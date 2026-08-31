@@ -1,0 +1,80 @@
+{
+  "responses": {
+    "poonan pact": {
+      "keywords": ["poonan", "pact", "gandhi", "fast", "hunger strike"],
+      "answer": "The Poona Pact was signed on September 24, 1931, between Dr. B.R. Ambedkar and Mahatma Gandhi at Yerwada Central Jail in Poona (Pune).\n\nDr. Ambedkar was representing the Depressed Classes and demanding separate electorates — a right granted by the British Prime Minister Ramsay MacDonald in the Communal Award. Gandhi responded with a fast-unto-death, arguing that separate electorates would fragment Hindu society.\n\nAfter days of negotiation, the Poona Pact was signed. Key provisions:\n• Abandoned separate electorates for Depressed Classes\n• Guaranteed 18% reservation for Depressed Classes in legislatures\n• Reserved seats would be elected by all voters (not just Depressed Class voters)\n• Primary elections within Depressed Class communities to select candidates\n\n[Source: BAWS Volume 1, pp. 297-305 | DAIC Archives]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "constitution": {
+      "keywords": ["constitution", "drafting", "committee", "chairman", "law minister", "395", "articles"],
+      "answer": "Dr. Ambedkar is known as the Chief Architect of the Indian Constitution.\n\nIn 1947, he was appointed Chairman of the Drafting Committee of the Constituent Assembly and India's first Law Minister. Over 2 years, 11 months, and 17 days, he led the drafting of a document that would become one of the world's most comprehensive constitutions.\n\nKey features he championed:\n• Fundamental Rights (Articles 12-35) — including abolition of untouchability\n• Directive Principles of State Policy (Articles 36-51)\n• Federal structure with a strong center\n• Independent judiciary\n• Reservation provisions for Scheduled Castes and Tribes\n• Official language provisions\n\nThe Constitution was adopted on November 26, 1949, with 395 Articles and 8 Schedules. Ambedkar himself moved the motion: \"The Constitution is passed.\"\n\n[Source: Constituent Assembly Debates | DAIC Archives]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "annihilation of caste": {
+      "keywords": ["annihilation", "caste", "destroy", "jat", "pat", "todak", "mandal", "speech", "undelivered"],
+      "answer": "\"Annihilation of Caste\" is Dr. Ambedkar's most famous work — an undelivered speech written in 1936 for the Jat-Pat Todak Mandal (Society for the Abolition of Caste) of Lahore.\n\nWhen the organizers found the speech too radical and asked Ambedkar to modify it, he refused. He self-published it and sold over 15,000 copies.\n\nKey arguments in the work:\n• Caste is not just a division of labor, but a division of laborers — enforced through social and religious sanctions\n• The Hindu religion is the root cause of caste; reform is impossible without destroying its scriptural authority\n• Social democracy (liberty, equality, fraternity) is as important as political democracy\n• True reform requires the annihilation of the caste system, not just reform of it\n• Gandhi's approach to caste reform was criticized as superficial\n\nIt remains one of the most powerful critiques of caste ever written.\n\n[Source: BAWS Volume 1 | Published 1936]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "buddha": {
+      "keywords": ["buddha", "buddhism", "dhamma", "dhamma", "convert", "deekshabhoomi", "nagpur", "religion"],
+      "answer": "Dr. Ambedkar formally embraced Buddhism on October 14, 1956, at Deekshabhoomi in Nagpur, along with approximately 500,000 followers — one of the largest mass conversions in history.\n\nHe had studied Buddhism extensively for decades and published 'The Buddha and His Dhamma' in 1954, his final major work. The book presents Buddhism as a rational, scientific philosophy focused on:\n• Dhamma as a pragmatic moral code\n• Rejection of caste and ritual\n• Equality and social justice\n• The Buddha as a social reformer, not a divine figure\n\nAmbedkar rejected Hinduism because of its caste system, untouchability, and the authority of the Vedas and Manusmriti. He found in Buddhism a philosophy that was rational, egalitarian, and free from caste.\n\n[Source: BAWS Volume 11 | DAIC Archives]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "education": {
+      "keywords": ["education", "columbia", "london", "school", "degree", "study", "phd", "doctorate", "scholar"],
+      "answer": "Dr. Ambedkar was one of the most educated Indians of his time — a remarkable achievement for someone born into the 'untouchable' Mahar community.\n\nHis education:\n• 1907: Matriculation — Elphinstone High School, Bombay (first Mahar to pass)\n• 1912: B.A. in Economics & Political Science — Elphinstone College\n• 1913: Scholarship to Columbia University, New York\n• 1915: M.A. in Economics — Columbia (thesis: 'Ancient Indian Commerce')\n• 1916: Enrolled at London School of Economics + Gray's Inn\n• 1923: D.Sc. in Economics — LSE (thesis: 'The Problem of the Rupee')\n• 1923: Called to the Bar — Gray's Inn, London\n\nHe held 8+ degrees across Economics, Political Science, and Law from institutions including Columbia, LSE, and Gray's Inn. No other Indian leader of his generation matched this academic record.\n\n[Source: Columbia Archives | LSE Archives | DAIC]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "reservation": {
+      "keywords": ["reservation", "quota", "affirmative", "sc", "st", "obc", "percentage", "seat"],
+      "answer": "Dr. Ambedkar was the primary architect of India's reservation system for Scheduled Castes and Scheduled Tribes.\n\nKey milestones:\n• 1929: Demanded separate electorates for Depressed Classes before the Simon Commission\n• 1931: Poona Pact — secured 18% reservation for Depressed Classes in legislatures\n• 1946: Elected to Constituent Assembly, pushed for constitutional safeguards\n• 1949: Constitution adopted with Articles 15(4), 16(4), 46 — providing reservation in education, employment, and legislature\n\nThe reservation system was not charity — it was recognition of historical injustice and a mechanism for social justice. Ambedkar saw it as temporary (10-20 years) initially, though it has been extended periodically.\n\nToday, reservations exist for:\n• SC (Scheduled Castes) — ~15-17%\n• ST (Scheduled Tribes) — ~7-8%\n• OBC (Other Backward Classes) — ~27%\n\n[Source: BAWS Volumes | Constituent Assembly Debates | DAIC]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "manusmriti": {
+      "keywords": ["manusmriti", "manu", "dhamma", "scripture", "hindu law", "burn", "protest"],
+      "answer": "On December 25, 1927, Dr. Ambedkar publicly burned the Manusmriti — the ancient Hindu law book — in a symbolic act of protest against caste oppression.\n\nAmbedkar called Manusmriti 'the most undemocratic and most despotic book' because:\n• It enshrined the caste system (Varna system)\n• It denied education to Shudras and Ati-Shudras\n• It prescribed different punishments for the same crime based on caste\n• It denied women basic rights and autonomy\n\nHe said: 'If you want to establish democracy, you must first destroy the authority of Manu.'\n\nDecember 25 is observed as 'Manusmriti Dahan Din' (Manusmriti Burning Day) by Dalit organizations across India.\n\n[Source: BAWS Volume 1 | DAIC Archives]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "british": {
+      "keywords": ["british", "colonial", "rule", "independence", "partition", "movement", "freedom"],
+      "answer": "Dr. Ambedkar's relationship with the British colonial government and the independence movement was complex and critical.\n\nHe argued that while British rule was oppressive, independence from British rule would not automatically free the Depressed Classes from Hindu caste oppression.\n\nKey positions:\n• 1919: testified before the Southborough Franchise Committee for separate electorates\n• 1930: Participated in Round Table Conferences in London\n• 1935: Advocated for constitutional safeguards against Hindu majoritarianism\n• 1946: Elected to Constituent Assembly, worked within the system to secure rights\n• Was critical of the Congress leadership for not addressing caste\n• Wrote: 'If Hindu Raj comes, the untouchables will be done for.'\n\nHe saw the British departure as a strategic moment to secure constitutional guarantees before power transferred to Hindu-majority hands.\n\n[Source: BAWS Volumes | CAD Debates | DAIC]",
+      "language": "en",
+      "confidence": 0.92
+    },
+    "philosophy": {
+      "keywords": ["philosophy", "belief", "thought", "democracy", "liberty", "equality", "fraternity"],
+      "answer": "Dr. Ambedkar's political philosophy revolved around three core principles: Liberty, Equality, and Fraternity — which he considered the foundation of democracy.\n\nHis key philosophical positions:\n\n1. Constitutional Democracy — Believed in rule of law, not majority rule. Warned that 'democracy by itself is no safeguard against tyranny.'\n\n2. Social Democracy — Political democracy cannot survive without social and economic democracy. He said: 'We must not be content with mere political democracy. We must make our social and economic democracy a reality.'\n\n3. Annihilation of Caste — Social reform must precede political reform. Caste is antithetical to democracy.\n\n4. State Socialism — Favored state control of key industries, land reform, and economic equality.\n\n5. Buddhism — Found in Buddhism a rational, egalitarian philosophy compatible with democracy.\n\nHis famous quote: 'I like the religion that teaches liberty, equality, and fraternity.'\n\n[Source: BAWS Volumes | Various Speeches | DAIC]",
+      "language": "en",
+      "confidence": 0.93
+    },
+    "life": {
+      "keywords": ["born", "birth", "childhood", "mhow", "family", "early life", "when was"],
+      "answer": "Dr. Bhimrao Ramji Ambedkar was born on April 14, 1891, in Mhow (now Dr. Ambedkar Nagar), Madhya Pradesh. His father, Ramji Maloji Sakpal, was a Subedar Major in the British Indian Army.\n\nFrom childhood, he experienced caste discrimination — from not being allowed to sit in classrooms to having to drink water through a caste-specific window.\n\nDespite these obstacles, he excelled academically:\n• First Mahar to pass matriculation\n• First to graduate from Elphinstone College\n• Won a scholarship to Columbia University\n• Earned multiple doctorates from Columbia and LSE\n\nHe transformed from a discriminated 'untouchable' boy into one of the most educated Indians of his era — a journey that shaped his lifelong mission of social justice.\n\n[Source: DAIC Archives | Wikipedia]",
+      "language": "en",
+      "confidence": 0.95
+    },
+    "conversion": {
+      "keywords": ["convert", "buddhist", "buddhism", "nagpur", "deekshabhoomi", "mass conversion"],
+      "answer": "On October 14, 1956, at Deekshabhoomi in Nagpur, Maharashtra, Dr. Ambedkar formally embraced Buddhism along with approximately 500,000 of his followers.\n\nWhy Buddhism?\n• Rejection of caste — Buddhism has no concept of birth-based hierarchy\n• Rational philosophy — the Buddha taught through logic, not blind faith\n• Social equality — women and all castes could join the Sangha\n• Morality without God — ethical living independent of divine command\n• Historical legacy — Buddhism had flourished in India for 1000+ years\n\nHis final book, 'The Buddha and His Dhamma', laid out his interpretation of Buddhist teachings. He died just 7 weeks after the conversion, on December 6, 1956.\n\nDeekshabhoomi in Nagpur is now a major pilgrimage site and a protected monument.\n\n[Source: BAWS Volume 11 | DAIC Archives]",
+      "language": "en",
+      "confidence": 0.94
+    },
+    "independence": {
+      "keywords": ["independence", "1947", "august", "freedom", "partition"],
+      "answer": "When India gained independence on August 15, 1947, Dr. Ambedkar was serving as the first Law Minister of India and Chairman of the Drafting Committee.\n\nHis role:\n• Drafted the Constitution that would govern independent India\n• Ensured fundamental rights for all citizens regardless of caste or religion\n• Secured reservation provisions for SC/ST communities\n• His draft constitution was adopted on November 26, 1949\n\nHis reaction to independence was ambivalent — he celebrated the end of colonial rule but warned that political freedom without social freedom would be meaningless for the Depressed Classes.\n\nHe famously said: 'Political democracy cannot last unless there lies at the base of it social democracy.'\n\n[Source: BAWS Volumes | CAD Debates | DAIC]",
+      "language": "en",
+      "confidence": 0.93
+    }
+  },
+  "fallback": {
+    "answer": "That's an excellent question about Dr. Ambedkar's life and legacy. While our full AI system uses Llama 3 with RAG to provide comprehensive answers from 500+ documents, the prototype currently has detailed responses for key topics.\n\nYou can try asking about:\n• The Poona Pact\n• The Constitution of India\n• Annihilation of Caste\n• His education and career\n• His conversion to Buddhism\n• Reservation policy\n• His philosophy\n\nThe production version, to be completed post-competition, will answer any question with verified citations from Ambedkar's complete works.\n\nWould you like me to elaborate on any of these topics?",
+    "confidence": 0.5
+  }
+}

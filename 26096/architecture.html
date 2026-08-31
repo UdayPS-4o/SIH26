@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samdarshi — System Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 28px;
+            color: #f1f5f9;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        .legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 12px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .legend h3 {
+            color: #f1f5f9;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            background: #0f172a;
+            border-radius: 8px;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .legend-text {
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🙏 Samdarshi — Digital Heritage Archive Architecture</h1>
+        <p>AI-Powered Institutional Archive for Dr. B.R. Ambedkar | SIH 2026 | Problem #26096</p>
+    </div>
+
+    <div class="mermaid">
+graph TB
+    subgraph PRESENTATION["🖥️ PRESENTATION LAYER"]
+        KIOSK["🖐️ Interactive Kiosk<br/>24&quot; Capacitive Touch<br/>Raspberry Pi 5<br/>Electron + React<br/>Voice I/O + Audio"]
+        TOUCH["👆 Touch Interface"]
+        VOICE["🎤 Voice Input"]
+        SPEAKER["🔊 Audio Output"]
+        KIOSK --> TOUCH
+        KIOSK --> VOICE
+        KIOSK --> SPEAKER
+    end
+
+    subgraph NETWORK["🌐 LOCAL NETWORK — Gigabit Ethernet + WiFi 6"]
+        direction LR
+        SWITCH["Network Switch"]
+        ROUTER["Router / Gateway"]
+    end
+
+    subgraph BACKEND["🔧 BACKEND SERVICES"]
+        direction TB
+        API["⚡ FastAPI Backend<br/>REST API + WebSocket<br/>JWT Auth + Streaming"]
+        CELERY["🔄 Celery Task Queue<br/>OCR Jobs, Embeddings<br/>Transcription Tasks"]
+        GATEWAY["🔌 API Gateway<br/>Rate Limiting<br/>Load Balancing"]
+    end
+
+    subgraph DATABASE["💾 DATA LAYER"]
+        direction TB
+        PG["🐘 PostgreSQL 16<br/>Documents, Metadata<br/>Users, Sessions, Analytics<br/>Dublin Core Schema"]
+        VECTOR["🧮 pgvector<br/>Embedding Storage<br/>HNSW Index<br/>Semantic Search"]
+        REDIS["🟥 Redis 7<br/>Session Cache<br/>Query Results<br/>Rate Limiting"]
+        MEILI["🔍 Meilisearch<br/>Full-Text Search<br/>Typo-Tolerant<br/>Faceted Filters"]
+    end
+
+    subgraph STORAGE["📁 FILE STORAGE"]
+        direction TB
+        MINIO["🪣 MinIO S3 Store<br/>PDFs, Scans, Images<br/>Audio Files<br/>Video Files"]
+    end
+
+    subgraph AI["🤖 AI / ML SERVICES"]
+        direction TB
+        RAG["📚 RAG Engine<br/>Llama 3 8B (Ollama)<br/>Hybrid Retrieval<br/>Cross-Encoder Rerank<br/>Citations + Sources"]
+        EMBED["🔢 Embeddings<br/>sentence-transformers<br/>384-dim vectors<br/>Multilingual"]
+        OCR_ENGINE["📄 OCR Engine<br/>Tesseract 5 + EasyOCR<br/>Devanagari + English<br/>Sanskrit Support"]
+        TTS_ENGINE["🗣️ TTS Engine<br/>Coqui TTS + Indic TTS<br/>English + Hindi + Marathi<br/>Natural Voices"]
+        STT_ENGINE["🎤 STT Engine<br/>Whisper.cpp<br/>Voice Queries<br/>Multilingual"]
+        PREPROCESS["🖼️ Image Preprocessing<br/>OpenCV<br/>Deskew, Denoise<br/>Binarize, Enhance"]
+    end
+
+    subgraph CONTENT["📚 KNOWLEDGE BASE SOURCES"]
+        direction TB
+        SRC1["Dr. Ambedkar Writings<br/>(BAWS Volumes)"]
+        SRC2["Constituent Assembly<br/>Debates (CAD)"]
+        SRC3["Indian Constitution<br/>(Original Text)"]
+        SRC4["Speeches & Audio<br/>(Archival Recordings)"]
+        SRC5["Manuscripts & Letters<br/>(DAIC Archives)"]
+        SRC6["Wikimedia Commons<br/>(Photos, Documents)"]
+        SRC7["Biographical Sources<br/>(Waiting for a Visa, etc.)"]
+    end
+
+    %% Connections
+    KIOSK -->|"HTTPS / REST"| GATEWAY
+    GATEWAY --> API
+    API --> PG
+    API --> VECTOR
+    API --> REDIS
+    API --> MEILI
+    API --> MINIO
+    API --> RAG
+    API --> OCR_ENGINE
+    API --> TTS_ENGINE
+    API --> STT_ENGINE
+    API --> CELERY
+
+    CELERY --> OCR_ENGINE
+    CELERY --> EMBED
+    CELERY --> MINIO
+
+    RAG --> VECTOR
+    RAG --> MEILI
+    RAG --> PG
+
+    EMBED --> VECTOR
+
+    PREPROCESS --> OCR_ENGINE
+
+    SRC1 -->|"Ingest"| PREPROCESS
+    SRC2 -->|"Ingest"| PREPROCESS
+    SRC3 -->|"Ingest"| PREPROCESS
+    SRC4 -->|"Ingest"| MINIO
+    SRC5 -->|"Scan"| PREPROCESS
+    SRC6 -->|"Download"| MINIO
+    SRC7 -->|"Ingest"| PREPROCESS
+
+    %% Styling
+    classDef kioskLayer fill:#4f46e5,stroke:#3730a3,color:#fff
+    classDef backendLayer fill:#059669,stroke:#047857,color:#fff
+    classDef dbLayer fill:#2563eb,stroke:#1d4ed8,color:#fff
+    classDef storageLayer fill:#0891b2,stroke:#0e7490,color:#fff
+    classDef aiLayer fill:#7c3aed,stroke:#5b21b6,color:#fff
+    classDef contentLayer fill:#475569,stroke:#334155,color:#fff
+    classDef infraLayer fill:#f59e0b,stroke:#d97706,color:#fff
+
+    class KIOSK,TOUCH,VOICE,SPEAKER kioskLayer
+    class API,CELERY,GATEWAY backendLayer
+    class PG,VECTOR,REDIS,MEILI dbLayer
+    class MINIO storageLayer
+    class RAG,EMBED,OCR_ENGINE,TTS_ENGINE,STT_ENGINE,PREPROCESS aiLayer
+    class SRC1,SRC2,SRC3,SRC4,SRC5,SRC6,SRC7 contentLayer
+    class SWITCH,ROUTER infraLayer
+    </div>
+
+    <div class="legend">
+        <h3>📋 Architecture Layers</h3>
+        <div class="legend-grid">
+            <div class="legend-item">
+                <div class="color-box" style="background: #4f46e5;"></div>
+                <span class="legend-text"><strong>Presentation:</strong> Kiosk hardware + Electron/React UI</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #059669;"></div>
+                <span class="legend-text"><strong>Backend:</strong> FastAPI + Celery + API Gateway</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #2563eb;"></div>
+                <span class="legend-text"><strong>Data:</strong> PostgreSQL + pgvector + Redis + Meilisearch</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #0891b2;"></div>
+                <span class="legend-text"><strong>Storage:</strong> MinIO S3-compatible object store</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #7c3aed;"></div>
+                <span class="legend-text"><strong>AI/ML:</strong> Llama 3 RAG + OCR + TTS/STT + Embeddings</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #475569;"></div>
+                <span class="legend-text"><strong>Content:</strong> Ambedkar's writings, speeches, archives</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #f59e0b;"></div>
+                <span class="legend-text"><strong>Infrastructure:</strong> Network, Docker Compose deployment</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#1e293b',
+                primaryTextColor: '#e2e8f0',
+                primaryBorderColor: '#475569',
+                lineColor: '#64748b',
+                secondaryColor: '#0f172a',
+                tertiaryColor: '#1e293b',
+                background: '#0f172a',
+                mainBkg: '#1e293b',
+                nodeBorder: '#475569',
+                clusterBkg: '#1e293b',
+                titleColor: '#f1f5f9',
+                edgeLabelBackground: '#1e293b'
+            },
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

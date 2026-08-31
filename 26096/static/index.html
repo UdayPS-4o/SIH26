@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Samdarshi — Digital Heritage Archive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Marathi:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/kiosk.css">
+</head>
+<body>
+    <!-- ── SPLASH SCREEN ── -->
+    <div id="splash-screen" class="screen active">
+        <div class="splash-content">
+            <div class="splash-om">🙏</div>
+            <div class="splash-title">SAMDARSHI</div>
+            <div class="splash-subtitle">Seeing Clearly</div>
+            <div class="splash-tagline">AI-Powered Digital Heritage Archive</div>
+            <div class="splash-divider"></div>
+            <div class="splash-detail">Dr. B.R. Ambedkar Memorial</div>
+            <div class="splash-institution">Dr. Ambedkar International Centre, New Delhi</div>
+            <div class="splash-loading">
+                <div class="loading-bar"></div>
+                <div class="loading-text">Loading knowledge base...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── HOME SCREEN ── -->
+    <div id="home-screen" class="screen">
+        <header class="kiosk-header">
+            <div class="header-left">
+                <div class="logo">🙏</div>
+                <div class="logo-text">
+                    <div class="logo-name">SAMDARSHI</div>
+                    <div class="logo-sub">Digital Heritage Archive</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="lang-btn" onclick="cycleLanguage()" title="Switch Language">
+                    <span id="current-lang">EN</span>
+                </button>
+                <button class="about-btn" onclick="showScreen('about-screen')" title="About">ℹ️</button>
+            </div>
+        </header>
+
+        <main class="home-content">
+            <div class="welcome-banner">
+                <h1 id="welcome-title">Explore the Legacy of Dr. B.R. Ambedkar</h1>
+                <p id="welcome-desc">Touch any module below to begin your journey through history, knowledge, and wisdom.</p>
+            </div>
+
+            <div class="feature-grid">
+                <button class="feature-card" onclick="showScreen('chat-screen')" data-label="Ask Dr. Ambedkar">
+                    <div class="card-icon">🤖</div>
+                    <div class="card-title" data-en="Ask Dr. Ambedkar" data-hi="डॉ. अंबेडकर से पूछें" data-mr="डॉ. अंबेडकरला विचारा">Ask Dr. Ambedkar</div>
+                    <div class="card-desc" data-en="AI-powered research assistant" data-hi="AI-संचालित अनुसंधान सहायक" data-mr="AI-सक्षम संशोधन सहाय्यक">AI-powered research assistant</div>
+                </button>
+
+                <button class="feature-card" onclick="showScreen('timeline-screen')" data-label="Timeline">
+                    <div class="card-icon">📅</div>
+                    <div class="card-title" data-en="Timeline" data-hi="समयरेखा" data-mr="कालरेखा">Timeline</div>
+                    <div class="card-desc" data-en="1891 to 1956 — Explore his life" data-hi="1891 से 1956 — उनके जीवन की खोज" data-mr="1891 ते 1956 — त्यांच्या जीवनाचा शोध">1891 to 1956 — Explore his life</div>
+                </button>
+
+                <button class="feature-card" onclick="showScreen('manuscript-screen')" data-label="Manuscripts">
+                    <div class="card-icon">📜</div>
+                    <div class="card-title" data-en="Manuscripts" data-hi="पांडुलिपियाँ" data-mr="हस्तलिखिते">Manuscripts</div>
+                    <div class="card-desc" data-en="Original documents & OCR" data-hi="मूल दस्तावेज़ और ओसीआर" data-mr="मूळ दस्तऐवज आणि ओसीआर">Original documents & OCR</div>
+                </button>
+
+                <button class="feature-card" onclick="showScreen('ocr-screen')" data-label="OCR Scanner">
+                    <div class="card-icon">🔍</div>
+                    <div class="card-title" data-en="OCR Scanner" data-hi="ओसीआर स्कैनर" data-mr="ओसीआर स्कैनर">OCR Scanner</div>
+                    <div class="card-desc" data-en="Digitize old manuscripts" data-hi="पुरानी पांडुलिपियों को डिजिटल करें" data-mr="जुनी पांडुलिपी डिजिटल करा">Digitize old manuscripts</div>
+                </button>
+
+                <button class="feature-card" onclick="showScreen('speeches-screen')" data-label="Speeches">
+                    <div class="card-icon">🎙️</div>
+                    <div class="card-title" data-en="Speeches & Audio" data-hi="भाषण और ऑडियो" data-mr="भाषण आणि ऑडिओ">Speeches & Audio</div>
+                    <div class="card-desc" data-en="Listen to key addresses" data-hi="प्रमुख भाषण सुनें" data-mr="मुख्य भाषणे ऐका">Listen to key addresses</div>
+                </button>
+
+                <button class="feature-card" onclick="showScreen('about-screen')" data-label="About">
+                    <div class="card-icon">ℹ️</div>
+                    <div class="card-title" data-en="About" data-hi="परिचय" data-mr="माहिती">About</div>
+                    <div class="card-desc" data-en="Learn about this archive" data-hi="इस आर्काइव के बारे में जानें" data-mr="या आर्काइवबद्दल माहिती">Learn about this archive</div>
+                </button>
+            </div>
+
+            <div class="home-footer">
+                <div class="quick-questions">
+                    <span class="quick-label" data-en="Try asking:" data-hi="पूछें:" data-mr="विचारा:">Try asking:</span>
+                    <button class="quick-q" onclick="quickAsk('What was the Poona Pact?')">Poona Pact</button>
+                    <button class="quick-q" onclick="quickAsk('Tell me about Annihilation of Caste')">Annihilation of Caste</button>
+                    <button class="quick-q" onclick="quickAsk('What is Dr. Ambedkar known for?')">His legacy</button>
+                    <button class="quick-q" onclick="quickAsk('When was the Constitution drafted?')">Constitution</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ── CHAT SCREEN ── -->
+    <div id="chat-screen" class="screen">
+        <header class="chat-header">
+            <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+            <div class="chat-header-info">
+                <div class="chat-header-title">🤖 Ask Dr. Ambedkar</div>
+                <div class="chat-header-sub" data-en="AI Research Assistant" data-hi="AI अनुसंधान सहायक" data-mr="AI संशोधन सहाय्यक">AI Research Assistant</div>
+            </div>
+            <div class="chat-header-actions">
+                <button class="clear-btn" onclick="clearChat()" title="Clear chat">🗑️</button>
+            </div>
+        </header>
+        <div id="chat-messages" class="chat-messages">
+            <div class="welcome-message">
+                <div class="msg-avatar">🙏</div>
+                <div class="msg-bubble bot">
+                    <div class="msg-text">
+                        Namaste! 🙏 I'm your AI assistant for Dr. Ambedkar's legacy. Ask me anything about his life, works, speeches, or the Constitution of India. Every answer comes with verified sources.
+                    </div>
+                    <div class="msg-time">Now</div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-suggestions">
+            <button class="suggestion-chip" onclick="quickAsk('What was the Poona Pact?')">
+                What was the Poona Pact?
+            </button>
+            <button class="suggestion-chip" onclick="quickAsk('Tell me about Annihilation of Caste')">
+                Annihilation of Caste
+            </button>
+            <button class="suggestion-chip" onclick="quickAsk('Who was Dr. Ambedkar?')">
+                Who was Dr. Ambedkar?
+            </button>
+            <button class="suggestion-chip" onclick="quickAsk('What was his contribution to the Constitution?')">
+                Constitution contribution
+            </button>
+            <button class="suggestion-chip" onclick="quickAsk('Tell me about Buddhism and Ambedkar')">
+                Buddhism & Ambedkar
+            </button>
+        </div>
+        <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+                <input type="text" id="chat-input" placeholder="Ask about Dr. Ambedkar..." autocomplete="off"
+                       onkeydown="if(event.key==='Enter')sendMessage()">
+                <button class="send-btn" onclick="sendMessage()">➤</button>
+                <button class="voice-btn" onclick="toggleVoice()" title="Voice input">🎤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TIMELINE SCREEN ── -->
+    <div id="timeline-screen" class="screen">
+        <header class="timeline-header">
+            <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+            <div class="timeline-header-title">📅 Interactive Timeline</div>
+            <div class="timeline-header-sub" data-en="1891 — 1956" data-hi="1891 — 1956" data-mr="1891 — 1956">1891 — 1956</div>
+        </header>
+        <div class="timeline-filters">
+            <button class="filter-btn active" data-cat="all" onclick="filterTimeline('all')">All</button>
+            <button class="filter-btn" data-cat="Personal" onclick="filterTimeline('Personal')">Personal</button>
+            <button class="filter-btn" data-cat="Political" onclick="filterTimeline('Political')">Political</button>
+            <button class="filter-btn" data-cat="Constitutional" onclick="filterTimeline('Constitutional')">Constitutional</button>
+            <button class="filter-btn" data-cat="Literary" onclick="filterTimeline('Literary')">Literary</button>
+            <button class="filter-btn" data-cat="Religious" onclick="filterTimeline('Religious')">Religious</button>
+        </div>
+        <div id="timeline-container" class="timeline-container">
+            <div class="timeline-track">
+                <div class="timeline-line"></div>
+                <div id="timeline-events"></div>
+            </div>
+        </div>
+        <div id="timeline-detail" class="timeline-detail hidden">
+            <div class="detail-header">
+                <button class="back-btn" onclick="closeTimelineDetail()">← Back to Timeline</button>
+            </div>
+            <div id="detail-content" class="detail-content"></div>
+        </div>
+    </div>
+
+    <!-- ── MANUSCRIPT SCREEN ── -->
+    <div id="manuscript-screen" class="screen">
+        <header class="manuscript-header">
+            <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+            <div class="manuscript-header-title">📜 Key Writings</div>
+        </header>
+        <div id="manuscripts-list" class="manuscripts-list"></div>
+        <div id="manuscript-viewer" class="manuscript-viewer hidden">
+            <div class="viewer-header">
+                <button class="back-btn" onclick="closeManuscript()">← Back</button>
+                <div id="viewer-title" class="viewer-title"></div>
+            </div>
+            <div class="viewer-content">
+                <div class="viewer-scan">
+                    <div class="scan-placeholder">
+                        <div class="scan-icon">📜</div>
+                        <div class="scan-text">Original Manuscript Scan</div>
+                        <div class="scan-note">Image placeholder — in production, high-res scan displayed here</div>
+                    </div>
+                </div>
+                <div class="viewer-text">
+                    <div class="ocr-badge">OCR Text</div>
+                    <div id="viewer-body" class="viewer-body"></div>
+                </div>
+            </div>
+            <div class="viewer-actions">
+                <button class="action-btn" onclick="speakCurrentDocument()">🔊 Read Aloud</button>
+                <button class="action-btn" onclick="translateCurrentDocument()">🌐 Translate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── OCR SCREEN ── -->
+    <div id="ocr-screen" class="screen">
+        <header class="ocr-header">
+            <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+            <div class="ocr-header-title">🔍 OCR Digitization</div>
+        </header>
+        <main class="ocr-content">
+            <div class="ocr-info-card">
+                <h3 data-en="Digitize Old Manuscripts" data-hi="पुरानी पांडुलिपियों को डिजिटल करें" data-mr="जुनी पांडुलिपी डिजिटल करा">Digitize Old Manuscripts</h3>
+                <p data-en="Our OCR pipeline uses Tesseract 5 and EasyOCR to convert scanned documents into searchable digital text with support for English, Hindi, Devanagari, and Marathi scripts." data-hi="हमारे ओसीआर पाइपलाइन स्कैन किए गए दस्तावेजों को Tesseract 5 और EasyOCR का उपयोग करके खोजने योग्य डिजिटल टेक्स्ट में परिवर्तित करता है।" data-mr="आमचे OCR pipeline तुंबिल केलेल्या दस्तऐवजांना Tesseract 5 आणि EasyOCR वापरून शोधण्यायोग्य डिजिटल मजकूरात रूपांतरित करते.">Our OCR pipeline uses Tesseract 5 and EasyOCR to convert scanned documents into searchable digital text with support for English, Hindi, Devanagari, and Marathi scripts.</p>
+            </div>
+            <div class="ocr-demo">
+                <div class="ocr-scanner-visual">
+                    <div class="scanner-doc">
+                        <div class="doc-text-mock">माझी जात महार आहे...</div>
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+                <button class="scan-btn" onclick="runOCRDemo()">
+                    <span class="scan-icon">📷</span>
+                    <span data-en="Scan Document" data-hi="दस्तावेज स्कैन करें" data-mr="दस्तऐवज स्कॅन करा">Scan Document</span>
+                </button>
+            </div>
+            <div id="ocr-result" class="ocr-result hidden">
+                <div class="result-header">
+                    <span class="result-status">✅ Processing Complete</span>
+                    <span class="result-confidence"></span>
+                </div>
+                <div class="result-section">
+                    <h4 data-en="Extracted Text (Original)" data-hi="निकाला गया टेक्स्ट (मूल)" data-mr="काढलेला मजकूर (मूळ)">Extracted Text (Original)</h4>
+                    <div id="ocr-original" class="ocr-text-box"></div>
+                </div>
+                <div class="result-section">
+                    <h4 data-en="Translation (English)" data-hi="अनुवाद (अंग्रेजी)" data-mr="अनुवाद (इंग्रजी)">Translation (English)</h4>
+                    <div id="ocr-translated" class="ocr-text-box"></div>
+                </div>
+                <div class="result-meta">
+                    <span id="ocr-time"></span>
+                    <span id="ocr-source"></span>
+                </div>
+            </div>
+            <div class="ocr-info-grid">
+                <div class="ocr-info-item">
+                    <div class="ocr-info-icon">📊</div>
+                    <div class="ocr-info-label">Accuracy</div>
+                    <div class="ocr-info-value">85-90%</div>
+                </div>
+                <div class="ocr-info-item">
+                    <div class="ocr-info-icon">🌐</div>
+                    <div class="ocr-info-label">Languages</div>
+                    <div class="ocr-info-value">EN / HI / MR / SA</div>
+                </div>
+                <div class="ocr-info-item">
+                    <div class="ocr-info-icon">⚡</div>
+                    <div class="ocr-info-label">Speed</div>
+                    <div class="ocr-info-value">~10s per page</div>
+                </div>
+                <div class="ocr-info-item">
+                    <div class="ocr-info-icon">🔧</div>
+                    <div class="ocr-info-label">Engine</div>
+                    <div class="ocr-info-value">Tesseract + EasyOCR</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ── SPEECHES SCREEN ── -->
+    <div id="speeches-screen" class="screen">
+        <header class="speeches-header">
+            <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+            <div class="speeches-header-title">🎙️ Speeches & Audio Archive</div>
+        </header>
+        <main class="speeches-content">
+            <div class="audio-card" onclick="playDemoAudio('constitution')">
+                <div class="audio-card-icon">🎵</div>
+                <div class="audio-card-info">
+                    <div class="audio-card-title">Constitution Speech — November 25, 1949</div>
+                    <div class="audio-card-meta">Dr. B.R. Ambedkar | Constituent Assembly</div>
+                    <div class="audio-card-desc">The historic speech concluding the debate on the Constitution of India.</div>
+                </div>
+                <button class="play-btn">▶</button>
+            </div>
+            <div class="audio-card" onclick="playDemoAudio('buddhism')">
+                <div class="audio-card-icon">🎵</div>
+                <div class="audio-card-info">
+                    <div class="audio-card-title">Speech on Buddhism — October 14, 1956</div>
+                    <div class="audio-card-meta">Dr. B.R. Ambedkar | Deekshabhoomi, Nagpur</div>
+                    <div class="audio-card-desc">Historic address at the mass conversion ceremony to Buddhism.</div>
+                </div>
+                <button class="play-btn">▶</button>
+            </div>
+            <div class="audio-card" onclick="playDemoAudio('poonapact')">
+                <div class="audio-card-icon">🎵</div>
+                <div class="audio-card-info">
+                    <div class="audio-card-title">On the Poona Pact — 1932</div>
+                    <div class="audio-card-meta">Dr. B.R. Ambedkar | Bombay</div>
+                    <div class="audio-card-desc">Address on the Poona Pact and its implications for the Depressed Classes.</div>
+                </div>
+                <button class="play-btn">▶</button>
+            </div>
+            <div id="audio-player-bar" class="audio-player-bar hidden">
+                <div class="audio-playing-icon">🎵</div>
+                <div class="audio-playing-info">
+                    <div id="audio-playing-title" class="audio-playing-title">Now Playing</div>
+                    <div id="audio-playing-status" class="audio-playing-status">Playing audio narration...</div>
+                </div>
+                <button class="audio-stop-btn" onclick="stopAudio()">⏹</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- ── ABOUT SCREEN ── -->
+    <div id="about-screen" class="screen">
+        <header class="about-header">
+            <button class="back-btn" onclick="showScreen('home-screen')">←</button>
+            <div class="about-header-title">ℹ️ About Samdarshi</div>
+        </header>
+        <main class="about-content">
+            <div class="about-hero">
+                <div class="about-logo">🙏</div>
+                <div class="about-name">SAMDARSHI</div>
+                <div class="about-meaning" data-en="Sanskrit: 'One who sees equally' — An impartial observer" data-hi="संस्कृत: 'समदर्शी' — जो सबको समान रूप से देखता है" data-mr="संस्कृत: 'समदर्शी' — सर्वांना समान पाहणारा">Sanskrit: 'One who sees equally' — An impartial observer</div>
+            </div>
+            <div class="about-section">
+                <h3 data-en="About This Archive" data-hi="इस आर्काइव के बारे में" data-mr="या आर्काइवबद्दल">About This Archive</h3>
+                <p data-en="Samdarshi is an AI-powered digital heritage archive dedicated to preserving, digitizing, and making accessible the legacy of Dr. B.R. Ambedkar — the architect of the Indian Constitution, champion of social justice, and one of India's greatest thinkers." data-hi="समदर्शी डॉ. बी.आर. अंबेडकर के विरासत को संरक्षित, डिजिटल और सुलभ बनाने के लिए समर्पित AI-संचालित डिजिटल धरोहर आर्काइव है।" data-mr="समदर्शी हा डॉ. बी.आर. अंबेडकरांच्या वारसा संरक्षित, डिजिटल आणि प्रवेशयोग्य करण्यासाठी समर्पित AI-सक्षम डिजिटल वारसा आर्काइव आहे.">Samdarshi is an AI-powered digital heritage archive dedicated to preserving, digitizing, and making accessible the legacy of Dr. B.R. Ambedkar — the architect of the Indian Constitution, champion of social justice, and one of India's greatest thinkers.</p>
+            </div>
+            <div class="about-section">
+                <h3 data-en="Key Features" data-hi="प्रमुख विशेषताएं" data-mr="मुख्य वैशिष्ट्ये">Key Features</h3>
+                <div class="features-list">
+                    <div class="feature-item"><span class="feature-icon">🤖</span><span data-en="AI Research Assistant with verified citations" data-hi="सत्यापित उद्धरणों के साथ AI अनुसंधान सहायक" data-mr="सत्यापित उद्धरणांसह AI संशोधन सहाय्यक">AI Research Assistant with verified citations</span></div>
+                    <div class="feature-item"><span class="feature-icon">🌐</span><span data-en="Multilingual: English, Hindi, Marathi" data-hi="बहुभाषी: अंग्रेजी, हिंदी, मराठी" data-mr="बहुभाषिक: इंग्रजी, हिंदी, मराठी">Multilingual: English, Hindi, Marathi</span></div>
+                    <div class="feature-item"><span class="feature-icon">📅</span><span data-en="Interactive Timeline: 1891–1956" data-hi="इंटरैक्टिव टाइमलाइन: 1891–1956" data-mr="इंटरॅक्टिव कालरेखा: 1891–1956">Interactive Timeline: 1891–1956</span></div>
+                    <div class="feature-item"><span class="feature-icon">📜</span><span data-en="Manuscript viewer with OCR overlay" data-hi="ओसीआर ओवरले के साथ पांडुलिपी दर्शक" data-mr="OCR ओव्हरलेसह पांडुलिपी प्रदर्शक">Manuscript viewer with OCR overlay</span></div>
+                    <div class="feature-item"><span class="feature-icon">🔍</span><span data-en="OCR Digitization Pipeline" data-hi="ओसीआर डिजिटलाइजेशन पाइपलाइन" data-mr="OCR डिजिटलाइझेशन पाइपलाइन">OCR Digitization Pipeline</span></div>
+                    <div class="feature-item"><span class="feature-icon">🔊</span><span data-en="Text-to-Speech in all languages" data-hi="सभी भाषाओं में टेक्स्ट-टू-स्पीच" data-mr="सर्व भाषांमध्ये मजकूर-ते-भाषण">Text-to-Speech in all languages</span></div>
+                </div>
+            </div>
+            <div class="about-section">
+                <h3 data-en="Technology" data-hi="प्रौद्योगिकी" data-mr="तंत्रज्ञान">Technology</h3>
+                <p data-en="Built with open-source technologies: FastAPI, Llama 3, pgvector, Tesseract OCR, EasyOCR, Electron. All components are MIT-licensed. Zero licensing cost. Fully deployable at DAIC." data-hi="ओपन-सोर्स प्रौद्योगिकियों के साथ निर्मित: फास्टएपीआई, ल्लामा 3, पीजीवेक्टर, टेसरैक्ट ओसीआर, ईजीओसीआर, इलेक्ट्रॉन।" data-mr="ओपन-सोर्स तंत्रज्ञानांसह तयार: FastAPI, Llama 3, pgvector, Tesseract OCR, EasyOCR, Electron.">Built with open-source technologies: FastAPI, Llama 3, pgvector, Tesseract OCR, EasyOCR, Electron. All components are MIT-licensed.</p>
+            </div>
+            <div class="about-quote">
+                <div class="quote-mark">"</div>
+                <div class="quote-text" data-en="I like the religion that teaches liberty, equality, and fraternity." data-hi="मुझे वह धर्म पसंद है जो स्वतंत्रता, समानता और भाईचारा सिखाता है।" data-mr="मला तो धर्म आवडतो जो स्वातंत्र्य, समानता आणि बंधुत्व शिकवतो.">I like the religion that teaches liberty, equality, and fraternity.</div>
+                <div class="quote-author">— Dr. B.R. Ambedkar</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/kiosk.js"></script>
+</body>
+</html>

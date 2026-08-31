@@ -1,0 +1,322 @@
+[
+  {
+    "id": 1,
+    "date": "1891-04-14",
+    "year": 1891,
+    "title": "Birth of Dr. B.R. Ambedkar",
+    "description": "Born as Bhimrao Ramji Ambedkar in Mhow, Central Provinces (now Madhya Pradesh), to Ramji Maloji Sakpal and Bhimabai. He was the 14th child of the family.",
+    "category": "birth",
+    "source": "Wikipedia / DAIC",
+    "image": ""
+  },
+  {
+    "id": 2,
+    "date": "1893-1896",
+    "year": 1893,
+    "title": "Early Schooling — Satara",
+    "description": "Family moved to Satara after father's transfer. Young Bhim attended local school, facing caste-based discrimination early in life.",
+    "category": "education",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 3,
+    "date": "1897",
+    "year": 1897,
+    "title": "Father Retired — Move to Bombay",
+    "description": "Ramji Sakpal retired from military service. Family shifted to Bombay (now Mumbai). Bhim enrolled at Elphinstone High School.",
+    "category": "personal",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 4,
+    "date": "1907",
+    "year": 1907,
+    "title": "Matriculation — Elphinstone High School",
+    "description": "Bhimrao passed matriculation from Elphinstone High School, Bombay. He was the first from his Mahar community to do so. Celebrated in his community.",
+    "category": "education",
+    "source": "Wikipedia",
+    "image": ""
+  },
+  {
+    "id": 5,
+    "date": "1908",
+    "year": 1908,
+    "title": "Enrolled at Elphinstone College",
+    "description": "Joined Elphinstone College, affiliated with University of Bombay. Studied Economics and Political Science.",
+    "category": "education",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 6,
+    "date": "1912",
+    "year": 1912,
+    "title": "Graduation — B.A. in Economics & Political Science",
+    "description": "Graduated from Elphinstone College with a B.A. degree. His success was celebrated across the Mahar community. The degree was conferred by Bombay University.",
+    "category": "education",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 7,
+    "date": "1913",
+    "year": 1913,
+    "title": "Scholarship to Columbia University",
+    "description": "Secured the Baroda State Scholarship for study in New York. Left for Columbia University to pursue graduate studies in Economics and Political Science.",
+    "category": "education",
+    "source": "Wikipedia",
+    "image": ""
+  },
+  {
+    "id": 8,
+    "date": "1915",
+    "year": 1915,
+    "title": "M.A. — Columbia University",
+    "description": "Completed M.A. in Economics at Columbia University. Specialized in Economics, Sociology, History, Philosophy and Anthropology. Thesis: 'Ancient Indian Commerce'.",
+    "category": "education",
+    "source": "Columbia University Archives",
+    "image": ""
+  },
+  {
+    "id": 9,
+    "date": "1916",
+    "year": 1916,
+    "title": "D.Sc. — London School of Economics",
+    "description": "Enrolled at the London School of Economics. Began work on doctoral thesis. Also studied at Gray's Inn for law.",
+    "category": "education",
+    "source": "LSE Archives",
+    "image": ""
+  },
+  {
+    "id": 10,
+    "date": "1923",
+    "year": 1923,
+    "title": "D.Sc. in Economics — London School of Economics",
+    "description": "Completed his second doctorate — D.Sc. in Economics from LSE. His thesis 'The Problem of the Rupee' examined currency systems and gold exchange standards.",
+    "category": "education",
+    "source": "LSE Archives",
+    "image": ""
+  },
+  {
+    "id": 11,
+    "date": "1923",
+    "year": 1923,
+    "title": "Called to the Bar — Gray's Inn",
+    "description": "Qualified as a barrister-at-law from Gray's Inn, London. Returned to India in 1923 with multiple advanced degrees — an extraordinary achievement for someone from his community.",
+    "category": "education",
+    "source": "Wikipedia",
+    "image": ""
+  },
+  {
+    "id": 12,
+    "date": "1924",
+    "year": 1924,
+    "title": "Started Legal Practice in Bombay",
+    "description": "Established his legal practice in Bombay High Court. Also taught at the prestigious Sydenham College of Commerce.",
+    "category": "career",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 13,
+    "date": "1927",
+    "year": 1927,
+    "title": "Appointed to Bombay University Senate",
+    "description": "Nominated to the Senate of Bombay University. Began working on social reform for the depressed classes.",
+    "category": "career",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 14,
+    "date": "1929",
+    "year": 1929,
+    "title": "Called for Separate Electorates — Simon Commission",
+    "description": "Appeared before the Simon Commission and demanded separate electorates for the Depressed Classes. This became a key point in constitutional negotiations.",
+    "category": "political",
+    "source": "CAD Volumes",
+    "image": ""
+  },
+  {
+    "id": 15,
+    "date": "1930",
+    "year": 1930,
+    "title": "Round Table Conference — First",
+    "description": "Participated in the First Round Table Conference in London as a representative of the Depressed Classes. Demanded separate electorates for untouchables.",
+    "category": "political",
+    "source": "CAD Volumes",
+    "image": ""
+  },
+  {
+    "id": 16,
+    "date": "1931",
+    "year": 1931,
+    "title": "Poona Pact with Mahatma Gandhi",
+    "description": "Negotiated the Poona Pact with Gandhi at Yerwada Jail. Abandoned separate electorates in exchange for 18% reservation for Depressed Classes in legislatures.",
+    "category": "political",
+    "source": "DAIC / BAWS Vol. 1",
+    "image": ""
+  },
+  {
+    "id": 17,
+    "date": "1932",
+    "year": 1932,
+    "title": "Second Round Table Conference",
+    "description": "Participated in the Second Round Table Conference. Continued advocacy for Depressed Classes rights.",
+    "category": "political",
+    "source": "CAD Volumes",
+    "image": ""
+  },
+  {
+    "id": 18,
+    "date": "1935",
+    "year": 1935,
+    "title": "Published 'Annihilation of Caste'",
+    "description": "Published his seminal work 'Annihilation of Caste' — an undelivered speech written for the Jat-Pat Todak Mandal (Lahore). Became his most famous work.",
+    "category": "literary",
+    "source": "BAWS Vol. 1",
+    "image": ""
+  },
+  {
+    "id": 19,
+    "date": "1935",
+    "year": 1935,
+    "title": "Government of India Act, 1935",
+    "description": "The Government of India Act incorporated provisions Ambedkar had advocated for, including reserved seats for Depressed Classes.",
+    "category": "political",
+    "source": "legislative.gov.in",
+    "image": ""
+  },
+  {
+    "id": 20,
+    "date": "1936",
+    "year": 1936,
+    "title": "Founded Independent Labour Party",
+    "description": "Founded the Independent Labour Party (ILP) in Bombay. The party contested elections and won several seats.",
+    "category": "political",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 21,
+    "date": "1936",
+    "year": 1936,
+    "title": "Annihilation of Caste Published",
+    "description": "Self-published after organizers cancelled the speech. Over 15,000 copies sold. Considered the most powerful critique of caste ever written.",
+    "category": "literary",
+    "source": "BAWS Vol. 1",
+    "image": ""
+  },
+  {
+    "id": 22,
+    "date": "1937",
+    "year": 1937,
+    "title": "Bombay Legislative Council — Elected Member",
+    "description": "Elected to the Bombay Legislative Council as an ILP candidate. Became Leader of the Opposition.",
+    "category": "political",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 23,
+    "date": "1942",
+    "year": 1942,
+    "title": "Appointed to Viceroy's Executive Council",
+    "description": "Nominated as Labour Member. Worked on labor rights, minimum wages, and working conditions for industrial workers.",
+    "category": "career",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 24,
+    "date": "1946",
+    "year": 1946,
+    "title": "Elected to Constituent Assembly",
+    "description": "Elected to the Constituent Assembly of India as representative of the Depressed Classes. Would become chief architect of the Constitution.",
+    "category": "political",
+    "source": "CAD Volumes",
+    "image": ""
+  },
+  {
+    "id": 25,
+    "date": "1947-08-15",
+    "year": 1947,
+    "title": "First Law Minister of India",
+    "description": "Appointed as the first Law Minister of independent India. Also served as Chairman of the Drafting Committee of the Constitution.",
+    "category": "political",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 26,
+    "date": "1948-01-26",
+    "year": 1948,
+    "title": "Draft Constitution Completed",
+    "description": "The Draft Constitution was completed after 2 years, 11 months, and 17 days of work. Contained 395 Articles and 8 Schedules.",
+    "category": "political",
+    "source": "CAD Volumes",
+    "image": ""
+  },
+  {
+    "id": 27,
+    "date": "1949-11-26",
+    "year": 1949,
+    "title": "Constitution Adopted",
+    "description": "The Constituent Assembly adopted the Constitution of India on November 26, 1949. Ambedkar moved the motion: 'The Constitution is passed.'",
+    "category": "political",
+    "source": "CAD Volumes",
+    "image": ""
+  },
+  {
+    "id": 28,
+    "date": "1951",
+    "year": 1951,
+    "title": "Resigned from Cabinet",
+    "description": "Resigned from Nehru's cabinet over disagreement on the Hindu Code Bill and other policy matters.",
+    "category": "political",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 29,
+    "date": "1952",
+    "year": 1952,
+    "title": "Elected to Lok Sabha — Bombay North",
+    "description": "Contested the first general election from Bombay North and won. Became a member of the First Lok Sabha.",
+    "category": "political",
+    "source": "Election Commission Records",
+    "image": ""
+  },
+  {
+    "id": 30,
+    "date": "1954",
+    "year": 1954,
+    "title": "Published 'Buddha and His Dhamma'",
+    "description": "Published his final major work. Presents Buddhism as a rational, scientific philosophy. Completed shortly before his own conversion.",
+    "category": "literary",
+    "source": "BAWS Vol. 11",
+    "image": ""
+  },
+  {
+    "id": 31,
+    "date": "1956-10-14",
+    "year": 1956,
+    "title": "Conversion to Buddhism — Nagpur",
+    "description": "Formally embraced Buddhism at Deekshabhoomi, Nagpur, along with approximately 500,000 followers — the largest mass conversion in history.",
+    "category": "political",
+    "source": "DAIC",
+    "image": ""
+  },
+  {
+    "id": 32,
+    "date": "1956-12-06",
+    "year": 1956,
+    "title": "Passing of Dr. B.R. Ambedkar",
+    "description": "Dr. Bhimrao Ramji Ambedkar passed away in his sleep at his Delhi residence. He was 65. Cremated at Dadar Chowpatty, Mumbai, per Buddhist rites.",
+    "category": "death",
+    "source": "DAIC",
+    "image": ""
+  }
+]

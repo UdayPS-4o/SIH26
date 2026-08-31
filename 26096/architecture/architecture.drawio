@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-08-30T00:00:00.000Z" agent="claude" version="24.0.0" type="device">
+  <diagram name="Samdarshi Architecture" id="samdarshi-arch-001">
+    <mxGraphModel dx="2600" dy="1800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="🙏 Samdarshi — Digital Heritage Archive System Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;fontColor=#f1f5f9;" vertex="1" parent="1">
+          <mxGeometry x="200" y="20" width="1200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="AI-Powered Institutional Archive for Dr. B.R. Ambedkar | SIH 2026 | Problem #26096 | Hardware + Software Integration" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="200" y="55" width="1200" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- PRESENTATION LAYER -->
+        <mxCell id="presentation-layer" value="PRESENTATION LAYER" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#0f172a;fontColor=#ffffff;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="1440" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- Kiosk -->
+        <mxCell id="kiosk" value="INTERACTIVE KIOSK&#xa;(24&quot; Capacitive Touchscreen)&#xa;Raspberry Pi 5 (4GB)&#xa;Electron + React + TypeScript&#xa;Voice I/O + Audio Narration&#xa;Auto-boot Kiosk Mode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4f46e5;strokeColor=#3730a3;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="130" width="280" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Smart Display -->
+        <mxCell id="display" value="SMART DISPLAY (Optional)&#xa;(65&quot; Smart TV / Monitor)&#xa;Documentary Loop&#xa;Photo Slideshow&#xa;Ambient Content" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7c3aed;strokeColor=#5b21b6;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="440" y="130" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- OCR Scanner -->
+        <mxCell id="ocr-scanner" value="OCR SCANNER (Optional)&#xa;(A4 Flatbed / Document Cam)&#xa;Auto-digitization&#xa;Manuscript Processing&#xa;Archive Integration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7c3aed;strokeColor=#5b21b6;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="680" y="130" width="200" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Admin -->
+        <mxCell id="admin" value="ADMIN PANEL&#xa;(Laptop / Workstation)&#xa;Content Management&#xa;Analytics Dashboard&#xa;System Monitoring" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#334155;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="40" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- NETWORK LAYER -->
+        <mxCell id="network-layer" value="LOCAL NETWORK — Gigabit Ethernet + WiFi 6 | DAIC Local Area Network" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f59e0b;strokeColor=#d97706;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="280" width="1280" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows from kiosk to network -->
+        <mxCell id="arr1" style="endArrow=classic;html=1;strokeColor=#4f46e5;strokeWidth=2;" edge="1" parent="1" source="kiosk" target="network-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr2" style="endArrow=classic;html=1;strokeColor=#7c3aed;strokeWidth=2;" edge="1" parent="1" source="display" target="network-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr3" style="endArrow=classic;html=1;strokeColor=#7c3aed;strokeWidth=2;" edge="1" parent="1" source="ocr-scanner" target="network-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr4" style="endArrow=classic;html=1;strokeColor=#64748b;strokeWidth=2;" edge="1" parent="1" source="admin" target="network-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- SERVER LAYER -->
+        <mxCell id="server-layer" value="AI SERVER (Institutional) — NVIDIA RTX / GPU Workstation + Optional Cloud Fallback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0f172a;strokeColor=#020617;fontColor=#ffffff;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="360" width="1440" height="480" as="geometry" />
+        </mxCell>
+
+        <!-- Backend -->
+        <mxCell id="fastapi" value="FastAPI Backend&#xa;REST API + WebSocket&#xa;JWT Authentication&#xa;Streaming Responses" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;strokeColor=#047857;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="400" width="240" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Celery -->
+        <mxCell id="celery" value="Celery Task Queue&#xa;OCR Jobs&#xa;Embedding Generation&#xa;Transcription Tasks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#059669;strokeColor=#047857;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="120" y="510" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- PostgreSQL -->
+        <mxCell id="postgres" value="PostgreSQL 16&#xa;Documents, Metadata&#xa;Users, Sessions&#xa;Dublin Core Schema" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#3b82f6;strokeColor=#1d4ed8;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="380" y="400" width="180" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- pgvector -->
+        <mxCell id="pgvector" value="pgvector&#xa;Vector Embeddings&#xa;HNSW Index&#xa;Semantic Search" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#3b82f6;strokeColor=#1d4ed8;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="600" y="400" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Meilisearch -->
+        <mxCell id="meili" value="Meilisearch&#xa;Full-Text Search&#xa;Typo-Tolerant&#xa;Faceted Filters" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#3b82f6;strokeColor=#1d4ed8;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="800" y="400" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Redis -->
+        <mxCell id="redis" value="Redis 7&#xa;Session Cache&#xa;Query Cache&#xa;Rate Limiting" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#3b82f6;strokeColor=#1d4ed8;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="400" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- MinIO -->
+        <mxCell id="minio" value="MinIO Object Store&#xa;S3-Compatible&#xa;PDFs, Images, Audio&#xa;10K+ Files" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#0ea5e9;strokeColor=#0369a1;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="400" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- AI/ML LAYER -->
+        <mxCell id="ai-layer" value="AI / ML SERVICES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7c3aed;strokeColor=#5b21b6;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="530" width="720" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- RAG -->
+        <mxCell id="rag" value="RAG Engine&#xa;Llama 3 8B (Ollama)&#xa;Hybrid Search + Rerank&#xa;Citations + Sources" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a855f7;strokeColor=#7e22ce;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="140" y="580" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Embeddings -->
+        <mxCell id="embeddings" value="Embeddings&#xa;sentence-transformers&#xa;384-dim vectors&#xa;Multilingual" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a855f7;strokeColor=#7e22ce;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="380" y="580" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- OCR -->
+        <mxCell id="ocr" value="OCR Engine&#xa;Tesseract 5 + EasyOCR&#xa;Devanagari + English&#xa;Sanskrit Support" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef4444;strokeColor=#b91c1c;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="580" y="580" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- TTS -->
+        <mxCell id="tts" value="Text-to-Speech&#xa;Coqui TTS + Indic TTS&#xa;English + Hindi + Marathi&#xa;Audio Narration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef4444;strokeColor=#b91c1c;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="800" y="580" width="180" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- STT -->
+        <mxCell id="stt" value="Speech-to-Text&#xa;Whisper.cpp&#xa;Voice Queries&#xa;Multilingual" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef4444;strokeColor=#b91c1c;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="580" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- OpenCV -->
+        <mxCell id="opencv" value="Image Preprocessing&#xa;OpenCV&#xa;Deskew, Denoise&#xa;Binarize, Enhance" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ef4444;strokeColor=#b91c1c;fontColor=#ffffff;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="580" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- INDIC NLP LAYER -->
+        <mxCell id="nlp-layer" value="INDIC NLP SERVICES" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dc2626;strokeColor=#991b1b;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="120" y="670" width="1280" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Language Detection -->
+        <mxCell id="lang-detect" value="Language Detection&#xa;FastText&#xa;Script Detection&#xa;EN / HI / MR / SA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f97316;strokeColor=#c2410c;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="140" y="720" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Transliteration -->
+        <mxCell id="translit" value="Transliteration&#xa;Sanskrit → Roman&#xa;Phonetic Mapping&#xa;Indic NLP Library" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f97316;strokeColor=#c2410c;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="340" y="720" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Spell Check -->
+        <mxCell id="spellcheck" value="Spell Check&#xa;Custom Dictionary&#xa;Ambedkar Vocabulary&#xa;Auto-correction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f97316;strokeColor=#c2410c;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="540" y="720" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Content Management -->
+        <mxCell id="content-mgmt" value="Content Manager&#xa;Metadata Tagger&#xa;Auto-Classification&#xa;Dublin Core" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f97316;strokeColor=#c2410c;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="740" y="720" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Monitoring -->
+        <mxCell id="monitoring" value="Monitoring&#xa;Prometheus + Grafana&#xa;System Health&#xa;Usage Analytics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f97316;strokeColor=#c2410c;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="940" y="720" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Docker -->
+        <mxCell id="docker" value="Docker Compose&#xa;Single-Command Deploy&#xa;All Services Containerized&#xa;Easy Institution Setup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0ea5e9;strokeColor=#0369a1;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="720" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- CONTENT SOURCES -->
+        <mxCell id="content-layer" value="KNOWLEDGE BASE SOURCES (Public Domain / Government)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#475569;strokeColor=#334155;fontColor=#ffffff;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="820" width="1440" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src1" value="Dr. Ambedkar Writings&#xa;(BAWS Volumes 1-22)&#xa;ambedkar.org, DAIC" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#475569;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="870" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src2" value="Constituent Assembly&#xa;Debates (CAD)&#xa;165 volumes&#xa;loksabha.nic.in" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#475569;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="310" y="870" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src3" value="Indian Constitution&#xa;(Original + Amendments)&#xa;legislative.gov.in&#xa;GitHub plain text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#475569;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="520" y="870" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src4" value="Speeches &amp; Audio&#xa;(Archival Recordings)&#xa;DAIC Collection&#xa;Internet Archive" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#475569;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="730" y="870" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src5" value="Manuscripts &amp; Letters&#xa;(DAIC Archives)&#xa;Physical → Digital&#xa;OCR Pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#475569;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="940" y="870" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src6" value="Wikimedia Commons&#xa;(28+ Ambedkar Images)&#xa;CC BY-SA License&#xa;Photos, Documents" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#475569;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="870" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="src7" value="Internet Archive&#xa;(archive.org)&#xa;Books, Recordings&#xa;Public Domain" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#64748b;strokeColor=#475569;fontColor=#ffffff;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="870" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- KEY FEATURES -->
+        <mxCell id="features" value="KEY FEATURES:  ✓ AI Q&amp;A with verified citations  ✓ Multilingual (EN/HI/MR/SA)  ✓ OCR Digitization  ✓ TTS + STT (voice I/O)  ✓ Interactive Timeline (500+ events)  ✓ Audio-Visual Archive  ✓ Semantic Search  ✓ Offline-first design  ✓ WCAG 2.1 AA accessible  ✓ Docker Compose deploy  ✓ Zero licensing costs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1f5f9;strokeColor=#475569;fontColor=#0f172a;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="960" width="1440" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- DEPLOYMENT NOTE -->
+        <mxCell id="deploy-note" value="DEPLOYMENT: Docker Compose (1 command) → DAIC server / any institutional server | Kiosk: Auto-boot Electron app | Offline-capable | No cloud dependency | Hardware: ~₹25,000/kiosk | Software: 100% open-source (MIT License)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1e293b;strokeColor=#0f172a;fontColor=#94a3b8;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1060" width="1440" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Backend arrows -->
+        <mxCell id="a-fp-pg" style="endArrow=classic;html=1;strokeColor=#059669;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="postgres">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-pv" style="endArrow=classic;html=1;strokeColor=#059669;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="pgvector">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-ml" style="endArrow=classic;html=1;strokeColor=#059669;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="meili">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-rd" style="endArrow=classic;html=1;strokeColor=#059669;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="redis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-mn" style="endArrow=classic;html=1;strokeColor=#059669;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="minio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-rag" style="endArrow=classic;html=1;strokeColor=#a855f7;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="rag">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-ocr" style="endArrow=classic;html=1;strokeColor=#ef4444;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="ocr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-tts" style="endArrow=classic;html=1;strokeColor=#ef4444;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="tts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-stt" style="endArrow=classic;html=1;strokeColor=#ef4444;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="stt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-fp-cl" style="endArrow=classic;html=1;strokeColor=#059669;strokeWidth=2;" edge="1" parent="1" source="fastapi" target="celery">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-cl-ocr" style="endArrow=classic;html=1;strokeColor=#ef4444;strokeWidth=2;dashed=1;" edge="1" parent="1" source="celery" target="ocr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-cl-emb" style="endArrow=classic;html=1;strokeColor=#a855f7;strokeWidth=2;dashed=1;" edge="1" parent="1" source="celery" target="embeddings">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-cl-min" style="endArrow=classic;html=1;strokeColor=#0ea5e9;strokeWidth=2;dashed=1;" edge="1" parent="1" source="celery" target="minio">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-rag-pv" style="endArrow=classic;html=1;strokeColor=#a855f7;strokeWidth=2;" edge="1" parent="1" source="rag" target="pgvector">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-rag-me" style="endArrow=classic;html=1;strokeColor=#a855f7;strokeWidth=2;" edge="1" parent="1" source="rag" target="meili">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-emb-pv" style="endArrow=classic;html=1;strokeColor=#a855f7;strokeWidth=2;" edge="1" parent="1" source="embeddings" target="pgvector">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-pre-ocr" style="endArrow=classic;html=1;strokeColor=#ef4444;strokeWidth=2;" edge="1" parent="1" source="opencv" target="ocr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Content to processing arrows -->
+        <mxCell id="a-s1-pre" style="endArrow=classic;html=1;strokeColor=#64748b;strokeWidth=1;dashed=1;" edge="1" parent="1" source="src1" target="opencv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-s2-pre" style="endArrow=classic;html=1;strokeColor=#64748b;strokeWidth=1;dashed=1;" edge="1" parent="1" source="src2" target="opencv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a-s5-pre" style="endArrow=classic;html=1;strokeColor=#64748b;strokeWidth=1;dashed=1;" edge="1" parent="1" source="src5" target="opencv">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

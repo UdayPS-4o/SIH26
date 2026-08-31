@@ -1,0 +1,108 @@
+{
+  "documents": [
+    {
+      "id": 1,
+      "title": "Annihilation of Caste",
+      "author": "Dr. B.R. Ambedkar",
+      "date": "1936",
+      "source": "BAWS Volume 1",
+      "url": "https://www.ambedkar.org",
+      "language": "en",
+      "type": "book",
+      "description": "An undelivered speech written for the Jat-Pat Todak Mandal of Lahore. This is Ambedkar's most famous work — a searing critique of the caste system and Hindu orthodoxy.",
+      "pages": 65,
+      "excerpt": "You cannot build a nation on foundations of caste. You cannot build up a nation on principles of Hindu religion. Caste is not a division of labor, it is a division of laborers."
+    },
+    {
+      "id": 2,
+      "title": "The Constitution of India",
+      "author": "Constituent Assembly of India",
+      "date": "1949-11-26",
+      "source": "legislative.gov.in",
+      "url": "https://legislative.gov.in",
+      "language": "en",
+      "type": "constitution",
+      "description": "The supreme law of India, drafted by the Constituent Assembly with Dr. Ambedkar as Chairman of the Drafting Committee. Contains 395 Articles and 8 Schedules.",
+      "pages": 450,
+      "excerpt": "We, the people of India, having solemnly resolved to constitute India into a Sovereign Democratic Republic and to secure to all its citizens..."
+    },
+    {
+      "id": 3,
+      "title": "Who Were the Shudras?",
+      "author": "Dr. B.R. Ambedkar",
+      "date": "1948",
+      "source": "BAWS Volume 7",
+      "url": "https://www.ambedkar.org",
+      "language": "en",
+      "type": "book",
+      "description": "A historical investigation into the origins of the Shudra caste. Ambedkar argues that Shudras were originally Aryans who were degraded to low status.",
+      "pages": 412,
+      "excerpt": "The Shudras were one of the Aryan communities of the solar race. They were originally Aryans. They did not form a separate varna but ranked as the third community in the Indo-Aryan society."
+    },
+    {
+      "id": 4,
+      "title": "The Buddha and His Dhamma",
+      "author": "Dr. B.R. Ambedkar",
+      "date": "1954",
+      "source": "BAWS Volume 11",
+      "url": "https://www.ambedkar.org",
+      "language": "en",
+      "type": "book",
+      "description": "Ambedkar's final and most personal work. Presents the Buddha's teachings as a rational, scientific philosophy. Completed shortly before his own conversion to Buddhism.",
+      "pages": 283,
+      "excerpt": "The Buddha was nothing but a man. But he was a man who was the Enlightened One. He was the greatest man who ever lived."
+    },
+    {
+      "id": 5,
+      "title": "Riddles in Hinduism",
+      "author": "Dr. B.R. Ambedkar",
+      "date": "1957 (posthumous)",
+      "source": "BAWS Volume 4",
+      "url": "https://www.ambedkar.org",
+      "language": "en",
+      "type": "book",
+      "description": "A provocative critique of Hindu religious texts and practices. Published posthumously. Addresses contradictions in the Vedas, Manusmriti, and Bhagavad Gita.",
+      "pages": 605,
+      "excerpt": "The Vedas are a mere conceit, a farce. If the Vedas are to be believed, then the whole social fabric of Hinduism must go."
+    },
+    {
+      "id": 6,
+      "title": "Constituent Assembly Debates — Volume 1",
+      "author": "Constituent Assembly of India",
+      "date": "1946-12-09",
+      "source": "loksabha.nic.in",
+      "url": "https://cad.clrc.nic.in",
+      "language": "en",
+      "type": "debates",
+      "description": "Proceedings of the Constituent Assembly debates, featuring Dr. Ambedkar's speeches on fundamental rights, directive principles, and the draft constitution.",
+      "pages": 200,
+      "excerpt": "The Draft Constitution as drafted by the Drafting Committee contains provisions which are liable to be questioned. But I need not dilate on them now."
+    },
+    {
+      "id": 7,
+      "title": "The Problem of the Rupee",
+      "author": "Dr. B.R. Ambedkar",
+      "date": "1923",
+      "source": "LSE Thesis",
+      "url": "https://www.ambedkar.org",
+      "language": "en",
+      "type": "thesis",
+      "description": "Ambedkar's doctoral thesis from the London School of Economics. Examined the Indian currency system, gold exchange standard, and monetary policy.",
+      "pages": 235,
+      "excerpt": "The problem of the rupee is essentially a problem of the stabilization of its exchange value in terms of gold or sterling."
+    },
+    {
+      "id": 8,
+      "title": "States and Minorities",
+      "author": "Dr. B.R. Ambedkar",
+      "date": "1945",
+      "source": "DAIC Collection",
+      "url": "https://www.ambedkar.org",
+      "language": "en",
+      "type": "policy",
+      "description": "A memorandum submitted to the Constituent Assembly outlining safeguards for minorities. Proposed separate electorates and reserved seats.",
+      "pages": 48,
+      "excerpt": "The minorities in India have been subjected to the most cruel injustices and have been denied the most elementary human rights."
+    }
+  ]
+}
