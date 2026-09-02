@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, EyeOff, ArrowRight, Lock, User } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 export default function LoginPage({ onLogin }: { onLogin?: () => void }) {
   const [username, setUsername] = useState('officer@nummf.gov.in')
@@ -18,6 +19,11 @@ export default function LoginPage({ onLogin }: { onLogin?: () => void }) {
 
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-dark-950 relative overflow-hidden select-none">
+      {/* Top right theme toggle */}
+      <div className="absolute top-6 right-6 z-30">
+        <ThemeToggle variant="segmented" />
+      </div>
+
       {/* Background glow and subtle cyber grid */}
       <div className="absolute inset-0 bg-cyber-grid opacity-30 pointer-events-none" />
       <div className="absolute inset-0 overflow-hidden pointer-events-none">

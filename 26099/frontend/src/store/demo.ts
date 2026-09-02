@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { SOURCES, MockSource } from '../demo/data'
+import { normalizeRow, computeSimilarity, generateCnmcCode, ParsedCsvRow } from '@/utils/harmonizer'
 
 export type LogLevel = 'info' | 'success' | 'warn' | 'error'
 
@@ -47,6 +48,20 @@ export interface DemoSummary {
 }
 
 export type Phase = 'idle' | 'importing' | 'normalizing' | 'matching' | 'generating' | 'complete'
+
+export type AuditAction = 'IMPORT' | 'NORMALIZE' | 'MATCH' | 'APPROVE' | 'REJECT' | 'BATCH_APPROVE' | 'BATCH_REJECT' | 'SYSTEM'
+
+export interface AuditEntry {
+  id: string
+  ts: string
+  action: AuditAction
+  user: string
+  org: string
+  detail: string
+  matchId?: string
+  cnmcCode?: string
+  materialCode?: string
+}
 
 export function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -274,7 +289,8 @@ interface DemoEngineStore {
   summary: DemoSummary | null
   logs: LogEntry[]
   isLoggedIn: boolean
-  
+  auditLog: AuditEntry[]
+
   // Actions
   login: () => void
   logout: () => void
@@ -284,6 +300,7 @@ interface DemoEngineStore {
   rejectMatch: (id: string) => void
   batchApprove: (ids: string[]) => void
   batchReject: (ids: string[]) => void
+  processCustomCsv: (rows: ParsedCsvRow[], orgName: string) => Promise<void>
 }
 
 const initialSummary: DemoSummary = {
@@ -295,6 +312,23 @@ const initialSummary: DemoSummary = {
   timeElapsed: '0.84s',
   estSavingsCr: 48.6,
 }
+
+let auditSeq = 100
+function makeAuditId() { return `AUD-${++auditSeq}` }
+function auditTs() { return new Date().toLocaleString('en-IN', { hour12: false, day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) }
+
+const INITIAL_AUDIT: AuditEntry[] = [
+  { id: 'AUD-001', ts: '31 Aug 2026, 08:00:01', action: 'SYSTEM', user: 'System', org: 'NUMMF', detail: 'NUMMF Engine v1.0.0 started. 4 CPSE adapters registered.' },
+  { id: 'AUD-002', ts: '31 Aug 2026, 08:00:45', action: 'IMPORT', user: 'System', org: 'IOCL', detail: 'Material master imported: 1,25,000 records from IOCL SAP ECC 6.0.', materialCode: 'BATCH-IOCL-001' },
+  { id: 'AUD-003', ts: '31 Aug 2026, 08:01:12', action: 'IMPORT', user: 'System', org: 'NTPC', detail: 'Material master imported: 89,000 records from NTPC SAP S/4HANA.', materialCode: 'BATCH-NTPC-001' },
+  { id: 'AUD-004', ts: '31 Aug 2026, 08:01:38', action: 'IMPORT', user: 'System', org: 'SAIL', detail: 'Material master imported: 67,000 records from SAIL Maximo 7.6.', materialCode: 'BATCH-SAIL-001' },
+  { id: 'AUD-005', ts: '31 Aug 2026, 08:02:05', action: 'IMPORT', user: 'System', org: 'CIL', detail: 'Material master imported: 45,000 records from CIL Oracle EBS 12.2.', materialCode: 'BATCH-CIL-001' },
+  { id: 'AUD-006', ts: '31 Aug 2026, 08:03:10', action: 'NORMALIZE', user: 'System', org: 'NUMMF', detail: 'Normalization complete: 3,26,000 records processed. 51,800 duplicates flagged. 14,200 abbreviations expanded.' },
+  { id: 'AUD-007', ts: '31 Aug 2026, 08:04:22', action: 'MATCH', user: 'System', org: 'NUMMF', detail: 'AI Matching complete: 2,450 cross-CPSE match pairs found. Bi-Encoder + Cross-Encoder pipeline used.' },
+  { id: 'AUD-008', ts: '31 Aug 2026, 09:15:33', action: 'APPROVE', user: 'Rajesh Kumar', org: 'IOCL', detail: 'Match M001 approved: IOCL-BLT-1001 ↔ NTPC-BLT-2001 → CNMC-FA-4A2B', matchId: 'M001', cnmcCode: 'CNMC-FA-4A2B', materialCode: 'IOCL-BLT-1001' },
+  { id: 'AUD-009', ts: '31 Aug 2026, 09:17:44', action: 'APPROVE', user: 'Anita Sharma', org: 'SAIL', detail: 'Match M002 approved: IOCL-PIP-1002 ↔ SAIL-PIP-2002 → CNMC-PT-9D1E', matchId: 'M002', cnmcCode: 'CNMC-PT-9D1E', materialCode: 'IOCL-PIP-1002' },
+  { id: 'AUD-010', ts: '31 Aug 2026, 09:32:11', action: 'APPROVE', user: 'Rajesh Kumar', org: 'IOCL', detail: 'Match M005 approved: IOCL-BRG-1005 ↔ NTPC-BRG-2005 → CNMC-BE-5E91', matchId: 'M005', cnmcCode: 'CNMC-BE-5E91', materialCode: 'IOCL-BRG-1005' },
+]
 
 export const useDemoEngine = create<DemoEngineStore>((set, get) => ({
   isRunning: false,
@@ -314,6 +348,7 @@ export const useDemoEngine = create<DemoEngineStore>((set, get) => ({
     log('AI: Sentence-BERT Bi-Encoder & Cross-Encoder pipelines calibrated.', 'info'),
     log('READY: System ready for harmonized material master search and clustering.', 'success'),
   ],
+  auditLog: INITIAL_AUDIT,
   isLoggedIn: true,
 
   login: () => set({ isLoggedIn: true }),
@@ -339,32 +374,180 @@ export const useDemoEngine = create<DemoEngineStore>((set, get) => ({
   },
 
   approveMatch: (id: string) => {
+    const m = get().matches.find(x => x.id === id)
+    const entry: AuditEntry = {
+      id: makeAuditId(), ts: auditTs(), action: 'APPROVE',
+      user: 'Govt. Officer', org: 'NUMMF',
+      detail: m ? `Match ${id} approved: ${m.sourceCode} ↔ ${m.targetCode} → ${m.cnmcCode}` : `Match ${id} approved.`,
+      matchId: id, cnmcCode: m?.cnmcCode, materialCode: m?.sourceCode,
+    }
     set(state => ({
-      matches: state.matches.map(m => m.id === id ? { ...m, status: 'approved' } : m),
+      matches: state.matches.map(x => x.id === id ? { ...x, status: 'approved' } : x),
       logs: [log(`REVIEW: Match ${id} approved by officer. CNMC validated.`, 'success'), ...state.logs].slice(0, 100),
+      auditLog: [entry, ...state.auditLog],
     }))
   },
 
   rejectMatch: (id: string) => {
+    const m = get().matches.find(x => x.id === id)
+    const entry: AuditEntry = {
+      id: makeAuditId(), ts: auditTs(), action: 'REJECT',
+      user: 'Govt. Officer', org: 'NUMMF',
+      detail: m ? `Match ${id} rejected: ${m.sourceCode} ↔ ${m.targetCode} marked as distinct items.` : `Match ${id} rejected.`,
+      matchId: id, materialCode: m?.sourceCode,
+    }
     set(state => ({
-      matches: state.matches.map(m => m.id === id ? { ...m, status: 'rejected' } : m),
+      matches: state.matches.map(x => x.id === id ? { ...x, status: 'rejected' } : x),
       logs: [log(`REVIEW: Match ${id} marked as distinct item.`, 'warn'), ...state.logs].slice(0, 100),
+      auditLog: [entry, ...state.auditLog],
     }))
   },
 
   batchApprove: (ids: string[]) => {
     const idSet = new Set(ids)
+    const entry: AuditEntry = {
+      id: makeAuditId(), ts: auditTs(), action: 'BATCH_APPROVE',
+      user: 'Govt. Officer', org: 'NUMMF',
+      detail: `Batch approved ${ids.length} material match pairs to CNMC master catalogue.`,
+    }
     set(state => ({
       matches: state.matches.map(m => idSet.has(m.id) ? { ...m, status: 'approved' } : m),
       logs: [log(`REVIEW: Batch approved ${ids.length} material pairs to CNMC master catalogue.`, 'success'), ...state.logs].slice(0, 100),
+      auditLog: [entry, ...state.auditLog],
     }))
   },
 
   batchReject: (ids: string[]) => {
     const idSet = new Set(ids)
+    const entry: AuditEntry = {
+      id: makeAuditId(), ts: auditTs(), action: 'BATCH_REJECT',
+      user: 'Govt. Officer', org: 'NUMMF',
+      detail: `Batch rejected ${ids.length} material match proposals.`,
+    }
     set(state => ({
       matches: state.matches.map(m => idSet.has(m.id) ? { ...m, status: 'rejected' } : m),
       logs: [log(`REVIEW: Batch rejected ${ids.length} proposals.`, 'warn'), ...state.logs].slice(0, 100),
+      auditLog: [entry, ...state.auditLog],
+    }))
+  },
+
+  processCustomCsv: async (rows: ParsedCsvRow[], orgName: string) => {
+    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+    
+    set({
+      isRunning: true,
+      phase: 'importing',
+      logs: [
+        log(`CSV-INGEST: Received ${rows.length} records from uploaded file for ${orgName}.`, 'info'),
+        ...get().logs
+      ].slice(0, 100),
+    })
+
+    await sleep(400)
+
+    // Phase 1: Ingest
+    set(state => ({
+      phase: 'normalizing',
+      logs: [
+        log(`NORMALIZE: Processing ${rows.length} rows through spaCy EntityRuler & PSU abbreviation dictionary...`, 'info'),
+        ...state.logs
+      ].slice(0, 100),
+    }))
+
+    await sleep(600)
+
+    // Normalize rows
+    const normalizedList = rows.map((r, i) => normalizeRow(r, i))
+
+    set(state => ({
+      phase: 'matching',
+      logs: [
+        log(`AI-MATCH: Running pairwise Bi-Encoder embeddings & fuzzy matching on uploaded dataset...`, 'info'),
+        ...state.logs
+      ].slice(0, 100),
+    }))
+
+    await sleep(700)
+
+    // Phase 2: Compute AI Matches
+    const newMatches: MatchResult[] = []
+    const existingMatches = get().matches
+
+    for (let i = 0; i < normalizedList.length; i++) {
+      const item = normalizedList[i]
+      // Compare against preceding item or sample targets
+      const targetItem = normalizedList[(i + 1) % normalizedList.length]
+      const sim = computeSimilarity(item.rawDesc, targetItem.rawDesc)
+
+      const type = sim.total >= 0.92 ? 'EXACT' : sim.total >= 0.82 ? 'NEAR_DUPLICATE' : sim.total >= 0.70 ? 'EQUIVALENT' : 'PARTIAL'
+      const confidence = sim.total >= 0.85 ? 'HIGH' : sim.total >= 0.70 ? 'MEDIUM' : 'LOW'
+      const cnmcCode = generateCnmcCode(item.unspscLabel, item.rawDesc)
+
+      newMatches.push({
+        id: `CSV-M${String(i + 1).padStart(3, '0')}`,
+        sourceCode: item.rawCode,
+        sourceDesc: item.rawDesc,
+        sourceOrg: orgName,
+        targetCode: targetItem.rawCode,
+        targetDesc: targetItem.rawDesc,
+        targetOrg: `${orgName}-NODE2`,
+        score: sim.total,
+        lexicalScore: sim.lexical,
+        semanticScore: sim.semantic,
+        numericScore: sim.numeric,
+        type,
+        confidence,
+        cnmcCode,
+        status: 'pending',
+        family: item.unspscLabel,
+        isStandard: item.standardRef,
+      })
+    }
+
+    set(state => ({
+      phase: 'generating',
+      logs: [
+        log(`CNMC-GEN: Minted ${newMatches.length} CNMC Codes. Updating Master Catalogue...`, 'info'),
+        ...state.logs
+      ].slice(0, 100),
+    }))
+
+    await sleep(500)
+
+    const updatedMatches = [...newMatches, ...existingMatches]
+    const dupCount = newMatches.filter(m => m.type === 'EXACT' || m.type === 'NEAR_DUPLICATE').length
+
+    const auditEntry: AuditEntry = {
+      id: makeAuditId(),
+      ts: auditTs(),
+      action: 'IMPORT',
+      user: 'CPSE Officer',
+      org: orgName,
+      detail: `CSV Upload: Imported & harmonized ${rows.length} custom records. ${dupCount} duplicates flagged. ${newMatches.length} CNMC candidates generated.`,
+      materialCode: `CSV-BATCH-${Date.now().toString(36).toUpperCase()}`
+    }
+
+    const currentSummary = get().summary
+    const updatedSummary: DemoSummary = {
+      totalRows: (currentSummary?.totalRows || 0) + rows.length,
+      uniqueMaterials: (currentSummary?.uniqueMaterials || 0) + (rows.length - dupCount),
+      duplicatesFound: (currentSummary?.duplicatesFound || 0) + dupCount,
+      cnmcAssigned: (currentSummary?.cnmcAssigned || 0) + newMatches.length,
+      crossCpeMatches: (currentSummary?.crossCpeMatches || 0) + newMatches.length,
+      timeElapsed: '1.42s',
+      estSavingsCr: Math.round(((currentSummary?.estSavingsCr || 48.6) + (rows.length * 0.08)) * 10) / 10,
+    }
+
+    set(state => ({
+      isRunning: false,
+      phase: 'complete',
+      matches: updatedMatches,
+      summary: updatedSummary,
+      auditLog: [auditEntry, ...state.auditLog],
+      logs: [
+        log(`SUCCESS: Custom CSV successfully harmonized! ${rows.length} rows processed in 1.42s.`, 'success'),
+        ...state.logs
+      ].slice(0, 100),
     }))
   },
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Plus, Sliders, Server, Save } from 'lucide-react'
+import { Plus, Sliders, Server, Save, Palette, Sun, Moon, Check } from 'lucide-react'
 import { useDemoEngine } from '@/store/demo'
+import { useThemeStore } from '@/store/theme'
 import toast from 'react-hot-toast'
 
 export default function AdminPage() {
@@ -35,6 +36,8 @@ export default function AdminPage() {
     toast.success(`Registered connector for ${form.name} (${form.short})`)
     setForm({ name: '', short: '', code: '', sector: '', system: 'SAP S/4HANA' })
   }
+
+  const { theme, setTheme } = useThemeStore()
 
   return (
     <div className="h-full flex flex-col bg-dark-950 p-6 space-y-6 overflow-y-auto select-none">
@@ -105,7 +108,7 @@ export default function AdminPage() {
               <span className="text-[11px] text-dark-400 font-mono">Formula: {semanticWeight}% Sem + {lexicalWeight}% Lex + {numericWeight}% Num</span>
               <button
                 onClick={handleSaveWeights}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold transition"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold transition cursor-pointer"
               >
                 <Save size={13} />
                 <span>Save Weights</span>
@@ -114,63 +117,147 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Register New PSU / CPSE Connector Form */}
+        {/* Interface Appearance & Theme Preferences */}
         <div className="glass-card p-5 rounded-xl border border-dark-700 bg-dark-900/80 space-y-4">
           <div>
             <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Server size={15} className="text-primary-400" />
-              <span>Register New CPSE Connector</span>
+              <Palette size={15} className="text-primary-400" />
+              <span>UI Theme & Visual Appearance</span>
             </h3>
-            <p className="text-xs text-dark-400">Onboard additional PSU ERP systems into NUMMF</p>
+            <p className="text-xs text-dark-400">Switch display theme mode and real-time contrast preferences</p>
           </div>
 
-          <form onSubmit={handleAddOrg} className="space-y-3 text-xs">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Light Theme Option Card */}
+            <div
+              onClick={() => {
+                setTheme('light')
+                toast.success('Switched to Light Executive Theme')
+              }}
+              className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                theme === 'light'
+                  ? 'bg-blue-500/10 border-blue-500 shadow-md shadow-blue-500/10 ring-2 ring-blue-500/30'
+                  : 'bg-dark-850/60 border-dark-700/80 hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
+                  <Sun size={17} />
+                </div>
+                {theme === 'light' && (
+                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                    <Check size={12} />
+                  </span>
+                )}
+              </div>
+              <div className="font-bold text-xs text-white mb-1">Light Executive</div>
+              <p className="text-[11px] text-dark-400">High-clarity daytime contrast for executive reports & audits</p>
+              <div className="mt-3 flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-slate-50 border border-slate-300" />
+                <div className="w-4 h-4 rounded bg-white border border-slate-300" />
+                <div className="w-4 h-4 rounded bg-blue-600" />
+                <div className="w-4 h-4 rounded bg-emerald-500" />
+              </div>
+            </div>
+
+            {/* Dark Theme Option Card */}
+            <div
+              onClick={() => {
+                setTheme('dark')
+                toast.success('Switched to Dark Command Center Theme')
+              }}
+              className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                theme === 'dark'
+                  ? 'bg-blue-500/10 border-blue-500 shadow-md shadow-blue-500/10 ring-2 ring-blue-500/30'
+                  : 'bg-dark-850/60 border-dark-700/80 hover:border-dark-600'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                  <Moon size={17} />
+                </div>
+                {theme === 'dark' && (
+                  <span className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                    <Check size={12} />
+                  </span>
+                )}
+              </div>
+              <div className="font-bold text-xs text-white mb-1">Dark Command Center</div>
+              <p className="text-[11px] text-dark-400">Cyberpunk tactical palette with illuminated telemetry & neon cues</p>
+              <div className="mt-3 flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded bg-[#070a13] border border-slate-700" />
+                <div className="w-4 h-4 rounded bg-[#0b101d] border border-slate-700" />
+                <div className="w-4 h-4 rounded bg-blue-600" />
+                <div className="w-4 h-4 rounded bg-purple-500" />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-lg bg-dark-850 border border-dark-700/60 flex items-center justify-between text-xs">
+            <span className="text-dark-400 font-mono text-[11px]">System Status: Theme synced to local profile</span>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[10px] font-bold">
+              ACTIVE: {theme.toUpperCase()}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Register New PSU / CPSE Connector Form */}
+      <div className="glass-card p-5 rounded-xl border border-dark-700 bg-dark-900/80 space-y-4">
+        <div>
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Server size={15} className="text-primary-400" />
+            <span>Register New CPSE Connector</span>
+          </h3>
+          <p className="text-xs text-dark-400">Onboard additional PSU ERP systems into NUMMF</p>
+        </div>
+
+        <form onSubmit={handleAddOrg} className="space-y-3 text-xs">
+          <div>
+            <label className="text-[10px] text-dark-400 uppercase font-mono mb-1 block">Organization Full Name</label>
+            <input
+              type="text"
+              placeholder="e.g. Bharat Petroleum Corporation Limited"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+              className="w-full px-3 py-1.5 bg-dark-850 border border-dark-700 rounded-lg text-xs text-white placeholder-dark-500 focus:border-blue-500 outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] text-dark-400 uppercase font-mono mb-1 block">Organization Full Name</label>
+              <label className="text-[10px] text-dark-400 uppercase font-mono mb-1 block">Short Code</label>
               <input
                 type="text"
-                placeholder="e.g. Bharat Petroleum Corporation Limited"
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-1.5 bg-dark-850 border border-dark-700 rounded-lg text-xs text-white placeholder-dark-500 focus:border-blue-500 outline-none"
+                placeholder="e.g. BPCL"
+                value={form.short}
+                onChange={e => setForm({ ...form, short: e.target.value.toUpperCase() })}
+                className="w-full px-3 py-1.5 bg-dark-850 border border-dark-700 rounded-lg text-xs text-white placeholder-dark-500 focus:border-blue-500 outline-none font-mono"
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] text-dark-400 uppercase font-mono mb-1 block">Short Code</label>
-                <input
-                  type="text"
-                  placeholder="e.g. BPCL"
-                  value={form.short}
-                  onChange={e => setForm({ ...form, short: e.target.value.toUpperCase() })}
-                  className="w-full px-3 py-1.5 bg-dark-850 border border-dark-700 rounded-lg text-xs text-white placeholder-dark-500 focus:border-blue-500 outline-none font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] text-dark-400 uppercase font-mono mb-1 block">ERP System</label>
-                <select
-                  value={form.system}
-                  onChange={e => setForm({ ...form, system: e.target.value })}
-                  className="w-full px-3 py-1.5 bg-dark-850 border border-dark-700 rounded-lg text-xs text-white focus:border-blue-500 outline-none"
-                >
-                  <option value="SAP S/4HANA">SAP S/4HANA</option>
-                  <option value="SAP ECC 6.0">SAP ECC 6.0</option>
-                  <option value="IBM Maximo 7.6">IBM Maximo 7.6</option>
-                  <option value="Oracle EBS 12.2">Oracle EBS 12.2</option>
-                </select>
-              </div>
+            <div>
+              <label className="text-[10px] text-dark-400 uppercase font-mono mb-1 block">ERP System</label>
+              <select
+                value={form.system}
+                onChange={e => setForm({ ...form, system: e.target.value })}
+                className="w-full px-3 py-1.5 bg-dark-850 border border-dark-700 rounded-lg text-xs text-white focus:border-blue-500 outline-none"
+              >
+                <option value="SAP S/4HANA">SAP S/4HANA</option>
+                <option value="SAP ECC 6.0">SAP ECC 6.0</option>
+                <option value="IBM Maximo 7.6">IBM Maximo 7.6</option>
+                <option value="Oracle EBS 12.2">Oracle EBS 12.2</option>
+              </select>
             </div>
+          </div>
 
-            <button
-              type="submit"
-              className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1.5"
-            >
-              <Plus size={14} />
-              <span>Register PSU Connector</span>
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit"
+            className="w-full py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-lg text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <Plus size={14} />
+            <span>Register PSU Connector</span>
+          </button>
+        </form>
       </div>
 
       {/* Active PSU Connectors List */}

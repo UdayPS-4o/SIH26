@@ -14,6 +14,7 @@ import {
   Layers
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const PAGE_META: Record<string, { title: string; subtitle: string; icon: any }> = {
   '/': { title: 'Harmonization Dashboard', subtitle: 'Cross-CPSE Material Master Harmonization', icon: LayoutDashboard },
@@ -43,28 +44,28 @@ export default function Header() {
   const IconComponent = meta.icon
 
   const phaseConfig: Record<string, { label: string; color: string; bg: string; border: string }> = {
-    idle: { label: 'ONLINE · READY', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-    importing: { label: 'STAGE 1: INGESTING', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-    normalizing: { label: 'STAGE 2: NORMALIZING', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
-    matching: { label: 'STAGE 3: AI MATCHING', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-    generating: { label: 'STAGE 4: CNMC GEN', color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
-    complete: { label: 'HARMONIZATION COMPLETE', color: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/40' },
+    idle: { label: 'ONLINE · READY', color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+    importing: { label: 'STAGE 1: INGESTING', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+    normalizing: { label: 'STAGE 2: NORMALIZING', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/30' },
+    matching: { label: 'STAGE 3: AI MATCHING', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+    generating: { label: 'STAGE 4: CNMC GEN', color: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30' },
+    complete: { label: 'HARMONIZATION COMPLETE', color: 'text-emerald-500', bg: 'bg-emerald-500/15', border: 'border-emerald-500/40' },
   }
 
   const activePhase = phaseConfig[phase] || phaseConfig.idle
   const connectedCount = sources.filter(s => s.status === 'connected').length
 
   return (
-    <header className="h-16 border-b border-dark-700 bg-dark-900/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 select-none z-20">
+    <header className="h-16 border-b border-dark-700 bg-dark-900 px-6 flex items-center justify-between shrink-0 select-none z-20">
       {/* Left: Page Title & Breadcrumb */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-dark-800 border border-dark-700 flex items-center justify-center text-primary-400 shadow-inner">
+        <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 shadow-xs">
           <IconComponent size={20} />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-base font-bold text-white tracking-tight">{meta.title}</h1>
-            <span className="px-2 py-0.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-primary-400 text-[10px] font-mono">
+            <h1 className="text-base font-bold text-dark-100 tracking-tight">{meta.title}</h1>
+            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[10px] font-mono font-semibold">
               SIH 26099
             </span>
           </div>
@@ -75,33 +76,36 @@ export default function Header() {
       {/* Right: Actions & Pipeline Status */}
       <div className="flex items-center gap-3">
         {/* CPSE Connected Badge */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-xs text-dark-300">
-          <Layers size={14} className="text-primary-400" />
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-dark-400">
+          <Layers size={14} className="text-blue-500" />
           <span>Connected CPSEs:</span>
-          <span className="font-mono font-semibold text-white">{connectedCount}/4</span>
+          <span className="font-mono font-bold text-blue-500">{connectedCount}/4</span>
         </div>
 
         {/* Live Status Pill */}
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-mono font-medium ${activePhase.bg} ${activePhase.border} ${activePhase.color}`}>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono font-semibold ${activePhase.bg} ${activePhase.border} ${activePhase.color}`}>
           {isRunning ? (
-            <Zap size={14} className="animate-pulse text-amber-400" />
+            <Zap size={14} className="animate-pulse text-amber-500" />
           ) : (
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           )}
           <span>{activePhase.label}</span>
         </div>
 
         {/* Live Clock */}
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-dark-800 border border-dark-700 text-xs font-mono text-dark-300">
+        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-850 border border-dark-700 text-xs font-mono text-dark-400">
           <Clock size={13} className="text-dark-400" />
           <span>{time} IST</span>
         </div>
+
+        {/* Theme Toggle Button */}
+        <ThemeToggle variant="compact" />
 
         {/* Reset Action */}
         <button
           onClick={resetDemo}
           disabled={isRunning}
-          className="p-2 rounded-lg bg-dark-800 border border-dark-700 hover:bg-dark-700 text-dark-300 hover:text-white transition disabled:opacity-40"
+          className="p-2 rounded-lg bg-dark-800 border border-dark-700 hover:bg-dark-700 text-dark-300 hover:text-dark-100 transition disabled:opacity-40"
           title="Reset Demo Data"
         >
           <RotateCcw size={15} />

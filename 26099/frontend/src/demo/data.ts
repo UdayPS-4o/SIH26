@@ -147,3 +147,244 @@ function hashCode(str: string): number {
   }
   return hash
 }
+
+// ─── Normalization Examples ────────────────────────────────────────────────
+export interface NormExample {
+  id: string
+  org: string
+  rawCode: string
+  rawDesc: string
+  normalizedDesc: string
+  attributes: { key: string; raw: string; normalized: string }[]
+  abbreviationsExpanded: { from: string; to: string }[]
+  unspscCode: string
+  unspscLabel: string
+  standardRef: string
+  uom: string
+}
+
+export const NORMALIZATION_EXAMPLES: NormExample[] = [
+  {
+    id: 'N001', org: 'IOCL', rawCode: 'IOCL-BRG-1005',
+    rawDesc: 'BRG,BALL,SKF 6205-2RS,25MM ID,GREASE SEAL,IS:6305',
+    normalizedDesc: 'BEARING, BALL, DEEP GROOVE, 6205-2RS, BORE 25MM, GREASE SEALED, SKF, IS 6305',
+    attributes: [
+      { key: 'Noun',       raw: 'BRG',      normalized: 'BEARING' },
+      { key: 'Type',       raw: 'BALL',     normalized: 'BALL, DEEP GROOVE' },
+      { key: 'Model',      raw: '6205-2RS', normalized: '6205-2RS' },
+      { key: 'Bore',       raw: '25MM ID',  normalized: '25 MM' },
+      { key: 'Seal',       raw: 'GREASE SEAL', normalized: 'GREASE SEALED (2RS)' },
+      { key: 'Brand',      raw: 'SKF',      normalized: 'SKF' },
+      { key: 'Standard',   raw: 'IS:6305',  normalized: 'IS 6305' },
+      { key: 'UOM',        raw: 'NOS',      normalized: 'EA' },
+    ],
+    abbreviationsExpanded: [
+      { from: 'BRG', to: 'BEARING' },
+      { from: 'NOS', to: 'EA' },
+      { from: 'ID', to: 'BORE (INNER DIAMETER)' },
+    ],
+    unspscCode: '31171501', unspscLabel: 'Ball bearings',
+    standardRef: 'IS 6305', uom: 'EA',
+  },
+  {
+    id: 'N002', org: 'SAIL', rawCode: 'SAIL-PIP-2002',
+    rawDesc: 'CS PIPE SCH40 100NB IS:1239 HVY',
+    normalizedDesc: 'PIPE, CARBON STEEL, SEAMLESS, 100NB, SCHEDULE 40, HEAVY, IS 1239',
+    attributes: [
+      { key: 'Noun',     raw: 'PIPE',     normalized: 'PIPE' },
+      { key: 'Material', raw: 'CS',       normalized: 'CARBON STEEL' },
+      { key: 'Schedule', raw: 'SCH40',    normalized: 'SCHEDULE 40' },
+      { key: 'Size',     raw: '100NB',    normalized: '100 NB (DN 100)' },
+      { key: 'Weight',   raw: 'HVY',      normalized: 'HEAVY' },
+      { key: 'Standard', raw: 'IS:1239',  normalized: 'IS 1239' },
+      { key: 'UOM',      raw: 'MTR',      normalized: 'M' },
+    ],
+    abbreviationsExpanded: [
+      { from: 'CS', to: 'CARBON STEEL' },
+      { from: 'SCH40', to: 'SCHEDULE 40' },
+      { from: 'NB', to: 'NOMINAL BORE' },
+      { from: 'HVY', to: 'HEAVY' },
+      { from: 'MTR', to: 'M (METRE)' },
+    ],
+    unspscCode: '40141700', unspscLabel: 'Industrial pipe',
+    standardRef: 'IS 1239', uom: 'M',
+  },
+  {
+    id: 'N003', org: 'NTPC', rawCode: 'NTPC-VLV-3003',
+    rawDesc: 'GATE VLV FULL BORE 100NB PN40 SS304 FLGD END',
+    normalizedDesc: 'VALVE, GATE, FULL BORE, 100NB, PN40, SS 304 BODY, FLANGED END',
+    attributes: [
+      { key: 'Noun',     raw: 'GATE VLV',  normalized: 'VALVE, GATE' },
+      { key: 'Bore',     raw: 'FULL BORE', normalized: 'FULL BORE' },
+      { key: 'Size',     raw: '100NB',     normalized: '100 NB (DN 100)' },
+      { key: 'Pressure', raw: 'PN40',      normalized: 'PN 40 (40 Bar)' },
+      { key: 'Material', raw: 'SS304',     normalized: 'STAINLESS STEEL 304' },
+      { key: 'Ends',     raw: 'FLGD END',  normalized: 'FLANGED ENDS (RF)' },
+      { key: 'UOM',      raw: 'NO',        normalized: 'EA' },
+    ],
+    abbreviationsExpanded: [
+      { from: 'VLV', to: 'VALVE' },
+      { from: 'SS304', to: 'STAINLESS STEEL AISI 304' },
+      { from: 'PN40', to: 'PRESSURE NOMINAL 40 BAR' },
+      { from: 'FLGD', to: 'FLANGED' },
+      { from: 'NO', to: 'EA (EACH)' },
+    ],
+    unspscCode: '40141600', unspscLabel: 'Valves',
+    standardRef: 'IS 5428', uom: 'EA',
+  },
+  {
+    id: 'N004', org: 'CIL', rawCode: 'CIL-CBL-4004',
+    rawDesc: 'PWR CBL 3.5C X 185MM2 XLPE 1.1KV AL IS:7098',
+    normalizedDesc: 'CABLE, POWER, 3.5 CORE, 185 SQ MM, XLPE INSULATED, 1.1 KV, ALUMINIUM CONDUCTOR, IS 7098',
+    attributes: [
+      { key: 'Noun',        raw: 'PWR CBL',    normalized: 'CABLE, POWER' },
+      { key: 'Cores',       raw: '3.5C',        normalized: '3.5 CORE' },
+      { key: 'Cross-sec',   raw: '185MM2',      normalized: '185 SQ MM' },
+      { key: 'Insulation',  raw: 'XLPE',        normalized: 'CROSS-LINKED POLYETHYLENE' },
+      { key: 'Voltage',     raw: '1.1KV',       normalized: '1.1 KV (1100 V)' },
+      { key: 'Conductor',   raw: 'AL',          normalized: 'ALUMINIUM' },
+      { key: 'Standard',    raw: 'IS:7098',     normalized: 'IS 7098 (PART 2)' },
+      { key: 'UOM',         raw: 'MTR',         normalized: 'M' },
+    ],
+    abbreviationsExpanded: [
+      { from: 'PWR CBL', to: 'POWER CABLE' },
+      { from: '3.5C', to: '3.5 CORE' },
+      { from: 'MM2', to: 'SQ MM (mm²)' },
+      { from: 'XLPE', to: 'CROSS-LINKED POLYETHYLENE' },
+      { from: 'AL', to: 'ALUMINIUM' },
+    ],
+    unspscCode: '26121600', unspscLabel: 'Power cables',
+    standardRef: 'IS 7098', uom: 'M',
+  },
+  {
+    id: 'N005', org: 'IOCL', rawCode: 'IOCL-BLT-1001',
+    rawDesc: 'HEX BOLT FULL THD M20X100 GR8.8 SS304 IS:1364',
+    normalizedDesc: 'BOLT, HEXAGONAL HEAD, FULL THREAD, M20 x 100MM, GRADE 8.8, SS 304, IS 1364',
+    attributes: [
+      { key: 'Noun',     raw: 'HEX BOLT',    normalized: 'BOLT, HEXAGONAL HEAD' },
+      { key: 'Thread',   raw: 'FULL THD',    normalized: 'FULL THREAD' },
+      { key: 'Size',     raw: 'M20X100',     normalized: 'M20 x 100 MM' },
+      { key: 'Grade',    raw: 'GR8.8',       normalized: 'GRADE 8.8' },
+      { key: 'Material', raw: 'SS304',       normalized: 'STAINLESS STEEL 304' },
+      { key: 'Standard', raw: 'IS:1364',     normalized: 'IS 1364' },
+      { key: 'UOM',      raw: 'NOS',         normalized: 'EA' },
+    ],
+    abbreviationsExpanded: [
+      { from: 'HEX', to: 'HEXAGONAL' },
+      { from: 'THD', to: 'THREAD' },
+      { from: 'GR8.8', to: 'GRADE 8.8 (MEDIUM CARBON STEEL)' },
+      { from: 'SS304', to: 'STAINLESS STEEL AISI 304' },
+      { from: 'NOS', to: 'EA (EACH)' },
+    ],
+    unspscCode: '31161500', unspscLabel: 'Bolts',
+    standardRef: 'IS 1364', uom: 'EA',
+  },
+]
+
+// ─── CNMC Registry ─────────────────────────────────────────────────────────
+export interface CnmcEntry {
+  cnmcCode: string
+  standardDesc: string
+  family: string
+  unspscCode: string
+  unspscLabel: string
+  standardRef: string
+  uom: string
+  approvedAt: string
+  approvedBy: string
+  legacyMappings: { org: string; code: string; desc: string }[]
+  crossCpeCount: number
+  estSavingsLakh: number
+}
+
+export const CNMC_REGISTRY: CnmcEntry[] = [
+  {
+    cnmcCode: 'CNMC-BE-5E91', standardDesc: 'BEARING, BALL, DEEP GROOVE, 6205-2RS, BORE 25MM, GREASE SEALED, IS 6305',
+    family: 'Bearings', unspscCode: '31171501', unspscLabel: 'Ball bearings',
+    standardRef: 'IS 6305', uom: 'EA', approvedAt: '2026-08-15 09:32', approvedBy: 'Rajesh Kumar (IOCL)',
+    legacyMappings: [
+      { org: 'IOCL', code: 'IOCL-BRG-1005', desc: 'BRG,BALL,SKF 6205-2RS,25MM ID' },
+      { org: 'NTPC', code: 'NTPC-BRG-2005', desc: 'Ball Bearing 6205 2RS ISO 281' },
+      { org: 'SAIL', code: 'SAIL-BRG-3005', desc: 'DEEP GROOVE BALL BEARING 6205' },
+      { org: 'CIL',  code: 'CIL-BRG-4005',  desc: 'BALL BEARING 6205-2RS SKF' },
+    ],
+    crossCpeCount: 4, estSavingsLakh: 18.4,
+  },
+  {
+    cnmcCode: 'CNMC-PT-9D1E', standardDesc: 'PIPE, CARBON STEEL, SEAMLESS, 100NB, SCHEDULE 40, IS 1239',
+    family: 'Pipes & Tubes', unspscCode: '40141700', unspscLabel: 'Industrial pipe',
+    standardRef: 'IS 1239', uom: 'M', approvedAt: '2026-08-15 10:05', approvedBy: 'Anita Sharma (SAIL)',
+    legacyMappings: [
+      { org: 'IOCL', code: 'IOCL-PIP-1002', desc: 'CS PIPE SCH40 100NB IS:1239' },
+      { org: 'SAIL', code: 'SAIL-PIP-2002', desc: 'IS:1239 PIPE CS 100NB SCH40 HVY' },
+      { org: 'NTPC', code: 'NTPC-PIP-3002', desc: 'CARBON STEEL PIPE 100NB SCH40' },
+    ],
+    crossCpeCount: 3, estSavingsLakh: 32.1,
+  },
+  {
+    cnmcCode: 'CNMC-FA-4A2B', standardDesc: 'BOLT, HEXAGONAL HEAD, FULL THREAD, M20x100, GRADE 8.8, SS 304, IS 1364',
+    family: 'Fasteners', unspscCode: '31161500', unspscLabel: 'Bolts',
+    standardRef: 'IS 1364', uom: 'EA', approvedAt: '2026-08-16 11:20', approvedBy: 'Rajesh Kumar (IOCL)',
+    legacyMappings: [
+      { org: 'IOCL', code: 'IOCL-BLT-1001', desc: 'HEX BOLT FULL THD M20X100 GR8.8 SS304' },
+      { org: 'NTPC', code: 'NTPC-BLT-2001', desc: 'Hexagonal Bolt M20x100 8.8 SS IS-1364' },
+    ],
+    crossCpeCount: 2, estSavingsLakh: 5.8,
+  },
+  {
+    cnmcCode: 'CNMC-EL-2B8A', standardDesc: 'CABLE, POWER, 3.5 CORE, 185 SQ MM, XLPE, 1.1KV, AL CONDUCTOR, IS 7098',
+    family: 'Electrical', unspscCode: '26121600', unspscLabel: 'Power cables',
+    standardRef: 'IS 7098', uom: 'M', approvedAt: '2026-08-16 14:45', approvedBy: 'Suresh Nair (NTPC)',
+    legacyMappings: [
+      { org: 'NTPC', code: 'NTPC-CBL-1004', desc: 'XLPE Power Cable 3.5C x 185 Sqmm 1.1kV' },
+      { org: 'SAIL', code: 'SAIL-CBL-2004', desc: 'Power Cable 3.5 Core 185sqmm XLPE' },
+      { org: 'CIL',  code: 'CIL-CBL-4004',  desc: 'PWR CBL 3.5C X 185MM2 XLPE 1.1KV' },
+    ],
+    crossCpeCount: 3, estSavingsLakh: 22.7,
+  },
+  {
+    cnmcCode: 'CNMC-VF-7C3F', standardDesc: 'VALVE, GATE, FULL BORE, 100NB, PN40, CARBON STEEL WCB, FLANGED RF',
+    family: 'Valves & Fittings', unspscCode: '40141600', unspscLabel: 'Valves',
+    standardRef: 'IS 5428', uom: 'EA', approvedAt: '2026-08-17 09:10', approvedBy: 'Priya Menon (CPCL)',
+    legacyMappings: [
+      { org: 'IOCL', code: 'IOCL-VLV-1003', desc: 'Gate Valve DN150 PN16 Flanged SS304 Body' },
+      { org: 'NTPC', code: 'NTPC-VLV-3003', desc: 'GATE VLV FULL BORE 100NB PN40 FLGD' },
+      { org: 'CIL',  code: 'CIL-VLV-4003',  desc: 'GATE VALVE BODY CAST IRON 100NB' },
+    ],
+    crossCpeCount: 3, estSavingsLakh: 15.3,
+  },
+  {
+    cnmcCode: 'CNMC-GK-1A4D', standardDesc: 'GASKET, SPIRAL WOUND, 100NB, PN40, SS 304 / GRAPHITE FILLER, ASME B16.20',
+    family: 'Gaskets & Seals', unspscCode: '40151500', unspscLabel: 'Gaskets',
+    standardRef: 'ASME B16.20', uom: 'EA', approvedAt: '2026-08-17 11:55', approvedBy: 'Rajesh Kumar (IOCL)',
+    legacyMappings: [
+      { org: 'IOCL', code: 'IOCL-GSK-1006', desc: 'Spiral Wound Gasket 100NB PN40 SS304 ASME B16.20' },
+      { org: 'SAIL', code: 'SAIL-GSK-2006', desc: 'SWG Gasket 4 Inch CL300 SS304 Graphite Filler' },
+    ],
+    crossCpeCount: 2, estSavingsLakh: 3.2,
+  },
+  {
+    cnmcCode: 'CNMC-MT-3C6B', standardDesc: 'MOTOR, INDUCTION, 5.5 KW, 4 POLE, 415V, IE2, TEFC, IS 12615',
+    family: 'Motors & Drives', unspscCode: '26101600', unspscLabel: 'Electric motors',
+    standardRef: 'IS 12615', uom: 'EA', approvedAt: '2026-08-18 08:30', approvedBy: 'Suresh Nair (NTPC)',
+    legacyMappings: [
+      { org: 'IOCL', code: 'IOCL-MOT-1007', desc: 'MOTOR INDUCTION 5.5KW 4POLE' },
+      { org: 'NTPC', code: 'NTPC-MOT-2007', desc: 'IE2 MOTOR 5.5KW 4POLE 415V' },
+      { org: 'SAIL', code: 'SAIL-MOT-3007', desc: '5.5 KW IE3 MOTOR 4 POLE' },
+      { org: 'CIL',  code: 'CIL-MOT-4007',  desc: 'INDUCTION MOTOR 5.5KW 415V' },
+    ],
+    crossCpeCount: 4, estSavingsLakh: 41.2,
+  },
+  {
+    cnmcCode: 'CNMC-IN-8F2C', standardDesc: 'INSULATION, CALCIUM SILICATE, PIPE, 100NB, 50MM THICKNESS, IS 14989',
+    family: 'Insulation', unspscCode: '30111700', unspscLabel: 'Thermal insulation',
+    standardRef: 'IS 14989', uom: 'M', approvedAt: '2026-08-18 15:10', approvedBy: 'Anita Sharma (SAIL)',
+    legacyMappings: [
+      { org: 'IOCL', code: 'IOCL-INS-1008', desc: 'INSULATION CALCIUM SILICATE 50MM' },
+      { org: 'NTPC', code: 'NTPC-INS-2008', desc: 'CALSIUM SILICATE INSULATION 50MM' },
+      { org: 'SAIL', code: 'SAIL-INS-3008', desc: 'CALCIUM SILICATE PIPE INSULATION' },
+      { org: 'CIL',  code: 'CIL-INS-4008',  desc: 'PIPE INSULATION CAL-SIL 50MM' },
+    ],
+    crossCpeCount: 4, estSavingsLakh: 8.9,
+  },
+]

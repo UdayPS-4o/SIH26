@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root, html.dark, [data-theme="dark"] {
     --bg-primary: #070a13;
     --bg-secondary: #0b101d;
     --bg-card: #0e1526;
@@ -15,6 +15,20 @@
     --text-primary: #f1f5f9;
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
+    color-scheme: dark;
+  }
+
+  html.light, [data-theme="light"] {
+    --bg-primary: #f5f7fb;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --bg-hover: #f1f5f9;
+    --border: #e2e8f0;
+    --border-highlight: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    color-scheme: light;
   }
 
   body {
@@ -38,24 +52,148 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #070a13;
+  background: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--border-highlight);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: var(--text-muted);
 }
 
-/* Glassmorphism & Cyber Card Effects */
+/* =========================================================
+   EXPLICIT LIGHT THEME DESIGN SYSTEM (Guaranteed Override)
+   ========================================================= */
+
+html.light body {
+  background-color: #f5f7fb !important;
+  color: #0f172a !important;
+}
+
+/* Surface backgrounds */
+html.light .bg-dark-950,
+html.light [class*="bg-dark-950"] {
+  background-color: #f5f7fb !important;
+}
+
+html.light .bg-dark-900,
+html.light [class*="bg-dark-900"],
+html.light header,
+html.light aside {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-dark-850,
+html.light [class*="bg-dark-850"] {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-dark-800,
+html.light [class*="bg-dark-800"] {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .bg-dark-750,
+html.light [class*="bg-dark-750"] {
+  background-color: #e2e8f0 !important;
+}
+
+/* Border overrides */
+html.light .border-dark-700,
+html.light .border-dark-700\/80,
+html.light .border-dark-700\/60,
+html.light .border-dark-700\/50,
+html.light [class*="border-dark-700"] {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .border-dark-800,
+html.light .border-dark-800\/40,
+html.light .border-dark-800\/60,
+html.light [class*="border-dark-800"] {
+  border-color: #f1f5f9 !important;
+}
+
+html.light .border-dark-600,
+html.light [class*="border-dark-600"] {
+  border-color: #cbd5e1 !important;
+}
+
+/* Typography in Light Mode */
+html.light .text-dark-100,
+html.light [class*="text-dark-100"] {
+  color: #0f172a !important;
+}
+
+html.light .text-dark-200,
+html.light [class*="text-dark-200"] {
+  color: #1e293b !important;
+}
+
+html.light .text-dark-300,
+html.light [class*="text-dark-300"] {
+  color: #334155 !important;
+}
+
+html.light .text-dark-400,
+html.light [class*="text-dark-400"] {
+  color: #64748b !important;
+}
+
+html.light .text-dark-500,
+html.light [class*="text-dark-500"] {
+  color: #94a3b8 !important;
+}
+
+html.light .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Intelligent text-white contrast handling */
+html.light .text-white:not(
+  [class*="bg-blue-"],
+  [class*="bg-indigo-"],
+  [class*="bg-emerald-"],
+  [class*="bg-teal-"],
+  [class*="bg-purple-"],
+  [class*="bg-red-"],
+  [class*="bg-amber-"],
+  [class*="bg-gradient-"],
+  button,
+  .btn,
+  .badge,
+  .keep-white
+) {
+  color: #0f172a !important;
+}
+
+/* Cards & Panels */
 .glass-panel {
   background: rgba(11, 16, 29, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(30, 41, 59, 0.7);
+}
+
+html.light .glass-panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04) !important;
 }
 
 .glass-card {
@@ -66,25 +204,29 @@
   transition: all 0.2s ease-in-out;
 }
 
-.glass-card:hover {
-  border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: 0 4px 20px -2px rgba(59, 130, 246, 0.1);
+html.light .glass-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
 }
 
-.glow-blue {
-  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.3);
+html.light .glass-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06) !important;
 }
 
-.glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.3);
+/* Inputs & Form controls in Light Mode */
+html.light input:not([type="range"]),
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-.glow-amber {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.3);
-}
-
-.glow-purple {
-  box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.3);
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
 /* Subtle grid background */
@@ -93,4 +235,25 @@
   background-image: 
     linear-gradient(to right, rgba(30, 41, 59, 0.25) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+}
+
+html.light .bg-cyber-grid {
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px) !important;
+}
+
+/* Table headers & zebra stripes */
+html.light thead {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+}
+
+html.light tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Smooth transition when toggling themes */
+body, header, aside, main, .glass-card, .glass-panel {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

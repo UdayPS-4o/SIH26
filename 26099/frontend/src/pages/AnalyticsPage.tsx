@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useDemoEngine, formatNumber } from '@/store/demo'
+import { useThemeStore } from '@/store/theme'
 import { 
   BarChart, 
   Bar, 
@@ -16,6 +17,8 @@ import { TrendingUp } from 'lucide-react'
 
 export default function AnalyticsPage() {
   const { sources, matches } = useDemoEngine()
+  const { theme } = useThemeStore()
+  const isDark = theme === 'dark'
 
   const familyData = useMemo(() => [
     { name: 'Fasteners', count: 48500, cnmc: 420 },
@@ -96,7 +99,14 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="name" stroke="#64748b" fontSize={10} tickLine={false} />
                 <YAxis stroke="#64748b" fontSize={10} tickLine={false} />
                 <Tooltip
-                  contentStyle={{ background: '#0b101d', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '11px', color: '#fff' }}
+                  contentStyle={{ 
+                    background: isDark ? '#0b101d' : '#ffffff', 
+                    border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0', 
+                    borderRadius: '8px', 
+                    fontSize: '11px', 
+                    color: isDark ? '#fff' : '#0f172a',
+                    boxShadow: isDark ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.1)'
+                  }}
                 />
                 <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Total Items" />
               </BarChart>
@@ -130,9 +140,16 @@ export default function AnalyticsPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: '#0b101d', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '11px', color: '#fff' }}
+                  contentStyle={{ 
+                    background: isDark ? '#0b101d' : '#ffffff', 
+                    border: isDark ? '1px solid #1e293b' : '1px solid #e2e8f0', 
+                    borderRadius: '8px', 
+                    fontSize: '11px', 
+                    color: isDark ? '#fff' : '#0f172a',
+                    boxShadow: isDark ? '0 10px 25px -5px rgba(0,0,0,0.5)' : '0 10px 25px -5px rgba(0,0,0,0.1)'
+                  }}
                 />
-                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
+                <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '11px', color: isDark ? '#94a3b8' : '#475569' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
