@@ -68,9 +68,9 @@ def create_app() -> FastAPI:
     @app.on_event('startup')
     async def on_startup() -> None:
         from database import init_db
-        from seed_data import seed_if_empty
+        from seed_data import run_seed
         init_db()
-        seed_if_empty()
+        run_seed()
         logger.info('Samdarshi backend ready — prototype mode')
 
     @app.on_event('shutdown')
