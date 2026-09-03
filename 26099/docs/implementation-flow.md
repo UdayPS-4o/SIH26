@@ -2,46 +2,47 @@
 
 Four CPSE codes in, one national code out: a narrowing funnel with a human steward at the gate.
 
+## Slide panel — use this one
+
 ![Implementation Flow](implementation-flow.png)
 
-Slide-ready: `implementation-flow.svg` (vector — PowerPoint imports SVG natively and it stays sharp at any size) and `implementation-flow.png` (3200x1800, 16:9, drops straight onto a slide).
+Sized for **half a slide** (about 6.5in x 5.5in, 936 x 792 units). Type is set so it stays legible at that size, so the panel carries the flow only — the supporting argument belongs in the text beside it.
+
+- `implementation-flow.svg` — vector, PowerPoint imports SVG natively and it stays sharp
+- `implementation-flow.png` — 2808 x 2376 raster, if SVG import is a problem
 
 ## How to read it
 
-**Top band — the pipeline, narrowing left to right.** Four material masters describing the same SKF 6205 bearing enter; normalisation, embedding retrieval, explainable scoring and cross-encoder re-ranking cut 5 billion possible pairs down to one verdict; a steward approves before anything goes live; one CNMC golden record comes out with all four legacy codes still mapped.
+Reads top to bottom, and the cards physically narrow as the candidate set does: four material masters describing the same SKF 6205 bearing enter, normalisation and retrieval and scoring and re-ranking cut 5 billion possible pairs to one verdict, a steward approves, and one CNMC golden record comes out with all four legacy codes still mapped to it.
 
-**Bottom left — what it actually fixes.** The four real descriptions, and the single standardised record they collapse into. This is the slide judges remember.
-
-**Bottom centre — why a funnel, not brute force.** 5 000 000 000 pairs to 50 per item to 5 per item to the hard 2% that reaches a human. It shows engineering judgement rather than "we called an API".
-
-**Bottom right — governance is the product.** Audit trail, legacy mapping, dashboard, ERP integration, air-gapped deployment — the four things a ministry asks about after the demo ends.
+The right-hand pills carry the numbers that show engineering judgement rather than "we called an API": `5 B -> 50`, `50 -> 5`, `5 -> 1`, and `nothing goes live unreviewed` on the steward row.
 
 ## Stage notes
 
-| On the diagram | In the code |
+| On the panel | In the code |
 |---|---|
 | Normalise | `app/services/normalizer.py` |
-| Retrieve (MiniLM embeddings) | `app/ml/embeddings.py` |
+| Retrieve | `app/ml/embeddings.py` |
 | Score (lexical 30 · semantic 40 · attribute 30) | `app/services/matching_engine.py` |
-| Re-rank (cross-encoder) | `app/ml/reranker.py` |
-| Steward gate | `app/routers/matching.py` |
-| CNMC minting + legacy mapping | `app/services/cnmc_generator.py`, `app/routers/mapping.py` |
-| Audit trail / dashboard / ERP API | `app/models/audit.py`, `app/routers/analytics.py` |
+| Re-rank | `app/ml/reranker.py` |
+| Steward approves | `app/routers/matching.py` |
+| CNMC + legacy mapping | `app/services/cnmc_generator.py`, `app/routers/mapping.py` |
 
-Thresholds shown in the footer are the live ones: exact >= 0.85, near-duplicate >= 0.78, functional equivalent >= 0.65.
+## Other variants
+
+- `implementation-flow-full.svg` / `.png` — the full-slide version (16:9, 3200 x 1800) with the supporting evidence panels. Good for a dedicated slide, the report, or the appendix.
+- `implementation-flow-mermaid.mmd` — plain Mermaid, rendered inline below.
+- `implementation-flow-detailed.mmd` / `.png` — Mermaid with every branch broken out.
 
 ## Regenerate
 
-Edit the SVG by hand, then re-render the PNG with headless Chrome:
+Edit the SVG, then re-render the PNG with headless Chrome:
 
 ```bash
-chrome --headless --disable-gpu --force-device-scale-factor=2 --window-size=1600,900 \n  --screenshot=implementation-flow.png implementation-flow.svg
+chrome --headless --disable-gpu --force-device-scale-factor=3 --window-size=936,792 \n  --screenshot=implementation-flow.png implementation-flow.svg
 ```
 
-## Plain Mermaid variants
-
-Kept for GitHub inline rendering and for anyone who wants a boxes-and-arrows version:
-`implementation-flow-mermaid.mmd` (compact) and `implementation-flow-detailed.mmd` / `.png` (every branch broken out).
+## Mermaid source
 
 ```mermaid
 flowchart TD
