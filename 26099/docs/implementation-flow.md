@@ -1,36 +1,47 @@
 # NUMMF — Implementation Flow (PS 26099)
 
-## Slide version (use this one in the PPT)
+Four CPSE codes in, one national code out: a narrowing funnel with a human steward at the gate.
 
 ![Implementation Flow](implementation-flow.png)
 
-Twelve nodes, near-square, readable at slide size. Vector copy: [`implementation-flow.svg`](implementation-flow.svg).
+Slide-ready: `implementation-flow.svg` (vector — PowerPoint imports SVG natively and it stays sharp at any size) and `implementation-flow.png` (3200x1800, 16:9, drops straight onto a slide).
+
+## How to read it
+
+**Top band — the pipeline, narrowing left to right.** Four material masters describing the same SKF 6205 bearing enter; normalisation, embedding retrieval, explainable scoring and cross-encoder re-ranking cut 5 billion possible pairs down to one verdict; a steward approves before anything goes live; one CNMC golden record comes out with all four legacy codes still mapped.
+
+**Bottom left — what it actually fixes.** The four real descriptions, and the single standardised record they collapse into. This is the slide judges remember.
+
+**Bottom centre — why a funnel, not brute force.** 5 000 000 000 pairs to 50 per item to 5 per item to the hard 2% that reaches a human. It shows engineering judgement rather than "we called an API".
+
+**Bottom right — governance is the product.** Audit trail, legacy mapping, dashboard, ERP integration, air-gapped deployment — the four things a ministry asks about after the demo ends.
 
 ## Stage notes
 
-| Stage | What runs | Where in code |
-|---|---|---|
-| Inputs | SAP/ERP export, CSV upload, manual entry | `app/routers/materials.py`, `app/routers/admin.py` |
-| Normalize | lowercase, IS-code strip, grade + UOM normalization, abbreviation expansion | `app/services/normalizer.py` |
-| Lexical 30% | RapidFuzz `token_sort_ratio` | `app/services/matching_engine.py` |
-| Semantic 40% | bi-encoder `all-MiniLM-L6-v2` cosine similarity | `app/ml/embeddings.py` |
-| Attribute 30% | family / material type / UOM compatibility | `app/services/matching_engine.py` |
-| Fusion + rerank | blended score at threshold 0.65, top-K shortlist, then `ms-marco-MiniLM-L-6-v2` cross-encoder (sigmoid-normalized, blended 0.6/0.4) | `_candidate_selection`, `app/ml/reranker.py` |
-| Decision | exact >=0.85 auto-propose, near/equivalent >=0.65 to steward review, low confidence loops back for re-evaluation | `app/routers/matching.py` |
-| CNMC minting | `CNMC-{SEGMENT}-{MD5[:6]}` semantic hash, plus per-CPSE legacy code mapping and migration export | `app/services/cnmc_generator.py`, `app/routers/mapping.py` |
-| Audit / dashboard / ERP API | every AI suggestion and human action logged; analytics and review queue served over FastAPI | `app/models/audit.py`, `app/routers/analytics.py` |
+| On the diagram | In the code |
+|---|---|
+| Normalise | `app/services/normalizer.py` |
+| Retrieve (MiniLM embeddings) | `app/ml/embeddings.py` |
+| Score (lexical 30 · semantic 40 · attribute 30) | `app/services/matching_engine.py` |
+| Re-rank (cross-encoder) | `app/ml/reranker.py` |
+| Steward gate | `app/routers/matching.py` |
+| CNMC minting + legacy mapping | `app/services/cnmc_generator.py`, `app/routers/mapping.py` |
+| Audit trail / dashboard / ERP API | `app/models/audit.py`, `app/routers/analytics.py` |
 
-## Detailed version
-
-The full-fidelity chart with every branch broken out lives in [`implementation-flow-detailed.png`](implementation-flow-detailed.png) (source: [`implementation-flow-detailed.mmd`](implementation-flow-detailed.mmd)). It is roughly 1:2 portrait, so it suits an appendix slide or the report rather than a main slide.
+Thresholds shown in the footer are the live ones: exact >= 0.85, near-duplicate >= 0.78, functional equivalent >= 0.65.
 
 ## Regenerate
 
+Edit the SVG by hand, then re-render the PNG with headless Chrome:
+
 ```bash
-npx -y @mermaid-js/mermaid-cli@11 -i implementation-flow.mmd -o implementation-flow.png -b white -s 3
+chrome --headless --disable-gpu --force-device-scale-factor=2 --window-size=1600,900 \n  --screenshot=implementation-flow.png implementation-flow.svg
 ```
 
-## Source
+## Plain Mermaid variants
+
+Kept for GitHub inline rendering and for anyone who wants a boxes-and-arrows version:
+`implementation-flow-mermaid.mmd` (compact) and `implementation-flow-detailed.mmd` / `.png` (every branch broken out).
 
 ```mermaid
 flowchart TD
