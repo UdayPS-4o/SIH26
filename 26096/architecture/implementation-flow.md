@@ -1,48 +1,47 @@
 # Samdarshi — Implementation Flow (PS 26096)
 
-Two lanes around one verified archive: digitisation feeds it, the kiosk may only speak from it.
+Digitisation feeds one verified archive; the kiosk may only speak from it, or it refuses.
+
+## Slide panel — use this one
 
 ![Implementation Flow](implementation-flow.png)
 
-Slide-ready: `implementation-flow.svg` (vector — PowerPoint imports SVG natively and it stays sharp at any size) and `implementation-flow.png` (3200x1800, 16:9, drops straight onto a slide).
+Sized for **half a slide** (about 6.5in x 5.5in, 936 x 792 units). Type is set so it stays legible at that size, so the panel carries the flow only — the supporting argument belongs in the text beside it.
+
+- `implementation-flow.svg` — vector, PowerPoint imports SVG natively and it stays sharp
+- `implementation-flow.png` — 2808 x 2376 raster, if SVG import is a problem
 
 ## How to read it
 
-**Left lane — how the archive grows.** Capture, restore, OCR, curator verification, indexing. A scanned page is useless until it is searchable, and nothing enters unverified.
+Two movements in one panel. Across the top, how the archive grows: scan, restore, OCR, curator verification. In the middle, the verified archive itself — if it is not in here, the kiosk will not say it. Down the spine, how one question is answered: speech or touch, retrieval and re-ranking, then the gate.
 
-**Centre — the verified archive.** Page images, text and metadata, embeddings, keyword index. The single source of truth: if it is not in here, the kiosk will not say it.
-
-**Right lane — how one question is answered.** Speech or touch, hybrid retrieval, re-ranking, then the gate: evidence, or an honest refusal. The refusal is the hero of the diagram — a memorial kiosk that invents quotations is a liability, and refusing well is what separates this from a chatbot.
-
-**The dashed loop.** Every unanswered question becomes a digitisation request, so the archive learns what visitors actually ask for.
-
-**The kiosk mock.** A real answer with real citations and a language switcher — the visual anchor for the demo.
+The gate is the point of the slide. Evidence found, and Llama 3 answers with a citation per claim. No evidence, and it says so and routes the question to the curator queue instead of inventing an answer — and the dashed line on the left carries that unanswered question back to the top as a digitisation request.
 
 ## Stage notes
 
-| On the diagram | Reference |
+| On the panel | Reference |
 |---|---|
-| Capture / restore / read | Master Plan 5.3 (OCR pipeline) |
-| Curator verifies | archival-science requirement, not an afterthought |
-| Index (512-token chunks + embeddings) | Master Plan 5.3, indexing stage |
-| Retrieve + RRF fusion | Master Plan 5.2 step 2 |
-| Re-rank, relevance > 0.7 | Master Plan 5.2 step 3 |
+| Scan / restore / OCR | Master Plan 5.3 |
+| Curator verifies | nothing enters the archive unverified |
+| Retrieve, then re-rank | Master Plan 5.2 steps 2-3 |
 | Evidence gate | anti-hallucination guarantee |
-| Llama 3 + citations | Master Plan 5.2 steps 4-6 |
-| TTS in four languages | Master Plan 5.4 |
+| Speak it back | Master Plan 5.4 |
+
+## Other variants
+
+- `implementation-flow-full.svg` / `.png` — the full-slide version (16:9, 3200 x 1800) with the supporting evidence panels. Good for a dedicated slide, the report, or the appendix.
+- `implementation-flow-mermaid.mmd` — plain Mermaid, rendered inline below.
+- `implementation-flow-detailed.mmd` / `.png` — Mermaid with every branch broken out.
 
 ## Regenerate
 
-Edit the SVG by hand, then re-render the PNG with headless Chrome:
+Edit the SVG, then re-render the PNG with headless Chrome:
 
 ```bash
-chrome --headless --disable-gpu --force-device-scale-factor=2 --window-size=1600,900 \n  --screenshot=implementation-flow.png implementation-flow.svg
+chrome --headless --disable-gpu --force-device-scale-factor=3 --window-size=936,792 \n  --screenshot=implementation-flow.png implementation-flow.svg
 ```
 
-## Plain Mermaid variants
-
-Kept for GitHub inline rendering and for anyone who wants a boxes-and-arrows version:
-`implementation-flow-mermaid.mmd` (compact) and `implementation-flow-detailed.mmd` / `.png` (every branch broken out).
+## Mermaid source
 
 ```mermaid
 flowchart TD

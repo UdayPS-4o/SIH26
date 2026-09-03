@@ -1,218 +1,77 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="'Segoe UI', Inter, system-ui, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 936 792" width="936" height="792" font-family="'Segoe UI', Inter, system-ui, sans-serif">
   <style>
-    .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .16em; fill: #94A3B8; }
-    .title   { font-size: 27px; font-weight: 700; fill: #0F172A; }
-    .sub     { font-size: 14.5px; fill: #64748B; }
-    .h       { font-size: 14px; font-weight: 700; fill: #0F172A; }
-    .h2      { font-size: 13px; font-weight: 700; fill: #0F172A; }
-    .b       { font-size: 12px; fill: #475569; }
-    .bs      { font-size: 11px; fill: #64748B; }
-    .mono    { font-size: 11.5px; font-family: 'Consolas', 'JetBrains Mono', monospace; fill: #334155; }
-    .monob   { font-size: 15px; font-weight: 700; font-family: 'Consolas', 'JetBrains Mono', monospace; fill: #047857; }
-    .metric  { font-size: 12.5px; font-weight: 700; fill: #1D4ED8; }
-    .num     { font-size: 11px; font-weight: 700; fill: #FFFFFF; }
-    .amber   { fill: #B45309; }
-    .red     { fill: #B91C1C; }
-    .green   { fill: #047857; }
-    .card    { fill: #F8FAFC; stroke: #E2E8F0; }
+    .st   { font-size: 32px; font-weight: 700; fill: #0F172A; }
+    .dt   { font-size: 26px; fill: #475569; }
+    .cap  { font-size: 22px; fill: #64748B; }
+    .mono { font-size: 24px; font-family: 'Consolas', 'JetBrains Mono', monospace; fill: #475569; }
+    .met  { font-size: 24px; font-weight: 700; fill: #1D4ED8; }
+    .num  { font-size: 22px; font-weight: 700; fill: #FFFFFF; }
+    .card { fill: #F8FAFC; stroke: #E2E8F0; stroke-width: 1.5; }
   </style>
-
-  <rect width="1600" height="900" fill="#FFFFFF"/>
-
-  <!-- ── header ─────────────────────────────────────────────── -->
-  <text x="48" y="40" class="eyebrow">IMPLEMENTATION FLOW · PS 26099 · NUMMF</text>
-  <text x="48" y="72" class="title">Four CPSE codes in. One national code out.</text>
-  <text x="48" y="98" class="sub">AI shortlists, explainable scoring ranks, a human steward approves — and every step is audited.</text>
-
-  <rect x="1252" y="44" width="300" height="46" rx="23" fill="#EFF6FF" stroke="#BFDBFE"/>
-  <circle cx="1278" cy="67" r="5" fill="#1D4ED8"/>
-  <text x="1294" y="63" class="h2" fill="#1E3A8A">Runs fully offline, on-premises</text>
-  <text x="1294" y="79" class="bs" fill="#3B82F6">open-weight models · nothing leaves the site</text>
-
-  <line x1="48" y1="122" x2="1552" y2="122" stroke="#E2E8F0" stroke-width="1"/>
-
-  <!-- ── ROW A : the pipeline, narrowing left to right ───────── -->
+  <rect width="936" height="792" fill="#FFFFFF"/>
 
   <!-- inputs -->
-  <rect x="48" y="150" width="250" height="260" rx="12" fill="#FEF2F2" stroke="#FECACA"/>
-  <text x="68" y="178" class="h">Four material masters</text>
-  <text x="68" y="196" class="bs">the same SKF 6205 bearing</text>
-  <g class="mono">
-    <rect x="68" y="212" width="6" height="34" fill="#EF4444" opacity=".55"/>
-    <text x="84" y="226">ONGC</text><text x="84" y="242" font-size="10.5" fill="#64748B">4500012876</text>
-    <rect x="68" y="254" width="6" height="34" fill="#EF4444" opacity=".55"/>
-    <text x="84" y="268">SAIL</text><text x="84" y="284" font-size="10.5" fill="#64748B">MM-88-19243</text>
-    <rect x="68" y="296" width="6" height="34" fill="#EF4444" opacity=".55"/>
-    <text x="84" y="310">NTPC</text><text x="84" y="326" font-size="10.5" fill="#64748B">1176-BRG-005</text>
-    <rect x="68" y="338" width="6" height="34" fill="#EF4444" opacity=".55"/>
-    <text x="84" y="352">CIL</text><text x="84" y="368" font-size="10.5" fill="#64748B">90887123</text>
-  </g>
-  <text x="68" y="392" class="bs red">4 codes · 4 stockpiles · zero bulk leverage</text>
+  <rect x="24" y="16" width="888" height="84" rx="12" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+  <text x="52" y="52" class="st" fill="#B91C1C" style="font-size:28px">Four CPSEs, one SKF 6205 bearing</text>
+  <text x="52" y="84" class="mono" fill="#7F1D1D" style="font-size:19px">ONGC 4500012876 · SAIL MM-88-19243 · NTPC 1176-BRG-005 · CIL 90887123</text>
+  <path d="M462 104 h12 l-6 12 z" fill="#94A3B8"/>
 
-  <path d="M303 274 l12 6 -12 6 z" fill="#94A3B8"/>
+  <!-- 1 normalise -->
+  <rect x="24" y="112" width="888" height="86" rx="12" class="card"/>
+  <circle cx="62" cy="155" r="17" fill="#1D4ED8"/><text x="62" y="163" class="num" text-anchor="middle">1</text>
+  <text x="92" y="150" class="st">Normalise</text>
+  <text x="92" y="182" class="dt">BRG → BEARING · SS304 = SS-304 · NOS → EA</text>
+  <rect x="742" y="136" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="817" y="162" class="met" text-anchor="middle">rules, not ML</text>
 
-  <!-- stage 1 -->
-  <rect x="320" y="155" width="190" height="250" rx="12" class="card"/>
-  <circle cx="342" cy="182" r="11" fill="#1D4ED8"/><text x="342" y="186" class="num" text-anchor="middle">1</text>
-  <text x="362" y="187" class="h">Normalise</text>
-  <text x="340" y="216" class="b">expand BRG → BEARING</text>
-  <text x="340" y="238" class="b">SS304 = SS-304 = 304 SS</text>
-  <text x="340" y="260" class="b">NOS · PC · EA → one UOM</text>
-  <text x="340" y="282" class="b">strip IS-code noise</text>
-  <line x1="340" y1="304" x2="490" y2="304" stroke="#E2E8F0"/>
-  <text x="340" y="328" class="metric">rules, not ML</text>
-  <text x="340" y="346" class="bs">100+ Indian PSU abbreviations —</text>
-  <text x="340" y="362" class="bs">a dictionary that does not exist</text>
-  <text x="340" y="378" class="bs">publicly. Our IP.</text>
+  <path d="M462 202 h12 l-6 12 z" fill="#94A3B8"/>
 
-  <path d="M515 274 l12 6 -12 6 z" fill="#94A3B8"/>
+  <!-- 2 retrieve -->
+  <rect x="48" y="210" width="840" height="86" rx="12" class="card"/>
+  <circle cx="86" cy="253" r="17" fill="#1D4ED8"/><text x="86" y="261" class="num" text-anchor="middle">2</text>
+  <text x="116" y="248" class="st">Retrieve</text>
+  <text x="116" y="280" class="dt">MiniLM embeddings + pgvector ANN</text>
+  <rect x="718" y="234" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="793" y="260" class="met" text-anchor="middle">5 B → 50</text>
 
-  <!-- stage 2 -->
-  <rect x="532" y="167" width="190" height="226" rx="12" class="card"/>
-  <circle cx="554" cy="194" r="11" fill="#1D4ED8"/><text x="554" y="198" class="num" text-anchor="middle">2</text>
-  <text x="574" y="199" class="h">Retrieve</text>
-  <text x="552" y="228" class="b">MiniLM embeddings</text>
-  <text x="552" y="250" class="b">pgvector ANN search</text>
-  <text x="552" y="272" class="b">+ exact part-number index</text>
-  <line x1="552" y1="294" x2="702" y2="294" stroke="#E2E8F0"/>
-  <text x="552" y="318" class="metric">5 B pairs → 50 per item</text>
-  <text x="552" y="336" class="bs">cheap shortlist first, so the</text>
-  <text x="552" y="352" class="bs">expensive models stay affordable</text>
+  <path d="M462 300 h12 l-6 12 z" fill="#94A3B8"/>
 
-  <path d="M727 274 l12 6 -12 6 z" fill="#94A3B8"/>
+  <!-- 3 score -->
+  <rect x="72" y="308" width="792" height="86" rx="12" class="card"/>
+  <circle cx="110" cy="351" r="17" fill="#1D4ED8"/><text x="110" y="359" class="num" text-anchor="middle">3</text>
+  <text x="140" y="346" class="st">Score</text>
+  <text x="140" y="378" class="dt">lexical 30 · semantic 40 · attribute 30</text>
+  <rect x="694" y="332" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="769" y="358" class="met" text-anchor="middle">50 → 5</text>
 
-  <!-- stage 3 -->
-  <rect x="744" y="179" width="190" height="202" rx="12" class="card"/>
-  <circle cx="766" cy="206" r="11" fill="#1D4ED8"/><text x="766" y="210" class="num" text-anchor="middle">3</text>
-  <text x="786" y="211" class="h">Score</text>
-  <text x="764" y="240" class="b">lexical 30 · semantic 40</text>
-  <text x="764" y="262" class="b">· attribute 30</text>
-  <text x="764" y="284" class="b">per-field, explainable</text>
-  <line x1="764" y1="306" x2="914" y2="306" stroke="#E2E8F0"/>
-  <text x="764" y="330" class="metric">50 → top 5</text>
-  <text x="764" y="348" class="bs">every score is defensible</text>
-  <text x="764" y="364" class="bs">in a government audit</text>
+  <path d="M462 398 h12 l-6 12 z" fill="#94A3B8"/>
 
-  <path d="M939 274 l12 6 -12 6 z" fill="#94A3B8"/>
+  <!-- 4 rerank -->
+  <rect x="96" y="406" width="744" height="86" rx="12" class="card"/>
+  <circle cx="134" cy="449" r="17" fill="#1D4ED8"/><text x="134" y="457" class="num" text-anchor="middle">4</text>
+  <text x="164" y="444" class="st">Re-rank</text>
+  <text x="164" y="476" class="dt">cross-encoder reads the hard five</text>
+  <rect x="670" y="430" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="745" y="456" class="met" text-anchor="middle">5 → 1</text>
 
-  <!-- stage 4 -->
-  <rect x="956" y="191" width="190" height="178" rx="12" class="card"/>
-  <circle cx="978" cy="218" r="11" fill="#1D4ED8"/><text x="978" y="222" class="num" text-anchor="middle">4</text>
-  <text x="998" y="223" class="h">Re-rank</text>
-  <text x="976" y="252" class="b">cross-encoder reads the</text>
-  <text x="976" y="274" class="b">hard five, pairwise</text>
-  <line x1="976" y1="296" x2="1126" y2="296" stroke="#E2E8F0"/>
-  <text x="976" y="320" class="metric">top 5 → 1 verdict</text>
-  <text x="976" y="338" class="bs">ms-marco-MiniLM, CPU-only</text>
+  <path d="M462 496 h12 l-6 12 z" fill="#94A3B8"/>
 
-  <path d="M1151 274 l12 6 -12 6 z" fill="#94A3B8"/>
+  <!-- 5 steward gate -->
+  <rect x="120" y="504" width="696" height="96" rx="12" fill="#FFFBEB" stroke="#B45309" stroke-width="2"/>
+  <circle cx="158" cy="552" r="17" fill="#B45309"/><text x="158" y="560" class="num" text-anchor="middle">5</text>
+  <text x="188" y="546" class="st" fill="#B45309">Steward approves</text>
+  <text x="188" y="578" class="dt">approve · merge · reject</text>
+  <text x="796" y="546" class="met" fill="#B45309" text-anchor="end">nothing goes live</text>
+  <text x="796" y="576" class="met" fill="#B45309" text-anchor="end">unreviewed</text>
 
-  <!-- steward gate -->
-  <rect x="1168" y="180" width="190" height="200" rx="12" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5"/>
-  <circle cx="1190" cy="207" r="11" fill="#B45309"/><text x="1190" y="211" class="num" text-anchor="middle">5</text>
-  <text x="1210" y="212" class="h amber">Steward gate</text>
-  <text x="1188" y="241" class="b">side-by-side compare</text>
-  <text x="1188" y="263" class="b">approve · merge · reject</text>
-  <line x1="1188" y1="285" x2="1338" y2="285" stroke="#FDE68A"/>
-  <text x="1188" y="309" class="metric amber">no code goes live</text>
-  <text x="1188" y="327" class="metric amber">unreviewed</text>
-  <text x="1188" y="349" class="bs">the human-in-the-loop the</text>
-  <text x="1188" y="365" class="bs">problem statement demands</text>
-
-  <path d="M1363 274 l12 6 -12 6 z" fill="#94A3B8"/>
+  <path d="M462 604 h12 l-6 12 z" fill="#94A3B8"/>
 
   <!-- output -->
-  <rect x="1380" y="150" width="172" height="260" rx="12" fill="#ECFDF5" stroke="#A7F3D0"/>
-  <text x="1400" y="178" class="h green">One golden record</text>
-  <rect x="1400" y="192" width="132" height="34" rx="6" fill="#FFFFFF" stroke="#A7F3D0"/>
-  <text x="1466" y="214" class="monob" text-anchor="middle">CNMC-BE-A47F91</text>
-  <text x="1400" y="248" class="bs">BEARING, BALL, SINGLE</text>
-  <text x="1400" y="264" class="bs">ROW, 6205-2RS, 25 MM</text>
-  <text x="1400" y="280" class="bs">ID, SKF</text>
-  <line x1="1400" y1="298" x2="1532" y2="298" stroke="#A7F3D0"/>
-  <text x="1400" y="322" class="b">4 legacy codes mapped</text>
-  <text x="1400" y="344" class="b">every SAP system keeps</text>
-  <text x="1400" y="360" class="b">working, unchanged</text>
-  <text x="1400" y="388" class="bs green">stable hash: one item,</text>
-  <text x="1400" y="402" class="bs green">one code, every CPSE</text>
-
-  <!-- ── ROW B : three proof panels ──────────────────────────── -->
-
-  <!-- P1 : worked example -->
-  <rect x="48" y="460" width="480" height="380" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
-  <text x="72" y="492" class="h">What it actually fixes</text>
-  <text x="72" y="512" class="bs">one bearing, as four CPSEs wrote it down</text>
-  <g class="mono" font-size="11">
-    <text x="72" y="546">ONGC   BRG,BALL,SKF 6205-2RS,25MM ID</text>
-    <text x="72" y="574">SAIL   BEARING BALL SINGLE ROW 6205 2RS</text>
-    <text x="72" y="602">NTPC   SKF BALL BEARING 6205-2RS/C3</text>
-    <text x="72" y="630">CIL    BALL BRG 6205 SEALED</text>
-  </g>
-  <line x1="72" y1="652" x2="504" y2="652" stroke="#E2E8F0"/>
-  <text x="72" y="676" class="bs">standardised into</text>
-  <rect x="72" y="686" width="432" height="66" rx="8" fill="#ECFDF5" stroke="#A7F3D0"/>
-  <text x="88" y="710" class="mono" font-size="11.5" fill="#065F46">CNMC-BE-A47F91</text>
-  <text x="88" y="732" class="mono" font-size="10.5" fill="#047857">BEARING, BALL, SINGLE ROW, 6205-2RS, 25 MM ID, SKF</text>
-  <text x="72" y="782" class="b">NTPC stops buying what SAIL already has on the shelf.</text>
-  <text x="72" y="804" class="bs">Same principle as the NATO Stock Number — 60+ countries, one code per item.</text>
-
-  <!-- P2 : the funnel argument -->
-  <rect x="552" y="460" width="480" height="380" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
-  <text x="576" y="492" class="h">Why a funnel, not brute force</text>
-  <text x="576" y="512" class="bs">100 000 items is 5 billion possible pairs — nobody can LLM their way through that</text>
-
-  <text x="576" y="548" class="bs">every possible pair</text>
-  <rect x="576" y="556" width="420" height="22" rx="4" fill="#1D4ED8" opacity=".16"/>
-  <text x="588" y="572" class="mono" font-size="11">5 000 000 000</text>
-
-  <text x="576" y="614" class="bs">after embedding shortlist</text>
-  <rect x="576" y="622" width="300" height="22" rx="4" fill="#1D4ED8" opacity=".30"/>
-  <text x="588" y="638" class="mono" font-size="11">50 per item</text>
-
-  <text x="576" y="680" class="bs">after explainable scoring</text>
-  <rect x="576" y="688" width="180" height="22" rx="4" fill="#1D4ED8" opacity=".55"/>
-  <text x="588" y="704" class="mono" font-size="11" fill="#FFFFFF">5 per item</text>
-
-  <text x="576" y="746" class="bs">reaches a human steward</text>
-  <rect x="576" y="754" width="86" height="22" rx="4" fill="#B45309"/>
-  <text x="588" y="770" class="mono" font-size="11" fill="#FFFFFF">the hard 2%</text>
-
-  <text x="576" y="806" class="b">Cheap models filter, expensive models decide, humans arbitrate.</text>
-  <text x="576" y="824" class="bs">Whole catalogue runs on CPU — no GPU cluster, no cloud bill.</text>
-
-  <!-- P3 : governance -->
-  <rect x="1056" y="460" width="496" height="380" rx="12" fill="#FFFFFF" stroke="#E2E8F0"/>
-  <text x="1080" y="492" class="h">Governance is the product</text>
-  <text x="1080" y="512" class="bs">a ministry cannot deploy a matcher it cannot answer for</text>
-
-  <rect x="1080" y="528" width="218" height="112" rx="10" fill="#F8FAFC" stroke="#E2E8F0"/>
-  <text x="1098" y="554" class="h2">Audit trail</text>
-  <text x="1098" y="576" class="bs">every AI suggestion, every</text>
-  <text x="1098" y="592" class="bs">human decision, timestamped</text>
-  <text x="1098" y="608" class="bs">and attributable</text>
-
-  <rect x="1314" y="528" width="218" height="112" rx="10" fill="#F8FAFC" stroke="#E2E8F0"/>
-  <text x="1332" y="554" class="h2">Legacy mapping</text>
-  <text x="1332" y="576" class="bs">old codes never die — they</text>
-  <text x="1332" y="592" class="bs">resolve to the national code,</text>
-  <text x="1332" y="608" class="bs">so migration is optional</text>
-
-  <rect x="1080" y="654" width="218" height="112" rx="10" fill="#F8FAFC" stroke="#E2E8F0"/>
-  <text x="1098" y="680" class="h2">Dashboard</text>
-  <text x="1098" y="702" class="bs">duplicates found, spend</text>
-  <text x="1098" y="718" class="bs">overlap between CPSEs,</text>
-  <text x="1098" y="734" class="bs">master-data quality score</text>
-
-  <rect x="1314" y="654" width="218" height="112" rx="10" fill="#F8FAFC" stroke="#E2E8F0"/>
-  <text x="1332" y="680" class="h2">ERP integration</text>
-  <text x="1332" y="702" class="bs">REST + OData endpoints</text>
-  <text x="1332" y="718" class="bs">and IDoc-shaped import,</text>
-  <text x="1332" y="734" class="bs">so SAP can consume it</text>
-
-  <rect x="1080" y="784" width="452" height="36" rx="8" fill="#EFF6FF" stroke="#BFDBFE"/>
-  <text x="1098" y="807" class="b" fill="#1E3A8A">Air-gapped by design — MeitY data-sovereignty holds without a single API call.</text>
-
-  <!-- ── footer ─────────────────────────────────────────────── -->
-  <text x="48" y="874" class="bs">Thresholds: exact ≥ 0.85 · near-duplicate ≥ 0.78 · functional equivalent ≥ 0.65 · anything below goes to a human</text>
-  <text x="1552" y="874" class="bs" text-anchor="end">all-MiniLM-L6-v2 · ms-marco-MiniLM-L-6-v2 · RapidFuzz · pgvector · FastAPI</text>
+  <rect x="24" y="612" width="888" height="130" rx="12" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.5"/>
+  <text x="52" y="648" class="cap" fill="#047857" letter-spacing="2">ONE NATIONAL CODE</text>
+  <text x="52" y="692" font-size="34" font-weight="700" font-family="'Consolas', monospace" fill="#047857">CNMC-BE-A47F91</text>
+  <text x="52" y="724" class="cap" fill="#065F46">BEARING, BALL, 6205-2RS, 25 MM ID</text>
+  <text x="884" y="656" class="dt" fill="#065F46" text-anchor="end">4 legacy codes mapped</text>
+  <text x="884" y="690" class="cap" fill="#047857" text-anchor="end">SAP keeps working</text>
+  <text x="884" y="722" class="cap" fill="#047857" text-anchor="end">same item → same code</text>
 </svg>
