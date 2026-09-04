@@ -28,15 +28,20 @@ import {
   ArrowsMerge,
   ArrowUUpLeft,
   Barcode,
+  CopySimple,
+  PiggyBank,
+  Stack,
   TextAa,
 } from '@phosphor-icons/react'
 
 import {
+  AnimatedNumber,
   Button,
   Chip,
   EmptyState,
   EndpointTag,
   ErrorState,
+  IconTile,
   Label,
   Meter,
   Mono,
@@ -53,6 +58,7 @@ import {
 } from '@/components/ui'
 import { ByMode, TechnicalOnly } from '@/components/Gate'
 import SourceLoader from '@/components/SourceLoader'
+import { cx } from '@/components/ui/tokens'
 import { useCopy } from '@/copy'
 import { useIsTechnical } from '@/store/viewmode'
 import { useService } from '@/store/service'
@@ -484,6 +490,12 @@ function ResolverSection() {
           >
             Reset
           </Button>
+
+          <ResolveFlow
+            normalized={norms !== null}
+            matched={matches !== null}
+            minted={minted !== null}
+          />
         </div>
 
         <TechnicalOnly>
@@ -634,7 +646,7 @@ function ResolverSection() {
                         value={match.data.breakdown.combined}
                         tone={
                           match.verdict === 'same'
-                            ? 'accent'
+                            ? 'positive'
                             : match.verdict === 'review'
                               ? 'attention'
                               : 'negative'
@@ -755,7 +767,7 @@ function ResolverSection() {
             {...reveal}
             className={
               worst === 'same'
-                ? 'border-t border-rule bg-accent-bg px-5 py-3'
+                ? 'border-t border-rule bg-positive-bg px-5 py-3'
                 : worst === 'review'
                   ? 'border-t border-rule bg-attention-bg px-5 py-3'
                   : 'border-t border-rule bg-negative-bg px-5 py-3'
@@ -764,7 +776,7 @@ function ResolverSection() {
             <p
               className={
                 worst === 'same'
-                  ? 'text-[13px] text-accent'
+                  ? 'text-[13px] text-positive'
                   : worst === 'review'
                     ? 'text-[13px] text-attention'
                     : 'text-[13px] text-negative'
@@ -799,6 +811,41 @@ function ResolverSection() {
   )
 }
 
+/**
+ * Compact progress strip for the three real resolver stages.
+ *
+ * Each node is honest about the component's own state — it lights up once
+ * `norms`/`matches`/`minted` is actually populated, and never before, so this
+ * cannot drift into a fabricated "processing" animation.
+ */
+function ResolveFlow({
+  normalized,
+  matched,
+  minted,
+}: {
+  normalized: boolean
+  matched: boolean
+  minted: boolean
+}) {
+  return (
+    <div className="flex items-center gap-1.5" aria-hidden="true">
+      <ResolveFlowNode icon={<TextAa size={15} weight="regular" />} active={normalized} />
+      <ResolveFlowLine active={normalized} />
+      <ResolveFlowNode icon={<ArrowsMerge size={15} weight="regular" />} active={matched} />
+      <ResolveFlowLine active={matched} />
+      <ResolveFlowNode icon={<Barcode size={15} weight="regular" />} active={minted} />
+    </div>
+  )
+}
+
+function ResolveFlowNode({ icon, active }: { icon: ReactNode; active: boolean }) {
+  return <IconTile icon={icon} tone={active ? 'primary' : 'neutral'} size="sm" />
+}
+
+function ResolveFlowLine({ active }: { active: boolean }) {
+  return <span className={cx('h-px w-5 shrink-0', active ? 'bg-primary' : 'bg-rule')} />
+}
+
 /** Raw string with every token the dictionary expanded marked in place. */
 function MarkedDescription({ raw, expansions }: { raw: string; expansions: Expansion[] }) {
   const expanded = new Set(expansions.map(expansion => expansion.from))
@@ -828,7 +875,7 @@ function ScoreLine({
 }: {
   label: string
   value: number
-  tone?: 'accent' | 'attention' | 'negative'
+  tone?: 'accent' | 'positive' | 'attention' | 'negative'
   strong?: boolean
 }) {
   return (
@@ -942,8 +989,9 @@ function ScaleSection() {
       <StatRow>
         <StatCell>
           <Stat
-            value={formatCount(dashboard.totalRecords)}
+            value={<AnimatedNumber value={dashboard.totalRecords} format={formatCount} />}
             label={technical ? 'Records ingested' : 'Items read'}
+            icon={<Stack size={16} weight="regular" />}
             note={
               <ByMode
                 simple={`Item lists from ${companyList}.`}
@@ -955,8 +1003,10 @@ function ScaleSection() {
 
         <StatCell>
           <Stat
-            value={formatCount(dashboard.duplicateRecords)}
+            value={<AnimatedNumber value={dashboard.duplicateRecords} format={formatCount} />}
             label={technical ? 'Duplicate records' : 'Repeats found'}
+            icon={<CopySimple size={16} weight="regular" />}
+            tone="attention"
             note={
               <ByMode
                 simple={`About 1 in ${oneIn} items already exists somewhere else.`}
@@ -968,8 +1018,9 @@ function ScaleSection() {
 
         <StatCell>
           <Stat
-            value={formatExact(dashboard.distinctCodes)}
+            value={<AnimatedNumber value={dashboard.distinctCodes} format={formatExact} />}
             label={technical ? 'Distinct national codes' : 'National codes issued'}
+            icon={<Barcode size={16} weight="regular" />}
             note={
               <ByMode
                 simple={`One code for each distinct item in the ${formatExact(dashboard.sampleSize)} record slice anyone can open and check.`}
@@ -981,8 +1032,10 @@ function ScaleSection() {
 
         <StatCell>
           <Stat
-            value={formatRupees(savings.annualSaving)}
+            value={<AnimatedNumber value={savings.annualSaving} format={formatRupees} />}
             label={technical ? 'Annual saving' : 'Saving each year'}
+            icon={<PiggyBank size={16} weight="regular" />}
+            tone="positive"
             emphasis
             note={
               <ByMode

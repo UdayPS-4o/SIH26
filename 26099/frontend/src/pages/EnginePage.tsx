@@ -34,6 +34,7 @@ import {
   EndpointTag,
   ErrorState,
   Field,
+  IconTile,
   Label,
   Mono,
   Num,
@@ -48,6 +49,7 @@ import {
   Th,
   TextInput,
 } from '@/components/ui'
+import { ThresholdHistogram, type HistogramBucket, type HistogramThreshold } from '@/components/ui/charts'
 import { ByMode } from '@/components/Gate'
 import { useCopy } from '@/copy'
 import { useService } from '@/store/service'
@@ -75,9 +77,6 @@ const HIST_FLOOR = 0.45
 const HIST_CEIL = 1
 const HIST_BUCKETS = 20
 
-const pct = (value: number) =>
-  Math.max(0, Math.min(100, ((value - HIST_FLOOR) / (HIST_CEIL - HIST_FLOOR)) * 100))
-
 /* -------------------------------------------------------------- local parts */
 
 /** One step of the pipeline. Numbered, because the order is the method. */
@@ -98,11 +97,11 @@ function Step({
 }) {
   return (
     <li className="flex gap-4 border-t border-rule px-5 py-4 first:border-t-0">
-      <div className="flex w-5 shrink-0 flex-col items-center gap-2.5 pt-1">
+      <div className="flex w-9 shrink-0 flex-col items-center gap-2.5 pt-1">
         <Num size="xs" className="text-ink-3">
           {index}
         </Num>
-        <span className="text-ink-3">{icon}</span>
+        <IconTile icon={icon} tone="accent" size="sm" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -261,6 +260,22 @@ export default function EnginePage() {
   }, [pairs])
 
   const peak = Math.max(1, ...histogram.map(b => b.count))
+
+  /** ThresholdHistogram wants {x, count}: x is the bucket midpoint on the 0-1
+   *  score scale, so a bucket's colour band lines up with where its scores
+   *  actually sit relative to the two threshold lines. */
+  const histogramChartData: HistogramBucket[] = useMemo(
+    () => histogram.map(bucket => ({ x: (bucket.from + bucket.to) / 2, count: bucket.count })),
+    [histogram],
+  )
+
+  const histogramThresholds: HistogramThreshold[] = useMemo(
+    () => [
+      { value: draftReview, label: 'Review', tone: 'attention' },
+      { value: draftAccept, label: 'Accept', tone: 'positive' },
+    ],
+    [draftReview, draftAccept],
+  )
 
   const multiMember = clusters.filter(cluster => cluster.members.length > 1).length
 
@@ -721,7 +736,7 @@ export default function EnginePage() {
                 <Readout
                   value={inr(bands.accepted)}
                   label="pairs at or above accept, resolved without a person"
-                  tone="text-accent"
+                  tone="text-positive"
                 />
                 <Readout
                   value={inr(bands.review)}
@@ -782,77 +797,21 @@ export default function EnginePage() {
               />
             ) : (
               <>
-                <div className="relative">
-                  <div className="flex h-[170px] items-end gap-[3px]">
-                    {histogram.map(bucket => {
-                      const mid = (bucket.from + bucket.to) / 2
-                      const fill =
-                        mid >= draftAccept
-                          ? 'bg-accent'
-                          : mid >= draftReview
-                            ? 'bg-attention'
-                            : 'bg-ink-3'
-                      return (
-                        <div
-                          key={bucket.from}
-                          className="flex h-full flex-1 items-end"
-                          title={`${bucket.from.toFixed(2)} to ${bucket.to.toFixed(2)}: ${inr(bucket.count)} pairs`}
-                        >
-                          <div
-                            className={`w-full transition-[height] duration-300 motion-reduce:transition-none ${fill}`}
-                            style={{
-                              height: bucket.count === 0 ? '1px' : `${(bucket.count / peak) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
+                <ThresholdHistogram
+                  buckets={histogramChartData}
+                  thresholds={histogramThresholds}
+                  belowTone="negative"
+                  formatX={value => value.toFixed(2)}
+                />
 
-                  <div
-                    className="pointer-events-none absolute inset-y-0 w-px bg-attention"
-                    style={{ left: `${pct(draftReview)}%` }}
-                    aria-hidden
-                  />
-                  <div
-                    className="pointer-events-none absolute inset-y-0 w-px bg-accent"
-                    style={{ left: `${pct(draftAccept)}%` }}
-                    aria-hidden
-                  />
-                </div>
-
-                <div className="relative mt-2 h-5 border-t border-rule">
-                  {[HIST_FLOOR, 0.6, 0.75, 0.9, HIST_CEIL].map(tick => (
-                    <span
-                      key={tick}
-                      className="absolute top-1 -translate-x-1/2 font-mono text-[10.5px] tabular-nums text-ink-3"
-                      style={{ left: `${pct(tick)}%` }}
-                    >
-                      {tick.toFixed(2)}
-                    </span>
-                  ))}
-                  <span
-                    className="absolute top-1 -translate-x-1/2 whitespace-nowrap font-mono text-[10.5px] tabular-nums text-attention"
-                    style={{ left: `${pct(draftReview)}%` }}
-                  >
-                    review {draftReview.toFixed(2)}
-                  </span>
-                  <span
-                    className="absolute top-1 -translate-x-1/2 whitespace-nowrap font-mono text-[10.5px] tabular-nums text-accent"
-                    style={{ left: `${pct(draftAccept)}%` }}
-                  >
-                    accept {draftAccept.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="mt-7 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-rule pt-3 text-[12.5px]">
+                <div className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-rule pt-3 text-[12.5px]">
                   <span className="text-ink-3">
                     below review <Num size="sm">{inr(bands.below)}</Num>
                   </span>
                   <span className="text-attention">
                     review band <Num size="sm">{inr(bands.review)}</Num>
                   </span>
-                  <span className="text-accent">
+                  <span className="text-positive">
                     at or above accept <Num size="sm">{inr(bands.accepted)}</Num>
                   </span>
                   <span className="ml-auto text-ink-3">

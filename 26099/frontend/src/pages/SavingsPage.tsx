@@ -13,9 +13,9 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { animate, useReducedMotion } from 'framer-motion'
 import { CaretDown, CaretRight } from '@phosphor-icons/react'
 import {
+  AnimatedNumber,
   Button,
   EmptyState,
   EndpointTag,
@@ -35,56 +35,13 @@ import {
   TextInput,
   Th,
 } from '@/components/ui'
+import { CategoryBarChart, FunnelChart, type FunnelStep } from '@/components/ui/charts'
 import { ByMode, SimpleOnly, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
 import { useService } from '@/store/service'
 import { DEFAULT_SAVINGS, formatExact, formatRupees } from '@/engine/savings'
 import type { SavingsInputs } from '@/engine/types'
-
-/* --------------------------------------------------------------- animation */
-
-/**
- * A figure that counts to its new value when an assumption moves.
- *
- * The motion is motivated: it exists so that changing a slider visibly propagates
- * to the number it produced. Reduced motion snaps instead.
- */
-function AnimatedNumber({
-  value,
-  format,
-}: {
-  value: number
-  /** Must be a stable module level function, not an inline closure. */
-  format: (value: number) => string
-}) {
-  const reduced = useReducedMotion()
-  const current = useRef(value)
-  const [display, setDisplay] = useState(() => format(value))
-
-  useEffect(() => {
-    if (reduced || current.current === value) {
-      current.current = value
-      setDisplay(format(value))
-      return
-    }
-    const controls = animate(current.current, value, {
-      duration: 0.34,
-      ease: 'easeOut',
-      onUpdate: latest => {
-        current.current = latest
-        setDisplay(format(latest))
-      },
-      onComplete: () => {
-        current.current = value
-        setDisplay(format(value))
-      },
-    })
-    return () => controls.stop()
-  }, [value, reduced, format])
-
-  return <>{display}</>
-}
 
 /* -------------------------------------------------------------- disclosure */
 
@@ -233,6 +190,28 @@ export default function SavingsPage() {
   }
   const sliceRate = dashboard.sampleSize > 0 ? health.duplicateRecords / dashboard.sampleSize : 0
 
+  /* Same four live step values that feed the per-step Meter below, reshaped for
+   * the funnel chart. These are not additive deltas in one unit (two steps are
+   * item counts, two are rupee figures), so each bar is normalized against
+   * stepMax for its own unit rather than stacked into a running total - see
+   * the stepMax comment above for why. The last step (the saving itself) is
+   * the one figure this chain exists to produce, so it alone reads as positive. */
+  const funnelSteps: FunnelStep[] = savings.steps.map((step, index) => {
+    const max = stepMax[step.unit]
+    const format = step.unit === 'rupees' ? formatRupees : formatExact
+    return {
+      label: step.label,
+      fraction: max > 0 ? step.value / max : 0,
+      display: format(step.value),
+      tone: index === savings.steps.length - 1 ? 'positive' : 'primary',
+    }
+  })
+
+  const clusterChartData = topClusters.map(cluster => ({
+    name: cluster.standardDescription,
+    value: cluster.annualSpend,
+  }))
+
   return (
     <>
       <PageHead title={c('savingsTitle')} lead={c('savingsLead')} />
@@ -319,6 +298,10 @@ export default function SavingsPage() {
             </p>
           </div>
 
+          <div className="border-b border-rule px-5 py-4">
+            <FunnelChart steps={funnelSteps} height={220} />
+          </div>
+
           <ol>
             {savings.steps.map((step, index) => {
               const max = stepMax[step.unit]
@@ -336,10 +319,6 @@ export default function SavingsPage() {
                     <Num size="lg" className="text-ink">
                       <AnimatedNumber value={step.value} format={format} />
                     </Num>
-                  </div>
-
-                  <div className="mt-2.5">
-                    <Meter value={relative} />
                   </div>
 
                   <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -593,6 +572,10 @@ export default function SavingsPage() {
           </div>
         ) : (
           <>
+            <div className="border-b border-rule px-5 py-4">
+              <CategoryBarChart data={clusterChartData} format={formatRupees} barSize={14} />
+            </div>
+
             <Table>
               <thead>
                 <tr>

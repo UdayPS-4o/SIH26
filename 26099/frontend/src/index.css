@@ -4,13 +4,12 @@
    no network font requests.
    ========================================================================== */
 
-@import '@fontsource/ibm-plex-sans/400.css';
-@import '@fontsource/ibm-plex-sans/500.css';
-@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/karla/400.css';
+@import '@fontsource/karla/500.css';
+@import '@fontsource/karla/600.css';
+@import '@fontsource/karla/700.css';
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
-@import '@fontsource/archivo/600.css';
-@import '@fontsource/archivo/700.css';
 
 @tailwind base;
 @tailwind components;
@@ -18,61 +17,121 @@
 
 /* --------------------------------------------------------------------------
    Tokens
-   Three semantic colours only:
-     --accent     steel blue. Interaction and product identity.
-     --attention  ochre. Needs a human decision. Nothing else.
-     --negative   rust. Rejected or conflicting. Nothing else.
-   There is no fourth hue in this system.
+   Semantic colours:
+     --accent     brand identity. Headings, links, active nav, focus.
+     --primary    interactive. Primary buttons and calls to action.
+     --attention  needs a human decision. Nothing else.
+     --negative   rejected or conflicting. Nothing else.
+     --positive   matched / accepted / success. Nothing else.
+     --info       secondary, used sparingly (a second data series, a technical
+                  accent). Never load-bearing on its own.
+   Anchored on the "Warm Sand" (light) and "Obsidian Amber" (dark) brand
+   palettes. --chart-1..6 are a separate, explicitly non-semantic palette for
+   chart series that carry no inherent meaning (see components/ui/tokens.ts).
    -------------------------------------------------------------------------- */
 
 :root {
-  --paper: #F1F3F4;
+  --paper: #FAF7F2;
   --surface: #FFFFFF;
-  --surface-2: #F8FAFA;
+  --surface-2: #F3EDE3;
+  --surface-hover: #EFE7D8;
 
-  --ink: #141B21;
-  --ink-2: #56646E;
-  --ink-3: #85939C;
+  --ink: #2C2620;
+  --ink-2: #6B6152;
+  --ink-3: #736A5E;
 
-  --rule: #DCE2E5;
-  --rule-strong: #C3CBD0;
+  --rule: #E8DFD0;
+  --rule-strong: #D9CCB5;
 
-  --accent: #1D4E79;
-  --accent-bg: #E9F0F6;
-  --accent-edge: #A9C4DA;
+  --accent: #AB4D11;
+  --accent-bg: #FBEDE2;
+  --accent-edge: #E2B190;
+
+  --primary: #C97B4A;
+  --primary-bg: #FCF1E7;
+  --primary-edge: #E7C1A0;
+  /* Dark warm text, not white: white on this mid-tone terracotta only hits
+     3.3:1, below AA for normal-size button text. */
+  --primary-ink: #241F19;
 
   --attention: #8F5406;
   --attention-bg: #FBF2E4;
   --attention-edge: #E3C48E;
 
-  --negative: #9C2E20;
-  --negative-bg: #FAECE9;
+  --negative: #B23A22;
+  --negative-bg: #FBEAE5;
+  --negative-edge: #E7B4A6;
+
+  --positive: #2E6A2A;
+  --positive-bg: #EEF6E9;
+  --positive-edge: #B9DCAE;
+
+  --info: #2E6E96;
+  --info-bg: #E9F2F7;
+  --info-edge: #ABCEE0;
+
+  --chart-1: #AB4D11;
+  --chart-2: #C97B4A;
+  --chart-3: #3F8B3B;
+  --chart-4: #2E6E96;
+  --chart-5: #B23A22;
+  --chart-6: #8B5A8C;
+
+  --shadow-sm: 0 1px 2px rgba(44, 38, 32, 0.05);
+  --shadow-md: 0 1px 2px rgba(44, 38, 32, 0.04), 0 8px 20px -8px rgba(44, 38, 32, 0.14);
+  --shadow-lg: 0 2px 4px rgba(44, 38, 32, 0.05), 0 16px 32px -12px rgba(44, 38, 32, 0.18);
 
   color-scheme: light;
 }
 
 .dark {
-  --paper: #0F151A;
-  --surface: #171F25;
-  --surface-2: #1B242B;
+  --paper: #121212;
+  --surface: #1E1E1E;
+  --surface-2: #262220;
+  --surface-hover: #2B2622;
 
-  --ink: #E7EDF0;
-  --ink-2: #9EABB4;
-  --ink-3: #6E7D87;
+  --ink: #F0E9DD;
+  --ink-2: #B4A99A;
+  --ink-3: #93897A;
 
-  --rule: #29343C;
-  --rule-strong: #3B4850;
+  --rule: #34291D;
+  --rule-strong: #4A3B28;
 
-  --accent: #84B6DE;
-  --accent-bg: #13242F;
-  --accent-edge: #2C4A61;
+  --accent: #F27B0A;
+  --accent-bg: #2B1B0C;
+  --accent-edge: #6E3E15;
+
+  --primary: #F5A623;
+  --primary-bg: #2E230F;
+  --primary-edge: #7A5720;
+  --primary-ink: #1A1206;
 
   --attention: #E4A85D;
-  --attention-bg: #261D10;
-  --attention-edge: #6B4E22;
+  --attention-bg: #2A2010;
+  --attention-edge: #6B551F;
 
-  --negative: #E88875;
+  --negative: #EF7A63;
   --negative-bg: #2A1712;
+  --negative-edge: #6E3A2C;
+
+  --positive: #7FBF6A;
+  --positive-bg: #16260F;
+  --positive-edge: #3C5E2E;
+
+  --info: #6FB3D9;
+  --info-bg: #12242E;
+  --info-edge: #2C4E61;
+
+  --chart-1: #F27B0A;
+  --chart-2: #F5A623;
+  --chart-3: #7FBF6A;
+  --chart-4: #6FB3D9;
+  --chart-5: #EF7A63;
+  --chart-6: #C88BC9;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 1px 0 rgba(0, 0, 0, 0.2), 0 10px 24px -10px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(242, 123, 10, 0.05);
+  --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.25), 0 20px 40px -16px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(242, 123, 10, 0.06);
 
   color-scheme: dark;
 }
@@ -93,7 +152,7 @@
   body {
     background-color: var(--paper);
     color: var(--ink);
-    font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto,
+    font-family: 'Karla', system-ui, -apple-system, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
     line-height: 1.55;
@@ -107,8 +166,8 @@
   h4,
   h5,
   h6 {
-    font-family: Archivo, 'IBM Plex Sans', system-ui, sans-serif;
-    font-weight: 600;
+    font-family: 'Karla', system-ui, sans-serif;
+    font-weight: 700;
     color: var(--ink);
     line-height: 1.2;
     text-wrap: balance;
@@ -167,7 +226,7 @@
     background-color: var(--rule-strong);
     border: 2px solid transparent;
     background-clip: content-box;
-    border-radius: 0;
+    border-radius: 8px;
   }
 
   ::-webkit-scrollbar-thumb:hover {

@@ -1,22 +1,28 @@
 /**
  * Interface primitives.
  *
- * The whole application is built from these. Two rules hold the system together:
- * grouping is done with 1px rules and space rather than stacked cards, and every
- * number is set in tabular mono so columns of figures line up on the decimal.
- *
- * Do not introduce a fourth hue. See ./tokens.ts for what the three mean.
+ * The whole application is built from these. Every number is set in tabular mono
+ * so columns of figures line up on the decimal. Colour always carries the meaning
+ * documented in ./tokens.ts — six semantic hues (accent, primary, attention,
+ * negative, positive, info), each with one job. Do not introduce a new one here;
+ * extend tokens.ts and this file together so the meaning stays documented.
  */
 
 import {
   forwardRef,
+  useEffect,
+  useRef,
+  useState,
   type ButtonHTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react'
+import { animate, useReducedMotion } from 'framer-motion'
 import { cx } from './tokens'
+
+export type Tone = 'neutral' | 'accent' | 'primary' | 'attention' | 'negative' | 'positive' | 'info'
 
 /* ------------------------------------------------------------------ surfaces */
 
@@ -24,16 +30,20 @@ export function Panel({
   children,
   className,
   flush,
+  hover,
 }: {
   children: ReactNode
   className?: string
   /** Remove interior padding when the panel holds a table or list that draws its own. */
   flush?: boolean
+  /** Lift on hover. Use only when the whole panel is a single interactive target. */
+  hover?: boolean
 }) {
   return (
     <section
       className={cx(
-        'border border-rule bg-surface',
+        'overflow-hidden rounded-2xl border border-rule bg-surface shadow-sm',
+        hover && 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
         flush ? '' : 'px-5 py-4',
         className,
       )}
@@ -47,22 +57,27 @@ export function PanelHead({
   title,
   meta,
   action,
+  icon,
   className,
 }: {
   title: ReactNode
   meta?: ReactNode
   action?: ReactNode
+  icon?: ReactNode
   className?: string
 }) {
   return (
     <div
       className={cx(
-        'flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-rule px-5 py-3',
+        'flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-rule px-5 py-3.5',
         className,
       )}
     >
-      <h2 className="font-display text-[13px] font-semibold tracking-tight text-ink">{title}</h2>
-      {meta ? <span className="font-mono text-[11px] text-ink-3">{meta}</span> : null}
+      {icon ? <IconTile icon={icon} size="sm" /> : null}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h2 className="font-display text-[13.5px] font-bold tracking-tight text-ink">{title}</h2>
+        {meta ? <span className="font-mono text-[11px] text-ink-3">{meta}</span> : null}
+      </div>
       {action ? <div className="ml-auto flex items-center gap-2">{action}</div> : null}
     </div>
   )
@@ -73,22 +88,65 @@ export function PageHead({
   title,
   lead,
   aside,
+  icon,
 }: {
   title: string
   lead: string
   aside?: ReactNode
+  icon?: ReactNode
 }) {
   return (
-    <header className="mb-6 border-b border-ink pb-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <header className="mb-7 flex flex-wrap items-start justify-between gap-4 border-b border-rule pb-6">
+      <div className="flex min-w-0 items-start gap-4">
+        {icon ? <IconTile icon={icon} tone="accent" size="lg" /> : null}
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-ink">{title}</h1>
+          <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-ink">
+            {title}
+          </h1>
           <p className="mt-2 max-w-[68ch] text-[14.5px] leading-relaxed text-ink-2">{lead}</p>
         </div>
-        {aside ? <div className="shrink-0">{aside}</div> : null}
       </div>
+      {aside ? <div className="shrink-0">{aside}</div> : null}
     </header>
   )
+}
+
+/** Small rounded tile carrying a phosphor icon in a tinted, tone-matched background.
+ *  The one place decorative colour is attached to an icon, so it stays consistent. */
+export function IconTile({
+  icon,
+  tone = 'accent',
+  size = 'md',
+}: {
+  icon: ReactNode
+  tone?: Tone
+  size?: 'sm' | 'md' | 'lg'
+}) {
+  const dims = { sm: 'h-8 w-8', md: 'h-9 w-9', lg: 'h-11 w-11' }[size]
+  return (
+    <span
+      className={cx(
+        'inline-flex shrink-0 items-center justify-center rounded-xl',
+        dims,
+        ICON_TONE_CLASS[tone],
+      )}
+    >
+      {icon}
+    </span>
+  )
+}
+
+const ICON_TONE_CLASS: Record<Tone, string> = {
+  neutral: 'bg-surface-2 text-ink-2',
+  accent: 'bg-accent-bg text-accent',
+  // primary itself is a mid-tone button color: on its own light tint it falls
+  // short of body-text contrast, so the "primary" flavour borrows accent
+  // (same orange/amber family) for the icon/text colour instead.
+  primary: 'bg-primary-bg text-accent',
+  attention: 'bg-attention-bg text-attention',
+  negative: 'bg-negative-bg text-negative',
+  positive: 'bg-positive-bg text-positive',
+  info: 'bg-info-bg text-info',
 }
 
 /* --------------------------------------------------------------------- text */
@@ -109,10 +167,52 @@ export function Num({
     sm: 'text-[12.5px]',
     base: 'text-[13px]',
     lg: 'text-[17px]',
-    xl: 'text-[22px]',
-    display: 'text-[34px] leading-[1.05]',
+    xl: 'text-[23px]',
+    display: 'text-[36px] leading-[1.05]',
   }
   return <span className={cx('font-mono tabular-nums', sizes[size], className)}>{children}</span>
+}
+
+/**
+ * A number that counts to its new value when it changes, instead of jumping.
+ *
+ * The motion is motivated: it exists so a value that recomputed from a slider,
+ * an approval, or a loaded source visibly propagates instead of silently
+ * changing. Reduced motion snaps straight to the new value.
+ */
+export function AnimatedNumber({
+  value,
+  format,
+}: {
+  value: number
+  /** Must be a stable module level function, not an inline closure. */
+  format: (value: number) => string
+}) {
+  const reduced = useReducedMotion()
+  const current = useRef(value)
+  const [display, setDisplay] = useState(() => format(value))
+
+  useEffect(() => {
+    if (reduced || current.current === value) {
+      current.current = value
+      setDisplay(format(value))
+      return
+    }
+    const controls = animate(current.current, value, {
+      duration: 0.5,
+      ease: 'easeOut',
+      onUpdate: latest => {
+        current.current = latest
+        setDisplay(format(latest))
+      },
+      onComplete: () => {
+        current.current = value
+      },
+    })
+    return () => controls.stop()
+  }, [value, format, reduced])
+
+  return <>{display}</>
 }
 
 /** Small caps metadata label. Used sparingly: a panel that needs a label above its
@@ -128,7 +228,7 @@ export function Mono({ children, className }: { children: ReactNode; className?:
   return (
     <code
       className={cx(
-        'border border-rule bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] text-ink',
+        'rounded-md border border-rule bg-surface-2 px-1.5 py-0.5 font-mono text-[12px] text-ink',
         className,
       )}
     >
@@ -144,35 +244,45 @@ export function Stat({
   label,
   note,
   emphasis,
+  icon,
+  tone = 'accent',
 }: {
   value: ReactNode
   label: string
   note?: ReactNode
   /** One stat per group may be emphasised, so the eye has somewhere to land. */
   emphasis?: boolean
+  icon?: ReactNode
+  tone?: Tone
 }) {
   return (
     <div className="min-w-0">
-      <div className="text-[11px] uppercase tracking-[0.1em] text-ink-3">{label}</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3">
+          {label}
+        </div>
+        {icon ? <IconTile icon={icon} tone={tone} size="sm" /> : null}
+      </div>
       <div
         className={cx(
-          'mt-1.5 font-mono tabular-nums text-ink',
-          emphasis ? 'text-[30px] leading-[1.05]' : 'text-[21px] leading-[1.1]',
+          'mt-2 break-words font-mono tabular-nums text-ink',
+          emphasis ? 'text-[26px] leading-[1.15]' : 'text-[21px] leading-[1.2]',
         )}
       >
         {value}
       </div>
-      {note ? <div className="mt-1 text-[12.5px] leading-snug text-ink-2">{note}</div> : null}
+      {note ? <div className="mt-1.5 text-[12.5px] leading-snug text-ink-2">{note}</div> : null}
     </div>
   )
 }
 
-/** Stats separated by rules rather than boxed into cards. */
+/** Stats separated by hairlines within one rounded card, rather than boxed
+ *  individually into competing cards. */
 export function StatRow({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div
       className={cx(
-        'grid gap-px border border-rule bg-rule sm:grid-cols-2 lg:grid-cols-4',
+        'grid gap-px overflow-hidden rounded-2xl border border-rule bg-rule shadow-sm sm:grid-cols-2 lg:grid-cols-4',
         className,
       )}
     >
@@ -182,18 +292,21 @@ export function StatRow({ children, className }: { children: ReactNode; classNam
 }
 
 export function StatCell({ children }: { children: ReactNode }) {
-  return <div className="bg-surface px-5 py-4">{children}</div>
+  return <div className="bg-surface px-5 py-5 transition-colors hover:bg-surface-hover">{children}</div>
 }
 
 /* ------------------------------------------------------------------- chips */
 
-type Tone = 'neutral' | 'accent' | 'attention' | 'negative'
-
 const TONE_CLASS: Record<Tone, string> = {
   neutral: 'border-rule-strong text-ink-2',
   accent: 'border-accent-edge bg-accent-bg text-accent',
+  // Same reasoning as ICON_TONE_CLASS: primary is a mid-tone button color,
+  // not a text color, so this flavour borrows accent for legible text.
+  primary: 'border-primary-edge bg-primary-bg text-accent',
   attention: 'border-attention-edge bg-attention-bg text-attention',
-  negative: 'border-negative bg-negative-bg text-negative',
+  negative: 'border-negative-edge bg-negative-bg text-negative',
+  positive: 'border-positive-edge bg-positive-bg text-positive',
+  info: 'border-info-edge bg-info-bg text-info',
 }
 
 export function Chip({
@@ -208,7 +321,7 @@ export function Chip({
   return (
     <span
       className={cx(
-        'inline-flex items-center border px-1.5 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.08em]',
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.08em]',
         TONE_CLASS[tone],
         className,
       )}
@@ -218,9 +331,11 @@ export function Chip({
   )
 }
 
-/** The one place a verdict is rendered, so the three states cannot drift apart. */
+/** The one place a verdict is rendered, so the three states cannot drift apart.
+ *  "same" reads as positive (a match confirmed), not accent (accent is identity,
+ *  never a result) — see tokens.ts. */
 export function VerdictChip({ verdict, label }: { verdict: 'same' | 'review' | 'different'; label: string }) {
-  const tone: Tone = verdict === 'same' ? 'accent' : verdict === 'review' ? 'attention' : 'negative'
+  const tone: Tone = verdict === 'same' ? 'positive' : verdict === 'review' ? 'attention' : 'negative'
   return <Chip tone={tone}>{label}</Chip>
 }
 
@@ -229,9 +344,9 @@ export function VerdictChip({ verdict, label }: { verdict: 'same' | 'review' | '
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
 const VARIANT_CLASS: Record<Variant, string> = {
-  primary: 'bg-accent text-white border-accent hover:opacity-90',
-  secondary: 'bg-surface text-ink border-rule-strong hover:bg-surface-2',
-  ghost: 'bg-transparent text-ink-2 border-transparent hover:bg-surface-2 hover:text-ink',
+  primary: 'bg-primary text-primary-ink border-primary shadow-sm hover:shadow-md hover:brightness-105',
+  secondary: 'bg-surface text-ink border-rule-strong hover:bg-surface-hover',
+  ghost: 'bg-transparent text-ink-2 border-transparent hover:bg-surface-hover hover:text-ink',
   danger: 'bg-surface text-negative border-negative hover:bg-negative-bg',
 }
 
@@ -249,9 +364,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       className={cx(
-        'inline-flex items-center justify-center gap-2 whitespace-nowrap border font-medium',
-        'transition-colors active:translate-y-px disabled:pointer-events-none disabled:opacity-45',
-        size === 'sm' ? 'px-2.5 py-1 text-[12px]' : 'px-3.5 py-1.5 text-[13px]',
+        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border font-semibold',
+        'transition-all duration-150 active:translate-y-px active:shadow-none',
+        'disabled:pointer-events-none disabled:opacity-45 disabled:shadow-none',
+        size === 'sm' ? 'px-3 py-1 text-[12px]' : 'px-4 py-1.5 text-[13px]',
         VARIANT_CLASS[variant],
         className,
       )}
@@ -278,8 +394,11 @@ export function Segmented<T extends string>({
   className?: string
 }) {
   return (
-    <div className={cx('inline-flex border border-rule-strong', className)} role="tablist">
-      {options.map((option, index) => {
+    <div
+      className={cx('inline-flex gap-0.5 rounded-full border border-rule-strong bg-surface-2 p-0.5', className)}
+      role="tablist"
+    >
+      {options.map(option => {
         const active = option.value === value
         return (
           <button
@@ -288,15 +407,21 @@ export function Segmented<T extends string>({
             aria-selected={active}
             onClick={() => onChange(option.value)}
             className={cx(
-              'inline-flex items-center gap-1.5 font-medium transition-colors',
+              'inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors',
               size === 'sm' ? 'px-2.5 py-1 text-[12px]' : 'px-3 py-1.5 text-[12.5px]',
-              index > 0 && 'border-l border-rule-strong',
-              active ? 'bg-accent text-white' : 'bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink',
+              active
+                ? 'bg-primary text-primary-ink shadow-sm'
+                : 'bg-transparent text-ink-2 hover:bg-surface-hover hover:text-ink',
             )}
           >
             {option.label}
             {option.count !== undefined ? (
-              <span className={cx('font-mono tabular-nums text-[11px]', active ? 'text-white' : 'text-ink-3')}>
+              <span
+                className={cx(
+                  'font-mono tabular-nums text-[11px]',
+                  active ? 'text-primary-ink' : 'text-ink-3',
+                )}
+              >
                 {option.count}
               </span>
             ) : null}
@@ -324,7 +449,7 @@ export function Field({
 }) {
   return (
     <div className={cx('flex flex-col gap-1.5', className)}>
-      <label className="text-[12px] font-medium text-ink">{label}</label>
+      <label className="text-[12px] font-semibold text-ink">{label}</label>
       {children}
       {error ? (
         <p className="text-[12px] text-negative">{error}</p>
@@ -336,8 +461,8 @@ export function Field({
 }
 
 const CONTROL =
-  'w-full border border-rule-strong bg-surface px-2.5 py-1.5 text-[13px] text-ink placeholder:text-ink-3 ' +
-  'focus:border-accent focus:outline-none'
+  'w-full rounded-lg border border-rule-strong bg-surface px-3 py-1.5 text-[13px] text-ink placeholder:text-ink-3 ' +
+  'transition-colors focus:border-accent focus:outline-none'
 
 export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   function TextInput({ className, ...rest }, ref) {
@@ -397,7 +522,7 @@ export function Slider({
         step={step}
         value={value}
         onChange={event => onChange(Number(event.target.value))}
-        className="h-1 w-full cursor-pointer appearance-none rounded-full bg-rule accent-accent"
+        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-rule accent-primary"
         aria-label={label}
       />
       {hint ? <p className="text-[11.5px] text-ink-3">{hint}</p> : null}
@@ -407,19 +532,23 @@ export function Slider({
 
 /* -------------------------------------------------------------------- meter */
 
+const METER_FILL: Record<Tone, string> = {
+  neutral: 'bg-ink-3',
+  accent: 'bg-accent',
+  primary: 'bg-primary',
+  attention: 'bg-attention',
+  negative: 'bg-negative',
+  positive: 'bg-positive',
+  info: 'bg-info',
+}
+
 /** Thin score bar. Deliberately small: the number is the information, the bar only
- *  makes a column of numbers scannable. */
+ *  makes a column of numbers scannable. For a real chart, use ./charts.tsx. */
 export function Meter({ value, tone = 'accent' }: { value: number; tone?: Tone }) {
-  const fill = {
-    neutral: 'bg-ink-3',
-    accent: 'bg-accent',
-    attention: 'bg-attention',
-    negative: 'bg-negative',
-  }[tone]
   return (
-    <span className="block h-[3px] w-full bg-rule" role="presentation">
+    <span className="block h-1.5 w-full overflow-hidden rounded-full bg-rule" role="presentation">
       <span
-        className={cx('block h-full transition-[width] duration-300', fill)}
+        className={cx('block h-full rounded-full transition-[width] duration-300', METER_FILL[tone])}
         style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }}
       />
     </span>
@@ -434,7 +563,7 @@ export function Skeleton({ rows = 3, className }: { rows?: number; className?: s
       {Array.from({ length: rows }).map((_, index) => (
         <div
           key={index}
-          className="h-4 animate-pulse bg-surface-2"
+          className="h-4 animate-pulse rounded-md bg-surface-2"
           style={{ width: `${92 - index * 11}%` }}
         />
       ))}
@@ -446,14 +575,17 @@ export function EmptyState({
   title,
   detail,
   action,
+  icon,
 }: {
   title: string
   detail?: string
   action?: ReactNode
+  icon?: ReactNode
 }) {
   return (
-    <div className="flex flex-col items-start gap-3 border border-dashed border-rule-strong px-6 py-10">
-      <p className="font-display text-[15px] font-semibold text-ink">{title}</p>
+    <div className="flex flex-col items-start gap-3 rounded-2xl border border-dashed border-rule-strong bg-surface-2 px-6 py-10">
+      {icon ? <IconTile icon={icon} tone="neutral" /> : null}
+      <p className="font-display text-[15px] font-bold text-ink">{title}</p>
       {detail ? <p className="max-w-[52ch] text-[13px] text-ink-2">{detail}</p> : null}
       {action}
     </div>
@@ -462,10 +594,10 @@ export function EmptyState({
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-col items-start gap-3 border border-negative bg-negative-bg px-5 py-4">
+    <div className="flex flex-col items-start gap-3 rounded-2xl border border-negative-edge bg-negative-bg px-5 py-4">
       <p className="text-[13px] text-negative">{message}</p>
       {onRetry ? (
-        <Button size="sm" onClick={onRetry}>
+        <Button size="sm" variant="danger" onClick={onRetry}>
           Try again
         </Button>
       ) : null}
@@ -506,7 +638,7 @@ export function EndpointTag({
 
 export function Table({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cx('w-full overflow-x-auto', className)}>
+    <div className={cx('w-full overflow-x-auto rounded-xl border border-rule', className)}>
       <table className="w-full border-collapse text-[13px]">{children}</table>
     </div>
   )
@@ -524,8 +656,8 @@ export function Th({
   return (
     <th
       className={cx(
-        'whitespace-nowrap border-b border-rule-strong bg-surface-2 px-3 py-2',
-        'text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-2',
+        'whitespace-nowrap border-b border-rule-strong bg-surface-2 px-3 py-2.5',
+        'text-[11px] font-bold uppercase tracking-[0.08em] text-ink-2',
         align === 'right' ? 'text-right' : 'text-left',
         className,
       )}
@@ -547,7 +679,7 @@ export function Td({
   return (
     <td
       className={cx(
-        'border-b border-rule px-3 py-2 align-top',
+        'border-b border-rule px-3 py-2.5 align-top',
         align === 'right' ? 'text-right' : 'text-left',
         className,
       )}

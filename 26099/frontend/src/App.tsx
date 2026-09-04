@@ -32,7 +32,7 @@ export default function App() {
               tables carry eight to ten columns and at 1180px they were being
               horizontally scrolled on a 1920px screen, which put the national
               code, the column the whole product is about, off the right edge. */}
-          <div className="mx-auto w-full max-w-[1600px] px-6 py-7 pb-20">
+          <div className="mx-auto w-full max-w-[1600px] px-6 py-8 pb-20">
             <Suspense fallback={<Skeleton rows={6} />}>
               <Routes>
                 <Route path="/" element={<OverviewPage />} />
