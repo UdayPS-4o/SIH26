@@ -15,10 +15,12 @@
  *     "this bar is a different CPSE" (see tokens.ts)
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
 import {
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
   LabelList,
   Pie,
@@ -205,6 +207,88 @@ export function CategoryBarChart({
   )
 }
 
+/* ------------------------------------------------------------ column chart */
+
+/**
+ * Vertical column chart. The right shape when the category axis is short
+ * labels and the comparison is "which of these is biggest" — a horizontal
+ * CategoryBarChart is better when the labels are long enough to need the
+ * width.
+ */
+export function ColumnChart({
+  data,
+  tone,
+  tones,
+  format = value => value.toLocaleString('en-IN'),
+  height = 240,
+  /** Rotate the category labels when the names are too long to sit flat. */
+  angledLabels = false,
+}: {
+  data: CategoryDatum[]
+  /** A fixed tone colours every column the same. */
+  tone?: Tone
+  /** One tone per column, when each column carries its own meaning. Wins over
+   *  `tone`; omit both to cycle the non-semantic chart palette. */
+  tones?: Tone[]
+  format?: (value: number) => string
+  height?: number
+  angledLabels?: boolean
+}) {
+  const colors = useChartColors()
+  if (!colors.ink) return null
+
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart
+        data={data}
+        // An angled label is drawn leaving its tick, so the leftmost one runs
+        // back past the axis and clips against the panel edge without this.
+        margin={{ top: 12, right: 8, bottom: angledLabels ? 34 : 4, left: angledLabels ? 26 : 0 }}
+        barCategoryGap="22%"
+      >
+        <CartesianGrid stroke={colors.rule} vertical={false} />
+        <XAxis
+          dataKey="name"
+          axisLine={{ stroke: colors.rule }}
+          tickLine={false}
+          tick={{ fill: colors.ink2, fontSize: 11 }}
+          interval={0}
+          angle={angledLabels ? -32 : 0}
+          textAnchor={angledLabels ? 'end' : 'middle'}
+          height={angledLabels ? 60 : 30}
+          tickFormatter={value => truncateLabel(value, angledLabels ? 15 : 12)}
+        />
+        <YAxis
+          axisLine={false}
+          tickLine={false}
+          width={44}
+          tick={{ fill: colors.ink3, fontSize: 10.5 }}
+          tickFormatter={value => format(value as number)}
+        />
+        <Tooltip
+          cursor={{ fill: colors.rule, opacity: 0.35 }}
+          content={<ChartTooltip format={format} />}
+        />
+        {/* isAnimationActive off: see the note in CategoryBarChart. */}
+        <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
+          {data.map((entry, index) => (
+            <Cell
+              key={entry.name}
+              fill={
+                tones?.[index]
+                  ? toneColor(colors, tones[index])
+                  : tone
+                    ? toneColor(colors, tone)
+                    : colors.chart[index % colors.chart.length]
+              }
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
 /* ------------------------------------------------------------------- donut */
 
 /** Small donut for a share-of-total breakdown (e.g. records per CPSE). Always
@@ -214,38 +298,71 @@ export function DonutChart({
   data,
   size = 148,
   thickness = 22,
+  tones,
+  center,
 }: {
   data: CategoryDatum[]
   size?: number
   thickness?: number
+  /** One tone per slice, when the slices carry meaning (e.g. same / review /
+   *  different). Omit to cycle the non-semantic chart palette. */
+  tones?: Tone[]
+  /** Rendered in the hole. Use for the total the slices add up to, so the
+   *  donut does not need a separate caption to be readable. */
+  center?: ReactNode
 }) {
   const colors = useChartColors()
   if (!colors.ink) return null
   const radius = size / 2
 
   return (
-    <ResponsiveContainer width={size} height={size}>
-      <PieChart>
-        <Pie
-          data={data}
-          dataKey="value"
-          nameKey="name"
-          cx="50%"
-          cy="50%"
-          innerRadius={radius - thickness}
-          outerRadius={radius}
-          paddingAngle={data.length > 1 ? 2 : 0}
-          stroke={colors.surface}
-          strokeWidth={2}
-          isAnimationActive
-        >
-          {data.map((entry, index) => (
-            <Cell key={entry.name} fill={colors.chart[index % colors.chart.length]} />
-          ))}
-        </Pie>
-        <Tooltip content={<ChartTooltip />} />
-      </PieChart>
-    </ResponsiveContainer>
+    <motion.div
+      className="relative shrink-0"
+      style={{ width: size, height: size }}
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+    >
+      <ResponsiveContainer width={size} height={size}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={radius - thickness}
+            outerRadius={radius}
+            paddingAngle={data.length > 1 ? 2 : 0}
+            stroke={colors.surface}
+            strokeWidth={2}
+            // Off for the same reason as every Bar in this file: in recharts
+            // 2.x the animated shape is mounted as an empty <g> and the sector
+            // path is never painted, so the donut renders as a hole. The
+            // entrance animation is done on the wrapper below instead, which
+            // is a plain DOM element and animates reliably.
+            isAnimationActive={false}
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={entry.name}
+                fill={
+                  tones?.[index]
+                    ? toneColor(colors, tones[index])
+                    : colors.chart[index % colors.chart.length]
+                }
+              />
+            ))}
+          </Pie>
+          <Tooltip content={<ChartTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
+      {center ? (
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          {center}
+        </div>
+      ) : null}
+    </motion.div>
   )
 }
 

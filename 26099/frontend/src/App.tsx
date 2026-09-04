@@ -5,6 +5,7 @@ import Header from '@/components/Header'
 import { Skeleton } from '@/components/ui'
 import { useService } from '@/store/service'
 
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const OverviewPage = lazy(() => import('@/pages/OverviewPage'))
 const ExplorerPage = lazy(() => import('@/pages/ExplorerPage'))
 const DuplicatesPage = lazy(() => import('@/pages/DuplicatesPage'))
@@ -35,7 +36,12 @@ export default function App() {
           <div className="mx-auto w-full max-w-[1600px] px-6 py-8 pb-20">
             <Suspense fallback={<Skeleton rows={6} />}>
               <Routes>
-                <Route path="/" element={<OverviewPage />} />
+                {/* The dashboard lands, the walkthrough is one click away. The
+                    guided run used to sit on "/" and was the first thing a
+                    visitor met, before they had any sense of the scale of what
+                    it was walking them through. */}
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/overview" element={<OverviewPage />} />
                 <Route path="/explorer" element={<ExplorerPage />} />
                 <Route path="/duplicates" element={<DuplicatesPage />} />
                 <Route path="/savings" element={<SavingsPage />} />
