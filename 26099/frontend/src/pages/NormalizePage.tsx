@@ -1,270 +1,876 @@
-import { useState } from 'react'
-import { NORMALIZATION_EXAMPLES, NormExample } from '@/demo/data'
-import { ArrowRight, Zap, Copy, Database } from 'lucide-react'
-import toast from 'react-hot-toast'
+/**
+ * Normalization.
+ *
+ * The instrument page. A visitor types a description of their own choosing and
+ * watches it decompose: tokens, dictionary expansions, attribute slots, canonical
+ * signature, unit, code. Nothing is asserted that is not shown.
+ *
+ * The second half is the dictionary itself, listed and extendable. Adding a rule
+ * goes through the service and the instrument above re-runs against the extended
+ * rule set, which is the argument that this is a dictionary a procurement officer
+ * owns rather than a model they cannot reach.
+ */
 
-const ORG_COLORS: Record<string, string> = {
-  IOCL: 'text-blue-600 bg-blue-50 border-blue-200',
-  NTPC: 'text-purple-600 bg-purple-50 border-purple-200',
-  SAIL: 'text-amber-600 bg-amber-50 border-amber-200',
-  CIL: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { ArrowRight, MagnifyingGlass, Plus } from '@phosphor-icons/react'
+
+import {
+  Button,
+  Chip,
+  EmptyState,
+  EndpointTag,
+  ErrorState,
+  Field,
+  Mono,
+  Num,
+  PageHead,
+  Panel,
+  PanelHead,
+  Select,
+  Skeleton,
+  Table,
+  Td,
+  TextInput,
+  Textarea,
+  Th,
+} from '@/components/ui'
+import { ByMode, TechnicalOnly } from '@/components/Gate'
+import { useCopy } from '@/copy'
+import { useService } from '@/store/service'
+import {
+  fetchDictionary,
+  normalizeDescription,
+  type NormalizeResponse,
+} from '@/api/endpoints'
+import type { RequestMeta } from '@/api/client'
+import { BASE_RULES, STOP_TOKENS, buildIndex, type DictionaryRule } from '@/engine/dictionary'
+import { describeSignature } from '@/engine/normalize'
+import { codeDerivation, mintCode } from '@/engine/cluster'
+import {
+  ATTRIBUTE_SLOTS,
+  FAMILY_LABEL,
+  type AttributeSlot,
+  type MaterialFamily,
+} from '@/engine/types'
+
+/* --------------------------------------------------------------- local values */
+
+/** Raw unit strings as they are actually written in the four material masters.
+ *  Each one is a key the normalizer already knows how to collapse. */
+const RAW_UOMS = ['NOS', 'EA', 'PCS', 'NO', 'MTR', 'M', 'RMT', 'KG', 'KGS', 'LTR', 'L']
+
+const SEED_DESCRIPTION = 'BRG BALL DG 6205 2RS SKF'
+
+/**
+ * The round trip the page is built to demonstrate. NBR is not in the base
+ * dictionary and matches none of the shape heuristics, so it contributes nothing
+ * and the material slot stays empty until someone writes the rule down.
+ */
+const UNKNOWN_DEMO = {
+  description: 'GSKT NBR 150NB CL150 IS 2712',
+  uom: 'NOS',
+  family: 'gaskets_seals' as MaterialFamily,
+  token: 'NBR',
+  expansion: 'NITRILE RUBBER',
+  slot: 'material' as AttributeSlot,
 }
 
+const SLOT_PLAIN: Record<AttributeSlot, string> = {
+  noun: 'What the item is',
+  variant: 'Which kind',
+  material: 'What it is made of',
+  grade: 'Grade',
+  dimension: 'Size',
+  rating: 'Pressure or electrical rating',
+  standard: 'Official standard',
+}
+
+const SOURCE_OPTIONS: DictionaryRule['source'][] = ['MRO', 'SAP', 'IS', 'UOM']
+
+/** `useCopy` returns a fresh closure each render, so it cannot be an effect
+ *  dependency. Failure messages inside effects use this instead. */
+const SERVICE_FAILED = 'The harmonization service did not answer that call.'
+
+/* ----------------------------------------------------------- local primitives */
+
+/** One decomposition stage. Stages are separated by rules, never boxed, so the
+ *  sequence reads as one operation rather than six unrelated results. */
+function Stage({
+  step,
+  title,
+  note,
+  children,
+}: {
+  step: number
+  title: ReactNode
+  note?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className="border-t border-rule px-5 py-4">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <Num size="xs" className="text-ink-3">
+          {step}
+        </Num>
+        <h3 className="font-display text-[13px] font-semibold tracking-tight text-ink">{title}</h3>
+        {note ? <span className="text-[12px] text-ink-3">{note}</span> : null}
+      </div>
+      <div className="mt-3">{children}</div>
+    </section>
+  )
+}
+
+/** Opacity-only transition, keyed on the value so a keystroke that changes nothing
+ *  does not restart the fade. */
+function Fade({ id, children }: { id: string; children: ReactNode }) {
+  const reduce = useReducedMotion()
+  if (reduce) return <>{children}</>
+  return (
+    <motion.div
+      key={id}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+/** A token the normalizer discarded. Shown rather than hidden, so what was thrown
+ *  away is as visible as what was kept. */
+function DroppedToken({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center border border-rule px-1.5 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.08em] text-ink-3 line-through">
+      {children}
+    </span>
+  )
+}
+
+function Quiet({ children }: { children: ReactNode }) {
+  return <p className="max-w-[68ch] text-[13px] leading-relaxed text-ink-2">{children}</p>
+}
+
+/* ------------------------------------------------------------------- the page */
+
 export default function NormalizePage() {
-  const [selected, setSelected] = useState<NormExample>(NORMALIZATION_EXAMPLES[0])
-  const [running, setRunning] = useState(false)
-  const [done, setDone] = useState(false)
+  const c = useCopy()
+  const reduce = useReducedMotion()
 
-  const handleRun = async () => {
-    setRunning(true)
-    await new Promise(r => setTimeout(r, 1000))
-    setRunning(false)
-    setDone(true)
-    toast.success('Normalization complete! Attributes extracted.')
+  const addRule = useService(s => s.addRule)
+  /** Changes identity on every store refresh, and `addRule` refreshes. Using it as
+   *  a dependency is what makes a dictionary edit re-run the instrument. */
+  const lastCall = useService(s => s.lastCall)
+
+  const [description, setDescription] = useState(SEED_DESCRIPTION)
+  const [uom, setUom] = useState('NOS')
+  const [family, setFamily] = useState<MaterialFamily>('bearings')
+  const [attempt, setAttempt] = useState(0)
+
+  const [result, setResult] = useState<NormalizeResponse | null>(null)
+  const [meta, setMeta] = useState<RequestMeta | null>(null)
+  const [pending, setPending] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const sequence = useRef(0)
+
+  /* ------------------------------------------------------- the instrument call */
+
+  useEffect(() => {
+    const trimmed = description.trim()
+    if (!trimmed) {
+      sequence.current += 1
+      setResult(null)
+      setMeta(null)
+      setError(null)
+      setPending(false)
+      return
+    }
+
+    setPending(true)
+    const id = ++sequence.current
+    const timer = window.setTimeout(() => {
+      normalizeDescription(trimmed, uom)
+        .then(response => {
+          if (sequence.current !== id) return
+          setResult(response.data)
+          setMeta(response.meta)
+          setError(null)
+          setPending(false)
+        })
+        .catch(caught => {
+          if (sequence.current !== id) return
+          setError(caught instanceof Error ? caught.message : SERVICE_FAILED)
+          setPending(false)
+        })
+    }, 180)
+
+    return () => window.clearTimeout(timer)
+    // `lastCall` is the dictionary-changed signal; `attempt` is the retry.
+  }, [description, uom, lastCall, attempt])
+
+  /* --------------------------------------------------------- the dictionary call */
+
+  const [rules, setRules] = useState<DictionaryRule[] | null>(null)
+  const [dictMeta, setDictMeta] = useState<RequestMeta | null>(null)
+  const [dictError, setDictError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let live = true
+    fetchDictionary()
+      .then(response => {
+        if (!live) return
+        setRules(response.data.rules)
+        setDictMeta(response.meta)
+        setDictError(null)
+      })
+      .catch(caught => {
+        if (!live) return
+        setDictError(caught instanceof Error ? caught.message : SERVICE_FAILED)
+      })
+    return () => {
+      live = false
+    }
+  }, [lastCall, attempt])
+
+  const ruleIndex = useMemo(() => buildIndex(rules ?? BASE_RULES), [rules])
+
+  /** Rules the base dictionary did not ship with, marked and floated to the top so
+   *  a rule added thirty seconds ago is findable among two hundred. */
+  const flagged = useMemo(() => {
+    const all = rules ?? []
+    const marked = all.map((rule, index) => ({ rule, added: index >= BASE_RULES.length }))
+    return [...marked.filter(entry => entry.added).reverse(), ...marked.filter(entry => !entry.added)]
+  }, [rules])
+
+  const [search, setSearch] = useState('')
+  const filtered = useMemo(() => {
+    const needle = search.trim().toUpperCase()
+    if (!needle) return flagged
+    return flagged.filter(({ rule }) =>
+      `${rule.token} ${rule.expansion} ${rule.slot ?? 'no slot'} ${rule.source}`
+        .toUpperCase()
+        .includes(needle),
+    )
+  }, [flagged, search])
+
+  /* ------------------------------------------------------------ add a rule form */
+
+  const [formToken, setFormToken] = useState('')
+  const [formExpansion, setFormExpansion] = useState('')
+  const [formSlot, setFormSlot] = useState<AttributeSlot | 'none'>('noun')
+  const [formSource, setFormSource] = useState<DictionaryRule['source']>('MRO')
+  const [formError, setFormError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [added, setAdded] = useState<DictionaryRule | null>(null)
+
+  async function submitRule(event: FormEvent) {
+    event.preventDefault()
+    const token = formToken.trim().toUpperCase()
+    const expansion = formExpansion.trim().toUpperCase()
+
+    if (!token) {
+      setFormError('Give the short form as it appears in a material master.')
+      return
+    }
+    if (/\s/.test(token)) {
+      setFormError('A rule matches one token. Remove the space.')
+      return
+    }
+    if (!expansion) {
+      setFormError('Give what the short form means.')
+      return
+    }
+
+    const rule: DictionaryRule = {
+      token,
+      expansion,
+      slot: formSlot === 'none' ? null : formSlot,
+      source: formSource,
+    }
+
+    setFormError(null)
+    setSaving(true)
+    try {
+      await addRule(rule)
+      setAdded(rule)
+      setFormToken('')
+      setFormExpansion('')
+    } catch (caught) {
+      setFormError(caught instanceof Error ? caught.message : SERVICE_FAILED)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleSelect = (ex: NormExample) => {
-    setSelected(ex)
-    setDone(false)
+  function loadDemo() {
+    setDescription(UNKNOWN_DEMO.description)
+    setUom(UNKNOWN_DEMO.uom)
+    setFamily(UNKNOWN_DEMO.family)
+    setFormToken(UNKNOWN_DEMO.token)
+    setFormExpansion(UNKNOWN_DEMO.expansion)
+    setFormSlot(UNKNOWN_DEMO.slot)
+    setFormSource('MRO')
+    setAdded(null)
+    setFormError(null)
+    setSearch('')
   }
 
-  const copy = (t: string) => {
-    navigator.clipboard.writeText(t)
-    toast.success('Copied to clipboard')
+  /* ---------------------------------------------------------------- derivations */
+
+  const normalized = result?.normalized ?? null
+  const attributes = normalized?.attributes ?? {}
+  const expansions = normalized?.expansions ?? []
+  const signature = normalized?.signature ?? ''
+  const readable = normalized ? describeSignature(normalized.attributes) : ''
+  const filledSlots = ATTRIBUTE_SLOTS.filter(slot => attributes[slot]).length
+  const droppedCount = normalized
+    ? normalized.tokens.filter(token => !ruleIndex.has(token) && STOP_TOKENS.has(token)).length
+    : 0
+
+  function slotOrigin(slot: AttributeSlot, value: string): string {
+    if (slot === 'standard') return 'standards pattern'
+    return expansions.some(expansion => expansion.to === value) ? 'dictionary rule' : 'shape rule'
   }
+
+  /* --------------------------------------------------------------------- render */
 
   return (
-    <div className="h-full flex flex-col bg-dark-950 overflow-hidden select-none p-6 space-y-4">
-      {/* Sub-Header Banner */}
-      <div className="glass-card rounded-2xl border border-dark-700 bg-dark-900 shadow-sm p-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
-            <Zap size={16} />
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-xs font-bold text-dark-100 tracking-tight">Material Normalization Engine</h2>
-            <span className="text-dark-400 text-xs">—</span>
-            <span className="text-xs text-dark-400">Raw CPSE description → Structured attributes (spaCy EntityRuler + MRO abbreviation dictionary)</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-xs font-mono font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full shrink-0">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-          <span>ENGINE ONLINE</span>
-        </div>
-      </div>
+    <div className="flex flex-col gap-7">
+      <PageHead title={c('normalizeTitle')} lead={c('normalizeLead')} />
 
-      {/* Main Grid: Left Selector, Middle Raw Input, Right Normalized Output */}
-      <div className="flex-1 grid grid-cols-12 gap-4 overflow-hidden min-h-0">
-        {/* Left Column: Select Material (col-span-3) */}
-        <div className="col-span-3 glass-card rounded-2xl border border-dark-700 bg-dark-900 shadow-sm p-4 flex flex-col overflow-hidden">
-          <div className="pb-3 mb-1">
-            <span className="text-[10px] font-bold font-mono text-dark-500 uppercase tracking-wider">SELECT MATERIAL</span>
-          </div>
-          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-            {NORMALIZATION_EXAMPLES.map(ex => {
-              const isSelected = selected.id === ex.id
-              return (
-                <div
-                  key={ex.id}
-                  onClick={() => handleSelect(ex)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-1.5 ${isSelected
-                      ? 'bg-blue-500/5 border-2 border-blue-500 shadow-xs'
-                      : 'bg-dark-850/60 hover:bg-dark-850 border-dark-700'
-                    }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-md border font-mono font-bold ${ORG_COLORS[ex.org]}`}>
-                      {ex.org}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-dark-100">{ex.rawCode}</span>
-                  </div>
-                  <p className="text-xs font-mono font-bold text-dark-100 leading-snug line-clamp-2">
-                    {ex.rawDesc}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+      {/* ------------------------------------------------------------ instrument */}
 
-        {/* Middle Column: RAW INPUT (FROM CPSE ERP) (col-span-4 or col-span-4.5) */}
-        <div className="col-span-4 glass-card rounded-2xl border border-dark-700 bg-dark-900 shadow-sm p-5 flex flex-col justify-between overflow-y-auto space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-1">
-              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
-              <span className="text-xs font-black font-mono text-dark-100 tracking-wider uppercase">RAW INPUT (FROM CPSE ERP)</span>
-            </div>
+      <Panel flush>
+        <PanelHead
+          title={
+            <ByMode
+              simple="Type anything and watch it get sorted out"
+              technical="Normalize a description"
+            />
+          }
+          meta={
+            result ? (
+              <ByMode
+                simple={`${result.dictionarySize} short forms known`}
+                technical={`${result.dictionarySize} rules in effect`}
+              />
+            ) : undefined
+          }
+          action={
+            meta ? (
+              <TechnicalOnly>
+                <EndpointTag
+                  method={meta.method}
+                  endpoint={meta.endpoint}
+                  ms={meta.ms}
+                  scanned={meta.scanned}
+                />
+              </TechnicalOnly>
+            ) : undefined
+          }
+        />
 
-            {/* Description Field Box */}
-            <div className="rounded-2xl border border-dark-700 bg-dark-850 p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-rose-500 uppercase tracking-wider">
-                  DESCRIPTION FIELD (40-char SAP truncation)
-                </span>
-                <button
-                  onClick={() => copy(selected.rawDesc)}
-                  className="text-dark-400 hover:text-dark-100 transition cursor-pointer p-1"
-                  title="Copy raw text"
-                >
-                  <Copy size={13} />
-                </button>
-              </div>
-              <p className="font-mono text-xs font-bold text-rose-500 leading-relaxed break-words">
-                {selected.rawDesc}
-              </p>
-            </div>
+        <div className="grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1fr)_170px_200px]">
+          <Field
+            label="Description as written in the source system"
+            helper="Abbreviated, punctuated, inconsistent. Whatever an engineer actually typed."
+          >
+            <Textarea
+              rows={2}
+              value={description}
+              spellCheck={false}
+              onChange={event => setDescription(event.target.value)}
+              placeholder={SEED_DESCRIPTION}
+              aria-label="Description as written in the source system"
+            />
+          </Field>
 
-            {/* Abbreviations Detected */}
-            <div className="space-y-2">
-              <span className="text-[10px] font-mono font-bold text-dark-500 uppercase tracking-wider block">
-                ABBREVIATIONS DETECTED ({selected.abbreviationsExpanded.length})
-              </span>
-              <div className="space-y-2">
-                {selected.abbreviationsExpanded.map((ab, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between rounded-xl border border-dark-700 bg-dark-850 px-4 py-3"
-                  >
-                    <span className="font-mono text-xs font-bold text-rose-500">{ab.from}</span>
-                    <ArrowRight size={13} className="text-dark-400" />
-                    <span className="font-mono text-xs font-bold text-emerald-500 text-right">{ab.to}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <Field label="Unit as stored" helper="The raw string, not the clean one.">
+            <Select value={uom} onChange={event => setUom(event.target.value)} aria-label="Unit as stored">
+              {RAW_UOMS.map(value => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </Select>
+          </Field>
 
-            {/* Source Metadata */}
-            <div className="rounded-2xl border border-dark-700 bg-dark-850 p-4 space-y-2.5">
-              <div className="flex items-center gap-2 mb-1">
-                <Database size={13} className="text-blue-500" />
-                <span className="text-[10px] font-mono font-bold text-dark-400 uppercase tracking-wider">
-                  SOURCE METADATA
-                </span>
-              </div>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-dark-400 font-medium">Source Code</span>
-                  <span className="font-mono font-bold text-dark-100">{selected.rawCode}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-dark-400 font-medium">Organization</span>
-                  <span className="font-mono font-bold text-dark-100">{selected.org}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-dark-400 font-medium">UOM (raw)</span>
-                  <span className="font-mono font-bold text-dark-100">NOS / MTR / NO (inconsistent)</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Field
+            label="Classification family"
+            helper="Sets the two-letter prefix of the code."
+          >
+            <Select
+              value={family}
+              onChange={event => setFamily(event.target.value as MaterialFamily)}
+              aria-label="Classification family"
+            >
+              {(Object.keys(FAMILY_LABEL) as MaterialFamily[]).map(value => (
+                <option key={value} value={value}>
+                  {FAMILY_LABEL[value]}
+                </option>
+              ))}
+            </Select>
+          </Field>
         </div>
 
-        {/* Right Column: NORMALIZED OUTPUT (CNMC STANDARD) (col-span-5) */}
-        <div className="col-span-5 glass-card rounded-2xl border border-dark-700 bg-dark-900 shadow-sm p-5 flex flex-col overflow-y-auto">
-          <div className="flex items-center gap-2 pb-4 border-b border-dark-700 mb-4 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-            <span className="text-xs font-black font-mono text-dark-100 tracking-wider uppercase">NORMALIZED OUTPUT (CNMC STANDARD)</span>
+        {error ? (
+          <div className="px-5 pb-5">
+            <ErrorState message={error} onRetry={() => setAttempt(value => value + 1)} />
           </div>
-
-          {done ? (
-            <div className="space-y-4">
-              {/* Standard Golden Description Box */}
-              <div className="rounded-2xl border border-dark-700 bg-dark-850 p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-wider">
-                    STANDARD GOLDEN DESCRIPTION
-                  </span>
-                  <button
-                    onClick={() => copy(selected.normalizedDesc)}
-                    className="text-dark-400 hover:text-dark-100 transition cursor-pointer p-1"
-                    title="Copy golden description"
-                  >
-                    <Copy size={13} />
-                  </button>
-                </div>
-                <p className="font-mono text-xs font-bold text-emerald-500 leading-relaxed">
-                  {selected.normalizedDesc}
-                </p>
-              </div>
-
-              {/* Extracted Attributes Table */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-mono font-bold text-dark-500 uppercase tracking-wider block">
-                  EXTRACTED ATTRIBUTES ({selected.attributes.length})
-                </span>
-                <div className="rounded-2xl border border-dark-700 overflow-hidden bg-dark-850">
-                  <div className="grid grid-cols-3 bg-dark-800/80 px-4 py-2.5 text-[10px] font-mono font-bold text-dark-400 uppercase tracking-wider border-b border-dark-700">
-                    <span>ATTRIBUTE</span>
-                    <span>RAW</span>
-                    <span>NORMALIZED</span>
-                  </div>
-                  <div className="divide-y divide-dark-750">
-                    {selected.attributes.map((a, i) => (
-                      <div key={i} className="grid grid-cols-3 px-4 py-2.5 text-xs items-center hover:bg-dark-800/30 transition">
-                        <span className="font-bold text-dark-100">{a.key}</span>
-                        <span className="font-mono font-bold text-rose-500 text-[11px] truncate pr-2">{a.raw}</span>
-                        <span className="font-mono font-bold text-emerald-500 text-[11px] truncate">{a.normalized}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
-              {running ? (
+        ) : !description.trim() ? (
+          <div className="px-5 pb-5">
+            <EmptyState
+              title="Nothing to take apart yet"
+              detail="Type a description above. Anything from a material master will do, however badly abbreviated."
+              action={
+                <Button size="sm" onClick={() => setDescription(SEED_DESCRIPTION)}>
+                  Use a real line
+                </Button>
+              }
+            />
+          </div>
+        ) : !normalized ? (
+          <div className="px-5 pb-5">
+            {pending ? (
+              <Skeleton rows={6} />
+            ) : (
+              <EmptyState
+                title="The service returned nothing for that line"
+                detail="The call completed but carried no decomposition. Run it again, or shorten the description."
+                action={
+                  <Button size="sm" onClick={() => setAttempt(value => value + 1)}>
+                    Run it again
+                  </Button>
+                }
+              />
+            )}
+          </div>
+        ) : (
+          <>
+            {/* 1 ------------------------------------------------------- tokens */}
+            <Stage
+              step={1}
+              title={<ByMode simple="Split into words" technical="Tokens" />}
+              note={
                 <>
-                  <div className="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-dark-100">Running normalization...</p>
-                    <p className="text-xs text-dark-400">spaCy EntityRuler → MRO dictionary → UNSPSC lookup</p>
+                  <Num size="xs">{normalized.tokens.length}</Num> in order,{' '}
+                  <Num size="xs">{droppedCount}</Num> dropped
+                </>
+              }
+            >
+              <Fade id={`tokens:${normalized.tokens.join(' ')}`}>
+                {normalized.tokens.length === 0 ? (
+                  <Quiet>Nothing survived punctuation stripping. Try a longer description.</Quiet>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {normalized.tokens.map((token, index) => {
+                      const dropped = !ruleIndex.has(token) && STOP_TOKENS.has(token)
+                      return dropped ? (
+                        <DroppedToken key={`${token}-${index}`}>{token}</DroppedToken>
+                      ) : (
+                        <Chip key={`${token}-${index}`}>{token}</Chip>
+                      )
+                    })}
                   </div>
+                )}
+              </Fade>
+              <p className="mt-3 max-w-[68ch] text-[12.5px] leading-relaxed text-ink-3">
+                <ByMode
+                  simple="Struck-out words are filler such as TYPE, SET or ASSEMBLY. They appear in every description and tell you nothing, so they are set aside."
+                  technical="Struck-out tokens are stop words. They carry no discriminating information and are dropped before scoring. A stop word covered by a dictionary rule is kept."
+                />
+              </p>
+            </Stage>
+
+            {/* 2 --------------------------------------------------- expansions */}
+            <Stage
+              step={2}
+              title={<ByMode simple="Short forms written out" technical="Dictionary expansions" />}
+              note={
+                <>
+                  <Num size="xs">{expansions.length}</Num> fired
+                </>
+              }
+            >
+              <Fade id={`exp:${expansions.map(e => `${e.from}>${e.to}`).join(',')}`}>
+                {expansions.length === 0 ? (
+                  <Quiet>
+                    <ByMode
+                      simple="No short form in this line is one the dictionary knows. Everything passed through as typed."
+                      technical="No rule matched. Every token passed through unexpanded and only the shape heuristics had anything to work with."
+                    />
+                  </Quiet>
+                ) : (
+                  <ul className="flex flex-col">
+                    {expansions.map((expansion, index) => (
+                      <li
+                        key={`${expansion.from}-${index}`}
+                        className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-rule py-2 last:border-b-0"
+                      >
+                        <Mono>{expansion.from}</Mono>
+                        <ArrowRight size={16} weight="regular" className="text-ink-3" />
+                        <span className="text-[13px] text-ink">{expansion.to}</span>
+                        <TechnicalOnly>
+                          <span className="ml-auto font-mono text-[11px] text-ink-3">
+                            {expansion.rule}
+                          </span>
+                        </TechnicalOnly>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Fade>
+            </Stage>
+
+            {/* 3 ------------------------------------------------ attribute slots */}
+            <Stage
+              step={3}
+              title={<ByMode simple="Specifications pulled out" technical="Attribute slots" />}
+              note={
+                <>
+                  <Num size="xs">{filledSlots}</Num> of{' '}
+                  <Num size="xs">{ATTRIBUTE_SLOTS.length}</Num> filled
+                </>
+              }
+            >
+              <Fade id={`slots:${signature}`}>
+                <dl className="border-t border-rule">
+                  {ATTRIBUTE_SLOTS.map(slot => {
+                    const value = attributes[slot]
+                    return (
+                      <div
+                        key={slot}
+                        className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-rule py-2"
+                      >
+                        <dt className="w-40 shrink-0">
+                          <ByMode
+                            simple={
+                              <span className="text-[12.5px] text-ink-2">{SLOT_PLAIN[slot]}</span>
+                            }
+                            technical={
+                              <span className="font-mono text-[12px] text-ink-2">{slot}</span>
+                            }
+                          />
+                        </dt>
+                        <dd className="min-w-0 flex-1">
+                          {value ? (
+                            <span className="text-[13px] text-ink">{value}</span>
+                          ) : (
+                            <span className="text-[13px] text-ink-3">not stated</span>
+                          )}
+                        </dd>
+                        {value ? (
+                          <TechnicalOnly>
+                            <span className="font-mono text-[11px] text-ink-3">
+                              {slotOrigin(slot, value)}
+                            </span>
+                          </TechnicalOnly>
+                        ) : null}
+                      </div>
+                    )
+                  })}
+                </dl>
+              </Fade>
+              <p className="mt-3 max-w-[68ch] text-[12.5px] leading-relaxed text-ink-3">
+                <ByMode
+                  simple="The empty rows matter as much as the filled ones. They are the questions the description never answered, and they are the same seven questions for every item in the country."
+                  technical="Empty slots are shown deliberately. The slot set is fixed and ordered, so an omission is recorded as an omission rather than silently absorbed, and two records can disagree about a slot neither one filled."
+                />
+              </p>
+            </Stage>
+
+            {/* 4 ------------------------------------------------------ signature */}
+            <Stage
+              step={4}
+              title={<ByMode simple="The agreed description" technical="Canonical signature" />}
+            >
+              <Fade id={`sig:${signature}`}>
+                {signature ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="overflow-x-auto">
+                      <Mono className="whitespace-nowrap">{signature}</Mono>
+                    </div>
+                    <p className="max-w-[68ch] text-[13px] leading-relaxed text-ink">{readable}</p>
+                  </div>
+                ) : (
+                  <Quiet>
+                    No slot was filled, so there is no signature. Two descriptions that both
+                    reach this point are not comparable on attributes at all.
+                  </Quiet>
+                )}
+              </Fade>
+              <TechnicalOnly>
+                <p className="mt-3 max-w-[68ch] text-[12.5px] leading-relaxed text-ink-3">
+                  Slot values in slot order, pipe joined, empty slots skipped. Two records that
+                  produce this string produce the same code by construction.
+                </p>
+              </TechnicalOnly>
+            </Stage>
+
+            {/* 5 ----------------------------------------------------------- unit */}
+            <Stage step={5} title={<ByMode simple="Unit" technical="Unit of measure" />}>
+              <Fade id={`uom:${uom}->${normalized.uom}`}>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Mono>{uom}</Mono>
+                  <ArrowRight size={16} weight="regular" className="text-ink-3" />
+                  <Mono>{normalized.uom}</Mono>
+                  <span className="text-[12.5px] text-ink-3">
+                    <ByMode
+                      simple="Piece, number, each and NOS all mean the same thing to a storekeeper. They have to mean the same thing to the system."
+                      technical="Collapsed against the canonical unit table, so NOS, NO, EA and PCS do not read as four different units."
+                    />
+                  </span>
+                </div>
+              </Fade>
+            </Stage>
+
+            {/* 6 ----------------------------------------------------------- code */}
+            <Stage step={6} title={<ByMode simple="The national code" technical={c('nationalCode')} />}>
+              <Fade id={`code:${family}:${signature}`}>
+                {signature ? (
+                  <div className="flex flex-col gap-3">
+                    <Num size="lg" className="text-ink">
+                      {mintCode(family, signature)}
+                    </Num>
+                    <TechnicalOnly>
+                      <div className="overflow-x-auto">
+                        <span className="whitespace-nowrap font-mono text-[11.5px] text-ink-3">
+                          {codeDerivation(family, signature)}
+                        </span>
+                      </div>
+                    </TechnicalOnly>
+                    <p className="max-w-[68ch] text-[12.5px] leading-relaxed text-ink-3">
+                      <ByMode
+                        simple="The code is worked out from the description itself, not handed out in order. The same item described the same way gets the same code in Delhi and in Durgapur."
+                        technical="The code is a pure function of family and signature. It is not a sequence and it is not stored: the same signature mints the same code on any machine."
+                      />
+                    </p>
+                  </div>
+                ) : (
+                  <Quiet>
+                    There is nothing to mint from. A code is derived from the signature, and this
+                    description did not produce one.
+                  </Quiet>
+                )}
+              </Fade>
+            </Stage>
+          </>
+        )}
+      </Panel>
+
+      {/* ------------------------------------------------------------ dictionary */}
+
+      <Panel flush>
+        <PanelHead
+          title={<ByMode simple="The list of short forms" technical="Abbreviation dictionary" />}
+          meta={
+            rules ? (
+              <>
+                <Num size="xs">{rules.length}</Num> rules,{' '}
+                <Num size="xs">{Math.max(0, rules.length - BASE_RULES.length)}</Num> added here
+              </>
+            ) : undefined
+          }
+          action={
+            dictMeta ? (
+              <TechnicalOnly>
+                <EndpointTag
+                  method={dictMeta.method}
+                  endpoint={dictMeta.endpoint}
+                  ms={dictMeta.ms}
+                  scanned={dictMeta.scanned}
+                />
+              </TechnicalOnly>
+            ) : undefined
+          }
+        />
+
+        <div className="border-b border-rule px-5 py-4">
+          <p className="max-w-[76ch] text-[13px] leading-relaxed text-ink-2">
+            <ByMode
+              simple="Try this. Type a short form nobody has taught it yet. It will pass straight through and the specification row will stay empty. Then write the rule below and watch the same line fill in, with no waiting and nothing to retrain. The person who knows what the short form means writes it down once."
+              technical="Try this. Put an unknown abbreviation in the instrument above: it passes through stage 2 unexpanded and its slot stays empty in stage 3. Add the rule below and the instrument re-runs against the extended rule set immediately. The dictionary is the model, and it is editable by the people who own the vocabulary."
+            />
+          </p>
+          <div className="mt-3">
+            <Button size="sm" onClick={loadDemo}>
+              Set up that example
+            </Button>
+          </div>
+        </div>
+
+        <form onSubmit={submitRule} className="border-b border-rule px-5 py-4">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_170px_120px_auto] md:items-end">
+            <Field label="Short form">
+              <TextInput
+                value={formToken}
+                spellCheck={false}
+                onChange={event => setFormToken(event.target.value)}
+                placeholder="NBR"
+                className="font-mono uppercase"
+                aria-label="Short form"
+              />
+            </Field>
+
+            <Field label="What it means">
+              <TextInput
+                value={formExpansion}
+                spellCheck={false}
+                onChange={event => setFormExpansion(event.target.value)}
+                placeholder="NITRILE RUBBER"
+                className="uppercase"
+                aria-label="What it means"
+              />
+            </Field>
+
+            <Field label="Slot it fills">
+              <Select
+                value={formSlot}
+                onChange={event => setFormSlot(event.target.value as AttributeSlot | 'none')}
+                aria-label="Slot it fills"
+              >
+                {ATTRIBUTE_SLOTS.map(slot => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+                <option value="none">no slot</option>
+              </Select>
+            </Field>
+
+            <Field label="Provenance">
+              <Select
+                value={formSource}
+                onChange={event => setFormSource(event.target.value as DictionaryRule['source'])}
+                aria-label="Provenance"
+              >
+                {SOURCE_OPTIONS.map(source => (
+                  <option key={source} value={source}>
+                    {source}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={saving}
+              icon={<Plus size={16} weight="regular" />}
+            >
+              {saving ? 'Adding' : 'Add rule'}
+            </Button>
+          </div>
+
+          {formError ? <p className="mt-3 text-[12.5px] text-negative">{formError}</p> : null}
+
+          {added && !formError ? (
+            <motion.p
+              key={`${added.token}-${added.expansion}`}
+              initial={reduce ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15 }}
+              className="mt-3 max-w-[76ch] text-[12.5px] leading-relaxed text-ink-2"
+            >
+              <Mono>{added.token}</Mono> now expands to{' '}
+              <span className="text-ink">{added.expansion}</span>
+              {added.slot ? (
+                <>
+                  {' '}
+                  and fills the <span className="text-ink">{added.slot}</span> slot
                 </>
               ) : (
-                <>
-                  <div className="w-14 h-14 rounded-2xl bg-dark-850 border border-dark-700 flex items-center justify-center text-dark-400">
-                    <Zap size={24} className="text-dark-500" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <p className="text-sm font-bold text-dark-100">Ready to normalize</p>
-                    <p className="text-xs text-dark-400">Click <span className="font-bold text-amber-500">"Run Normalization"</span> to extract structured attributes</p>
-                  </div>
-                </>
+                ' and contributes its words without claiming a slot'
               )}
-            </div>
-          )}
-        </div>
-      </div>
+              . The instrument above has already re-run with it in effect.
+            </motion.p>
+          ) : null}
+        </form>
 
-      {/* Bottom Footer Action Bar */}
-      <div className="glass-card rounded-2xl border border-dark-700 bg-dark-900 shadow-sm px-6 py-3.5 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4 text-xs">
-          <span className="text-dark-400">
-            Pipeline: <span className="font-mono font-bold text-dark-100">spaCy EntityRuler + regex + MRO dictionary</span>
-          </span>
-          <span className="text-dark-500">|</span>
-          <span className="text-dark-400">
-            Avg. time: <span className="font-mono font-bold text-emerald-500">~12ms</span>
-          </span>
+        <div className="flex flex-wrap items-center gap-3 border-b border-rule px-5 py-3">
+          <div className="relative w-full max-w-[320px]">
+            <MagnifyingGlass
+              size={16}
+              weight="regular"
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3"
+            />
+            <TextInput
+              value={search}
+              onChange={event => setSearch(event.target.value)}
+              placeholder="Filter by short form, meaning or slot"
+              className="pl-8"
+              aria-label="Filter dictionary rules"
+            />
+          </div>
+          {rules ? (
+            <span className="text-[12px] text-ink-3">
+              <Num size="xs">{filtered.length}</Num> of <Num size="xs">{rules.length}</Num> shown
+            </span>
+          ) : null}
         </div>
-        <button
-          onClick={handleRun}
-          disabled={running}
-          className="flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black rounded-xl transition disabled:opacity-50 shadow-md shadow-amber-500/20 cursor-pointer"
-        >
-          {running ? (
-            <>
-              <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-              <span>Running...</span>
-            </>
-          ) : (
-            <>
-              <Zap size={14} className="fill-slate-950" />
-              <span>Run Normalization</span>
-            </>
-          )}
-        </button>
-      </div>
+
+        {dictError ? (
+          <div className="px-5 py-4">
+            <ErrorState message={dictError} onRetry={() => setAttempt(value => value + 1)} />
+          </div>
+        ) : !rules ? (
+          <div className="px-5 py-4">
+            <Skeleton rows={6} />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="px-5 py-4">
+            <EmptyState
+              title="No rule matches that"
+              detail="Nothing in the dictionary contains that text. If the short form belongs here, add it with the form above."
+              action={
+                <Button size="sm" onClick={() => setSearch('')}>
+                  Clear the filter
+                </Button>
+              }
+            />
+          </div>
+        ) : (
+          <div className="max-h-[420px] overflow-y-auto">
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Short form</Th>
+                  <Th>Expands to</Th>
+                  <Th>Slot</Th>
+                  <Th>Source</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(({ rule, added: isAdded }, index) => (
+                  <tr
+                    key={`${rule.token}-${rule.expansion}-${rule.source}-${index}`}
+                    className={isAdded ? 'bg-accent-bg' : undefined}
+                  >
+                    <Td>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <Num size="sm">{rule.token}</Num>
+                        {isAdded ? <Chip tone="accent">added here</Chip> : null}
+                      </span>
+                    </Td>
+                    <Td className="text-ink">{rule.expansion}</Td>
+                    <Td>
+                      {rule.slot ? (
+                        <span className="font-mono text-[12px] text-ink-2">{rule.slot}</span>
+                      ) : (
+                        <span className="text-[12.5px] text-ink-3">no slot</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <span className="font-mono text-[12px] text-ink-3">{rule.source}</span>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
+        )}
+      </Panel>
     </div>
   )
 }

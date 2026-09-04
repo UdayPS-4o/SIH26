@@ -1,259 +1,210 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* ==========================================================================
+   NUMMF design token layer
+   Self-hosted fonts via @fontsource. Specific weights only, no full families,
+   no network font requests.
+   ========================================================================== */
+
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/archivo/600.css';
+@import '@fontsource/archivo/700.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* --------------------------------------------------------------------------
+   Tokens
+   Three semantic colours only:
+     --accent     steel blue. Interaction and product identity.
+     --attention  ochre. Needs a human decision. Nothing else.
+     --negative   rust. Rejected or conflicting. Nothing else.
+   There is no fourth hue in this system.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --paper: #F1F3F4;
+  --surface: #FFFFFF;
+  --surface-2: #F8FAFA;
+
+  --ink: #141B21;
+  --ink-2: #56646E;
+  --ink-3: #85939C;
+
+  --rule: #DCE2E5;
+  --rule-strong: #C3CBD0;
+
+  --accent: #1D4E79;
+  --accent-bg: #E9F0F6;
+  --accent-edge: #A9C4DA;
+
+  --attention: #8F5406;
+  --attention-bg: #FBF2E4;
+  --attention-edge: #E3C48E;
+
+  --negative: #9C2E20;
+  --negative-bg: #FAECE9;
+
+  color-scheme: light;
+}
+
+.dark {
+  --paper: #0F151A;
+  --surface: #171F25;
+  --surface-2: #1B242B;
+
+  --ink: #E7EDF0;
+  --ink-2: #9EABB4;
+  --ink-3: #6E7D87;
+
+  --rule: #29343C;
+  --rule-strong: #3B4850;
+
+  --accent: #84B6DE;
+  --accent-bg: #13242F;
+  --accent-edge: #2C4A61;
+
+  --attention: #E4A85D;
+  --attention-bg: #261D10;
+  --attention-edge: #6B4E22;
+
+  --negative: #E88875;
+  --negative-bg: #2A1712;
+
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
 @layer base {
-  :root, html.dark, [data-theme="dark"] {
-    --bg-primary: #070a13;
-    --bg-secondary: #0b101d;
-    --bg-card: #0e1526;
-    --bg-hover: #162032;
-    --border: #1e293b;
-    --border-highlight: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    color-scheme: dark;
+  * {
+    border-color: var(--rule);
   }
 
-  html.light, [data-theme="light"] {
-    --bg-primary: #f5f7fb;
-    --bg-secondary: #ffffff;
-    --bg-card: #ffffff;
-    --bg-hover: #f1f5f9;
-    --border: #e2e8f0;
-    --border-highlight: #cbd5e1;
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
-    color-scheme: light;
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto,
+      'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
   }
 
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: Archivo, 'IBM Plex Sans', system-ui, sans-serif;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas,
+      'Liberation Mono', monospace;
+  }
+
+  /* Numerals line up in columns wherever mono is used. */
+  .font-mono,
+  code,
+  pre,
+  kbd,
+  samp,
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::placeholder {
+    color: var(--ink-3);
+    opacity: 1;
+  }
+
+  ::selection {
+    background-color: var(--accent-bg);
+    color: var(--ink);
+  }
+
+  /* Never remove the focus ring. Keyboard operation is a hard requirement. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Scrollbars: thin, drawn as a rule rather than a bar. Both themes. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--rule-strong);
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: 0;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--ink-3);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
   }
 }
 
-/* Custom modern scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* --------------------------------------------------------------------------
+   Utilities
+   Token plumbing only. No component classes live here.
+   -------------------------------------------------------------------------- */
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .balance {
+    text-wrap: balance;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
+/* --------------------------------------------------------------------------
+   Motion
+   -------------------------------------------------------------------------- */
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-highlight);
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
-
-/* =========================================================
-   EXPLICIT LIGHT THEME DESIGN SYSTEM (Guaranteed Override)
-   ========================================================= */
-
-html.light body {
-  background-color: #f5f7fb !important;
-  color: #0f172a !important;
-}
-
-/* Surface backgrounds */
-html.light .bg-dark-950,
-html.light [class*="bg-dark-950"] {
-  background-color: #f5f7fb !important;
-}
-
-html.light .bg-dark-900,
-html.light [class*="bg-dark-900"],
-html.light header,
-html.light aside {
-  background-color: #ffffff !important;
-}
-
-html.light .bg-dark-850,
-html.light [class*="bg-dark-850"] {
-  background-color: #f8fafc !important;
-}
-
-html.light .bg-dark-800,
-html.light [class*="bg-dark-800"] {
-  background-color: #f1f5f9 !important;
-}
-
-html.light .bg-dark-750,
-html.light [class*="bg-dark-750"] {
-  background-color: #e2e8f0 !important;
-}
-
-/* Border overrides */
-html.light .border-dark-700,
-html.light .border-dark-700\/80,
-html.light .border-dark-700\/60,
-html.light .border-dark-700\/50,
-html.light [class*="border-dark-700"] {
-  border-color: #e2e8f0 !important;
-}
-
-html.light .border-dark-800,
-html.light .border-dark-800\/40,
-html.light .border-dark-800\/60,
-html.light [class*="border-dark-800"] {
-  border-color: #f1f5f9 !important;
-}
-
-html.light .border-dark-600,
-html.light [class*="border-dark-600"] {
-  border-color: #cbd5e1 !important;
-}
-
-/* Typography in Light Mode */
-html.light .text-dark-100,
-html.light [class*="text-dark-100"] {
-  color: #0f172a !important;
-}
-
-html.light .text-dark-200,
-html.light [class*="text-dark-200"] {
-  color: #1e293b !important;
-}
-
-html.light .text-dark-300,
-html.light [class*="text-dark-300"] {
-  color: #334155 !important;
-}
-
-html.light .text-dark-400,
-html.light [class*="text-dark-400"] {
-  color: #64748b !important;
-}
-
-html.light .text-dark-500,
-html.light [class*="text-dark-500"] {
-  color: #94a3b8 !important;
-}
-
-html.light .text-slate-100 {
-  color: #0f172a !important;
-}
-
-html.light .text-slate-200 {
-  color: #1e293b !important;
-}
-
-html.light .text-slate-300 {
-  color: #334155 !important;
-}
-
-html.light .text-slate-400 {
-  color: #64748b !important;
-}
-
-/* Intelligent text-white contrast handling */
-html.light .text-white:not(
-  [class*="bg-blue-"],
-  [class*="bg-indigo-"],
-  [class*="bg-emerald-"],
-  [class*="bg-teal-"],
-  [class*="bg-purple-"],
-  [class*="bg-red-"],
-  [class*="bg-amber-"],
-  [class*="bg-gradient-"],
-  button,
-  .btn,
-  .badge,
-  .keep-white
-) {
-  color: #0f172a !important;
-}
-
-/* Cards & Panels */
-.glass-panel {
-  background: rgba(11, 16, 29, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 41, 59, 0.7);
-}
-
-html.light .glass-panel {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04) !important;
-}
-
-.glass-card {
-  background: rgba(14, 21, 38, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(30, 41, 59, 0.8);
-  transition: all 0.2s ease-in-out;
-}
-
-html.light .glass-card {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04) !important;
-}
-
-html.light .glass-card:hover {
-  border-color: #cbd5e1 !important;
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06) !important;
-}
-
-/* Inputs & Form controls in Light Mode */
-html.light input:not([type="range"]),
-html.light select,
-html.light textarea {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-html.light input::placeholder,
-html.light textarea::placeholder {
-  color: #94a3b8 !important;
-}
-
-/* Subtle grid background */
-.bg-cyber-grid {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(30, 41, 59, 0.25) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
-}
-
-html.light .bg-cyber-grid {
-  background-image: 
-    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px) !important;
-}
-
-/* Table headers & zebra stripes */
-html.light thead {
-  background-color: #f8fafc !important;
-  color: #64748b !important;
-}
-
-html.light tbody tr:hover {
-  background-color: #f8fafc !important;
-}
-
-/* Smooth transition when toggling themes */
-body, header, aside, main, .glass-card, .glass-panel {
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

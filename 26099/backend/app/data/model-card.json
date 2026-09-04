@@ -1,0 +1,64 @@
+{
+  "embeddingModel": "sentence-transformers/all-MiniLM-L6-v2",
+  "crossEncoderModel": null,
+  "features": [
+    "lexical",
+    "attribute",
+    "numeric"
+  ],
+  "coefficients": {
+    "lexical": 3.5335048794833397,
+    "attribute": 1.3767657534401359,
+    "numeric": 10.497139949999465
+  },
+  "intercept": -12.137582594664593,
+  "shares": {
+    "lexical": 0.2293,
+    "attribute": 0.0894,
+    "numeric": 0.6813
+  },
+  "accept": 0.9292,
+  "review": 0.5784,
+  "trainedOnPairs": 1310,
+  "positivePairs": 193,
+  "distinctItems": 241,
+  "folds": 5,
+  "heldOut": {
+    "auc": 0.9968,
+    "averagePrecision": 0.9827,
+    "atAccept": {
+      "threshold": 0.9292,
+      "precision": 1.0,
+      "recall": 0.8342,
+      "truePositives": 161,
+      "falsePositives": 0,
+      "falseNegatives": 32
+    },
+    "atReview": {
+      "threshold": 0.5784,
+      "precision": 0.8363,
+      "recall": 0.9793,
+      "truePositives": 189,
+      "falsePositives": 37,
+      "falseNegatives": 4
+    }
+  },
+  "comparedWith": {
+    "deterministic only": {
+      "auc": 0.9968,
+      "averagePrecision": 0.9827
+    },
+    "with embeddings": {
+      "auc": 0.9967,
+      "averagePrecision": 0.9826
+    },
+    "with embeddings and cross-encoder": {
+      "auc": 0.9961,
+      "averagePrecision": 0.9798
+    },
+    "hand-set weights (no fitting)": {
+      "auc": 0.9553,
+      "averagePrecision": 0.9434
+    }
+  }
+}
