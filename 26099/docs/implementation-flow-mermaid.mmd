@@ -1,0 +1,54 @@
+flowchart TD
+    subgraph INPUTS[" Inputs "]
+        direction LR
+        I1["SAP export"]
+        I2["ERP / CSV upload"]
+        I3["Manual entry"]
+    end
+
+    PRE["Normalize — clean · expand abbrev · UOM"]
+
+    subgraph FEATURES[" Features "]
+        direction LR
+        F1["Lexical · RapidFuzz 30%"]
+        F2["Semantic · MiniLM 40%"]
+        F3["Attribute · family/UOM 30%"]
+    end
+
+    I1 --> PRE
+    I2 --> PRE
+    I3 --> PRE
+    PRE --> F1
+    PRE --> F2
+    PRE --> F3
+
+    F1 --> FUSE["Fusion + cross-encoder rerank"]
+    F2 --> FUSE
+    F3 --> FUSE
+
+    FUSE --> DEC{"Decision"}
+    DEC -->|"Exact ≥0.85"| B1["Auto-propose"]
+    DEC -->|"Near / equivalent"| B2["Steward review · human-in-the-loop"]
+    DEC -->|"Low conf"| B3["Re-evaluate"]
+    B3 --> FUSE
+
+    B1 --> CNMC["CNMC minting + legacy code mapping"]
+    B2 --> CNMC
+    CNMC --> OUT["Audit log · dashboard · ERP API"]
+
+    classDef input fill:#cfe2f3,stroke:#6fa8dc,color:#1f2937;
+    classDef pre fill:#e8dfc8,stroke:#bfa76a,color:#1f2937;
+    classDef feat fill:#d9ead3,stroke:#8fbc8f,color:#1f2937;
+    classDef score fill:#f4cccc,stroke:#cc6666,color:#1f2937;
+    classDef dec fill:#b4a7d6,stroke:#7b68a6,color:#1f2937;
+    classDef act fill:#e6e6e6,stroke:#999999,color:#1f2937;
+
+    class I1,I2,I3 input;
+    class PRE pre;
+    class F1,F2,F3 feat;
+    class FUSE score;
+    class DEC dec;
+    class B1,B2,B3,CNMC,OUT act;
+
+    style INPUTS fill:#f4f4f4,stroke:#d0d0d0,color:#1f2937;
+    style FEATURES fill:#f4f4f4,stroke:#d0d0d0,color:#1f2937;

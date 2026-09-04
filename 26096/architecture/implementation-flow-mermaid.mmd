@@ -1,0 +1,54 @@
+flowchart TD
+    subgraph INPUTS[" Inputs "]
+        direction LR
+        I1["Touch query"]
+        I2["Voice query · mic"]
+        I3["Scanned manuscript"]
+    end
+
+    PRE["Preprocess — STT · language detect · deskew"]
+
+    subgraph FEATURES[" Features "]
+        direction LR
+        F1["Semantic · pgvector"]
+        F2["Keyword · Meilisearch"]
+        F3["OCR text + metadata"]
+    end
+
+    I1 --> PRE
+    I2 --> PRE
+    I3 --> PRE
+    PRE --> F1
+    PRE --> F2
+    PRE --> F3
+
+    F1 --> FUSE["RRF fusion + cross-encoder rerank"]
+    F2 --> FUSE
+    F3 --> FUSE
+
+    FUSE --> DEC{"Decision"}
+    DEC -->|"Grounded ≥0.7"| B1["Cited answer"]
+    DEC -->|"No evidence"| B2["Escalate to curator · no guessing"]
+    DEC -->|"Low conf"| B3["Re-query expand"]
+    B3 --> FUSE
+
+    B1 --> GEN["Llama 3 + citation engine"]
+    B2 --> GEN
+    GEN --> OUT["TTS · kiosk UI · provenance log"]
+
+    classDef input fill:#cfe2f3,stroke:#6fa8dc,color:#1f2937;
+    classDef pre fill:#e8dfc8,stroke:#bfa76a,color:#1f2937;
+    classDef feat fill:#d9ead3,stroke:#8fbc8f,color:#1f2937;
+    classDef score fill:#f4cccc,stroke:#cc6666,color:#1f2937;
+    classDef dec fill:#b4a7d6,stroke:#7b68a6,color:#1f2937;
+    classDef act fill:#e6e6e6,stroke:#999999,color:#1f2937;
+
+    class I1,I2,I3 input;
+    class PRE pre;
+    class F1,F2,F3 feat;
+    class FUSE score;
+    class DEC dec;
+    class B1,B2,B3,GEN,OUT act;
+
+    style INPUTS fill:#f4f4f4,stroke:#d0d0d0,color:#1f2937;
+    style FEATURES fill:#f4f4f4,stroke:#d0d0d0,color:#1f2937;

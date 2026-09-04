@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 936 792" width="936" height="792" font-family="'Segoe UI', Inter, system-ui, sans-serif">
+  <style>
+    .st   { font-size: 32px; font-weight: 700; fill: #0F172A; }
+    .dt   { font-size: 26px; fill: #475569; }
+    .cap  { font-size: 22px; fill: #64748B; }
+    .mono { font-size: 24px; font-family: 'Consolas', 'JetBrains Mono', monospace; fill: #475569; }
+    .met  { font-size: 24px; font-weight: 700; fill: #1D4ED8; }
+    .num  { font-size: 22px; font-weight: 700; fill: #FFFFFF; }
+    .card { fill: #F8FAFC; stroke: #E2E8F0; stroke-width: 1.5; }
+  </style>
+  <rect width="936" height="792" fill="#FFFFFF"/>
+
+  <!-- inputs -->
+  <rect x="24" y="16" width="888" height="84" rx="12" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+  <text x="52" y="52" class="st" fill="#B91C1C" style="font-size:28px">Four CPSEs, one SKF 6205 bearing</text>
+  <text x="52" y="84" class="mono" fill="#7F1D1D" style="font-size:19px">ONGC 4500012876 · SAIL MM-88-19243 · NTPC 1176-BRG-005 · CIL 90887123</text>
+  <path d="M462 104 h12 l-6 12 z" fill="#94A3B8"/>
+
+  <!-- 1 normalise -->
+  <rect x="24" y="112" width="888" height="86" rx="12" class="card"/>
+  <circle cx="62" cy="155" r="17" fill="#1D4ED8"/><text x="62" y="163" class="num" text-anchor="middle">1</text>
+  <text x="92" y="150" class="st">Normalise</text>
+  <text x="92" y="182" class="dt">BRG → BEARING · SS304 = SS-304 · NOS → EA</text>
+  <rect x="742" y="136" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="817" y="162" class="met" text-anchor="middle">rules, not ML</text>
+
+  <path d="M462 202 h12 l-6 12 z" fill="#94A3B8"/>
+
+  <!-- 2 retrieve -->
+  <rect x="48" y="210" width="840" height="86" rx="12" class="card"/>
+  <circle cx="86" cy="253" r="17" fill="#1D4ED8"/><text x="86" y="261" class="num" text-anchor="middle">2</text>
+  <text x="116" y="248" class="st">Retrieve</text>
+  <text x="116" y="280" class="dt">MiniLM embeddings + pgvector ANN</text>
+  <rect x="718" y="234" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="793" y="260" class="met" text-anchor="middle">5 B → 50</text>
+
+  <path d="M462 300 h12 l-6 12 z" fill="#94A3B8"/>
+
+  <!-- 3 score -->
+  <rect x="72" y="308" width="792" height="86" rx="12" class="card"/>
+  <circle cx="110" cy="351" r="17" fill="#1D4ED8"/><text x="110" y="359" class="num" text-anchor="middle">3</text>
+  <text x="140" y="346" class="st">Score</text>
+  <text x="140" y="378" class="dt">lexical 30 · semantic 40 · attribute 30</text>
+  <rect x="694" y="332" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="769" y="358" class="met" text-anchor="middle">50 → 5</text>
+
+  <path d="M462 398 h12 l-6 12 z" fill="#94A3B8"/>
+
+  <!-- 4 rerank -->
+  <rect x="96" y="406" width="744" height="86" rx="12" class="card"/>
+  <circle cx="134" cy="449" r="17" fill="#1D4ED8"/><text x="134" y="457" class="num" text-anchor="middle">4</text>
+  <text x="164" y="444" class="st">Re-rank</text>
+  <text x="164" y="476" class="dt">cross-encoder reads the hard five</text>
+  <rect x="670" y="430" width="150" height="38" rx="19" fill="#EFF6FF"/>
+  <text x="745" y="456" class="met" text-anchor="middle">5 → 1</text>
+
+  <path d="M462 496 h12 l-6 12 z" fill="#94A3B8"/>
+
+  <!-- 5 steward gate -->
+  <rect x="120" y="504" width="696" height="96" rx="12" fill="#FFFBEB" stroke="#B45309" stroke-width="2"/>
+  <circle cx="158" cy="552" r="17" fill="#B45309"/><text x="158" y="560" class="num" text-anchor="middle">5</text>
+  <text x="188" y="546" class="st" fill="#B45309">Steward approves</text>
+  <text x="188" y="578" class="dt">approve · merge · reject</text>
+  <text x="796" y="546" class="met" fill="#B45309" text-anchor="end">nothing goes live</text>
+  <text x="796" y="576" class="met" fill="#B45309" text-anchor="end">unreviewed</text>
+
+  <path d="M462 604 h12 l-6 12 z" fill="#94A3B8"/>
+
+  <!-- output -->
+  <rect x="24" y="612" width="888" height="130" rx="12" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.5"/>
+  <text x="52" y="648" class="cap" fill="#047857" letter-spacing="2">ONE NATIONAL CODE</text>
+  <text x="52" y="692" font-size="34" font-weight="700" font-family="'Consolas', monospace" fill="#047857">CNMC-BE-A47F91</text>
+  <text x="52" y="724" class="cap" fill="#065F46">BEARING, BALL, 6205-2RS, 25 MM ID</text>
+  <text x="884" y="656" class="dt" fill="#065F46" text-anchor="end">4 legacy codes mapped</text>
+  <text x="884" y="690" class="cap" fill="#047857" text-anchor="end">SAP keeps working</text>
+  <text x="884" y="722" class="cap" fill="#047857" text-anchor="end">same item → same code</text>
+</svg>

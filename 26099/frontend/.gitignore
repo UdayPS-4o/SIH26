@@ -1,0 +1,6 @@
+
+# corpus check bundle
+scripts/.check.mjs
+
+# esbuild bundles produced by the check and export scripts
+scripts/.*.mjs
