@@ -50,12 +50,7 @@ redis.dump
 meili_data/
 
 # Environment Variables & Secrets
-.env
-.env.local
 .env.*.local
-.env.development
-.env.production
-.env.staging
 !.env.example
 *.pem
 *.key
@@ -90,3 +85,4 @@ temp/
 uploads/
 .cache/
 .parcel-cache/
+config.bat
