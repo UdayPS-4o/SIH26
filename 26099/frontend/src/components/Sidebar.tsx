@@ -10,10 +10,15 @@ import { NavLink } from 'react-router-dom'
 import {
   ArrowsMerge,
   ChartBar,
+  CheckCircle,
   ClockCounterClockwise,
   Compass,
+  Drop,
+  Factory,
   Gauge,
+  Lightning,
   MagnifyingGlass,
+  Mountains,
   Sliders,
   SquaresFour,
   Stack,
@@ -21,11 +26,14 @@ import {
   UploadSimple,
 } from '@phosphor-icons/react'
 import { useCopy } from '@/copy'
+import { ByMode } from '@/components/Gate'
 import { useViewMode } from '@/store/viewmode'
 import { useService } from '@/store/service'
 import { cx } from './ui/tokens'
 import { IconTile, Num } from './ui'
 import { CPSES } from '@/engine/corpus'
+import { formatCount } from '@/engine/savings'
+import type { Cpse } from '@/engine/types'
 import type { CopyKey } from '@/copy'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -51,10 +59,30 @@ const ITEMS: NavItem[] = [
   { to: '/engine', key: 'navEngine', icon: Sliders, simple: false },
 ]
 
-// Cycled per CPSE so the "loaded" strip at the bottom reads as four distinct
-// organisations rather than four identical dots. Decorative only, matches
-// the non-semantic chart palette (tokens.ts CHART_PALETTE) used elsewhere.
-const CPSE_DOT = ['bg-chart-1', 'bg-chart-2', 'bg-chart-3', 'bg-chart-4', 'bg-chart-5', 'bg-chart-6']
+/**
+ * The four sources, each marked with the industry it is in.
+ *
+ * A distinct glyph per organisation earns its place where a fourth identical
+ * dot does not: this strip is glanced at rather than read, and an oil drop
+ * against a lightning bolt is separable at a size where "IOCL" against "NTPC"
+ * is not. Colour is the non-semantic chart palette (tokens.ts CHART_PALETTE),
+ * used here for the reason it is used in a chart legend - to tell four peers
+ * apart, not to say anything about any of them.
+ */
+const SOURCE_MARK: Record<Cpse['code'], { icon: Icon; text: string }> = {
+  IOCL: { icon: Drop, text: 'text-chart-1' },
+  NTPC: { icon: Lightning, text: 'text-chart-2' },
+  SAIL: { icon: Factory, text: 'text-chart-3' },
+  CIL: { icon: Mountains, text: 'text-chart-4' },
+}
+
+/** The ERP without its version. The version does not fit at this width and is
+ *  not what the row is for; the Overview names it in full. */
+function shortErp(erp: string): string {
+  if (erp.startsWith('SAP')) return `SAP ${erp.split(' ')[1] ?? ''}`.trim()
+  if (erp.startsWith('Oracle')) return 'Oracle EBS'
+  return 'In-house'
+}
 
 export default function Sidebar() {
   const c = useCopy()
@@ -67,21 +95,25 @@ export default function Sidebar() {
   const operator = visible.filter(item => !item.simple)
 
   return (
-    <aside className="flex w-[254px] shrink-0 flex-col border-r border-rule bg-surface">
+    <aside className="flex w-[272px] shrink-0 flex-col border-r border-rule bg-surface">
       <div className="flex items-center gap-3 border-b border-rule px-5 py-4">
-        <IconTile icon={<Stack size={18} weight="fill" />} tone="accent" />
+        <IconTile icon={<Stack size={19} weight="fill" />} tone="accent" />
         <div className="min-w-0">
-          <div className="font-display text-[17px] font-bold leading-none tracking-tight text-ink">
+          <div className="font-display text-[18px] font-bold leading-none tracking-tight text-ink">
             {c('productName')}
           </div>
-          <div className="mt-1.5 truncate text-[11.5px] leading-snug text-ink-2">
+          <div className="mt-1.5 truncate text-[12px] leading-snug text-ink-2">
             {c('productFull')}
           </div>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="flex flex-col gap-1">
+      {/* min-h-0 so the nav, not the source strip below it, is what scrolls
+          when the two together exceed the viewport. Without it the flex item
+          refuses to shrink under its content and the last source is clipped
+          off the bottom of a short window. */}
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        <ul className="flex flex-col gap-0.5">
           {primary.map(item => (
             <Row key={item.to} item={item} pending={pending} />
           ))}
@@ -89,8 +121,10 @@ export default function Sidebar() {
 
         {operator.length > 0 ? (
           <>
-            <div className="mt-6 px-3 pb-2 font-mono text-2xs uppercase text-ink-3">Operator</div>
-            <ul className="flex flex-col gap-1">
+            <div className="mt-6 px-3 pb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
+              Operator
+            </div>
+            <ul className="flex flex-col gap-0.5">
               {operator.map(item => (
                 <Row key={item.to} item={item} pending={pending} />
               ))}
@@ -99,33 +133,7 @@ export default function Sidebar() {
         ) : null}
       </nav>
 
-      <div className="border-t border-rule px-5 py-4">
-        <div className="text-[11.5px] text-ink-2">
-          {loaded.length} of {CPSES.length} {c('cpsePlural')} loaded
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {CPSES.map((cpse, index) => {
-            const isLoaded = loaded.includes(cpse.code)
-            return (
-              <span
-                key={cpse.code}
-                className={cx(
-                  'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10.5px]',
-                  isLoaded ? 'border-rule-strong text-ink' : 'border-rule text-ink-3',
-                )}
-              >
-                <span
-                  className={cx(
-                    'h-1.5 w-1.5 rounded-full',
-                    isLoaded ? CPSE_DOT[index % CPSE_DOT.length] : 'bg-rule-strong',
-                  )}
-                />
-                {cpse.code}
-              </span>
-            )
-          })}
-        </div>
-      </div>
+      <SourceStrip loaded={loaded} />
     </aside>
   )
 }
@@ -143,23 +151,98 @@ function Row({ item, pending }: { item: NavItem; pending: number }) {
         end={item.to === '/'}
         className={({ isActive }) =>
           cx(
-            'flex items-center gap-2.5 rounded-xl px-2.5 py-[7px] text-[13px] font-medium transition-colors',
+            'group relative flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[14px] font-medium transition-colors',
             isActive
               ? 'bg-accent-bg text-accent'
               : 'text-ink-2 hover:bg-surface-hover hover:text-ink',
           )
         }
       >
-        <Icon size={17} weight="regular" className="shrink-0" />
-        <span className="truncate">{c(item.key)}</span>
-        {showBadge ? (
-          <span className="ml-auto shrink-0 rounded-full border border-attention-edge bg-attention-bg px-1.5 py-px">
-            <Num size="2xs" className="text-attention">
-              {mode === 'simple' ? `${pending} to check` : pending}
-            </Num>
-          </span>
-        ) : null}
+        {({ isActive }) => (
+          <>
+            {/* A short bar on the active row, so the current page is findable
+                without relying on the tint alone. */}
+            <span
+              className={cx(
+                'absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full transition-opacity',
+                isActive ? 'bg-accent opacity-100' : 'opacity-0',
+              )}
+            />
+            <Icon size={18} weight={isActive ? 'fill' : 'regular'} className="shrink-0" />
+            <span className="truncate">{c(item.key)}</span>
+            {showBadge ? (
+              <span className="ml-auto shrink-0 rounded-full border border-attention-edge bg-attention-bg px-1.5 py-px">
+                <Num size="2xs" className="text-attention">
+                  {mode === 'simple' ? `${pending} to check` : pending}
+                </Num>
+              </span>
+            ) : null}
+          </>
+        )}
       </NavLink>
     </li>
+  )
+}
+
+/**
+ * Which item lists are in, at the bottom of every page.
+ *
+ * The state shown is loaded or not loaded, which is something this tab knows
+ * for certain because it read the extract itself. It is deliberately not a
+ * connection light: nothing here polls an ERP, so a green dot per source would
+ * be asserting a connection that does not exist.
+ */
+function SourceStrip({ loaded }: { loaded: string[] }) {
+  return (
+    <div className="border-t border-rule px-3 py-3">
+      <div className="flex items-baseline justify-between gap-2 px-2 pb-2">
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
+          <ByMode simple="Item lists" technical="Material masters" />
+        </span>
+        <Num size="2xs" className="text-ink-3">
+          {loaded.length}/{CPSES.length}
+        </Num>
+      </div>
+
+      <ul className="flex flex-col">
+        {CPSES.map(cpse => {
+          const mark = SOURCE_MARK[cpse.code]
+          const Glyph = mark.icon
+          const isLoaded = loaded.includes(cpse.code)
+          return (
+            <li
+              key={cpse.code}
+              className={cx(
+                'flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors',
+                isLoaded ? 'hover:bg-surface-hover' : 'opacity-60',
+              )}
+            >
+              <Glyph
+                size={17}
+                weight={isLoaded ? 'fill' : 'regular'}
+                className={cx('shrink-0', isLoaded ? mark.text : 'text-ink-3')}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="font-mono text-[12.5px] font-medium tracking-[0.04em] text-ink">
+                  {cpse.code}
+                </div>
+                <div className="truncate font-mono text-[10.5px] text-ink-3">
+                  {shortErp(cpse.erp)} · {formatCount(cpse.totalRecords)}
+                </div>
+              </div>
+              {isLoaded ? (
+                <CheckCircle size={15} weight="fill" className="shrink-0 text-positive" />
+              ) : (
+                <span
+                  className="h-[9px] w-[9px] shrink-0 rounded-full border border-rule-strong"
+                  aria-hidden
+                />
+              )}
+              <span className="sr-only">{isLoaded ? 'loaded' : 'not loaded yet'}</span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
   )
 }
