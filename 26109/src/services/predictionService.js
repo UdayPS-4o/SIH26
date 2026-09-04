@@ -18,6 +18,9 @@ export function predictMastitisRisk(a = {}) {
   const temperature = num(a.temperature, 38.6)
   const humidity = num(a.humidity, 65)
   const previousMastitis = !!a.previousMastitis
+  // Feeding / nutrition quality and housing / bedding hygiene, 0-100 (100 = best).
+  const feedingQuality = num(a.feedingQuality, 75)
+  const housingQuality = num(a.housingQuality, 75)
 
   // Component contributions (each roughly 0..1)
   const sccC = clamp((scc - 100) / 500, 0, 1) // 100k safe -> 600k saturates
@@ -27,8 +30,10 @@ export function predictMastitisRisk(a = {}) {
   const tempC = clamp((temperature - 38.6) / 1.8, 0, 1) // fever above 38.6
   const humC = clamp((humidity - 55) / 40, 0, 1) // environmental load
   const histC = previousMastitis ? 1 : 0
+  const nutritionC = clamp((75 - feedingQuality) / 40, 0, 1) // poor feeding below 75 saturates at 35
+  const housingC = clamp((75 - housingQuality) / 40, 0, 1) // poor housing/bedding below 75 saturates at 35
 
-  const weights = { scc: 34, yield: 20, act: 14, rum: 10, temp: 12, hum: 6, hist: 10 }
+  const weights = { scc: 28, yield: 16, act: 11, rum: 8, temp: 10, hum: 5, hist: 8, nutrition: 8, housing: 6 }
   const raw =
     sccC * weights.scc +
     yieldC * weights.yield +
@@ -36,7 +41,9 @@ export function predictMastitisRisk(a = {}) {
     rumC * weights.rum +
     tempC * weights.temp +
     humC * weights.hum +
-    histC * weights.hist
+    histC * weights.hist +
+    nutritionC * weights.nutrition +
+    housingC * weights.housing
 
   const riskScore = Math.round(clamp(raw, 0, 99))
   const riskLevel = levelFromScore(riskScore)
@@ -49,6 +56,8 @@ export function predictMastitisRisk(a = {}) {
     { key: 'Udder Temperature', label: 'Body / udder temperature', weight: tempC * weights.temp, delta: `${temperature.toFixed(1)}°C` },
     { key: 'Humidity', label: 'Ambient humidity', weight: humC * weights.hum, delta: `${humidity}%` },
     { key: 'History', label: 'Previous mastitis', weight: histC * weights.hist, delta: previousMastitis ? 'Yes' : 'No' },
+    { key: 'Nutrition', label: 'Feeding / nutrition quality', weight: nutritionC * weights.nutrition, delta: `${Math.round(feedingQuality)}/100` },
+    { key: 'Housing', label: 'Housing / bedding hygiene', weight: housingC * weights.housing, delta: `${Math.round(housingQuality)}/100` },
   ]
     .filter((f) => f.weight > 0.5)
     .sort((x, y) => y.weight - x.weight)

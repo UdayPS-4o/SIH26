@@ -7,7 +7,7 @@ import BottomNav from './BottomNav.jsx'
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   return (
-    <div className="flex min-h-screen bg-[#f6f7f9]">
+    <div className="flex min-h-screen bg-[#f6f7f9] dark:bg-gray-950">
       <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenu={() => setMobileOpen(true)} />

@@ -29,13 +29,13 @@ export default function MilkQuality() {
           { title: t('milk.kpi.temp'), key: 'milkTemp', color: '#ef4444' },
         ].map((c) => (
           <Card key={c.key} className="p-5">
-            <p className="mb-2 text-sm font-medium text-gray-700">{c.title}</p>
+            <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">{c.title}</p>
             <AreaTrend data={MILK_TRENDS[c.key]} dataKey="value" color={c.color} name={c.title} height={190} />
           </Card>
         ))}
       </div>
 
-      <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+      <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
         {t('milk.insight')}
       </div>
 
@@ -44,7 +44,7 @@ export default function MilkQuality() {
         <Card className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase text-gray-500">
+              <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase text-gray-500 dark:border-gray-800 dark:bg-gray-800/50 dark:text-gray-400">
                 <th className="px-4 py-3 font-medium">{t('animals.col.animal')}</th>
                 <th className="px-4 py-3 font-medium">SCC</th>
                 <th className="px-4 py-3 font-medium">{t('animals.col.yield')}</th>
@@ -52,13 +52,13 @@ export default function MilkQuality() {
                 <th className="px-4 py-3 font-medium">{t('animals.col.risk')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {abnormal.map((a) => (
                 <tr key={a.id}>
-                  <td className="px-4 py-3 font-medium text-gray-900">{a.id}</td>
-                  <td className={`px-4 py-3 ${a.scc > 200 ? 'text-red-600' : 'text-gray-600'}`}>{a.scc}k</td>
-                  <td className="px-4 py-3 text-gray-600">{a.milkYield} L</td>
-                  <td className="px-4 py-3 text-gray-600">{a.temperature}°C</td>
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{a.id}</td>
+                  <td className={`px-4 py-3 ${a.scc > 200 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>{a.scc}k</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{a.milkYield} L</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{a.temperature}°C</td>
                   <td className="px-4 py-3"><RiskBadge level={a.riskLevel} score={a.riskScore} /></td>
                 </tr>
               ))}

@@ -13,7 +13,7 @@ const items = [
 export default function BottomNav() {
   const { t } = useI18n()
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-gray-200 bg-white lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 lg:hidden">
       {items.map((it) => {
         const Icon = it.icon
         return (
@@ -22,7 +22,7 @@ export default function BottomNav() {
             to={it.to}
             className={({ isActive }) =>
               `flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium ${
-                isActive ? 'text-brand-700' : 'text-gray-400'
+                isActive ? 'text-brand-700 dark:text-brand-400' : 'text-gray-400 dark:text-gray-500'
               }`
             }
           >

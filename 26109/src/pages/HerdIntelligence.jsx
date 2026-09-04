@@ -51,17 +51,17 @@ export default function HerdIntelligence() {
           ))}
         </div>
 
-        <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-red-100 text-red-700">
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-950/30">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400">
             <Flame size={17} />
           </span>
           <div>
-            <p className="text-sm font-semibold text-red-800">{t('herd.hotspot')}</p>
-            <p className="mt-1 text-xs text-red-700/80">
+            <p className="text-sm font-semibold text-red-800 dark:text-red-400">{t('herd.hotspot')}</p>
+            <p className="mt-1 text-xs text-red-700/80 dark:text-red-300/80">
               3 animals in Shed C exceed the risk threshold. Combined with rising humidity and poor bedding hygiene,
               this cluster is the top intervention priority.
             </p>
-            <Link to="/animals?shed=C" className="mt-2 inline-block text-xs font-medium text-red-800 underline">
+            <Link to="/animals?shed=C" className="mt-2 inline-block text-xs font-medium text-red-800 underline dark:text-red-400">
               Review Shed C animals
             </Link>
           </div>

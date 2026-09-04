@@ -6,6 +6,7 @@ import {
   Network,
   Droplets,
   CloudSun,
+  ClipboardCheck,
   FlaskConical,
   FileBarChart2,
   Settings,
@@ -25,6 +26,7 @@ const items = [
   { to: '/herd', icon: Network, label: 'nav.herd' },
   { to: '/milk-quality', icon: Droplets, label: 'nav.milk' },
   { to: '/environment', icon: CloudSun, label: 'nav.environment' },
+  { to: '/worker-hygiene', icon: ClipboardCheck, label: 'nav.workerHygiene' },
   { to: '/simulator', icon: FlaskConical, label: 'nav.simulator' },
   { to: '/reports', icon: FileBarChart2, label: 'nav.reports' },
   { to: '/settings', icon: Settings, label: 'nav.settings' },
@@ -36,7 +38,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
     <>
       {mobileOpen && <div className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-navy-800 to-navy-950 text-slate-300 transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-navy-800 to-navy-950 text-slate-300 transition-transform dark:from-navy-950 dark:to-black lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
