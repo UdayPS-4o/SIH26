@@ -42,10 +42,10 @@ export default function Sidebar({ mobileOpen, onClose }) {
       >
         {/* Brand */}
         <div className="flex items-center gap-3 px-5 pb-4 pt-5">
-          <img src={logoMark} alt="MastiGuard AI" className="h-11 w-11 shrink-0" />
+          <img src={logoMark} alt="Gaurogya Setu" className="h-11 w-11 shrink-0" />
           <div className="leading-tight">
             <div className="text-lg font-bold text-white">
-              MastiGuard <span className="text-ai">AI</span>
+              Gaurogya <span className="text-ai">Setu</span>
             </div>
             <div className="text-[10px] tracking-wide text-slate-400">
               Healthy Animals&nbsp;|&nbsp;Safe Milk&nbsp;|&nbsp;Better Future

@@ -1,4 +1,4 @@
-// Deterministic mock data for MastiGuard AI prototype.
+// Deterministic mock data for Gaurogya Setu prototype.
 // A tiny seeded PRNG keeps values stable across renders/reloads.
 
 function mulberry32(seed) {
