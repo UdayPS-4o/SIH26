@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 220" width="340" height="220">
+  <defs>
+    <linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d6efff"/>
+      <stop offset="1" stop-color="#eefaf0"/>
+    </linearGradient>
+  </defs>
+  <rect width="340" height="220" rx="16" fill="url(#hsky)"/>
+  <path d="M0 150 Q90 122 190 142 T340 130 V220 H0 Z" fill="#9bd98a"/>
+  <path d="M0 168 Q110 150 220 168 T340 156 V220 H0 Z" fill="#4faf4f"/>
+  <circle cx="286" cy="44" r="20" fill="#fff3c4"/>
+  <g fill="#ffffff" opacity="0.9">
+    <ellipse cx="70" cy="40" rx="24" ry="9"/>
+    <ellipse cx="92" cy="34" rx="16" ry="8"/>
+  </g>
+  <!-- cow -->
+  <g transform="translate(120 78)">
+    <ellipse cx="55" cy="112" rx="70" ry="10" fill="#000" opacity="0.12"/>
+    <!-- legs -->
+    <rect x="6" y="70" width="13" height="42" rx="5" fill="#f4f4f4"/>
+    <rect x="34" y="72" width="13" height="40" rx="5" fill="#e9e9e9"/>
+    <rect x="72" y="72" width="13" height="40" rx="5" fill="#f4f4f4"/>
+    <rect x="98" y="70" width="13" height="42" rx="5" fill="#e9e9e9"/>
+    <!-- body -->
+    <path d="M0 40c0-20 20-32 50-32 34 0 66 8 78 22 10 12 6 40-4 48-14 12-52 14-80 12C10 100-2 78 0 40z" fill="#ffffff"/>
+    <!-- black patches -->
+    <path d="M22 22c14-8 34-6 44 4 6 18-8 30-24 30-18 0-30-22-20-34z" fill="#2b2b2b"/>
+    <path d="M92 46c10-2 20 4 22 16 1 10-8 18-18 16-12-3-16-28-4-32z" fill="#2b2b2b"/>
+    <!-- head -->
+    <g transform="translate(-6 20)">
+      <path d="M-4 6c-10 0-18 8-18 22 0 16 12 26 24 26S26 44 26 26C26 10 14 6 -4 6z" fill="#ffffff"/>
+      <path d="M-20 2c-8-4-10 6-4 12 3 3 8 3 10 0z" fill="#f0f0f0"/>
+      <path d="M24 2c8-4 10 6 4 12-3 3-8 3-10 0z" fill="#f0f0f0"/>
+      <ellipse cx="1" cy="42" rx="14" ry="10" fill="#f7c9cf"/>
+      <circle cx="-7" cy="24" r="3" fill="#2b2b2b"/>
+      <circle cx="12" cy="24" r="3" fill="#2b2b2b"/>
+      <circle cx="-4" cy="40" r="2" fill="#c98a92"/>
+      <circle cx="7" cy="40" r="2" fill="#c98a92"/>
+    </g>
+  </g>
+</svg>

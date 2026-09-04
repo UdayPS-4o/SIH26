@@ -1,0 +1,139 @@
+{
+  "books": [
+    {
+      "id": 1,
+      "title": "Annihilation of Caste",
+      "year": 1936,
+      "category": "Social Reform",
+      "pages": 128,
+      "language": "English",
+      "summary": "An undelivered address turned self-published manifesto. Ambedkar dismantles the moral and economic defences of the caste system and calls for the destruction of the religious sanction behind it.",
+      "keyIdeas": [
+        "Caste is a division of labourers, not of labour",
+        "Real reform requires breaking the authority of the Shastras",
+        "Political democracy cannot survive without social democracy"
+      ],
+      "source": "BAWS Volume 1"
+    },
+    {
+      "id": 2,
+      "title": "The Problem of the Rupee: Its Origin and Its Solution",
+      "year": 1923,
+      "category": "Economics",
+      "pages": 268,
+      "language": "English",
+      "summary": "Ambedkar's D.Sc. thesis for the London School of Economics, analysing the history of the Indian currency and arguing for a gold-standard rupee with a fixed exchange value.",
+      "keyIdeas": [
+        "A stable currency protects the poor from hidden inflation",
+        "The gold-exchange standard was mismanaged by colonial authorities",
+        "Monetary policy is a question of social justice"
+      ],
+      "source": "P. S. King & Son, London"
+    },
+    {
+      "id": 3,
+      "title": "The Evolution of Provincial Finance in British India",
+      "year": 1925,
+      "category": "Economics",
+      "pages": 288,
+      "language": "English",
+      "summary": "His Columbia University doctoral thesis, tracing how financial relations between the central and provincial governments developed under British rule.",
+      "keyIdeas": [
+        "Centralised finance concentrated power and stifled provinces",
+        "Fiscal federalism needs clear, rule-based devolution",
+        "Budgets reveal the real priorities of a state"
+      ],
+      "source": "BAWS Volume 6"
+    },
+    {
+      "id": 4,
+      "title": "Who Were the Shudras?",
+      "year": 1946,
+      "category": "History",
+      "pages": 240,
+      "language": "English",
+      "summary": "A historical inquiry arguing that the Shudras were once Kshatriyas of the solar dynasty who were degraded to the fourth varna through conflict with the Brahmins.",
+      "keyIdeas": [
+        "Varna rank was historically contested, not divinely fixed",
+        "The fourfold order was imposed, not natural",
+        "History can be used to unsettle inherited hierarchy"
+      ],
+      "source": "BAWS Volume 7"
+    },
+    {
+      "id": 5,
+      "title": "The Untouchables: Who Were They and Why They Became Untouchables",
+      "year": 1948,
+      "category": "History",
+      "pages": 224,
+      "language": "English",
+      "summary": "A companion volume to Who Were the Shudras?, proposing that untouchability arose from the treatment of 'broken men' who remained Buddhist after the Brahminic revival.",
+      "keyIdeas": [
+        "Untouchability has a datable historical origin (~400 CE)",
+        "Beef-eating became a marker of stigma after it was abandoned by others",
+        "The disability is social engineering, not pollution"
+      ],
+      "source": "BAWS Volume 7"
+    },
+    {
+      "id": 6,
+      "title": "Thoughts on Pakistan / Pakistan or the Partition of India",
+      "year": 1940,
+      "category": "Politics",
+      "pages": 400,
+      "language": "English",
+      "summary": "A dispassionate examination of the Muslim League's demand for Pakistan, weighing the case for and against partition on communal, military and administrative grounds.",
+      "keyIdeas": [
+        "Communal majorities and minorities cannot be wished away",
+        "If partition happens it must be complete, including transfer of population",
+        "A house divided against itself cannot be defended"
+      ],
+      "source": "BAWS Volume 8"
+    },
+    {
+      "id": 7,
+      "title": "States and Minorities",
+      "year": 1947,
+      "category": "Constitutional",
+      "pages": 96,
+      "language": "English",
+      "summary": "A memorandum on fundamental rights submitted to the Constituent Assembly, containing an early blueprint for constitutional safeguards and 'state socialism' in key industries.",
+      "keyIdeas": [
+        "Rights on paper need remedies and institutions",
+        "Economic structure should be part of the Constitution",
+        "Minority protection is a test of majority good faith"
+      ],
+      "source": "BAWS Volume 1"
+    },
+    {
+      "id": 8,
+      "title": "The Buddha and His Dhamma",
+      "year": 1957,
+      "category": "Philosophy",
+      "pages": 599,
+      "language": "English",
+      "summary": "Published posthumously, this is Ambedkar's reconstruction of the Buddha's life and teaching as a rational, this-worldly ethics of liberty, equality and fraternity.",
+      "keyIdeas": [
+        "Dhamma is morality, not ritual or metaphysics",
+        "Suffering has social as well as personal causes",
+        "Religion should be judged by whether it upholds human dignity"
+      ],
+      "source": "BAWS Volume 11"
+    },
+    {
+      "id": 9,
+      "title": "Riddles in Hinduism",
+      "year": 1987,
+      "category": "Social Reform",
+      "pages": 336,
+      "language": "English",
+      "summary": "An unfinished critical commentary on contradictions in Hindu scripture and practice, released decades after his death by the Government of Maharashtra.",
+      "keyIdeas": [
+        "Sacred texts contradict one another on basic questions",
+        "Reason must be allowed to test revelation",
+        "Reform means confronting the texts, not evading them"
+      ],
+      "source": "BAWS Volume 4"
+    }
+  ]
+}

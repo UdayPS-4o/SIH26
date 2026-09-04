@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 320" width="520" height="320" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dfe9c9"/>
+      <stop offset="1" stop-color="#c7dcac"/>
+    </linearGradient>
+  </defs>
+  <rect width="520" height="320" fill="url(#ground)"/>
+  <!-- field plots -->
+  <g opacity="0.55">
+    <rect x="20" y="18" width="150" height="120" rx="6" fill="#a9cf82"/>
+    <rect x="185" y="18" width="150" height="90" rx="6" fill="#bcd89a"/>
+    <rect x="350" y="18" width="150" height="120" rx="6" fill="#9ec776"/>
+    <rect x="20" y="180" width="180" height="120" rx="6" fill="#bcd89a"/>
+    <rect x="330" y="185" width="170" height="115" rx="6" fill="#a9cf82"/>
+  </g>
+  <!-- paths -->
+  <path d="M0 160 H520" stroke="#e8e2cf" stroke-width="14"/>
+  <path d="M260 0 V320" stroke="#e8e2cf" stroke-width="14"/>
+  <!-- pond -->
+  <ellipse cx="440" cy="250" rx="34" ry="20" fill="#8fc7e8"/>
+  <!-- sheds (barns) -->
+  <g>
+    <g transform="translate(70 70)">
+      <rect width="92" height="52" rx="4" fill="#e7effa"/>
+      <rect width="92" height="52" rx="4" fill="none" stroke="#94a3b8"/>
+      <path d="M0 0 L46 -14 L92 0 Z" fill="#cbd5e1"/>
+      <line x1="23" y1="0" x2="23" y2="52" stroke="#cbd5e1"/>
+      <line x1="46" y1="0" x2="46" y2="52" stroke="#cbd5e1"/>
+      <line x1="69" y1="0" x2="69" y2="52" stroke="#cbd5e1"/>
+    </g>
+    <g transform="translate(330 66)">
+      <rect width="92" height="52" rx="4" fill="#fff2d6"/>
+      <rect width="92" height="52" rx="4" fill="none" stroke="#e0b458"/>
+      <path d="M0 0 L46 -14 L92 0 Z" fill="#f0d59a"/>
+      <line x1="23" y1="0" x2="23" y2="52" stroke="#f0d59a"/>
+      <line x1="46" y1="0" x2="46" y2="52" stroke="#f0d59a"/>
+      <line x1="69" y1="0" x2="69" y2="52" stroke="#f0d59a"/>
+    </g>
+    <g transform="translate(315 205)">
+      <rect width="100" height="58" rx="4" fill="#fde2e0"/>
+      <rect width="100" height="58" rx="4" fill="none" stroke="#e88a84"/>
+      <path d="M0 0 L50 -15 L100 0 Z" fill="#f3b3ae"/>
+      <line x1="25" y1="0" x2="25" y2="58" stroke="#f3b3ae"/>
+      <line x1="50" y1="0" x2="50" y2="58" stroke="#f3b3ae"/>
+      <line x1="75" y1="0" x2="75" y2="58" stroke="#f3b3ae"/>
+    </g>
+    <g transform="translate(70 210)">
+      <rect width="92" height="52" rx="4" fill="#e7f6e7"/>
+      <rect width="92" height="52" rx="4" fill="none" stroke="#7bbd7b"/>
+      <path d="M0 0 L46 -14 L92 0 Z" fill="#bfe0bf"/>
+      <line x1="23" y1="0" x2="23" y2="52" stroke="#bfe0bf"/>
+      <line x1="46" y1="0" x2="46" y2="52" stroke="#bfe0bf"/>
+      <line x1="69" y1="0" x2="69" y2="52" stroke="#bfe0bf"/>
+    </g>
+  </g>
+  <!-- hotspot heat over Shed C -->
+  <g>
+    <circle cx="365" cy="234" r="70" fill="#ef4444" opacity="0.12"/>
+    <circle cx="365" cy="234" r="46" fill="#ef4444" opacity="0.16"/>
+    <circle cx="365" cy="234" r="24" fill="#ef4444" opacity="0.22"/>
+  </g>
+  <!-- trees -->
+  <g fill="#6fae57">
+    <circle cx="34" cy="150" r="7"/><circle cx="52" cy="156" r="6"/>
+    <circle cx="486" cy="150" r="7"/><circle cx="470" cy="158" r="6"/>
+    <circle cx="250" cy="300" r="7"/><circle cx="270" cy="306" r="6"/>
+    <circle cx="200" cy="40" r="6"/>
+  </g>
+</svg>
