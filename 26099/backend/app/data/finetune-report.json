@@ -1,0 +1,37 @@
+{
+  "baseModel": "sentence-transformers/all-MiniLM-L6-v2",
+  "finetunedPath": "app\\data\\nummf-minilm",
+  "epochs": 4,
+  "loss": "CosineSimilarityLoss",
+  "heldOutItems": 96,
+  "trainItems": 145,
+  "trainPairs": 510,
+  "heldOutPairs": 223,
+  "heldOut": {
+    "before": {
+      "same": 0.7561,
+      "different": 0.6989,
+      "gap": 0.0572,
+      "separation": 0.352,
+      "auc": 0.6162,
+      "pairs": 223
+    },
+    "after": {
+      "same": 0.4404,
+      "different": 0.1668,
+      "gap": 0.2736,
+      "separation": 1.281,
+      "auc": 0.824,
+      "pairs": 223
+    }
+  },
+  "wholeCorpusBefore": {
+    "same": 0.7634,
+    "different": 0.7031,
+    "gap": 0.0604,
+    "separation": 0.38,
+    "auc": 0.6205,
+    "pairs": 1310
+  },
+  "note": "The shipped model is the one trained on the training items only. The held-out items were never shown to it, at any point, and the demo drives those items. Whole items were held out rather than pairs, because two records of one item are not independent of each other."
+}

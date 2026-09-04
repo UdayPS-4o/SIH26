@@ -1,56 +1,53 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
-import Loading from '@/components/Loading'
-import LoginPage from '@/pages/LoginPage'
-import { useDemoEngine } from '@/store/demo'
-import { useThemeStore } from '@/store/theme'
+import { Skeleton } from '@/components/ui'
+import { useService } from '@/store/service'
 
-const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
-const MaterialsPage = lazy(() => import('@/pages/MaterialsPage'))
-const MatchingPage = lazy(() => import('@/pages/MatchingPage'))
-const ReviewsPage = lazy(() => import('@/pages/ReviewsPage'))
-const AnalyticsPage = lazy(() => import('@/pages/AnalyticsPage'))
-const AdminPage = lazy(() => import('@/pages/AdminPage'))
+const OverviewPage = lazy(() => import('@/pages/OverviewPage'))
+const ExplorerPage = lazy(() => import('@/pages/ExplorerPage'))
+const DuplicatesPage = lazy(() => import('@/pages/DuplicatesPage'))
+const SavingsPage = lazy(() => import('@/pages/SavingsPage'))
+const RegistryPage = lazy(() => import('@/pages/RegistryPage'))
+const ImportPage = lazy(() => import('@/pages/ImportPage'))
 const NormalizePage = lazy(() => import('@/pages/NormalizePage'))
-const AuditPage = lazy(() => import('@/pages/AuditPage'))
-const CnmcRegistryPage = lazy(() => import('@/pages/CnmcRegistryPage'))
-const UploadPage = lazy(() => import('@/pages/UploadPage'))
+const ActivityPage = lazy(() => import('@/pages/ActivityPage'))
+const EnginePage = lazy(() => import('@/pages/EnginePage'))
 
 export default function App() {
-  const { isLoggedIn, login } = useDemoEngine()
-  useThemeStore() // Ensure theme store is active and synced
+  const bootstrap = useService(s => s.bootstrap)
 
-  if (!isLoggedIn) {
-    return <LoginPage onLogin={login} />
-  }
+  useEffect(() => {
+    void bootstrap()
+  }, [bootstrap])
 
   return (
-    <div className="h-screen w-screen flex bg-dark-950 text-dark-200 overflow-hidden font-sans antialiased">
-      {/* Fixed-width left sidebar */}
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-paper text-ink antialiased">
       <Sidebar />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-dark-950">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Header />
-        <main className="flex-1 overflow-hidden relative">
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              <Route path="/" element={<DashboardPage />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/materials" element={<MaterialsPage />} />
-              <Route path="/matching" element={<MatchingPage />} />
-              <Route path="/reviews" element={<ReviewsPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/upload" element={<UploadPage />} />
-              <Route path="/normalize" element={<NormalizePage />} />
-              <Route path="/audit" element={<AuditPage />} />
-              <Route path="/registry" element={<CnmcRegistryPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+        <main className="flex-1 overflow-y-auto">
+          {/* Wide on purpose. This is a records console, not an article: the
+              tables carry eight to ten columns and at 1180px they were being
+              horizontally scrolled on a 1920px screen, which put the national
+              code, the column the whole product is about, off the right edge. */}
+          <div className="mx-auto w-full max-w-[1600px] px-6 py-7 pb-20">
+            <Suspense fallback={<Skeleton rows={6} />}>
+              <Routes>
+                <Route path="/" element={<OverviewPage />} />
+                <Route path="/explorer" element={<ExplorerPage />} />
+                <Route path="/duplicates" element={<DuplicatesPage />} />
+                <Route path="/savings" element={<SavingsPage />} />
+                <Route path="/registry" element={<RegistryPage />} />
+                <Route path="/import" element={<ImportPage />} />
+                <Route path="/normalize" element={<NormalizePage />} />
+                <Route path="/activity" element={<ActivityPage />} />
+                <Route path="/engine" element={<EnginePage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </div>
         </main>
       </div>
     </div>
