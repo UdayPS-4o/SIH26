@@ -2,7 +2,7 @@ import { create } from 'zustand'
 
 export type Theme = 'light' | 'dark'
 
-const STORAGE_KEY = 'nummf.theme'
+const STORAGE_KEY = 'codeone.theme'
 
 function initialTheme(): Theme {
   try {

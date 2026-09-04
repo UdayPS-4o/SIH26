@@ -151,7 +151,7 @@ function guessFamily(text: string): MaterialFamily {
 
 /* ------------------------------------------------------------------ restore */
 
-const REMEMBERED = 'nummf.loaded'
+const REMEMBERED = 'codeone.loaded'
 
 /**
  * The masters that are already in when the console opens.

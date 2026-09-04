@@ -1,4 +1,4 @@
-# NUMMF - National Unified Material Master Framework
+# CodeOne - National Unified Material Master Framework
 ## SIH 2026 | Problem ID: 26099
 
 **"One Nation, One Material Code"**
@@ -56,7 +56,7 @@ Unlike simple fuzzy matching, our 4-stage pipeline:
 Lexical (30%) → Semantic (40%) → Numeric (30%) → Cross-Encoder Reranker
 ```
 
-| Feature | Simple Solutions | NUMMF |
+| Feature | Simple Solutions | CodeOne |
 |---------|-----------------|-------|
 | Lexical matching | 1 algorithm | RapidFuzz token_sort + partial |
 | Semantic understanding | Word count only | sentence-transformers embeddings |
@@ -105,7 +105,7 @@ Cross-Encoder (ms-marco-MiniLM) →  Accurate re-ranking
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        NUMMF - SYSTEM ARCHITECTURE                           │
+│                        CodeOne - SYSTEM ARCHITECTURE                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                               │
 │  ┌──────────────┐    ┌──────────────────┐    ┌───────────────────────────┐  │

@@ -1,4 +1,4 @@
-"""Generate NUMMF architecture diagram as PNG."""
+"""Generate CodeOne architecture diagram as PNG."""
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
@@ -35,7 +35,7 @@ def draw_arrow(ax, x1, y1, x2, y2):
                 arrowprops=dict(arrowstyle='->', color=COLORS['arrow'], lw=1.2))
 
 # Title
-ax.text(0, 6.5, 'NUMMF - System Architecture', ha='center', fontsize=20, fontweight='bold', color='white',
+ax.text(0, 6.5, 'CodeOne - System Architecture', ha='center', fontsize=20, fontweight='bold', color='white',
         path_effects=[pe.withStroke(linewidth=1, foreground=COLORS['accent'])])
 ax.text(0, 6.1, 'AI-Driven National Unified Material Master Framework', ha='center', fontsize=12, color=COLORS['subtext'])
 

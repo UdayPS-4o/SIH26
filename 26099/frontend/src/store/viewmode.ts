@@ -11,7 +11,7 @@ import { create } from 'zustand'
 
 export type ViewMode = 'simple' | 'technical'
 
-const STORAGE_KEY = 'nummf.view'
+const STORAGE_KEY = 'codeone.view'
 
 function initialMode(): ViewMode {
   try {

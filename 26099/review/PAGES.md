@@ -1,4 +1,4 @@
-# NUMMF (26099) — Page-by-Page Review
+# CodeOne (26099) — Page-by-Page Review
 
 Setup used for this review:
 - Backend: FastAPI + SQLite, run locally on `http://localhost:8001` (port 8000 was occupied by an unrelated process on this machine, so it was moved — see `frontend/vite.config.ts` proxy target).
@@ -29,7 +29,7 @@ Aggregate metrics dashboard: harmonization coverage %, redundancy reduction %, e
 Administration page for two things: (1) calibrating the AI scoring pipeline's weight formula (Semantic/Lexical/Numeric sliders, must total 100%), and (2) registering new CPSE ERP connectors (org name, short code, ERP system type) to onboard additional PSUs into the platform. Also has a light/dark theme switcher.
 
 ## 07. Upload CSV Data — `/upload` ([07_upload.png](07_upload.png))
-CSV ingestion tool for bringing a CPSE's material master data into NUMMF. Lets the user pick a target CPSE organization, load one of several bundled sample datasets (ONGC/SAIL/NTPC CSVs) for a quick demo, or drag-and-drop/upload a real CSV (expects Material Code, Description, UOM, Organization columns).
+CSV ingestion tool for bringing a CPSE's material master data into CodeOne. Lets the user pick a target CPSE organization, load one of several bundled sample datasets (ONGC/SAIL/NTPC CSVs) for a quick demo, or drag-and-drop/upload a real CSV (expects Material Code, Description, UOM, Organization columns).
 
 ## 08. Normalization — `/normalize` ([08_normalize.png](08_normalize.png))
 Interactive demo of the description-normalization engine (spaCy EntityRuler + regex + MRO abbreviation dictionary). User selects a raw material record, sees the raw ERP description and detected abbreviations (e.g. "BRG"→"BEARING", "ID"→"BORE (INNER DIAMETER)"), then runs normalization to see the structured, CNMC-standard output.

@@ -17,7 +17,7 @@ type Entry = { simple: string; technical: string }
 
 export const COPY = {
   /* ---------------------------------------------------------------- product */
-  productName: { simple: 'NUMMF', technical: 'NUMMF' },
+  productName: { simple: 'CodeOne', technical: 'CodeOne' },
   productFull: {
     simple: 'National Unified Material Master',
     technical: 'National Unified Material Master Framework',

@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
 /*
- * NUMMF token layer.
+ * CodeOne token layer.
  *
  * The palette is a full replacement, not an extension. Every colour resolves to
  * a CSS variable declared in src/index.css, so one class is correct in both

@@ -8,7 +8,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://nummf:nummf_password@postgres:5432/nummf_db
+      - DATABASE_URL=postgresql://codeone:codeone_password@postgres:5432/codeone_db
       - SECRET_KEY=change-me-in-production-use-env-var
       - DEBUG=true
     volumes:
@@ -24,13 +24,13 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=nummf
-      - POSTGRES_PASSWORD=nummf_password
-      - POSTGRES_DB=nummf_db
+      - POSTGRES_USER=codeone
+      - POSTGRES_PASSWORD=codeone_password
+      - POSTGRES_DB=codeone_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nummf"]
+      test: ["CMD-SHELL", "pg_isready -U codeone"]
       interval: 5s
       timeout: 5s
       retries: 5

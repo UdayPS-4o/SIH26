@@ -1,4 +1,4 @@
-# NUMMF — Complete Build Plan
+# CodeOne — Complete Build Plan
 **SIH 2026 · Problem Statement #26099 · Ministry of Petroleum & Natural Gas / CPCL**
 > *"AI-Driven Standardization and Harmonization of Material Codes Across CPSEs"*
 
@@ -30,7 +30,7 @@ Imagine five government companies — IOCL (oil), NTPC (power), SAIL (steel), CI
 
 ### 1.2 What We Are Building
 
-We are building **NUMMF (National Unified Material Master Framework)** — a full-stack AI web application that:
+We are building **CodeOne (National Unified Material Master Framework)** — a full-stack AI web application that:
 
 1. **Ingests** material catalogs from any CPSE (CSV, Excel, JSON, or live ERP API)
 2. **Normalizes** messy descriptions — fixes abbreviations, expands Indian industrial jargon, standardizes units
@@ -75,7 +75,7 @@ Confidence: HIGH / MEDIUM / LOW
 
 ### 1.5 Why This Will Win at SIH
 
-| Criterion | What Judges Look For | What NUMMF Delivers |
+| Criterion | What Judges Look For | What CodeOne Delivers |
 |-----------|---------------------|-------------------|
 | **Problem Understanding** | Deep grasp of the domain pain | Built around Indian CPSE procurement workflows |
 | **Technical Depth** | Smart architecture, not just CRUD | 4-stage AI pipeline with bi+cross encoder |
@@ -682,12 +682,12 @@ curl -X POST http://localhost:8000/api/v1/admin/seed-demo \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| DATABASE_URL | postgresql://postgres:postgres@postgres:5432/nummf | PostgreSQL connection |
+| DATABASE_URL | postgresql://postgres:postgres@postgres:5432/codeone | PostgreSQL connection |
 | SECRET_KEY | (auto-generated) | JWT signing key |
 | ALGORITHM | HS256 | JWT algorithm |
 | ACCESS_TOKEN_EXPIRE_MINUTES | 30 | Token expiry |
 | DEBUG | true | Enable debug mode |
-| APP_NAME | NUMMF | Application name |
+| APP_NAME | CodeOne | Application name |
 | VERSION | 1.0.0 | Application version |
 
 ---
@@ -709,7 +709,7 @@ curl -X POST http://localhost:8000/api/v1/admin/seed-demo \
 ## Appendix B: Demo Script (5-Minute Presentation)
 
 1. **Open browser** → http://localhost:3000 → Login page (0:00-0:15)
-2. **Login** → admin@nummf.gov.in / admin123 → Dashboard (0:15-0:30)
+2. **Login** → admin@codeone.gov.in / admin123 → Dashboard (0:15-0:30)
 3. **Click "Materials"** → Show material list, explain "different codes for same thing" (0:30-0:45)
 4. **Click "Matching"** → Select IOCL → NTPC → Click "Run AI Pipeline" → Show 4-stage animation (0:45-1:30)
 5. **Show match results** → 94% match score, proposed CNMC code (1:30-2:00)
@@ -753,4 +753,4 @@ curl -X POST http://localhost:8000/api/v1/admin/seed-demo \
 
 ---
 
-*Built for SIH 2026 · NUMMF · One Nation, One Material Code*
+*Built for SIH 2026 · CodeOne · One Nation, One Material Code*

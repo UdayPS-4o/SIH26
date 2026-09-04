@@ -51,7 +51,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "app" / "data" / "model-data.json"
-OUT = ROOT / "app" / "data" / "nummf-minilm"
+OUT = ROOT / "app" / "data" / "codeone-minilm"
 REPORT = ROOT / "app" / "data" / "finetune-report.json"
 
 BASE_MODEL = "sentence-transformers/all-MiniLM-L6-v2"

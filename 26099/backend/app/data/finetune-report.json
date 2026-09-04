@@ -1,6 +1,6 @@
 {
   "baseModel": "sentence-transformers/all-MiniLM-L6-v2",
-  "finetunedPath": "app\\data\\nummf-minilm",
+  "finetunedPath": "app\\data\\codeone-minilm",
   "epochs": 4,
   "loss": "CosineSimilarityLoss",
   "heldOutItems": 96,
