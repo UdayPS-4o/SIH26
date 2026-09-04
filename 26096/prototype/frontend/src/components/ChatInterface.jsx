@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSpeech } from '../hooks/useSpeech';
 import fakeResponses from '../data/fakeResponses.json';
 
@@ -26,11 +27,22 @@ export default function ChatInterface() {
   const [streamingText, setStreamingText] = useState('');
   const [visibleCount, setVisibleCount] = useState(0);
   const messagesEndRef = useRef(null);
+  const location = useLocation();
+  const initialQueryHandled = useRef(false);
   const { speak, listen, isListening, isSpeaking, stopSpeaking } = useSpeech();
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages, visibleCount]);
+
+  useEffect(() => {
+    const q = location.state?.query;
+    if (q && !initialQueryHandled.current) {
+      initialQueryHandled.current = true;
+      handleSend(q);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const findBestResponse = (query) => {
     const q = query.toLowerCase();
@@ -130,8 +142,9 @@ export default function ChatInterface() {
   return (
     <>
       <div className="page-header">
-        <h2 className="page-title">Digital Archive Chat</h2>
-        <p className="page-subtitle">Ask me anything about Dr. B.R. Ambedkar's life, works, and legacy</p>
+        <div className="page-eyebrow">AI Assistant</div>
+        <h1 className="page-title">Chat with AI</h1>
+        <p className="page-subtitle">Ask anything about Dr. B. R. Ambedkar&rsquo;s life, works and legacy &mdash; answers cite archival sources.</p>
       </div>
 
       <div className="chat-container">

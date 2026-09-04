@@ -44,9 +44,11 @@ export default function ManuscriptViewer() {
   return (
     <>
       <div className="page-header">
-        <h2 className="page-title">Digital Library</h2>
+        <div className="page-eyebrow">Digitised Collection</div>
+        <h1 className="page-title">Manuscripts</h1>
         <p className="page-subtitle">
-          {documentsData.documents.length} digitized works from the DAIC archives
+          {documentsData.documents.length} digitised works and documents from the DAIC archives.
+          Scan any item to preview its OCR text.
         </p>
       </div>
 

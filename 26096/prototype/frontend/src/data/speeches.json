@@ -1,0 +1,100 @@
+{
+  "speeches": [
+    {
+      "id": 1,
+      "title": "Grievances of the Depressed Classes",
+      "venue": "Southborough Committee, Bombay",
+      "date": "1919-01-27",
+      "year": 1919,
+      "duration": "22 min",
+      "category": "rights",
+      "summary": "Ambedkar's first major public testimony, arguing that the Depressed Classes needed separate political representation to secure their interests in any reformed legislature.",
+      "excerpt": "The right of representation and the right to hold office under the State are the two most important rights that make up citizenship. But the untouchability of the untouchables puts these rights far beyond their reach.",
+      "source": "BAWS Volume 1"
+    },
+    {
+      "id": 2,
+      "title": "Address at the Mahad Satyagraha",
+      "venue": "Chavdar Tank, Mahad",
+      "date": "1927-03-20",
+      "year": 1927,
+      "duration": "35 min",
+      "category": "movement",
+      "summary": "Leading thousands to drink from the public Chavdar Tank, Ambedkar declared the movement a battle for human dignity, not merely water.",
+      "excerpt": "We are not going to the Chavdar Tank to merely drink its water. We are going to the Tank to assert that we too are human beings like others. It must be clear that this meeting has been called to set up the norm of equality.",
+      "source": "BAWS Volume 17"
+    },
+    {
+      "id": 3,
+      "title": "Evidence before the Simon Commission",
+      "venue": "Indian Statutory Commission",
+      "date": "1928-05-23",
+      "year": 1928,
+      "duration": "40 min",
+      "category": "rights",
+      "summary": "A detailed constitutional argument for adult franchise and reserved representation for the Depressed Classes in the provincial and central legislatures.",
+      "excerpt": "We feel that nobody can remove our grievances as well as we can, and we cannot remove them unless we get political power in our own hands.",
+      "source": "BAWS Volume 2"
+    },
+    {
+      "id": 4,
+      "title": "Round Table Conference — Opening Statement",
+      "venue": "St. James's Palace, London",
+      "date": "1930-11-20",
+      "year": 1930,
+      "duration": "28 min",
+      "category": "constitutional",
+      "summary": "Representing the Depressed Classes on a world stage, Ambedkar insisted that self-government must also mean the end of the social tyranny of caste.",
+      "excerpt": "We do not want to be governed by others, but we want to make sure that the government of the country is not the government of a class, or a caste, but the government of the people.",
+      "source": "BAWS Volume 2"
+    },
+    {
+      "id": 5,
+      "title": "The Annihilation of Caste (undelivered)",
+      "venue": "Jat-Pat Todak Mandal, Lahore",
+      "date": "1936-05-15",
+      "year": 1936,
+      "duration": "written text",
+      "category": "reform",
+      "summary": "Prepared as a presidential address and then cancelled by the organisers, Ambedkar published the text himself; it became the century's most influential critique of caste.",
+      "excerpt": "Caste is not a physical object like a wall of bricks or a line of barbed wire which prevents the Hindus from co-mingling. Caste is a notion, it is a state of the mind.",
+      "source": "BAWS Volume 1"
+    },
+    {
+      "id": 6,
+      "title": "Moving the Draft Constitution",
+      "venue": "Constituent Assembly of India, New Delhi",
+      "date": "1948-11-04",
+      "year": 1948,
+      "duration": "90 min",
+      "category": "constitutional",
+      "summary": "Introducing the Draft Constitution, Ambedkar explained its federal structure, the choice of parliamentary democracy, and the safeguards against tyranny.",
+      "excerpt": "However good a Constitution may be, it is sure to turn out bad because those who are called to work it happen to be a bad lot. However bad a Constitution may be, it may turn out to be good if those who are called to work it happen to be a good lot.",
+      "source": "Constituent Assembly Debates, Vol. VII"
+    },
+    {
+      "id": 7,
+      "title": "The Grammar of Anarchy",
+      "venue": "Constituent Assembly of India, New Delhi",
+      "date": "1949-11-25",
+      "year": 1949,
+      "duration": "55 min",
+      "category": "constitutional",
+      "summary": "His final address to the Assembly, warning that constitutional morality had to replace methods of civil disobedience once democratic means existed.",
+      "excerpt": "If we wish to maintain democracy not merely in form, but also in fact, we must hold fast to constitutional methods of achieving our social and economic objectives. We must abandon the bloody methods of revolution.",
+      "source": "Constituent Assembly Debates, Vol. XI"
+    },
+    {
+      "id": 8,
+      "title": "Buddha or Karl Marx",
+      "venue": "World Fellowship of Buddhists, Kathmandu",
+      "date": "1956-11-20",
+      "year": 1956,
+      "duration": "45 min",
+      "category": "philosophy",
+      "summary": "One of his last speeches, contrasting the Buddha's path of moral transformation with the Marxist path of force as answers to human suffering.",
+      "excerpt": "The Russians are proud of their Communism. But they forget that the wonder of all wonders is that the Buddha established Communism so far as the Sangha was concerned without dictatorship.",
+      "source": "BAWS Volume 3"
+    }
+  ]
+}

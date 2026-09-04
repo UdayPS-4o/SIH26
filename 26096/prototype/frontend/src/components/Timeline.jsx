@@ -15,9 +15,10 @@ export default function Timeline() {
   return (
     <>
       <div className="page-header">
-        <h2 className="page-title">Timeline</h2>
+        <div className="page-eyebrow">1891 &ndash; 1956</div>
+        <h1 className="page-title">Timeline</h1>
         <p className="page-subtitle">
-          34 key events from 1891 to 1956 — the life of Dr. B.R. Ambedkar
+          Key events across sixty-five years in the life of Dr. B. R. Ambedkar.
         </p>
       </div>
 

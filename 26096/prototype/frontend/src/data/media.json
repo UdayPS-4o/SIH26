@@ -1,0 +1,112 @@
+{
+  "media": [
+    {
+      "id": 1,
+      "type": "video",
+      "youtubeId": "YZ57q_39hqg",
+      "title": "Dr. Babasaheb Ambedkar — Films Division Documentary",
+      "year": 1968,
+      "collection": "Films Division of India / Indian Diplomacy",
+      "description": "The official Films Division biographical documentary on Dr. Ambedkar, released on the MEA channel for Constitution Day."
+    },
+    {
+      "id": 2,
+      "type": "video",
+      "youtubeId": "hv3swq_N0tU",
+      "title": "Dr. Babasaheb Ambedkar (2000) — Feature Film",
+      "year": 2000,
+      "collection": "Dir. Jabbar Patel · NFDC / Govt. of India",
+      "description": "The National Award-winning biographical film starring Mammootty as Dr. Ambedkar, tracing his life from childhood to the framing of the Constitution."
+    },
+    {
+      "id": 3,
+      "type": "video",
+      "youtubeId": "ffVNc9gVZEQ",
+      "title": "B. R. Ambedkar — Now and Then",
+      "year": 2018,
+      "collection": "Independent documentary",
+      "description": "A feature-length documentary exploring Dr. Ambedkar's life and continuing political relevance."
+    },
+    {
+      "id": 4,
+      "type": "video",
+      "youtubeId": "-UZzs6M1Mas",
+      "title": "The Man Who Wrote India's Destiny",
+      "year": 2022,
+      "collection": "Educational short",
+      "description": "A short film on Dr. Ambedkar's journey from discrimination to becoming the principal architect of the Constitution."
+    },
+    {
+      "id": 5,
+      "type": "audio",
+      "youtubeId": "GxYfRPEmWzI",
+      "title": "Speech in the Constituent Assembly, 17 December 1946",
+      "year": 1946,
+      "collection": "Prasar Bharati Archives / All India Radio",
+      "description": "Restored All India Radio recording of Dr. Ambedkar addressing the Constituent Assembly during the debate on the Objectives Resolution."
+    },
+    {
+      "id": 6,
+      "type": "audio",
+      "youtubeId": "X_J4uMm6bB8",
+      "title": "The Immortal Voice of Dr. Ambedkar (English)",
+      "year": 1953,
+      "collection": "Archival audio compilation",
+      "description": "One of the few surviving recordings of Dr. Ambedkar's own voice, speaking in English on democracy and social justice."
+    },
+    {
+      "id": 7,
+      "type": "audio",
+      "youtubeId": "6TG-iHoHvjE",
+      "title": "BBC Radio Interview, 1955",
+      "year": 1955,
+      "collection": "BBC / archival audio",
+      "description": "Dr. Ambedkar in conversation with the BBC, including his much-quoted assessment of Gandhi and Indian politics."
+    },
+    {
+      "id": 8,
+      "type": "photograph",
+      "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Dr._Bhimrao_Ambedkar.jpg?width=900",
+      "title": "Portrait of Dr. B. R. Ambedkar",
+      "year": 1950,
+      "collection": "Wikimedia Commons (public domain)",
+      "description": "The widely reproduced formal portrait of Dr. Ambedkar from around the time he served as first Law Minister of India."
+    },
+    {
+      "id": 9,
+      "type": "photograph",
+      "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Drafting_Committee_for_the_Constitution_of_India._Dr._B._R._Ambedkar_in_the_center.jpg?width=1000",
+      "title": "The Drafting Committee of the Constitution",
+      "year": 1947,
+      "collection": "Wikimedia Commons (public domain)",
+      "description": "The Drafting Committee of the Constituent Assembly, with Dr. Ambedkar as chairman at the centre."
+    },
+    {
+      "id": 10,
+      "type": "photograph",
+      "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Dr._Babasaheb_Ambedkar,_chairman_of_the_Drafting_Committee,_presenting_the_final_draft_of_the_Indian_Constitution_to_Dr._Rajendra_Prasad_on_25_November,_1949.jpg?width=1000",
+      "title": "Presenting the Final Draft of the Constitution",
+      "year": 1949,
+      "collection": "Wikimedia Commons (public domain)",
+      "description": "Dr. Ambedkar presenting the final draft of the Constitution to Constituent Assembly President Dr. Rajendra Prasad on 25 November 1949."
+    },
+    {
+      "id": 11,
+      "type": "photograph",
+      "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Dr._Babasaheb_Ambedkar_Chairman,_Drafting_Committee_of_the_Indian_Constitution_with_other_members_on_Aug._29,_1947.jpg?width=1000",
+      "title": "Drafting Committee Constituted, 29 August 1947",
+      "year": 1947,
+      "collection": "Wikimedia Commons (public domain)",
+      "description": "The committee photographed on the day it was formed by the Constituent Assembly, with Dr. Ambedkar as chairman."
+    },
+    {
+      "id": 12,
+      "type": "photograph",
+      "image": "https://commons.wikimedia.org/wiki/Special:FilePath/Dr._Ambedkar_in_a_group_photograph.jpg?width=1000",
+      "title": "Dr. Ambedkar with Colleagues",
+      "year": 1950,
+      "collection": "Wikimedia Commons (public domain)",
+      "description": "A group photograph of Dr. Ambedkar with political and legal contemporaries in the early years of the Republic."
+    }
+  ]
+}
