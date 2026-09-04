@@ -1,58 +1,46 @@
 import { create } from 'zustand'
 
-export type ThemeMode = 'dark' | 'light'
+export type Theme = 'light' | 'dark'
 
-interface ThemeState {
-  theme: ThemeMode
-  setTheme: (theme: ThemeMode) => void
-  toggleTheme: () => void
-}
+const STORAGE_KEY = 'nummf.theme'
 
-const getInitialTheme = (): ThemeMode => {
-  if (typeof window === 'undefined') return 'dark'
-  const saved = localStorage.getItem('nummf-theme') as ThemeMode | null
-  if (saved === 'light' || saved === 'dark') {
-    return saved
-  }
-  // Check system preference
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+function initialTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored === 'light' || stored === 'dark') return stored
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  } catch {
     return 'light'
   }
-  return 'dark'
 }
 
-const applyThemeToDOM = (theme: ThemeMode) => {
-  if (typeof document === 'undefined') return
-  const root = document.documentElement
-  if (theme === 'light') {
-    root.classList.remove('dark')
-    root.classList.add('light')
-    root.setAttribute('data-theme', 'light')
-    root.style.colorScheme = 'light'
-  } else {
-    root.classList.remove('light')
-    root.classList.add('dark')
-    root.setAttribute('data-theme', 'dark')
-    root.style.colorScheme = 'dark'
-  }
+function apply(theme: Theme) {
+  document.documentElement.classList.toggle('dark', theme === 'dark')
 }
 
-export const useThemeStore = create<ThemeState>((set, get) => {
-  const initialTheme = getInitialTheme()
-  applyThemeToDOM(initialTheme)
+interface ThemeStore {
+  theme: Theme
+  setTheme: (theme: Theme) => void
+  toggle: () => void
+}
 
-  return {
-    theme: initialTheme,
-    setTheme: (theme: ThemeMode) => {
-      localStorage.setItem('nummf-theme', theme)
-      applyThemeToDOM(theme)
-      set({ theme })
-    },
-    toggleTheme: () => {
-      const nextTheme: ThemeMode = get().theme === 'dark' ? 'light' : 'dark'
-      localStorage.setItem('nummf-theme', nextTheme)
-      applyThemeToDOM(nextTheme)
-      set({ theme: nextTheme })
-    },
-  }
-})
+export const useTheme = create<ThemeStore>((set, get) => ({
+  theme: 'light',
+  setTheme: theme => {
+    apply(theme)
+    try {
+      localStorage.setItem(STORAGE_KEY, theme)
+    } catch {
+      // Preference will not persist, which is not worth failing the switch over.
+    }
+    set({ theme })
+  },
+  toggle: () => get().setTheme(get().theme === 'light' ? 'dark' : 'light'),
+}))
+
+/** Called once at start-up, before React paints, to avoid a flash of the wrong theme. */
+export function initTheme() {
+  const theme = initialTheme()
+  apply(theme)
+  useTheme.setState({ theme })
+}
