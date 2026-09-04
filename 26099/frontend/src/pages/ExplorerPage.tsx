@@ -18,9 +18,15 @@ import {
   ArrowSquareOut,
   ArrowUp,
   ArrowsDownUp,
+  Barcode,
+  Buildings,
   CaretDown,
   CaretLeft,
   CaretRight,
+  Copy,
+  Package,
+  Stack,
+  Warehouse,
 } from '@phosphor-icons/react'
 
 import {
@@ -31,7 +37,6 @@ import {
   ErrorState,
   Field,
   Label,
-  Meter,
   Mono,
   Num,
   PageHead,
@@ -48,6 +53,7 @@ import {
   TextInput,
   Th,
 } from '@/components/ui'
+import { CategoryBarChart, ChartLegend, DonutChart } from '@/components/ui/charts'
 import { ByMode, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
@@ -454,12 +460,18 @@ export default function ExplorerPage() {
         {health ? (
           <StatRow className="lg:!grid-cols-3">
             <StatCell>
-              <Stat value={formatExact(health.records)} label="Records read" />
+              <Stat
+                value={formatExact(health.records)}
+                label="Records read"
+                icon={<Stack size={16} weight="regular" />}
+                tone="neutral"
+              />
             </StatCell>
             <StatCell>
               <Stat
                 value={formatExact(health.distinctCodes)}
                 label="Distinct national codes"
+                icon={<Barcode size={16} weight="regular" />}
                 note="One code per group of records that resolved together."
               />
             </StatCell>
@@ -467,12 +479,16 @@ export default function ExplorerPage() {
               <Stat
                 value={formatExact(health.clustersWithDuplicates)}
                 label="Codes held by more than one record"
+                icon={<Copy size={16} weight="regular" />}
+                tone="attention"
               />
             </StatCell>
             <StatCell>
               <Stat
                 value={formatExact(health.duplicateRecords)}
                 label="Duplicate records"
+                icon={<Copy size={16} weight="regular" />}
+                tone="attention"
                 emphasis
                 note="Rows that repeat an item already held under the same code."
               />
@@ -481,12 +497,16 @@ export default function ExplorerPage() {
               <Stat
                 value={formatExact(health.crossCpseClusters)}
                 label="Groups spanning companies"
+                icon={<Buildings size={16} weight="regular" />}
+                tone="info"
               />
             </StatCell>
             <StatCell>
               <Stat
                 value={formatExact(health.largestCluster)}
                 label="Largest group"
+                icon={<Warehouse size={16} weight="regular" />}
+                tone="neutral"
                 note="The most companies found holding one item."
               />
             </StatCell>
@@ -1084,32 +1104,23 @@ function CpseBreakdown({ records }: { records: MaterialRecord[] }) {
     return map
   }, [records])
 
+  const data = useMemo(
+    () => CPSES.map(entry => ({ name: entry.code, value: counts[entry.code] ?? 0 })),
+    [counts],
+  )
+
   return (
     <Panel flush>
-      <PanelHead title="By company" meta={`${CPSES.length} organisations`} />
-      <div className="px-5">
-        {CPSES.map(entry => (
-          <div
-            key={entry.code}
-            className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-rule py-3 last:border-b-0"
-          >
-            <span className="font-mono text-[12px] text-ink">{entry.code}</span>
-            <span className="text-[12.5px] text-ink-2">{entry.name}</span>
-            <TechnicalOnly>
-              <span className="font-mono text-[11px] text-ink-3">{entry.erp}</span>
-            </TechnicalOnly>
-            <span className="ml-auto text-right">
-              <Num size="sm">{formatExact(entry.totalRecords)}</Num>
-              <span className="ml-1.5 text-[11.5px] text-ink-3">in its own list</span>
-              <span className="mt-0.5 block">
-                <Num size="xs" className="text-ink-2">
-                  {formatExact(counts[entry.code] ?? 0)}
-                </Num>
-                <span className="ml-1.5 text-[11px] text-ink-3">in this slice</span>
-              </span>
-            </span>
-          </div>
-        ))}
+      <PanelHead
+        title="By company"
+        meta={`${CPSES.length} organisations`}
+        icon={<Buildings size={18} weight="regular" />}
+      />
+      <div className="flex flex-wrap items-center gap-6 px-5 py-5">
+        <DonutChart data={data} />
+        <div className="min-w-[160px] flex-1">
+          <ChartLegend data={data} />
+        </div>
       </div>
     </Panel>
   )
@@ -1136,37 +1147,36 @@ function FamilyDistribution({
       .sort((a, b) => b.count - a.count)
   }, [records, clusters])
 
-  const peak = distribution.reduce((max, entry) => Math.max(max, entry.count), 1)
+  const chartData = useMemo(
+    () => distribution.map(entry => ({ name: FAMILY_LABEL[entry.family], value: entry.count })),
+    [distribution],
+  )
 
   return (
     <Panel flush>
-      <PanelHead title="By family" meta={`${distribution.length} families`} />
+      <PanelHead
+        title="By family"
+        meta={`${distribution.length} families`}
+        icon={<Package size={18} weight="regular" />}
+      />
       {distribution.length === 0 ? (
         <div className="px-5 py-6">
           <EmptyState title="No records to group yet." />
         </div>
       ) : (
-        <div className="px-5">
-          {distribution.map(entry => (
-            <div key={entry.family} className="border-b border-rule py-3 last:border-b-0">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-[13px] text-ink">{FAMILY_LABEL[entry.family]}</span>
-                <span className="ml-auto">
-                  <Num size="sm">{formatExact(entry.count)}</Num>
-                  <span className="ml-1.5 text-[11.5px] text-ink-3">records</span>
-                </span>
-                <span className="w-24 text-right">
-                  <Num size="sm" className="text-ink-2">
-                    {formatExact(entry.codes)}
-                  </Num>
-                  <span className="ml-1.5 text-[11.5px] text-ink-3">codes</span>
-                </span>
-              </div>
-              <div className="mt-2">
-                <Meter value={entry.count / peak} />
-              </div>
-            </div>
-          ))}
+        <div className="px-5 py-5">
+          <CategoryBarChart data={chartData} />
+          <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-rule pt-3">
+            {distribution.map(entry => (
+              <li key={entry.family} className="flex items-baseline gap-1.5 text-[11.5px] text-ink-3">
+                <span className="text-ink-2">{FAMILY_LABEL[entry.family]}</span>
+                <Num size="2xs" className="text-ink-2">
+                  {formatExact(entry.codes)}
+                </Num>
+                <span>{entry.codes === 1 ? 'code' : 'codes'}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </Panel>

@@ -13,7 +13,18 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, MagnifyingGlass, Plus } from '@phosphor-icons/react'
+import {
+  ArrowRight,
+  BookOpen,
+  Fingerprint,
+  MagnifyingGlass,
+  Plus,
+  Ruler,
+  Scissors,
+  Stamp,
+  Tag,
+  type Icon,
+} from '@phosphor-icons/react'
 
 import {
   Button,
@@ -22,6 +33,7 @@ import {
   EndpointTag,
   ErrorState,
   Field,
+  IconTile,
   Mono,
   Num,
   PageHead,
@@ -98,25 +110,35 @@ const SERVICE_FAILED = 'The harmonization service did not answer that call.'
  *  sequence reads as one operation rather than six unrelated results. */
 function Stage({
   step,
+  icon,
   title,
   note,
   children,
 }: {
   step: number
+  icon: Icon
   title: ReactNode
   note?: ReactNode
   children: ReactNode
 }) {
+  const StageIcon = icon
   return (
     <section className="border-t border-rule px-5 py-4">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <Num size="xs" className="text-ink-3">
-          {step}
-        </Num>
-        <h3 className="font-display text-[13px] font-semibold tracking-tight text-ink">{title}</h3>
-        {note ? <span className="text-[12px] text-ink-3">{note}</span> : null}
+      <div className="flex items-start gap-3">
+        <IconTile icon={<StageIcon size={18} weight="regular" />} tone="accent" size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <Num size="xs" className="text-ink-3">
+              {step}
+            </Num>
+            <h3 className="font-display text-[13px] font-semibold tracking-tight text-ink">
+              {title}
+            </h3>
+            {note ? <span className="text-[12px] text-ink-3">{note}</span> : null}
+          </div>
+          <div className="mt-3">{children}</div>
+        </div>
       </div>
-      <div className="mt-3">{children}</div>
     </section>
   )
 }
@@ -451,6 +473,7 @@ export default function NormalizePage() {
             {/* 1 ------------------------------------------------------- tokens */}
             <Stage
               step={1}
+              icon={Scissors}
               title={<ByMode simple="Split into words" technical="Tokens" />}
               note={
                 <>
@@ -486,6 +509,7 @@ export default function NormalizePage() {
             {/* 2 --------------------------------------------------- expansions */}
             <Stage
               step={2}
+              icon={BookOpen}
               title={<ByMode simple="Short forms written out" technical="Dictionary expansions" />}
               note={
                 <>
@@ -526,6 +550,7 @@ export default function NormalizePage() {
             {/* 3 ------------------------------------------------ attribute slots */}
             <Stage
               step={3}
+              icon={Tag}
               title={<ByMode simple="Specifications pulled out" technical="Attribute slots" />}
               note={
                 <>
@@ -583,6 +608,7 @@ export default function NormalizePage() {
             {/* 4 ------------------------------------------------------ signature */}
             <Stage
               step={4}
+              icon={Fingerprint}
               title={<ByMode simple="The agreed description" technical="Canonical signature" />}
             >
               <Fade id={`sig:${signature}`}>
@@ -609,7 +635,7 @@ export default function NormalizePage() {
             </Stage>
 
             {/* 5 ----------------------------------------------------------- unit */}
-            <Stage step={5} title={<ByMode simple="Unit" technical="Unit of measure" />}>
+            <Stage step={5} icon={Ruler} title={<ByMode simple="Unit" technical="Unit of measure" />}>
               <Fade id={`uom:${uom}->${normalized.uom}`}>
                 <div className="flex flex-wrap items-center gap-3">
                   <Mono>{uom}</Mono>
@@ -626,7 +652,7 @@ export default function NormalizePage() {
             </Stage>
 
             {/* 6 ----------------------------------------------------------- code */}
-            <Stage step={6} title={<ByMode simple="The national code" technical={c('nationalCode')} />}>
+            <Stage step={6} icon={Stamp} title={<ByMode simple="The national code" technical={c('nationalCode')} />}>
               <Fade id={`code:${family}:${signature}`}>
                 {signature ? (
                   <div className="flex flex-col gap-3">

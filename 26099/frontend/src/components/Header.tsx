@@ -79,7 +79,7 @@ export default function Header() {
         <button
           onClick={() => void reset()}
           title="Empty the registry and start again"
-          className="flex h-7 items-center gap-1.5 border border-rule-strong px-2 text-[11.5px] text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+          className="flex h-7 items-center gap-1.5 rounded-full border border-rule-strong px-3 text-[11.5px] text-ink-2 transition-colors hover:bg-surface-hover hover:text-ink"
         >
           <ArrowCounterClockwise size={13} />
           <span className="hidden sm:inline">Start over</span>
@@ -105,9 +105,9 @@ export default function Header() {
       <button
         onClick={toggleTheme}
         aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
-        className="flex h-7 w-7 items-center justify-center border border-rule-strong text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-rule-strong text-attention transition-colors hover:bg-surface-hover"
       >
-        {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+        {theme === 'light' ? <Moon size={14} weight="fill" /> : <Sun size={14} weight="fill" />}
       </button>
     </header>
   )

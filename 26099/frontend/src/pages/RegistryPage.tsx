@@ -15,7 +15,20 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { CaretDown, CaretLeft, CaretRight, CaretUp, Check, Copy, X } from '@phosphor-icons/react'
+import {
+  Books,
+  Buildings,
+  CaretDown,
+  CaretLeft,
+  CaretRight,
+  CaretUp,
+  Check,
+  Coins,
+  Copy,
+  Hash,
+  SealCheck,
+  X,
+} from '@phosphor-icons/react'
 import {
   Button,
   Chip,
@@ -23,6 +36,7 @@ import {
   EndpointTag,
   ErrorState,
   Field,
+  IconTile,
   Label,
   Mono,
   Num,
@@ -37,6 +51,7 @@ import {
   TextInput,
   Th,
 } from '@/components/ui'
+import { ChartLegend, DonutChart } from '@/components/ui/charts'
 import { ByMode, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
@@ -191,6 +206,7 @@ export default function RegistryPage() {
       <Panel flush>
         <PanelHead
           title={technical ? 'Golden records' : 'Every agreed entry'}
+          icon={<Books size={18} weight="regular" />}
           meta={`${formatExact(clusters.length)} codes`}
           action={
             <TechnicalOnly>
@@ -452,6 +468,18 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
   const single = cluster.members.length === 1
   const soleOwner = cluster.members[0]
 
+  /* Spend split by contributing CPSE, aggregated across members from the same
+   * company. Only worth a chart once there is more than one company to split. */
+  const cpseSpend = useMemo(() => {
+    const totals = new Map<string, number>()
+    for (const member of cluster.members) {
+      totals.set(member.cpse, (totals.get(member.cpse) ?? 0) + member.annualQty * member.unitPrice)
+    }
+    return [...totals.entries()]
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+  }, [cluster.members])
+
   const copyCode = () => {
     void navigator.clipboard?.writeText(cluster.code).then(
       () => {
@@ -471,28 +499,31 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
     >
       {/* ---------------------------------------------------------- identity */}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <Label>{c('goldenRecord')}</Label>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
-            <Mono className="px-2 py-1 text-[19px] tracking-tight">{cluster.code}</Mono>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={copyCode}
-              icon={
-                copied ? (
-                  <Check size={16} weight="regular" />
-                ) : (
-                  <Copy size={16} weight="regular" />
-                )
-              }
-            >
-              {copied ? 'Copied' : 'Copy code'}
-            </Button>
+        <div className="flex min-w-0 items-start gap-3">
+          <IconTile icon={<SealCheck size={20} weight="fill" />} tone="positive" size="md" />
+          <div className="min-w-0">
+            <Label>{c('goldenRecord')}</Label>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <Mono className="px-2 py-1 text-[19px] tracking-tight">{cluster.code}</Mono>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={copyCode}
+                icon={
+                  copied ? (
+                    <Check size={16} weight="regular" />
+                  ) : (
+                    <Copy size={16} weight="regular" />
+                  )
+                }
+              >
+                {copied ? 'Copied' : 'Copy code'}
+              </Button>
+            </div>
+            <p className="mt-3 max-w-[70ch] font-display text-[16px] font-semibold leading-snug text-ink">
+              {cluster.standardDescription}
+            </p>
           </div>
-          <p className="mt-3 max-w-[70ch] font-display text-[16px] font-semibold leading-snug text-ink">
-            {cluster.standardDescription}
-          </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -549,13 +580,16 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
 
       {/* ----------------------------------------------------------- members */}
       <section className="mt-6 border-t border-rule pt-4">
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="font-display text-[13px] font-semibold tracking-tight text-ink">
-            {technical ? 'Contributing records' : 'What each company calls it'}
-          </h3>
-          <span className="font-mono text-[11px] text-ink-3">
-            {formatExact(cluster.members.length)}
-          </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <IconTile icon={<Buildings size={14} weight="regular" />} tone="neutral" size="sm" />
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h3 className="font-display text-[13px] font-semibold tracking-tight text-ink">
+              {technical ? 'Contributing records' : 'What each company calls it'}
+            </h3>
+            <span className="font-mono text-[11px] text-ink-3">
+              {formatExact(cluster.members.length)}
+            </span>
+          </div>
         </div>
 
         {single && soleOwner ? (
@@ -660,9 +694,12 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
       <section className="mt-6 border-t border-rule pt-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
           <div>
-            <Label>
-              {technical ? 'Annual spend across members' : 'Spent on this every year, in total'}
-            </Label>
+            <div className="flex items-center gap-2">
+              <IconTile icon={<Coins size={14} weight="regular" />} tone="accent" size="sm" />
+              <Label>
+                {technical ? 'Annual spend across members' : 'Spent on this every year, in total'}
+              </Label>
+            </div>
             <div className="mt-1.5">
               <Num size="lg">{formatRupees(cluster.annualSpend)}</Num>
             </div>
@@ -678,6 +715,18 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
             />
           </p>
         </div>
+
+        {!single && cluster.cpses.length > 1 ? (
+          <div className="mt-4 flex flex-wrap items-center gap-6 border-t border-rule pt-4">
+            <DonutChart data={cpseSpend} size={116} thickness={18} />
+            <div className="min-w-[160px] flex-1">
+              <Label>{technical ? 'Spend by CPSE' : 'Spend by company'}</Label>
+              <div className="mt-2">
+                <ChartLegend data={cpseSpend} />
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <TechnicalOnly>
           <div className="mt-3 border border-rule bg-surface-2 px-4 py-3">
@@ -700,6 +749,12 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
 
       {/* -------------------------------------------------------- derivation */}
       <section className="mt-6 border-t border-rule pt-4">
+        <div className="mb-3 flex items-center gap-3">
+          <IconTile icon={<Hash size={14} weight="regular" />} tone="neutral" size="sm" />
+          <h3 className="font-display text-[13px] font-semibold tracking-tight text-ink">
+            {technical ? 'Derivation' : 'How this code was worked out'}
+          </h3>
+        </div>
         <Button
           size="sm"
           variant="secondary"

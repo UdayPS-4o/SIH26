@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, DownloadSimple } from '@phosphor-icons/react'
+import { ArrowRight, CheckCircle, Clock, DownloadSimple, Hash, XCircle } from '@phosphor-icons/react'
 import {
   Button,
   Chip,
@@ -79,8 +79,8 @@ const ACTION_LABEL: Record<'simple' | 'technical', Record<ActivityAction, string
   },
 }
 
-function toneFor(action: ActivityAction): 'accent' | 'negative' | 'neutral' {
-  if (action === 'approve') return 'accent'
+function toneFor(action: ActivityAction): 'positive' | 'negative' | 'neutral' {
+  if (action === 'approve') return 'positive'
   if (action === 'reject') return 'negative'
   return 'neutral'
 }
@@ -283,6 +283,8 @@ export default function ActivityPage() {
         <StatRow>
           <StatCell>
             <Stat
+              icon={<CheckCircle size={18} weight="regular" />}
+              tone="positive"
               value={summary.approved.toLocaleString('en-IN')}
               label={mode === 'simple' ? 'Agreed by a person' : 'Approved this session'}
               note={
@@ -295,6 +297,8 @@ export default function ActivityPage() {
           </StatCell>
           <StatCell>
             <Stat
+              icon={<XCircle size={18} weight="regular" />}
+              tone="negative"
               value={summary.rejected.toLocaleString('en-IN')}
               label={mode === 'simple' ? 'Rejected by a person' : 'Rejected this session'}
               note={
@@ -307,6 +311,8 @@ export default function ActivityPage() {
           </StatCell>
           <StatCell>
             <Stat
+              icon={<Hash size={18} weight="regular" />}
+              tone="info"
               value={summary.codes.toLocaleString('en-IN')}
               label={mode === 'simple' ? 'Codes settled here' : 'Codes confirmed this session'}
               note={
@@ -319,6 +325,8 @@ export default function ActivityPage() {
           </StatCell>
           <StatCell>
             <Stat
+              icon={<Clock size={18} weight="regular" />}
+              tone="attention"
               value={summary.open.toLocaleString('en-IN')}
               label={mode === 'simple' ? 'Still waiting on a person' : 'Open for review'}
               emphasis={summary.open > 0}

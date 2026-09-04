@@ -24,9 +24,12 @@ import { motion, useReducedMotion } from 'framer-motion'
 import {
   CaretDown,
   CaretRight,
+  CheckCircle,
   ClipboardText,
   FileArrowUp,
   FileCsv,
+  Question,
+  Sparkle,
   TextAa,
 } from '@phosphor-icons/react'
 
@@ -36,6 +39,7 @@ import {
   EmptyState,
   EndpointTag,
   ErrorState,
+  IconTile,
   Label,
   Meter,
   Mono,
@@ -367,9 +371,12 @@ export default function ImportPage() {
 
           {source === 'paste' ? (
             <div className="flex flex-col gap-3">
-              <label className="text-[12px] font-medium text-ink" htmlFor="import-paste">
-                Paste comma separated rows, first line being the header
-              </label>
+              <div className="flex items-center gap-2">
+                <IconTile icon={<ClipboardText size={14} weight="regular" />} tone="accent" size="sm" />
+                <label className="text-[12px] font-medium text-ink" htmlFor="import-paste">
+                  Paste comma separated rows, first line being the header
+                </label>
+              </div>
               <Textarea
                 id="import-paste"
                 rows={8}
@@ -419,7 +426,11 @@ export default function ImportPage() {
                     : 'flex flex-col items-center gap-2 border border-dashed border-rule-strong px-6 py-10 text-center'
                 }
               >
-                <FileArrowUp size={16} weight="regular" />
+                <IconTile
+                  icon={<FileArrowUp size={20} weight="regular" />}
+                  tone={dragging ? 'primary' : 'accent'}
+                  size="md"
+                />
                 <p className="text-[13px] text-ink">
                   {dragging ? 'Let go to read this file' : 'Drop a CSV file here'}
                 </p>
@@ -448,6 +459,10 @@ export default function ImportPage() {
 
           {source === 'line' ? (
             <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <IconTile icon={<TextAa size={14} weight="regular" />} tone="accent" size="sm" />
+                <span className="text-[12px] font-medium text-ink">One item, checked on its own</span>
+              </div>
               <div className="flex flex-wrap items-end gap-3">
                 <div className="flex min-w-[280px] flex-1 flex-col gap-1.5">
                   <label className="text-[12px] font-medium text-ink" htmlFor="import-line">
@@ -498,6 +513,7 @@ export default function ImportPage() {
             <div className="grid gap-px border border-rule bg-rule sm:grid-cols-2">
               {SAMPLES.map(sample => (
                 <div key={sample.path} className="flex flex-col gap-2 bg-surface px-4 py-4">
+                  <IconTile icon={<FileCsv size={16} weight="regular" />} tone="accent" size="sm" />
                   <p className="text-[13px] font-medium text-ink">{sample.label}</p>
                   <p className="text-[12.5px] leading-snug text-ink-2">{sample.detail}</p>
                   <TechnicalOnly>
@@ -766,7 +782,8 @@ export default function ImportPage() {
           <div className="mt-4 flex flex-col gap-4">
             <ResultGroup
               title="Already has a code"
-              tone="accent"
+              tone="positive"
+              icon={<IconTile icon={<CheckCircle size={16} weight="regular" />} tone="positive" size="sm" />}
               count={groups.coded.length}
               rows={groups.coded}
               meta={ingestMeta}
@@ -776,6 +793,7 @@ export default function ImportPage() {
             <ResultGroup
               title="Needs a decision"
               tone="attention"
+              icon={<IconTile icon={<Question size={16} weight="regular" />} tone="attention" size="sm" />}
               count={groups.undecided.length}
               rows={groups.undecided}
               meta={ingestMeta}
@@ -793,6 +811,7 @@ export default function ImportPage() {
             <ResultGroup
               title="New to the registry"
               tone="neutral"
+              icon={<IconTile icon={<Sparkle size={16} weight="regular" />} tone="accent" size="sm" />}
               count={groups.fresh.length}
               rows={groups.fresh}
               meta={ingestMeta}
@@ -819,6 +838,7 @@ export default function ImportPage() {
 function ResultGroup({
   title,
   tone,
+  icon,
   count,
   rows,
   meta,
@@ -827,7 +847,8 @@ function ResultGroup({
   defaultOpen,
 }: {
   title: string
-  tone: 'accent' | 'attention' | 'neutral'
+  tone: 'accent' | 'attention' | 'positive' | 'neutral'
+  icon: ReactNode
   count: number
   rows: IngestRowResult[]
   meta?: RequestMeta
@@ -841,6 +862,7 @@ function ResultGroup({
   return (
     <Panel flush>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule px-5 py-3">
+        {icon}
         <button
           type="button"
           onClick={() => setOpen(value => !value)}

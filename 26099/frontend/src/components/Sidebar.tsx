@@ -15,6 +15,7 @@ import {
   MagnifyingGlass,
   Sliders,
   SquaresFour,
+  Stack,
   TextAa,
   UploadSimple,
 } from '@phosphor-icons/react'
@@ -22,7 +23,7 @@ import { useCopy } from '@/copy'
 import { useViewMode } from '@/store/viewmode'
 import { useService } from '@/store/service'
 import { cx } from './ui/tokens'
-import { Num } from './ui'
+import { IconTile, Num } from './ui'
 import { CPSES } from '@/engine/corpus'
 import type { CopyKey } from '@/copy'
 import type { Icon } from '@phosphor-icons/react'
@@ -48,6 +49,11 @@ const ITEMS: NavItem[] = [
   { to: '/engine', key: 'navEngine', icon: Sliders, simple: false },
 ]
 
+// Cycled per CPSE so the "loaded" strip at the bottom reads as four distinct
+// organisations rather than four identical dots. Decorative only, matches
+// the non-semantic chart palette (tokens.ts CHART_PALETTE) used elsewhere.
+const CPSE_DOT = ['bg-chart-1', 'bg-chart-2', 'bg-chart-3', 'bg-chart-4', 'bg-chart-5', 'bg-chart-6']
+
 export default function Sidebar() {
   const c = useCopy()
   const mode = useViewMode(s => s.mode)
@@ -59,16 +65,21 @@ export default function Sidebar() {
   const operator = visible.filter(item => !item.simple)
 
   return (
-    <aside className="flex w-[248px] shrink-0 flex-col border-r border-rule bg-surface">
-      <div className="border-b border-rule px-5 py-4">
-        <div className="font-display text-[17px] font-bold leading-none tracking-tight text-ink">
-          {c('productName')}
+    <aside className="flex w-[254px] shrink-0 flex-col border-r border-rule bg-surface">
+      <div className="flex items-center gap-3 border-b border-rule px-5 py-4">
+        <IconTile icon={<Stack size={18} weight="fill" />} tone="accent" />
+        <div className="min-w-0">
+          <div className="font-display text-[17px] font-bold leading-none tracking-tight text-ink">
+            {c('productName')}
+          </div>
+          <div className="mt-1.5 truncate text-[11.5px] leading-snug text-ink-2">
+            {c('productFull')}
+          </div>
         </div>
-        <div className="mt-1.5 text-[11.5px] leading-snug text-ink-2">{c('productFull')}</div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="flex flex-col gap-0.5">
+        <ul className="flex flex-col gap-1">
           {primary.map(item => (
             <Row key={item.to} item={item} pending={pending} />
           ))}
@@ -76,8 +87,8 @@ export default function Sidebar() {
 
         {operator.length > 0 ? (
           <>
-            <div className="mt-6 px-2 pb-2 font-mono text-2xs uppercase text-ink-3">Operator</div>
-            <ul className="flex flex-col gap-0.5">
+            <div className="mt-6 px-3 pb-2 font-mono text-2xs uppercase text-ink-3">Operator</div>
+            <ul className="flex flex-col gap-1">
               {operator.map(item => (
                 <Row key={item.to} item={item} pending={pending} />
               ))}
@@ -90,15 +101,27 @@ export default function Sidebar() {
         <div className="text-[11.5px] text-ink-2">
           {loaded.length} of {CPSES.length} {c('cpsePlural')} loaded
         </div>
-        <div className="mt-1 flex flex-wrap gap-x-2 font-mono text-[11px] leading-relaxed">
-          {CPSES.map(cpse => (
-            <span
-              key={cpse.code}
-              className={loaded.includes(cpse.code) ? 'text-accent' : 'text-ink-3 line-through decoration-rule-strong'}
-            >
-              {cpse.code}
-            </span>
-          ))}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {CPSES.map((cpse, index) => {
+            const isLoaded = loaded.includes(cpse.code)
+            return (
+              <span
+                key={cpse.code}
+                className={cx(
+                  'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10.5px]',
+                  isLoaded ? 'border-rule-strong text-ink' : 'border-rule text-ink-3',
+                )}
+              >
+                <span
+                  className={cx(
+                    'h-1.5 w-1.5 rounded-full',
+                    isLoaded ? CPSE_DOT[index % CPSE_DOT.length] : 'bg-rule-strong',
+                  )}
+                />
+                {cpse.code}
+              </span>
+            )
+          })}
         </div>
       </div>
     </aside>
@@ -118,18 +141,20 @@ function Row({ item, pending }: { item: NavItem; pending: number }) {
         end={item.to === '/'}
         className={({ isActive }) =>
           cx(
-            'flex items-center gap-2.5 px-2 py-[7px] text-[13px] transition-colors',
+            'flex items-center gap-2.5 rounded-xl px-2.5 py-[7px] text-[13px] font-medium transition-colors',
             isActive
-              ? 'bg-accent-bg font-medium text-accent'
-              : 'text-ink-2 hover:bg-surface-2 hover:text-ink',
+              ? 'bg-accent-bg text-accent'
+              : 'text-ink-2 hover:bg-surface-hover hover:text-ink',
           )
         }
       >
-        <Icon size={16} weight="regular" className="shrink-0" />
+        <Icon size={17} weight="regular" className="shrink-0" />
         <span className="truncate">{c(item.key)}</span>
         {showBadge ? (
-          <span className="ml-auto shrink-0 border border-attention-edge bg-attention-bg px-1.5 py-px text-attention">
-            <Num size="2xs">{mode === 'simple' ? `${pending} to check` : pending}</Num>
+          <span className="ml-auto shrink-0 rounded-full border border-attention-edge bg-attention-bg px-1.5 py-px">
+            <Num size="2xs" className="text-attention">
+              {mode === 'simple' ? `${pending} to check` : pending}
+            </Num>
           </span>
         ) : null}
       </NavLink>

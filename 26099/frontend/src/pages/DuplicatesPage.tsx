@@ -14,15 +14,16 @@
  * move would turn the drag into a slideshow.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowUUpLeft, CaretDown, Check, Checks, X } from '@phosphor-icons/react'
+import { ArrowUUpLeft, CaretDown, Check, CheckCircle, Checks, Question, X, XCircle } from '@phosphor-icons/react'
 import {
   Button,
   Chip,
   EmptyState,
   EndpointTag,
   ErrorState,
+  Label,
   Meter,
   Mono,
   Num,
@@ -32,8 +33,10 @@ import {
   Segmented,
   Skeleton,
   Slider,
+  Stat,
   VerdictChip,
 } from '@/components/ui'
+import { ThresholdHistogram, type HistogramBucket } from '@/components/ui/charts'
 import { ByMode, SimpleOnly, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
@@ -329,6 +332,7 @@ function Tuner() {
   const accept = useService(s => s.accept)
   const review = useService(s => s.review)
   const counts = useService(s => s.counts)
+  const pairs = useService(s => s.pairs)
   const setWeight = useService(s => s.setWeight)
   const setThresholds = useService(s => s.setThresholds)
 
@@ -343,6 +347,21 @@ function Tuner() {
   const shownWeights = draftWeights ?? weights
   const shownBands = draftBands ?? { accept, review }
   const sum = shownWeights.lexical + shownWeights.attribute + shownWeights.numeric
+
+  /** Combined score of every pending pair, bucketed for the live histogram. Rebuilt
+   *  whenever the queue is re-scored (i.e. whenever a dial commit lands). */
+  const histogramBuckets = useMemo<HistogramBucket[]>(() => {
+    const BUCKETS = 20
+    const buckets: HistogramBucket[] = Array.from({ length: BUCKETS }, (_, index) => ({
+      x: index / BUCKETS,
+      count: 0,
+    }))
+    for (const pair of pairs) {
+      const index = Math.min(BUCKETS - 1, Math.max(0, Math.floor(pair.score.combined * BUCKETS)))
+      buckets[index].count += 1
+    }
+    return buckets
+  }, [pairs])
 
   function flush() {
     if (timer.current) {
@@ -508,18 +527,47 @@ function Tuner() {
         ) : null}
       </SimpleOnly>
 
+      <div className="mt-5 border-t border-rule pt-5">
+        <Label>Score distribution</Label>
+        <p className="mt-1 max-w-[62ch] text-[11.5px] leading-snug text-ink-3">
+          <ByMode
+            simple="How every pending pair's combined score is spread out, with the two lines marking where a pair counts as the same item or where a person should look."
+            technical="Combined score of every pending pair, bucketed in 0.05 steps, with the accept and review thresholds marked."
+          />
+        </p>
+        <div className="mt-3">
+          <ThresholdHistogram
+            buckets={histogramBuckets}
+            thresholds={[
+              { value: shownBands.review, label: 'Review', tone: 'attention' },
+              { value: shownBands.accept, label: 'Accept', tone: 'positive' },
+            ]}
+            belowTone="negative"
+            height={140}
+          />
+        </div>
+      </div>
+
       <div className="mt-5 grid divide-y divide-rule border-t border-rule sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-        <Band label="Same item" value={counts.same} tone="accent" total={counts.same + counts.review + counts.different} />
+        <Band
+          label="Same item"
+          value={counts.same}
+          tone="positive"
+          icon={<CheckCircle size={16} weight="regular" />}
+          total={counts.same + counts.review + counts.different}
+        />
         <Band
           label="Needs a person"
           value={counts.review}
           tone="attention"
+          icon={<Question size={16} weight="regular" />}
           total={counts.same + counts.review + counts.different}
         />
         <Band
           label="Different items"
           value={counts.different}
           tone="negative"
+          icon={<XCircle size={16} weight="regular" />}
           total={counts.same + counts.review + counts.different}
         />
       </div>
@@ -536,23 +584,27 @@ function Band({
   value,
   tone,
   total,
+  icon,
 }: {
   label: string
   value: number
-  tone: 'accent' | 'attention' | 'negative'
+  tone: 'positive' | 'attention' | 'negative'
   total: number
+  icon: ReactNode
 }) {
   return (
     <div className="px-4 py-3 first:pl-0">
-      <div className="text-[11px] uppercase tracking-[0.1em] text-ink-3">{label}</div>
-      <div className="mt-1.5">
-        <Num size="lg" className="text-ink">
-          {formatExact(value)}
-        </Num>
-      </div>
-      <div className="mt-2">
-        <Meter value={total === 0 ? 0 : value / total} tone={tone} />
-      </div>
+      <Stat
+        label={label}
+        icon={icon}
+        tone={tone}
+        value={
+          <Num size="lg" className="text-ink">
+            {formatExact(value)}
+          </Num>
+        }
+        note={<Meter value={total === 0 ? 0 : value / total} tone={tone} />}
+      />
     </div>
   )
 }
@@ -586,7 +638,7 @@ function PairRow({
         ? c('verdictReview')
         : c('verdictDifferent')
 
-  const tone = pair.verdict === 'same' ? 'accent' : pair.verdict === 'review' ? 'attention' : 'negative'
+  const tone = pair.verdict === 'same' ? 'positive' : pair.verdict === 'review' ? 'attention' : 'negative'
 
   return (
     <motion.li
@@ -606,7 +658,7 @@ function PairRow({
 
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {decision ? (
-            <Chip tone={decision === 'approved' ? 'accent' : 'negative'}>
+            <Chip tone={decision === 'approved' ? 'positive' : 'negative'}>
               {decision === 'approved' ? 'You agreed' : 'You rejected'}
             </Chip>
           ) : null}
