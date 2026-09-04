@@ -28,7 +28,7 @@ export default function NothingLoaded({ what }: { what: string }) {
             technical="Loads run from the Overview. Records commit to the registry as each extract drains, so this page fills while the load is still running."
           />
         </p>
-        <Link to="/">
+        <Link to="/overview">
           <Button variant="primary" icon={<Database size={16} weight="regular" />}>
             <ByMode simple="Go and load the item lists" technical="Go to the source loader" />
           </Button>

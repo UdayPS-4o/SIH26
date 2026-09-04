@@ -11,6 +11,7 @@ import {
   ArrowsMerge,
   ChartBar,
   ClockCounterClockwise,
+  Compass,
   Gauge,
   MagnifyingGlass,
   Sliders,
@@ -38,7 +39,8 @@ interface NavItem {
 }
 
 const ITEMS: NavItem[] = [
-  { to: '/', key: 'navOverview', icon: SquaresFour, simple: true },
+  { to: '/', key: 'navDashboard', icon: SquaresFour, simple: true },
+  { to: '/overview', key: 'navOverview', icon: Compass, simple: true },
   { to: '/explorer', key: 'navExplorer', icon: MagnifyingGlass, simple: true },
   { to: '/duplicates', key: 'navDuplicates', icon: ArrowsMerge, simple: true, badge: 'pending' },
   { to: '/savings', key: 'navSavings', icon: ChartBar, simple: true },

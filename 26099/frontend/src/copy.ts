@@ -47,7 +47,10 @@ export const COPY = {
   mint: { simple: 'create a new code', technical: 'mint' },
 
   /* -------------------------------------------------------------- nav items */
-  navOverview: { simple: 'Overview', technical: 'Dashboard' },
+  navDashboard: { simple: 'Dashboard', technical: 'Dashboard' },
+  // Overview is the guided run, not the numbers page: the two used to share the
+  // word "dashboard" and the nav read as two of the same thing.
+  navOverview: { simple: 'How this works', technical: 'Guided walkthrough' },
   navExplorer: { simple: 'Search items', technical: 'Material explorer' },
   // Kept short on purpose: this row carries a pending-count badge, and the longer
   // wording truncated against it at the sidebar's fixed width.
@@ -60,7 +63,18 @@ export const COPY = {
   navEngine: { simple: 'Settings', technical: 'Engine configuration' },
 
   /* ----------------------------------------------------------- page titles */
-  overviewTitle: { simple: 'Overview', technical: 'Harmonization dashboard' },
+  dashboardTitle: {
+    simple: 'Where things stand',
+    technical: 'Harmonization dashboard',
+  },
+  dashboardLead: {
+    simple:
+      'Everything the system has worked out so far, on one page. Every figure here is counted from the lists that have been loaded.',
+    technical:
+      'Corpus, matching and consolidation measures over the loaded masters. Headline figures are extrapolated from the inspectable slice and say so.',
+  },
+
+  overviewTitle: { simple: 'Overview', technical: 'Guided walkthrough' },
   // The page opens on the premise in full, so the lead says what to do rather
   // than repeating it in smaller type directly above itself.
   overviewLead: {
