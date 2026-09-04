@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 936 792" width="936" height="792" font-family="'Segoe UI', Inter, system-ui, sans-serif">
+  <style>
+    .lane { font-size: 21px; font-weight: 700; letter-spacing: .14em; }
+    .st   { font-size: 30px; font-weight: 700; fill: #1C1917; }
+    .dt   { font-size: 25px; fill: #57534E; }
+    .cap  { font-size: 21px; fill: #78716C; }
+    .num  { font-size: 21px; font-weight: 700; fill: #FFFFFF; }
+  </style>
+  <rect width="936" height="792" fill="#FFFFFF"/>
+
+  <!-- digitise strip -->
+  <text x="56" y="30" class="lane" fill="#C2410C">DIGITISE — THE ARCHIVE GROWS</text>
+
+  <rect x="56" y="44" width="194" height="66" rx="10" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1.5"/>
+  <text x="76" y="76" class="st" style="font-size:26px">Scan</text>
+  <text x="76" y="100" class="cap" style="font-size:19px">600 dpi, fragile paper</text>
+  <path d="M258 71 l14 6 -14 6 z" fill="#D6D3D1"/>
+
+  <rect x="276" y="44" width="194" height="66" rx="10" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1.5"/>
+  <text x="296" y="76" class="st" style="font-size:26px">Restore</text>
+  <text x="296" y="100" class="cap" style="font-size:19px">deskew · denoise</text>
+  <path d="M478 71 l14 6 -14 6 z" fill="#D6D3D1"/>
+
+  <rect x="496" y="44" width="194" height="66" rx="10" fill="#FFF7ED" stroke="#FED7AA" stroke-width="1.5"/>
+  <text x="516" y="76" class="st" style="font-size:26px">OCR</text>
+  <text x="516" y="100" class="cap" style="font-size:19px">Devanagari + Sanskrit</text>
+  <path d="M698 71 l14 6 -14 6 z" fill="#D6D3D1"/>
+
+  <rect x="716" y="44" width="194" height="66" rx="10" fill="#FFFBEB" stroke="#B45309" stroke-width="2"/>
+  <text x="736" y="76" class="st" fill="#B45309" style="font-size:26px">Curator ✓</text>
+  <text x="736" y="100" class="cap" style="font-size:19px">verifies and tags</text>
+
+  <path d="M477 114 h12 l-6 12 z" fill="#A8A29E"/>
+
+  <!-- the archive -->
+  <rect x="56" y="134" width="854" height="120" rx="12" fill="#FDF8EF" stroke="#EADFC8" stroke-width="2"/>
+  <text x="80" y="172" class="st">The verified archive</text>
+  <text x="80" y="200" class="dt">if it is not in here, the kiosk will not say it</text>
+  <g class="cap" fill="#8A6A3B">
+    <rect x="80" y="214" width="138" height="30" rx="15" fill="#FFFFFF" stroke="#EADFC8"/><text x="149" y="234" text-anchor="middle" style="font-size:19px">page images</text>
+    <rect x="230" y="214" width="178" height="30" rx="15" fill="#FFFFFF" stroke="#EADFC8"/><text x="319" y="234" text-anchor="middle" style="font-size:19px">text + metadata</text>
+    <rect x="420" y="214" width="132" height="30" rx="15" fill="#FFFFFF" stroke="#EADFC8"/><text x="486" y="234" text-anchor="middle" style="font-size:19px">embeddings</text>
+    <rect x="564" y="214" width="158" height="30" rx="15" fill="#FFFFFF" stroke="#EADFC8"/><text x="643" y="234" text-anchor="middle" style="font-size:19px">keyword index</text>
+  </g>
+
+  <path d="M477 258 h12 l-6 12 z" fill="#A8A29E"/>
+
+  <!-- ask spine -->
+  <text x="56" y="296" class="lane" fill="#1E3A8A">ASK — ONE QUESTION, ONE ANSWER</text>
+
+  <rect x="56" y="308" width="854" height="66" rx="10" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1.5"/>
+  <circle cx="90" cy="341" r="17" fill="#1E3A8A"/><text x="90" y="349" class="num" text-anchor="middle">1</text>
+  <text x="120" y="336" class="st" style="font-size:26px">Visitor speaks or touches</text>
+  <text x="120" y="362" class="cap">Whisper.cpp transcribes · script and language detected</text>
+
+  <path d="M477 378 h12 l-6 12 z" fill="#A8A29E"/>
+
+  <rect x="56" y="394" width="854" height="66" rx="10" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1.5"/>
+  <circle cx="90" cy="427" r="17" fill="#1E3A8A"/><text x="90" y="435" class="num" text-anchor="middle">2</text>
+  <text x="120" y="422" class="st" style="font-size:26px">Retrieve, then re-rank</text>
+  <text x="120" y="448" class="cap">pgvector + Meilisearch fused by RRF → cross-encoder → top 5 above 0.7</text>
+
+  <path d="M477 464 h12 l-6 12 z" fill="#A8A29E"/>
+
+  <!-- the gate -->
+  <rect x="56" y="480" width="854" height="182" rx="12" fill="#FFFBEB" stroke="#B45309" stroke-width="2.5"/>
+  <circle cx="90" cy="516" r="17" fill="#B45309"/><text x="90" y="524" class="num" text-anchor="middle">3</text>
+  <text x="120" y="525" class="st" fill="#B45309">Is there evidence for this?</text>
+
+  <rect x="84" y="540" width="798" height="54" rx="8" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.5"/>
+  <text x="104" y="564" font-size="25" font-weight="700" fill="#15803D">✓ Yes — Llama 3 answers, one citation per claim</text>
+  <text x="104" y="586" class="cap" fill="#166534">only the retrieved passages, streamed to the screen</text>
+
+  <rect x="84" y="602" width="798" height="54" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+  <text x="104" y="626" font-size="25" font-weight="700" fill="#B91C1C">✗ No — “that is not in the archive yet”</text>
+  <text x="104" y="648" class="cap" fill="#991B1B">routed to the curator queue instead of being invented</text>
+
+  <path d="M477 666 h12 l-6 12 z" fill="#A8A29E"/>
+
+  <rect x="56" y="682" width="854" height="66" rx="10" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1.5"/>
+  <circle cx="90" cy="715" r="17" fill="#1E3A8A"/><text x="90" y="723" class="num" text-anchor="middle">4</text>
+  <text x="120" y="710" class="st" style="font-size:26px">Speak it back</text>
+  <text x="120" y="736" class="cap" font-family="'Segoe UI','Nirmala UI','Noto Sans Devanagari',sans-serif">Coqui + Indic TTS — English · हिन्दी · मराठी · संस्कृतम्</text>
+
+  <!-- unanswered questions loop back into digitisation -->
+  <path d="M84 629 H30 V71 H44" stroke="#B45309" stroke-width="2" fill="none" stroke-dasharray="6 6"/>
+  <path d="M50 65 l12 6 -12 6 z" fill="#B45309"/>
+  <text x="20" y="380" class="cap" fill="#B45309" transform="rotate(-90 20 380)" text-anchor="middle">unanswered → digitisation backlog</text>
+</svg>
