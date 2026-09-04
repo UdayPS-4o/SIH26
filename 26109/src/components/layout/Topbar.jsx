@@ -36,18 +36,18 @@ export default function Topbar({ onMenu }) {
   const [farm, setFarm] = useState(FARMS[0])
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-gray-200 bg-white px-4 lg:px-6">
-      <button className="text-gray-500 lg:hidden" onClick={onMenu} aria-label="Open menu">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 overflow-hidden border-b border-gray-200 bg-white px-3 sm:gap-3 sm:px-4 lg:px-6">
+      <button className="shrink-0 text-gray-500 lg:hidden" onClick={onMenu} aria-label="Open menu">
         <Menu size={20} />
       </button>
 
       <Dropdown
         align="left"
         button={
-          <button className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50">
-            <Home size={15} className="text-brand-600" />
-            <span className="max-w-[9rem] truncate font-semibold text-gray-800">{farm}</span>
-            <ChevronDown size={14} className="text-gray-400" />
+          <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-2 text-sm hover:bg-gray-50 sm:gap-2 sm:px-3">
+            <Home size={15} className="shrink-0 text-brand-600" />
+            <span className="max-w-[5rem] truncate font-semibold text-gray-800 sm:max-w-[9rem]">{farm}</span>
+            <ChevronDown size={14} className="hidden shrink-0 text-gray-400 sm:block" />
           </button>
         }
       >
@@ -72,7 +72,7 @@ export default function Topbar({ onMenu }) {
         Mathura, Uttar Pradesh
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <div className="hidden items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 sm:flex">
           <CalendarDays size={15} className="text-gray-400" />
           Apr 27, 2025
@@ -80,10 +80,11 @@ export default function Topbar({ onMenu }) {
 
         <Dropdown
           button={
-            <button className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50" aria-label="Language">
-              <Globe size={15} className="text-gray-400" />
-              <span className="font-medium text-gray-700">{lang === 'en' ? 'English' : 'हिन्दी'}</span>
-              <ChevronDown size={14} className="text-gray-400" />
+            <button className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-2 text-sm hover:bg-gray-50 sm:gap-2 sm:px-3" aria-label="Language">
+              <Globe size={15} className="shrink-0 text-gray-400" />
+              <span className="font-medium text-gray-700 sm:hidden">{lang === 'en' ? 'EN' : 'हि'}</span>
+              <span className="hidden font-medium text-gray-700 sm:inline">{lang === 'en' ? 'English' : 'हिन्दी'}</span>
+              <ChevronDown size={14} className="hidden shrink-0 text-gray-400 sm:block" />
             </button>
           }
         >
@@ -105,7 +106,7 @@ export default function Topbar({ onMenu }) {
         <Dropdown
           width="w-64"
           button={
-            <button className="relative grid h-9 w-9 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50" aria-label="Notifications">
+            <button className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50" aria-label="Notifications">
               <Bell size={17} />
               {openAlerts.length > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
@@ -129,8 +130,8 @@ export default function Topbar({ onMenu }) {
           ))}
         </Dropdown>
 
-        <div className="ml-1 flex items-center gap-2 border-l border-gray-200 pl-3">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
+        <div className="ml-1 flex shrink-0 items-center gap-2 border-l border-gray-200 pl-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
             RK
           </span>
           <div className="hidden leading-tight lg:block">
