@@ -1,5 +1,5 @@
 /**
- * NUMMF semantic colour contract.
+ * CodeOne semantic colour contract.
  *
  * One meaning each. If a state does not fit one of these, it is neutral ink
  * and rules. Do not introduce a new semantic hue casually; extend this table

@@ -1,4 +1,4 @@
-# NUMMF — demo script
+# CodeOne — demo script
 
 **PS 26099 · AI-Driven Standardization and Harmonization of Material Codes Across CPSEs**
 Ministry of Petroleum & Natural Gas / CPCL
@@ -350,7 +350,7 @@ weighting fitted offline and a human in the loop above the review threshold. Tha
 is what carries the demo, and it is deterministic and auditable, which a code book
 has to be.
 
-There is a fine-tuned sentence transformer in `backend/app/data/nummf-minilm/`,
+There is a fine-tuned sentence transformer in `backend/app/data/codeone-minilm/`,
 trained with a 40% item-level hold-out. It lifts AUC on unseen items from 0.616
 off-the-shelf to 0.824. It is **not** wired into this build. The 13 pairs at the
 bottom of `check:truth` — HOOTER against SIREN, PENSTOCK against SLUICE GATE,

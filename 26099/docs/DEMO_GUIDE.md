@@ -1,4 +1,4 @@
-# NUMMF Demo Guide
+# CodeOne Demo Guide
 
 ## How to Run the Demo
 

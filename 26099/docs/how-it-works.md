@@ -1,4 +1,4 @@
-# NUMMF — how the matching actually works
+# CodeOne — how the matching actually works
 
 **PS 26099 · AI-Driven Standardization and Harmonization of Material Codes Across CPSEs**
 
@@ -294,7 +294,7 @@ different runs is not a registry.
 
 ### What is trained but not wired in
 
-A fine-tuned sentence transformer at `backend/app/data/nummf-minilm/`.
+A fine-tuned sentence transformer at `backend/app/data/codeone-minilm/`.
 
 - Base: `all-MiniLM-L6-v2`
 - Training: `CosineSimilarityLoss`, 4 epochs, seed 20260904

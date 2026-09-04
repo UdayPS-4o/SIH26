@@ -1,11 +1,11 @@
-# NUMMF - SIH 2026 Presentation Content
+# CodeOne - SIH 2026 Presentation Content
 ## Problem ID: 26099 | CPCL | Ministry of Petroleum & Natural Gas
 
 ---
 
 ## Slide 1: Title Slide
 
-**Title:** NUMMF — National Unified Material Master Framework
+**Title:** CodeOne — National Unified Material Master Framework
 **Subtitle:** One Nation, One Material Code
 
 **Team:** [Your Team Name]
@@ -46,7 +46,7 @@ With a big ❌ in the middle
 
 ## Slide 3: The Solution
 
-**Title:** NUMMF — AI-Powered Unified Material Master
+**Title:** CodeOne — AI-Powered Unified Material Master
 
 **Core Idea:** Use AI/NLP to find equivalent materials across CPSEs and generate a single Common National Material Code (CNMC)
 
@@ -193,9 +193,9 @@ CNMC-FA-4A2B9C
 
 ## Slide 10: Innovation & Differentiation
 
-**Title:** What Makes NUMMF Unique
+**Title:** What Makes CodeOne Unique
 
-| Aspect | Typical Solutions | NUMMF |
+| Aspect | Typical Solutions | CodeOne |
 |--------|-----------------|-------|
 | Matching method | Fuzzy string only | 4-stage AI pipeline |
 | Normalization | Basic lowercase | 100+ Indian industrial terms |

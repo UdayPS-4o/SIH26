@@ -1,4 +1,4 @@
-# NUMMF Architecture Diagram
+# CodeOne Architecture Diagram
 
 ## Mermaid Diagram (renders in GitHub, Notion, Mermaid Live Editor)
 
@@ -95,7 +95,7 @@ graph TB
 ## PlantUML Diagram
 
 ```plantuml
-@startuml NUMMF_Architecture
+@startuml CodeOne_Architecture
 skinparam backgroundColor #0f172a
 skinparam defaultTextAlignment center
 skinparam ArrowColor #94a3b8
@@ -188,7 +188,7 @@ ADM --> ADMIN_P
 ## Graphviz DOT Format
 
 ```dot
-digraph NUMMF {
+digraph CodeOne {
     rankdir=TB;
     node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11];
     edge [arrowhead=vee, color="#475569"];
@@ -277,7 +277,7 @@ python docs/generate_diagram.py
 ```
 
 ```python
-"""Generate NUMMF architecture diagram as PNG."""
+"""Generate CodeOne architecture diagram as PNG."""
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
@@ -311,7 +311,7 @@ ax.set_facecolor(COLORS['bg'])
 ax.set_xlim(-10, 10); ax.set_ylim(-6, 7); ax.axis('off')
 
 # Title
-ax.text(0, 6.5, 'NUMMF - System Architecture', ha='center', fontsize=20, fontweight='bold', color='white')
+ax.text(0, 6.5, 'CodeOne - System Architecture', ha='center', fontsize=20, fontweight='bold', color='white')
 ax.text(0, 6.1, 'AI-Driven National Unified Material Master Framework', ha='center', fontsize=12, color=COLORS['subtext'])
 
 # External

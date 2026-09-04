@@ -1,4 +1,4 @@
-"""Generate NUMMF SIH 2026 Presentation PPTX."""
+"""Generate CodeOne SIH 2026 Presentation PPTX."""
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
@@ -96,7 +96,7 @@ def header_bar(slide, title_text):
     """Top nav bar with title."""
     add_rect(slide, Inches(0), Inches(0), SLIDE_W, Inches(0.65), fill=NAVY)
     add_textbox(slide, Inches(0.3), Inches(0.1), Inches(8), Inches(0.5),
-                "NUMMF  |  " + title_text, font_size=12, color=LIGHT_GRAY, font_name="Calibri")
+                "CodeOne  |  " + title_text, font_size=12, color=LIGHT_GRAY, font_name="Calibri")
     add_textbox(slide, Inches(11.5), Inches(0.1), Inches(1.7), Inches(0.5),
                 "SIH 2026 · ID 26099", font_size=10, color=MID_GRAY, align=PP_ALIGN.RIGHT)
 
@@ -106,7 +106,7 @@ def footer(slide, tagline="One Nation, One Material Code"):
     add_textbox(slide, Inches(0.3), Inches(7.13), Inches(10), Inches(0.25),
                 tagline, font_size=9, color=MID_GRAY)
     add_textbox(slide, Inches(11), Inches(7.13), Inches(2), Inches(0.25),
-                "NUMMF v1.0", font_size=9, color=MID_GRAY, align=PP_ALIGN.RIGHT)
+                "CodeOne v1.0", font_size=9, color=MID_GRAY, align=PP_ALIGN.RIGHT)
 
 
 def card(slide, left, top, width, height, title=None, body_lines=None,
@@ -191,7 +191,7 @@ def slide01_title():
                 "SIH 2026  ·  Problem ID 26099", font_size=9, color=LIGHT_GRAY, align=PP_ALIGN.RIGHT, font_name="Calibri")
     # Logo box
     add_rect(sl, Inches(0.4), Inches(0.3), Inches(1.8), Inches(1.2), fill=NAVY, line=PURPLE, line_width=Pt(1.5))
-    add_textbox(sl, Inches(0.45), Inches(0.4), Inches(1.7), Inches(0.55), "NUMMF", font_size=22, bold=True, color=PURPLE, font_name="Calibri")
+    add_textbox(sl, Inches(0.45), Inches(0.4), Inches(1.7), Inches(0.55), "CodeOne", font_size=22, bold=True, color=PURPLE, font_name="Calibri")
     add_textbox(sl, Inches(0.45), Inches(0.9), Inches(1.7), Inches(0.45), "National Unified\nMaterial Master\nFramework", font_size=9, color=LIGHT_GRAY, font_name="Calibri")
     # Center title
     add_textbox(sl, Inches(2.5), Inches(2.2), Inches(8.3), Inches(1.2),
@@ -271,7 +271,7 @@ def slide03_solution():
     header_bar(sl, "The Solution")
     footer(sl)
     add_textbox(sl, Inches(0.4), Inches(0.8), Inches(8), Inches(0.8),
-                "NUMMF — AI-Powered Unified Material Master",
+                "CodeOne — AI-Powered Unified Material Master",
                 font_size=30, bold=True, color=WHITE, font_name="Calibri")
     add_textbox(sl, Inches(0.4), Inches(1.45), Inches(12), Inches(0.4),
                 "Use AI/NLP to find equivalent materials across CPSEs and generate a single Common National Material Code (CNMC)",
@@ -631,10 +631,10 @@ def slide10_diff():
     header_bar(sl, "Innovation & Differentiation")
     footer(sl)
     add_textbox(sl, Inches(0.4), Inches(0.8), Inches(10), Inches(0.7),
-                "What Makes NUMMF Unique", font_size=30, bold=True, color=WHITE, font_name="Calibri")
+                "What Makes CodeOne Unique", font_size=30, bold=True, color=WHITE, font_name="Calibri")
     accent_line(sl, Inches(0.4), Inches(1.45), Inches(5), PURPLE)
     # Table
-    headers = ["Aspect", "Typical Solutions", "NUMMF"]
+    headers = ["Aspect", "Typical Solutions", "CodeOne"]
     rows = [
         ("Matching Method",     "Fuzzy string only",                 "4-stage AI pipeline"),
         ("Normalization",       "Basic lowercase / trim",             "100+ Indian industrial terms"),
@@ -953,7 +953,7 @@ def slide16_team():
     # Contact
     add_rect(sl, Inches(0.4), Inches(6.8), Inches(12.5), Inches(0.45), fill=NAVY)
     add_textbox(sl, Inches(0.5), Inches(6.85), Inches(12.3), Inches(0.35),
-                "Email: [team@email.com]  |  GitHub: [github.com/team/nummf]  |  Demo: [nummf-demo.vercel.app]",
+                "Email: [team@email.com]  |  GitHub: [github.com/team/codeone]  |  Demo: [codeone-demo.vercel.app]",
                 font_size=10, color=LIGHT_GRAY, align=PP_ALIGN.CENTER, font_name="Calibri")
 
 
@@ -1013,7 +1013,7 @@ slide15_demo()
 slide16_team()
 slide17_problemstmt()
 
-out = r"C:\Users\udayps\Desktop\sih\sih-2026-material-harmonization\docs\NUMMF_SIH2026_Presentation.pptx"
+out = r"C:\Users\udayps\Desktop\sih\sih-2026-material-harmonization\docs\CodeOne_SIH2026_Presentation.pptx"
 prs.save(out)
 print(f"Saved: {out}")
 print(f"Slides: {len(prs.slides)}")

@@ -20,7 +20,7 @@
   <rect width="1600" height="900" fill="#FFFFFF"/>
 
   <!-- ── header ─────────────────────────────────────────────── -->
-  <text x="48" y="40" class="eyebrow">IMPLEMENTATION FLOW · PS 26099 · NUMMF</text>
+  <text x="48" y="40" class="eyebrow">IMPLEMENTATION FLOW · PS 26099 · CodeOne</text>
   <text x="48" y="72" class="title">Four CPSE codes in. One national code out.</text>
   <text x="48" y="98" class="sub">AI shortlists, explainable scoring ranks, a human steward approves — and every step is audited.</text>
 

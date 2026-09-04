@@ -184,7 +184,7 @@ function Premise() {
       <p className="mt-2.5 max-w-[74ch] text-[13.5px] leading-relaxed text-ink-2">
         <ByMode
           simple="This system reads all four lists, works out which items are the same thing, and gives each one a single national code. Once an item has one code, the four companies can see each other's stock and buy it together instead of four times over."
-          technical="NUMMF normalizes each description against an MRO dictionary, extracts an attribute signature, scores candidate pairs within blocking keys, clusters what the scorer accepts, and mints a deterministic national code from the winning signature. What follows is that pipeline running on data loaded in front of you."
+          technical="CodeOne normalizes each description against an MRO dictionary, extracts an attribute signature, scores candidate pairs within blocking keys, clusters what the scorer accepts, and mints a deterministic national code from the winning signature. What follows is that pipeline running on data loaded in front of you."
         />
       </p>
     </section>

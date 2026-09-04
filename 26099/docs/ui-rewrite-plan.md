@@ -1,4 +1,4 @@
-# NUMMF frontend rewrite plan
+# CodeOne frontend rewrite plan
 
 Problem statement 26099. Full replacement of `frontend/src`, plus a real computation engine
 underneath so that every page reads from one source of truth.
@@ -55,7 +55,7 @@ little visible gain, so the plan borrows Carbon's density principles and IBM Ple
 explicit token layer, and labels that honestly. The skill's transferable parts (anti-tells, colour
 discipline, content density, motivated motion, copy audit, pre-flight) are applied in full.
 
-The reference document at `nummf-view-modes.html` already carries this language, so the two agree.
+The reference document at `codeone-view-modes.html` already carries this language, so the two agree.
 
 ### Dials
 
