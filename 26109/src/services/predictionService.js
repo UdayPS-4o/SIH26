@@ -1,4 +1,4 @@
-// Simulated AI prediction layer for the MastiGuard AI prototype.
+// Simulated AI prediction layer for the Gaurogya Setu prototype.
 // This is a transparent demo formula. It is NOT a clinically validated model.
 
 import { clamp, levelFromScore } from '../utils/riskUtils'

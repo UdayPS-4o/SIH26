@@ -1,4 +1,4 @@
-# MastiGuard AI — React UI Prototype Task
+# Gaurogya Setu — React UI Prototype Task
 
 ## Objective
 
@@ -12,7 +12,7 @@ The prototype is primarily a FRONTEND UI prototype. Use realistic mock data and 
 
 # 1. Product
 
-Product name: **MastiGuard AI**
+Product name: **Gaurogya Setu**
 
 Tagline:
 **AI-Powered Early Mastitis Prediction & Herd Health Intelligence**
@@ -101,7 +101,7 @@ Desktop layout:
 ```
 
 Sidebar:
-- MastiGuard AI logo/mark
+- Gaurogya Setu logo/mark
 - Dashboard
 - Animals
 - Alerts

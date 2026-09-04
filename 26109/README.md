@@ -1,4 +1,4 @@
-# MastiGuard AI — UI Prototype
+# Gaurogya Setu — UI Prototype
 
 **AI-Powered Early Mastitis Prediction & Herd Health Intelligence**
 

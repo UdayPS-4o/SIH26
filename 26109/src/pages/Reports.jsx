@@ -20,7 +20,7 @@ export default function Reports() {
 
   const exportJson = () => {
     const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' })
-    triggerDownload(blob, 'mastiguard-weekly-report.json')
+    triggerDownload(blob, 'gaurogya-setu-weekly-report.json')
   }
 
   const exportCsv = () => {
@@ -29,7 +29,7 @@ export default function Reports() {
       ...highRisk.map((a) => [a.id, a.breed, a.shed, a.riskScore, a.riskLevel]),
     ]
     const csv = rows.map((r) => r.join(',')).join('\n')
-    triggerDownload(new Blob([csv], { type: 'text/csv' }), 'mastiguard-high-risk-animals.csv')
+    triggerDownload(new Blob([csv], { type: 'text/csv' }), 'gaurogya-setu-high-risk-animals.csv')
   }
 
   return (

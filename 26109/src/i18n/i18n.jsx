@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useState, useCallback } from 'react
 
 const dict = {
   en: {
-    'app.name': 'MastiGuard AI',
+    'app.name': 'Gaurogya Setu',
     'app.tagline': 'AI-Powered Early Mastitis Prediction & Herd Health Intelligence',
     'nav.dashboard': 'Dashboard',
     'nav.animals': 'Animals',
@@ -71,8 +71,8 @@ const dict = {
     'dash.aiInsight.body': 'Shed C shows elevated mastitis risk. Major factors: hygiene score, humidity and increasing SCC.',
     'dash.systemOnline': 'System Online',
     'dash.lastUpdated': 'Last Updated: 27 Apr 2025, 10:24 AM',
-    'dash.footer': 'MastiGuard AI  |  Empowering Dairy Farmers with AI & IoT',
-    'dash.capabilities': 'What MastiGuard does',
+    'dash.footer': 'Gaurogya Setu  |  Empowering Dairy Farmers with AI & IoT',
+    'dash.capabilities': 'What Gaurogya Setu does',
     'cap.predict': 'Predict',
     'cap.predict.d': 'Flags mastitis risk 7–14 days before clinical signs.',
     'cap.explain': 'Explain',
@@ -183,7 +183,7 @@ const dict = {
     'disclaimer.ai': 'Prototype AI simulation — field validation required.',
   },
   hi: {
-    'app.name': 'मास्टीगार्ड AI',
+    'app.name': 'गौरोग्य सेतु',
     'app.tagline': 'AI-आधारित शीघ्र मास्टाइटिस पूर्वानुमान एवं झुंड स्वास्थ्य बुद्धिमत्ता',
     'nav.dashboard': 'डैशबोर्ड',
     'nav.animals': 'पशु',
@@ -252,8 +252,8 @@ const dict = {
     'dash.aiInsight.body': 'शेड C में मास्टाइटिस जोखिम बढ़ा हुआ है। मुख्य कारण: स्वच्छता स्कोर, आर्द्रता और बढ़ती SCC।',
     'dash.systemOnline': 'सिस्टम ऑनलाइन',
     'dash.lastUpdated': 'अंतिम अपडेट: 27 अप्रैल 2025, 10:24 AM',
-    'dash.footer': 'मास्टीगार्ड AI  |  डेयरी किसानों को AI और IoT से सशक्त बनाना',
-    'dash.capabilities': 'मास्टीगार्ड क्या करता है',
+    'dash.footer': 'गौरोग्य सेतु  |  डेयरी किसानों को AI और IoT से सशक्त बनाना',
+    'dash.capabilities': 'गौरोग्य सेतु क्या करता है',
     'cap.predict': 'पूर्वानुमान',
     'cap.predict.d': 'नैदानिक लक्षणों से 7–14 दिन पहले मास्टाइटिस जोखिम चिह्नित करता है।',
     'cap.explain': 'व्याख्या',
