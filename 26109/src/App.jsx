@@ -7,6 +7,7 @@ import Alerts from './pages/Alerts.jsx'
 import HerdIntelligence from './pages/HerdIntelligence.jsx'
 import MilkQuality from './pages/MilkQuality.jsx'
 import Environment from './pages/Environment.jsx'
+import WorkerHygiene from './pages/WorkerHygiene.jsx'
 import Simulator from './pages/Simulator.jsx'
 import Reports from './pages/Reports.jsx'
 import Settings from './pages/Settings.jsx'
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/herd" element={<HerdIntelligence />} />
         <Route path="/milk-quality" element={<MilkQuality />} />
         <Route path="/environment" element={<Environment />} />
+        <Route path="/worker-hygiene" element={<WorkerHygiene />} />
         <Route path="/simulator" element={<Simulator />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />

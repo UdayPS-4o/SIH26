@@ -16,11 +16,28 @@ import {
 } from 'recharts'
 import { riskMeta } from '../../utils/riskUtils'
 import { useI18n } from '../../i18n/i18n.jsx'
+import { useTheme } from '../../context/ThemeContext.jsx'
 
-const axis = { fontSize: 11, fill: '#9ca3af' }
-const grid = '#eef0f2'
+function useChartTheme() {
+  const { theme } = useTheme()
+  const dark = theme === 'dark'
+  return {
+    axis: { fontSize: 11, fill: dark ? '#9099a8' : '#9ca3af' },
+    grid: dark ? '#2a2f3a' : '#eef0f2',
+    tooltipStyle: {
+      borderRadius: 10,
+      border: dark ? '1px solid #374151' : '1px solid #e5e7eb',
+      fontSize: 12,
+      backgroundColor: dark ? '#111827' : '#fff',
+      color: dark ? '#e5e7eb' : '#111827',
+    },
+    tooltipItemStyle: { color: dark ? '#e5e7eb' : '#111827' },
+    tooltipLabelStyle: { color: dark ? '#9099a8' : '#6b7280' },
+  }
+}
 
 export function TrendChart({ data, series, height = 260, threshold }) {
+  const { axis, grid, tooltipStyle, tooltipItemStyle, tooltipLabelStyle } = useChartTheme()
   const hasRight = series.some((s) => s.axis === 'right')
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -31,7 +48,7 @@ export function TrendChart({ data, series, height = 260, threshold }) {
         {hasRight && (
           <YAxis yAxisId="right" orientation="right" tick={axis} tickLine={false} axisLine={false} width={44} />
         )}
-        <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e5e7eb', fontSize: 12 }} />
+        <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
         {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12 }} />}
         {threshold !== undefined && (
           <ReferenceLine yAxisId="left" y={threshold} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Threshold', fontSize: 10, fill: '#ef4444', position: 'right' }} />
@@ -55,6 +72,7 @@ export function TrendChart({ data, series, height = 260, threshold }) {
 }
 
 export function AreaTrend({ data, dataKey, color = '#16a34a', height = 200, name }) {
+  const { axis, grid, tooltipStyle, tooltipItemStyle, tooltipLabelStyle } = useChartTheme()
   const id = `area-${dataKey}`
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -68,7 +86,7 @@ export function AreaTrend({ data, dataKey, color = '#16a34a', height = 200, name
         <CartesianGrid stroke={grid} vertical={false} />
         <XAxis dataKey="date" tick={axis} tickLine={false} axisLine={{ stroke: grid }} minTickGap={20} />
         <YAxis tick={axis} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} />
-        <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e5e7eb', fontSize: 12 }} />
+        <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
         <Area type="monotone" dataKey={dataKey} name={name} stroke={color} strokeWidth={2} fill={`url(#${id})`} />
       </AreaChart>
     </ResponsiveContainer>
@@ -77,6 +95,7 @@ export function AreaTrend({ data, dataKey, color = '#16a34a', height = 200, name
 
 export function RiskDistribution({ data, centerLabel, centerSub }) {
   const { t } = useI18n()
+  const { tooltipStyle, tooltipItemStyle, tooltipLabelStyle } = useChartTheme()
   const total = data.reduce((s, d) => s + d.value, 0)
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-around">
@@ -88,12 +107,12 @@ export function RiskDistribution({ data, centerLabel, centerSub }) {
                 <Cell key={d.name} fill={riskMeta(d.name).hex} />
               ))}
             </Pie>
-            <Tooltip contentStyle={{ borderRadius: 10, border: '1px solid #e5e7eb', fontSize: 12 }} />
+            <Tooltip contentStyle={tooltipStyle} itemStyle={tooltipItemStyle} labelStyle={tooltipLabelStyle} />
           </PieChart>
         </ResponsiveContainer>
         {centerLabel && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-gray-900">{centerLabel}</span>
+            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{centerLabel}</span>
             {centerSub && <span className="text-[11px] text-gray-400">{centerSub}</span>}
           </div>
         )}
@@ -103,9 +122,9 @@ export function RiskDistribution({ data, centerLabel, centerSub }) {
           <li key={d.name} className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: riskMeta(d.name).hex }} />
-              <span className="text-gray-600">{t(`risk.${d.name}`)}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t(`risk.${d.name}`)}</span>
             </span>
-            <span className="whitespace-nowrap font-medium text-gray-900">
+            <span className="whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
               {d.value} <span className="text-xs text-gray-400">({Math.round((d.value / total) * 100)}%)</span>
             </span>
           </li>

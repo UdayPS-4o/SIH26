@@ -104,6 +104,26 @@ export function getAnimal(id) {
   return ANIMALS.find((a) => a.id === id)
 }
 
+// ---- Feeding / housing profile ---------------------------------------------
+// Deterministic per-animal nutrition & housing/bedding hygiene scores (0-100,
+// 100 = best), derived from each animal's shed hygiene profile and computed
+// once at module load so the values stay stable across renders.
+const FEEDING_HOUSING = new Map(
+  ANIMALS.map((a) => {
+    const shed = SHEDS.find((s) => s.id === a.shed)
+    const shedPenalty = shed ? shed.risk / 100 : 0.3
+    const baseFeed = 82 - shedPenalty * 30 - (a.previousMastitis ? 6 : 0)
+    const baseHousing = 80 - shedPenalty * 34
+    const feedingScore = Math.round(Math.min(95, Math.max(20, baseFeed + (rand() - 0.5) * 10)))
+    const housingScore = Math.round(Math.min(92, Math.max(15, baseHousing + (rand() - 0.5) * 10)))
+    return [a.id, { feedingScore, housingScore }]
+  })
+)
+
+export function feedingProfile(animal) {
+  return FEEDING_HOUSING.get(animal?.id) || { feedingScore: 75, housingScore: 75 }
+}
+
 // ---- Time series -----------------------------------------------------------
 
 const DAY_LABELS = (days) => {

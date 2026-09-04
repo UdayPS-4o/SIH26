@@ -55,7 +55,7 @@ export default function Reports() {
             <Fig label={t('dash.kpi.atRisk')} value={HERD_STATS.atRisk} />
             <Fig label={t('dash.kpi.highRisk')} value={HERD_STATS.highRisk} />
           </div>
-          <p className="mt-4 text-sm text-gray-600">
+          <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
             Herd mastitis risk rose to {HERD_STATS.herdRisk}% this week (+14% over 7 days), driven by Shed C.
             {' '}{highRisk.length} animals require intervention within 48 hours.
           </p>
@@ -89,19 +89,19 @@ export default function Reports() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
+                <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500 dark:border-gray-800 dark:text-gray-400">
                   <th className="py-2 pr-4 font-medium">{t('animals.col.animal')}</th>
                   <th className="py-2 pr-4 font-medium">{t('animals.col.breed')}</th>
                   <th className="py-2 pr-4 font-medium">Shed</th>
                   <th className="py-2 font-medium">{t('animals.col.risk')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {highRisk.map((a) => (
                   <tr key={a.id}>
-                    <td className="py-2 pr-4 font-medium text-gray-900">{a.id}</td>
-                    <td className="py-2 pr-4 text-gray-600">{a.breed}</td>
-                    <td className="py-2 pr-4 text-gray-600">{a.shed}</td>
+                    <td className="py-2 pr-4 font-medium text-gray-900 dark:text-gray-100">{a.id}</td>
+                    <td className="py-2 pr-4 text-gray-600 dark:text-gray-400">{a.breed}</td>
+                    <td className="py-2 pr-4 text-gray-600 dark:text-gray-400">{a.shed}</td>
                     <td className="py-2"><RiskBadge level={a.riskLevel} score={a.riskScore} /></td>
                   </tr>
                 ))}
@@ -122,7 +122,7 @@ export default function Reports() {
           </Card>
           <Card className="p-5">
             <SectionTitle>{t('reports.intervention')}</SectionTitle>
-            <ul className="space-y-1.5 text-sm text-gray-600">
+            <ul className="space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
               <li>• 4 udder inspections completed</li>
               <li>• 6 SCC / CMT tests performed</li>
               <li>• 2 animals segregated at milking</li>
@@ -137,8 +137,8 @@ export default function Reports() {
 
 function Fig({ label, value }) {
   return (
-    <div className="rounded-lg border border-gray-200 p-3">
-      <p className="text-xl font-semibold text-gray-900">{value}</p>
+    <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+      <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">{value}</p>
       <p className="text-xs text-gray-400">{label}</p>
     </div>
   )
@@ -146,8 +146,8 @@ function Fig({ label, value }) {
 function Row({ k, v }) {
   return (
     <div className="flex justify-between">
-      <dt className="text-gray-500">{k}</dt>
-      <dd className="font-medium text-gray-900">{v}</dd>
+      <dt className="text-gray-500 dark:text-gray-400">{k}</dt>
+      <dd className="font-medium text-gray-900 dark:text-gray-100">{v}</dd>
     </div>
   )
 }

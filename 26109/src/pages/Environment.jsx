@@ -41,12 +41,12 @@ export default function Environment() {
           return (
             <div key={c.label} className="card-p">
               <div className="flex items-center justify-between">
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-gray-50 text-gray-500">
+                <span className="grid h-9 w-9 place-items-center rounded-lg bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   <Icon size={16} />
                 </span>
                 <Pill tone={c.tone}>{c.value}</Pill>
               </div>
-              <p className="mt-3 text-sm text-gray-500">{c.label}</p>
+              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{c.label}</p>
             </div>
           )
         })}
@@ -63,7 +63,7 @@ export default function Environment() {
         />
       </Card>
 
-      <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+      <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
         {t('env.insight')}
       </div>
 
@@ -71,8 +71,8 @@ export default function Environment() {
         <SectionTitle>Recommendations</SectionTitle>
         <ul className="space-y-2">
           {recs.map((r, i) => (
-            <li key={i} className="flex gap-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700">
+            <li key={i} className="flex gap-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
                 {i + 1}
               </span>
               {r}
