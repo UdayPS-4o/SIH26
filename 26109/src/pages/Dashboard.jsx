@@ -11,6 +11,7 @@ import {
   FlaskConical,
   Sparkles,
   ArrowRight,
+  Hand,
 } from 'lucide-react'
 import { KpiCard, Card, SectionTitle } from '../components/common/ui.jsx'
 import { RiskDistribution } from '../components/common/charts.jsx'
@@ -60,11 +61,18 @@ export default function Dashboard() {
         <div className="space-y-6">
           {/* Hero */}
           <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-            <img src={heroCow} alt="" className="absolute inset-y-0 right-0 h-full w-2/3 object-cover object-left [mask-image:linear-gradient(to_right,transparent,black_20%)]" />
+            <img src={heroCow} alt="" className="absolute inset-y-0 right-0 h-full w-2/3 object-cover object-left opacity-50" />
+            <div
+              className="absolute inset-0 bg-white dark:bg-gray-900"
+              style={{
+                maskImage: 'linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 42%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.15) 64%, transparent 75%)',
+                WebkitMaskImage: 'linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 42%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.15) 64%, transparent 75%)',
+              }}
+            />
             <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {t('dash.greeting')} <span className="align-middle">👋</span>
+                <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {t('dash.greeting')} <Hand size={22} className="text-amber-500" />
                 </h1>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('dash.sub')}</p>
               </div>
@@ -81,7 +89,7 @@ export default function Dashboard() {
           </div>
 
           {/* KPI cards */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <KpiCard
               icon={Beef}
               tone="info"
@@ -176,7 +184,7 @@ export default function Dashboard() {
         </div>
 
         {/* ---------------- RIGHT RAIL ---------------- */}
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/30">
               <span className="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-400">
@@ -204,11 +212,13 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          <div className="rounded-xl border border-brand-200 bg-brand-50 p-5 dark:border-brand-900/40 dark:bg-brand-950/20">
-            <div className="flex items-center gap-2 text-sm font-semibold text-brand-800 dark:text-brand-400">
-              <Sparkles size={16} /> {t('dash.aiInsight')}
+          <div className="flex flex-1 flex-col justify-between rounded-xl border border-brand-200 bg-brand-50 p-5 dark:border-brand-900/40 dark:bg-brand-950/20">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-semibold text-brand-800 dark:text-brand-400">
+                <Sparkles size={16} /> {t('dash.aiInsight')}
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-brand-800/90 dark:text-brand-300/90">{t('dash.aiInsight.body')}</p>
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-brand-800/90 dark:text-brand-300/90">{t('dash.aiInsight.body')}</p>
             <Link to="/herd" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline dark:text-brand-400">
               {t('common.viewShed')} <ArrowRight size={14} />
             </Link>
