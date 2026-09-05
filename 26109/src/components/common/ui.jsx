@@ -41,23 +41,24 @@ export function KpiCard({ icon: Icon, label, value, caption, progress, tone = 'n
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
   const trendColor = trend > 0 ? 'text-brand-600 dark:text-brand-400' : trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'
   return (
-    <div className="card-p">
+    <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-card dark:border-gray-800 dark:bg-gray-900 sm:p-5">
       <div className="flex items-start justify-between">
-        <span className={`grid h-11 w-11 place-items-center rounded-xl ${m.chip}`}>
-          {Icon && <Icon size={19} />}
+        <span className={`grid h-9 w-9 place-items-center rounded-xl sm:h-11 sm:w-11 ${m.chip}`}>
+          {Icon && <Icon size={17} className="sm:hidden" />}
+          {Icon && <Icon size={19} className="hidden sm:block" />}
         </span>
         {trend !== undefined && (
-          <span className={`inline-flex items-center gap-1 text-xs font-semibold ${trendColor}`}>
-            <TrendIcon size={13} />
+          <span className={`inline-flex items-center gap-0.5 whitespace-nowrap text-[11px] font-semibold sm:gap-1 sm:text-xs ${trendColor}`}>
+            <TrendIcon size={12} className="shrink-0" />
             {trendLabel || `${Math.abs(trend)}%`}
           </span>
         )}
       </div>
-      <div className="mt-3 text-sm font-medium text-gray-500 dark:text-gray-400">{label}</div>
-      <div className="mt-0.5 text-[26px] font-bold leading-tight text-gray-900 dark:text-gray-100">{value}</div>
+      <div className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400 sm:mt-3 sm:text-sm">{label}</div>
+      <div className="mt-0.5 text-xl font-bold leading-tight text-gray-900 dark:text-gray-100 sm:text-[26px]">{value}</div>
       {caption && <div className="mt-1 text-xs text-gray-400">{caption}</div>}
       {progress !== undefined && (
-        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 sm:mt-2.5">
           <div className={`h-full rounded-full ${m.bar}`} style={{ width: `${Math.min(100, progress)}%` }} />
         </div>
       )}
