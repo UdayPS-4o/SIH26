@@ -1,0 +1,16 @@
+{
+  "name": "sih26056-scraper",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Standalone Puppeteer scraper for VIMAAN's live fare ladder. Not part of the deployed frontend build — run manually and commit the resulting JSON.",
+  "scripts": {
+    "scrape:cleartrip": "node scrape-cleartrip.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.10.0"
+  },
+  "allowScripts": {
+    "puppeteer@25.10.0": true
+  }
+}
