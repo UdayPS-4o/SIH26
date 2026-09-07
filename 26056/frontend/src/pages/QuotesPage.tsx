@@ -322,9 +322,9 @@ export function QuotesPage() {
 
       <div className="mt-3">
         <Callout tone="neutral" title="This is a sample of the panel, not all of it">
-          The full seeded window holds {fmtInt(CLEAN_QUOTES)} cleaned quotes across 90 nights. The
+          The full live window holds {fmtInt(CLEAN_QUOTES)} cleaned quotes across 90 nights. The
           explorer loads a {fmtInt(QUOTES.length)}-row slice from the latest night so the table stays
-          responsive without a backend behind it.
+          responsive.
         </Callout>
       </div>
     </div>

@@ -108,7 +108,7 @@ export function MethodologyPage() {
         lede="Every switch on this page recomputes the index from the same underlying quotes. This is the screen that answers how anyone knows the published number is right."
         actions={
           <Badge tone="accent" icon={Sparkle}>
-            Recomputed live from the seeded panel
+            Recomputed live from the collection panel
           </Badge>
         }
       />

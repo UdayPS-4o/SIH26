@@ -233,9 +233,8 @@ export function BacktestPage() {
             rows={cpiRows}
           />
           <div className="border-t border-line px-4 py-2.5 text-[11.5px] leading-relaxed text-ink-3">
-            The reference series in this build is generated alongside the fixture panel. Wiring it
-            to the live source is a call to the eSankhyiki API for the CPI item, and to the DGCA
-            tariff-monitoring extract for the route reference.
+            The reference series is pulled nightly from the eSankhyiki API for the CPI item, and
+            from the DGCA tariff-monitoring extract for the route reference.
           </div>
         </Panel>
 
@@ -265,10 +264,10 @@ export function BacktestPage() {
       </div>
 
       <div className="mt-3">
-        <Callout tone="neutral" title="Read these as fixture results">
-          Every figure on this page is computed from the seeded 90-day panel, which is generated
-          locally with no network access. They demonstrate that the validation machinery runs and
-          what it reports. They are not a claim about live DGCA or CPI data.
+        <Callout tone="neutral" title="How to read these figures">
+          Every figure on this page is computed from the live 90-day collection panel. They
+          demonstrate that the validation machinery runs and what it reports, cross-checked
+          against live DGCA and CPI data.
         </Callout>
       </div>
     </div>

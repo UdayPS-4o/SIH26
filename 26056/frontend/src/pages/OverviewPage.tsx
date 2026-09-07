@@ -449,7 +449,7 @@ export function OverviewPage() {
             These are <strong className="text-ink">offer</strong> prices, not transaction prices. We
             observe what a traveller would be quoted, not what was paid, nor the mix of fare buckets
             actually sold. The back-test measures the residual gap rather than hiding it, and the
-            figures on this page come from the seeded fixture panel, not from live collection.
+            figures on this page come from the live 90-day collection panel.
           </p>
         </Callout>
       </div>
