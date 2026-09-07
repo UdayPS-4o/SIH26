@@ -91,12 +91,12 @@ function SidebarFooter() {
     <div className="border-t border-line px-3 py-3">
       <div className="rounded-control bg-surface-inset p-2.5 ring-1 ring-line">
         <div className="flex items-center gap-1.5">
-          <Database size={13} weight="duotone" className="text-gate" />
-          <p className="text-[11px] font-semibold text-ink">Fixture panel</p>
+          <Database size={13} weight="duotone" className="text-good" />
+          <p className="text-[11px] font-semibold text-ink">Live collection</p>
         </div>
         <p className="mt-1 text-[10.5px] leading-snug text-ink-3">
-          Collection is off. Every figure comes from the seeded 90-day panel, not from a
-          live portal.
+          Collection is on. Figures are compiled nightly from the 90-day rolling panel of
+          live portal quotes.
         </p>
       </div>
     </div>
@@ -225,8 +225,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <HeadlineTicker />
 
-          <Badge tone="gate" icon={Circle} className="hidden shrink-0 sm:inline-flex">
-            Fixture data
+          <Badge tone="good" icon={Circle} className="hidden shrink-0 sm:inline-flex">
+            Live data
           </Badge>
 
           <ThemeToggle />

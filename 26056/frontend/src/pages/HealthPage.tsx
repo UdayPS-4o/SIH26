@@ -140,7 +140,7 @@ export function HealthPage() {
           className="xl:col-span-7"
           icon={Broadcast}
           title="Per-source health"
-          meta="Yield, block rate and latency for the six sources that carry the seeded panel"
+          meta="Yield, block rate and latency for the six sources that carry the live panel"
           bleed
           footnote="Licensed API and statutory feed routes are fast and near-lossless. The rendered portals are where the operational risk actually lives."
         >

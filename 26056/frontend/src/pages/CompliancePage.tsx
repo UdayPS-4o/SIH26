@@ -336,8 +336,8 @@ export function CompliancePage() {
                     height={10}
                   />
                   <p className="mt-1.5 text-[11px] leading-snug text-ink-3">
-                    Figures come from a rehearsal run against the local fixture panel, not from this
-                    domain.
+                    Figures come from a rehearsal run against the rate-limit simulator, not from
+                    this domain.
                   </p>
                 </div>
               )}
