@@ -24,10 +24,10 @@ const LADDER_OUT_PATH = join(__dirname, '../frontend/src/data/liveFareLadder.jso
 const CABIN_OUT_PATH = join(__dirname, '../frontend/src/data/liveCabinCompare.json')
 
 const ORIGIN = 'DEL'
-const DEST = 'BOM'
+const DEST = 'SXR'
 const ORIGIN_CITY = 'Delhi'
-const DEST_CITY = 'Mumbai'
-const LEAD_DAYS = [1, 7, 15, 30, 45]
+const DEST_CITY = 'Srinagar'
+const LEAD_DAYS = [0, 1, 7, 15, 30, 45]
 const CABIN_LEAD_DAYS = 15
 const CABINS = [
   { param: 'Economy', label: 'Economy' },
