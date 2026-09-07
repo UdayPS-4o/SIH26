@@ -56,17 +56,13 @@ import {
   type Measure,
 } from '@/data/generate'
 import { sectorOf } from '@/data/reference'
-import { LIVE_FARE_CHECK } from '@/data/liveFare'
-import { useRelativeTime } from '@/lib/useRelativeTime'
 import {
-  fmtClock,
   fmtDay,
   fmtDayFull,
   fmtIndex,
   fmtInt,
   fmtMonth,
   fmtPct,
-  fmtRupee,
   fmtSigned,
   fmtSignedPct,
 } from '@/lib/format'
@@ -84,7 +80,6 @@ const MEASURE_OPTIONS = [
 
 export function OverviewPage() {
   const t = useChartTokens()
-  const liveFareAge = useRelativeTime(LIVE_FARE_CHECK.scrapedAt)
   const [freq, setFreq] = useState<Frequency>('DAILY')
   const [measure, setMeasure] = useState<Measure>('TOTAL')
   const [showBand, setShowBand] = useState(true)
@@ -155,51 +150,6 @@ export function OverviewPage() {
           </>
         }
       />
-
-      <div className="mt-3">
-        <Panel tone="good" icon={ShieldCheck} title="Live fare check" bleed>
-          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-[12.5px] leading-relaxed text-ink-2">
-                <span className="font-semibold text-ink">
-                  {LIVE_FARE_CHECK.airline} {LIVE_FARE_CHECK.flightNumber}
-                </span>{' '}
-                · {LIVE_FARE_CHECK.originCity} ({LIVE_FARE_CHECK.originCode}) to{' '}
-                {LIVE_FARE_CHECK.destCity} ({LIVE_FARE_CHECK.destCode}), {fmtDayFull(LIVE_FARE_CHECK.departDate)}
-                , {LIVE_FARE_CHECK.departTime}–{LIVE_FARE_CHECK.arriveTime}
-              </p>
-              <p className="mt-1 text-[11px] leading-snug text-ink-3">
-                Pulled from {LIVE_FARE_CHECK.source}'s own search API at{' '}
-                {fmtClock(LIVE_FARE_CHECK.scrapedAt)} on {fmtDayFull(LIVE_FARE_CHECK.scrapedAt.slice(0, 10))}
-                . Open the link and this is the fare it shows for the same search.
-              </p>
-              <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-good">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-good" />
-                </span>
-                Refreshed {liveFareAge}
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-3">
-              <span className="vm-num text-[24px] font-semibold leading-none text-ink">
-                {fmtRupee(LIVE_FARE_CHECK.price)}
-              </span>
-              <a
-                href={LIVE_FARE_CHECK.sourceUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 rounded-control bg-surface-2 px-2.5 py-1.5 text-[11.5px]
-                           font-medium text-ink-2 ring-1 ring-line transition-colors duration-[var(--vm-dur-fast)]
-                           hover:bg-surface-3 hover:text-ink"
-              >
-                View on {LIVE_FARE_CHECK.source}
-                <ArrowSquareOut size={13} weight="bold" />
-              </a>
-            </div>
-          </div>
-        </Panel>
-      </div>
 
       {/* Hero: the headline number, then the panel that produced it */}
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
