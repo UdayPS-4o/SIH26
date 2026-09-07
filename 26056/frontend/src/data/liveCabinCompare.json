@@ -8,45 +8,15 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-09-07T05:10:46.114Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
-      "cheapest": {
-        "price": 8068,
-        "airlineCode": "6E",
-        "flightNumber": "6E-6739",
-        "stops": 0,
-        "departTime": "2026-09-22T14:40:00.000+05:30",
-        "arriveTime": "2026-09-22T16:45:00.000+05:30"
-      },
-      "cardCount": 50
+      "error": "Timed out after waiting 30000ms"
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-09-07T05:10:55.169Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
-      "cheapest": {
-        "price": 11169.87,
-        "airlineCode": "AI",
-        "flightNumber": "AI-1780",
-        "stops": 1,
-        "departTime": "2026-09-22T18:25:00.000+05:30",
-        "arriveTime": "2026-09-23T10:05:00.000+05:30"
-      },
-      "cardCount": 32
+      "error": "Timed out after waiting 30000ms"
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-09-07T05:11:04.360Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
-      "cheapest": {
-        "price": 37439,
-        "airlineCode": "AI",
-        "flightNumber": "AI-2750",
-        "stops": 1,
-        "departTime": "2026-09-22T19:50:00.000+05:30",
-        "arriveTime": "2026-09-23T01:35:00.000+05:30"
-      },
-      "cardCount": 34
+      "error": "Timed out after waiting 30000ms"
     }
   ]
 }
