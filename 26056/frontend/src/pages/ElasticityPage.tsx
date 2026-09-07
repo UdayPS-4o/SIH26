@@ -29,6 +29,20 @@ import { LEAD_BUCKETS, SECTORS, sectorOf, type LeadBucket } from '@/data/referen
 import { LIVE_FARE_LADDER, LIVE_FARE_LADDER_ROUTE, type LiveFareRung } from '@/data/liveFareLadder'
 import { LIVE_CABIN_COMPARE, LIVE_CABIN_COMPARE_ROUTE } from '@/data/liveCabinCompare'
 import { fmtDayFull, fmtInt, fmtLead, fmtRupee } from '@/lib/format'
+import { useRelativeTime } from '@/lib/useRelativeTime'
+
+function LiveBadge({ scrapedAt }: { scrapedAt: string }) {
+  const age = useRelativeTime(scrapedAt)
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-good">
+      <span className="relative flex h-1.5 w-1.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-75" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-good" />
+      </span>
+      Refreshed {age}
+    </span>
+  )
+}
 
 const SECTOR_OPTIONS = SECTORS.map((s) => ({
   value: s.id,
@@ -103,6 +117,7 @@ export function ElasticityPage() {
           icon={ShieldCheck}
           title="Live fare ladder"
           meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · the same non-stop IndiGo flight, priced at each collection window`}
+          actions={<LiveBadge scrapedAt={LIVE_FARE_LADDER[0]?.scrapedAt ?? new Date().toISOString()} />}
           bleed
           footnote="Same flight, same airline, same non-stop routing at every window — only the booking date changes. That isolates the booking-window effect instead of mixing it with a cheaper-but-connecting itinerary. Click Verify to open the same search and compare."
         >
@@ -175,6 +190,7 @@ export function ElasticityPage() {
           icon={ShieldCheck}
           title="Live cabin comparison"
           meta={`${LIVE_CABIN_COMPARE_ROUTE.originCity} (${LIVE_CABIN_COMPARE_ROUTE.originCode}) to ${LIVE_CABIN_COMPARE_ROUTE.destCity} (${LIVE_CABIN_COMPARE_ROUTE.destCode}), ${fmtDayFull(LIVE_CABIN_COMPARE_ROUTE.departDate)} (T+${LIVE_CABIN_COMPARE_ROUTE.leadDays}) · cheapest real Cleartrip fare in each cabin, same night`}
+          actions={<LiveBadge scrapedAt={LIVE_CABIN_COMPARE[0]?.scrapedAt ?? new Date().toISOString()} />}
           bleed
           footnote="Each bar is the cheapest fare Cleartrip returned for that cabin on the same departure date. Click Verify to open the same search."
         >

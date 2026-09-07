@@ -1,11 +1,13 @@
 import { useMemo } from 'react'
 import {
+  ArrowSquareOut,
   Broadcast,
   CheckCircle,
   Funnel,
   Gauge,
   Lightning,
   Path,
+  ShieldCheck,
   Timer,
   Warning,
 } from '@phosphor-icons/react'
@@ -34,7 +36,57 @@ import {
   SUPPRESSED_COUNT,
   WINSORISED_QUOTES,
 } from '@/data/generate'
-import { fmtDay, fmtDayFull, fmtInt, fmtPct } from '@/lib/format'
+import { LIVE_FARE_LADDER } from '@/data/liveFareLadder'
+import { LIVE_CABIN_COMPARE } from '@/data/liveCabinCompare'
+import { fmtDay, fmtDayFull, fmtInt, fmtLead, fmtPct, fmtRupee } from '@/lib/format'
+import { useRelativeTime } from '@/lib/useRelativeTime'
+
+interface LiveRun {
+  key: string
+  label: string
+  price: number
+  scrapedAt: string
+  sourceUrl: string
+}
+
+const LIVE_RUNS: LiveRun[] = [
+  ...LIVE_FARE_LADDER.map((r) => ({
+    key: `ladder-${r.leadDays}`,
+    label: `Ladder ${fmtLead(r.leadDays)}`,
+    price: r.price,
+    scrapedAt: r.scrapedAt,
+    sourceUrl: r.sourceUrl,
+  })),
+  ...LIVE_CABIN_COMPARE.map((c) => ({
+    key: `cabin-${c.cabin}`,
+    label: `Cabin · ${c.cabin}`,
+    price: c.price,
+    scrapedAt: c.scrapedAt,
+    sourceUrl: c.sourceUrl,
+  })),
+].sort((a, b) => (a.scrapedAt < b.scrapedAt ? 1 : -1))
+
+function LiveRunRow({ run }: { run: LiveRun }) {
+  const age = useRelativeTime(run.scrapedAt)
+  return (
+    <li className="flex items-center justify-between gap-3 px-4 py-2">
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[12px] font-medium text-ink">{run.label}</span>
+        <span className="vm-num text-[10.5px] text-ink-3">{age}</span>
+      </span>
+      <span className="vm-num shrink-0 text-[12.5px] font-medium text-ink">{fmtRupee(run.price)}</span>
+      <a
+        href={run.sourceUrl}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="shrink-0 text-ink-3 transition-colors duration-[var(--vm-dur-fast)] hover:text-ink"
+        aria-label={`Verify ${run.label}`}
+      >
+        <ArrowSquareOut size={13} weight="bold" />
+      </a>
+    </li>
+  )
+}
 
 const RUN_TONE = { OK: 'good', WARN: 'warn', RUNNING: 'accent' } as const
 
@@ -66,7 +118,24 @@ export function HealthPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mt-3">
+        <Panel
+          tone="good"
+          icon={ShieldCheck}
+          title="Live scrape log"
+          meta="Every Cleartrip request this build actually made, most recent first — these are the runs behind the Overview and Lead-time curve panels"
+          bleed
+          footnote="This is the real collection pipeline: a Puppeteer job scrapes Cleartrip, commits the fares, and the site redeploys. Everything below this panel on this page is the fixture panel."
+        >
+          <ul className="divide-y divide-line">
+            {LIVE_RUNS.map((run) => (
+              <LiveRunRow key={run.key} run={run} />
+            ))}
+          </ul>
+        </Panel>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile
           label="Coverage tonight"
           value={fmtPct(LATEST.coverage)}

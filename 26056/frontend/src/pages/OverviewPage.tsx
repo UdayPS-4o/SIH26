@@ -57,6 +57,7 @@ import {
 } from '@/data/generate'
 import { sectorOf } from '@/data/reference'
 import { LIVE_FARE_CHECK } from '@/data/liveFare'
+import { useRelativeTime } from '@/lib/useRelativeTime'
 import {
   fmtClock,
   fmtDay,
@@ -83,6 +84,7 @@ const MEASURE_OPTIONS = [
 
 export function OverviewPage() {
   const t = useChartTokens()
+  const liveFareAge = useRelativeTime(LIVE_FARE_CHECK.scrapedAt)
   const [freq, setFreq] = useState<Frequency>('DAILY')
   const [measure, setMeasure] = useState<Measure>('TOTAL')
   const [showBand, setShowBand] = useState(true)
@@ -170,6 +172,13 @@ export function OverviewPage() {
                 Pulled from {LIVE_FARE_CHECK.source}'s own search API at{' '}
                 {fmtClock(LIVE_FARE_CHECK.scrapedAt)} on {fmtDayFull(LIVE_FARE_CHECK.scrapedAt.slice(0, 10))}
                 . Open the link and this is the fare it shows for the same search.
+              </p>
+              <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-good">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-good" />
+                </span>
+                Refreshed {liveFareAge}
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-3">
