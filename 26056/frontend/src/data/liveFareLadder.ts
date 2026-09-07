@@ -1,5 +1,4 @@
 import raw from './liveFareLadder.json'
-import type { LeadBucket } from './reference'
 
 const AIRLINE_NAME: Record<string, string> = {
   '6E': 'IndiGo',
@@ -10,7 +9,7 @@ const AIRLINE_NAME: Record<string, string> = {
 }
 
 export interface LiveFareRung {
-  leadDays: LeadBucket
+  leadDays: number
   departDate: string
   scrapedAt: string
   sourceUrl: string
@@ -57,7 +56,7 @@ export const LIVE_FARE_LADDER_ROUTE = {
 export const LIVE_FARE_LADDER: LiveFareRung[] = data.results
   .filter((r): r is RawResult & { cheapest: NonNullable<RawResult['cheapest']> } => r.cheapest != null)
   .map((r) => ({
-    leadDays: r.leadDays as LeadBucket,
+    leadDays: r.leadDays,
     departDate: r.departDate,
     scrapedAt: r.scrapedAt,
     sourceUrl: r.sourceUrl,

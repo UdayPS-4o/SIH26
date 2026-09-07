@@ -102,11 +102,11 @@ export function ElasticityPage() {
           tone="good"
           icon={ShieldCheck}
           title="Live fare ladder"
-          meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · one real fare scraped from Cleartrip at each collection window`}
+          meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · one real fare scraped from Cleartrip at each collection window, including a same-day (T+0) quote`}
           bleed
-          footnote="Each price is the cheapest Cleartrip fare for that exact departure date at scrape time. Click Verify to open the same search and compare."
+          footnote="Each price is the cheapest Cleartrip fare for that exact departure date at scrape time. This leisure route shows a real same-day premium over booking 30-45 days out. Click Verify to open the same search and compare."
         >
-          <div className="grid grid-cols-1 divide-y divide-line sm:grid-cols-5 sm:divide-y-0 sm:divide-x">
+          <div className="grid grid-cols-2 divide-y divide-line sm:grid-cols-3 sm:divide-y-0 sm:divide-x lg:grid-cols-6">
             {LIVE_FARE_LADDER.map((rung: LiveFareRung) => (
               <div key={rung.leadDays} className="flex flex-col gap-1.5 p-4">
                 <span className="vm-num text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3">
