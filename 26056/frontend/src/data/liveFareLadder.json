@@ -1,98 +1,98 @@
 {
-  "origin": "DEL",
-  "dest": "SXR",
-  "originCity": "Delhi",
-  "destCity": "Srinagar",
+  "origin": "IDR",
+  "dest": "BLR",
+  "originCity": "Indore",
+  "destCity": "Bangalore",
   "results": [
     {
       "leadDays": 0,
       "departDate": "2026-09-07",
-      "scrapedAt": "2026-09-07T02:43:12.009Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=07%2F09%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:46.659Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=07%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 7818,
-        "airlineCode": "AI",
-        "flightNumber": "AI-1739",
+        "price": 16045,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
         "stops": 0,
-        "departTime": "2026-09-07T11:30:00.000+05:30",
-        "arriveTime": "2026-09-07T13:05:00.000+05:30"
+        "departTime": "2026-09-07T21:40:00.000+05:30",
+        "arriveTime": "2026-09-07T23:45:00.000+05:30"
       },
-      "cardCount": 16
+      "cardCount": 30
     },
     {
       "leadDays": 1,
       "departDate": "2026-09-08",
-      "scrapedAt": "2026-09-07T02:43:15.861Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F09%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:48.775Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 6939,
-        "airlineCode": "IX",
-        "flightNumber": "IX-1074",
+        "price": 12470,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
         "stops": 0,
-        "departTime": "2026-09-08T11:00:00.000+05:30",
-        "arriveTime": "2026-09-08T13:45:00.000+05:30"
+        "departTime": "2026-09-08T21:40:00.000+05:30",
+        "arriveTime": "2026-09-08T23:45:00.000+05:30"
       },
-      "cardCount": 29
+      "cardCount": 52
     },
     {
       "leadDays": 7,
       "departDate": "2026-09-14",
-      "scrapedAt": "2026-09-07T02:43:19.718Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=14%2F09%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:50.454Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=14%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 6294,
-        "airlineCode": "SG",
-        "flightNumber": "SG-709",
+        "price": 9800,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
         "stops": 0,
-        "departTime": "2026-09-14T08:35:00.000+05:30",
-        "arriveTime": "2026-09-14T10:05:00.000+05:30"
+        "departTime": "2026-09-14T21:40:00.000+05:30",
+        "arriveTime": "2026-09-14T23:45:00.000+05:30"
       },
-      "cardCount": 27
+      "cardCount": 53
     },
     {
       "leadDays": 15,
       "departDate": "2026-09-22",
-      "scrapedAt": "2026-09-07T02:43:22.644Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:51.784Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 6485,
-        "airlineCode": "SG",
-        "flightNumber": "SG-709",
+        "price": 9246,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
         "stops": 0,
-        "departTime": "2026-09-22T08:35:00.000+05:30",
-        "arriveTime": "2026-09-22T10:05:00.000+05:30"
+        "departTime": "2026-09-22T21:40:00.000+05:30",
+        "arriveTime": "2026-09-22T23:45:00.000+05:30"
       },
-      "cardCount": 32
+      "cardCount": 58
     },
     {
       "leadDays": 30,
       "departDate": "2026-10-07",
-      "scrapedAt": "2026-09-07T02:43:25.440Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=07%2F10%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:53.251Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=07%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 6579,
+        "price": 8252,
         "airlineCode": "6E",
-        "flightNumber": "6E-6050",
-        "stops": 1,
-        "departTime": "2026-10-07T08:15:00.000+05:30",
-        "arriveTime": "2026-10-07T16:00:00.000+05:30"
+        "flightNumber": "6E-6744",
+        "stops": 0,
+        "departTime": "2026-10-07T21:20:00.000+05:30",
+        "arriveTime": "2026-10-07T23:25:00.000+05:30"
       },
-      "cardCount": 46
+      "cardCount": 55
     },
     {
       "leadDays": 45,
       "departDate": "2026-10-22",
-      "scrapedAt": "2026-09-07T02:43:27.786Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F10%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:54.775Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 7356,
+        "price": 8252,
         "airlineCode": "6E",
-        "flightNumber": "6E-7655",
-        "stops": 1,
-        "departTime": "2026-10-22T06:10:00.000+05:30",
-        "arriveTime": "2026-10-22T14:10:00.000+05:30"
+        "flightNumber": "6E-6744",
+        "stops": 0,
+        "departTime": "2026-10-22T21:20:00.000+05:30",
+        "arriveTime": "2026-10-22T23:25:00.000+05:30"
       },
-      "cardCount": 43
+      "cardCount": 79
     }
   ]
 }

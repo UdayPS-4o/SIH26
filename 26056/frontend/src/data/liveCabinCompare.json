@@ -1,52 +1,52 @@
 {
-  "origin": "DEL",
-  "dest": "SXR",
-  "originCity": "Delhi",
-  "destCity": "Srinagar",
+  "origin": "IDR",
+  "dest": "BLR",
+  "originCity": "Indore",
+  "destCity": "Bangalore",
   "departDate": "2026-09-22",
   "leadDays": 15,
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-09-07T02:43:30.110Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:56.126Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 6485,
-        "airlineCode": "SG",
-        "flightNumber": "SG-709",
+        "price": 8068,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6739",
         "stops": 0,
-        "departTime": "2026-09-22T08:35:00.000+05:30",
-        "arriveTime": "2026-09-22T10:05:00.000+05:30"
+        "departTime": "2026-09-22T14:40:00.000+05:30",
+        "arriveTime": "2026-09-22T16:45:00.000+05:30"
       },
-      "cardCount": 32
+      "cardCount": 58
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-09-07T02:43:33.254Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=22%2F09%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:57.429Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 8609.73,
+        "price": 11169.87,
         "airlineCode": "AI",
-        "flightNumber": "AI-1799",
-        "stops": 0,
-        "departTime": "2026-09-22T06:40:00.000+05:30",
-        "arriveTime": "2026-09-22T08:10:00.000+05:30"
+        "flightNumber": "AI-1780",
+        "stops": 1,
+        "departTime": "2026-09-22T18:25:00.000+05:30",
+        "arriveTime": "2026-09-23T04:10:00.000+05:30"
       },
-      "cardCount": 13
+      "cardCount": 31
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-09-07T02:43:36.338Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=22%2F09%2F2026&from=DEL&to=SXR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:16:58.774Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
       "cheapest": {
-        "price": 20188,
+        "price": 37439,
         "airlineCode": "AI",
-        "flightNumber": "AI-1799",
-        "stops": 0,
-        "departTime": "2026-09-22T06:40:00.000+05:30",
-        "arriveTime": "2026-09-22T08:10:00.000+05:30"
+        "flightNumber": "AI-2750",
+        "stops": 1,
+        "departTime": "2026-09-22T19:50:00.000+05:30",
+        "arriveTime": "2026-09-23T01:35:00.000+05:30"
       },
-      "cardCount": 12
+      "cardCount": 38
     }
   ]
 }

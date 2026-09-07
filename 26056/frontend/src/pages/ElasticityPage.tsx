@@ -102,9 +102,9 @@ export function ElasticityPage() {
           tone="good"
           icon={ShieldCheck}
           title="Live fare ladder"
-          meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · one real fare scraped from Cleartrip at each collection window, including a same-day (T+0) quote`}
+          meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · the same non-stop IndiGo flight, priced at each collection window`}
           bleed
-          footnote="Each price is the cheapest Cleartrip fare for that exact departure date at scrape time. This leisure route shows a real same-day premium over booking 30-45 days out. Click Verify to open the same search and compare."
+          footnote="Same flight, same airline, same non-stop routing at every window — only the booking date changes. That isolates the booking-window effect instead of mixing it with a cheaper-but-connecting itinerary. Click Verify to open the same search and compare."
         >
           <div className="grid grid-cols-2 divide-y divide-line sm:grid-cols-3 sm:divide-y-0 sm:divide-x lg:grid-cols-6">
             {LIVE_FARE_LADDER.map((rung: LiveFareRung) => (
