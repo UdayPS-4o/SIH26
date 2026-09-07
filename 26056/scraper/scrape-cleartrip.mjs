@@ -54,13 +54,19 @@ function ddmmyyyy(d) {
   return `${dd}/${mm}/${d.getFullYear()}`
 }
 
-function resultsUrl(depart, cabinParam) {
+// `filter` pre-applies Cleartrip's own airline/non-stop filters via URL params
+// (carrier, airline, stops=0) so a visitor who opens the link sees the same
+// single flight we scraped, not an unfiltered list mixing other airlines and
+// connecting itineraries.
+function resultsUrl(depart, cabinParam, filter) {
   const date = ddmmyyyy(depart)
-  return (
+  const carrier = filter?.airlineCode ?? ''
+  let url =
     `https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=${cabinParam}` +
     `&depart_date=${encodeURIComponent(date)}&from=${ORIGIN}&to=${DEST}&intl=false` +
-    `&carrier=&airline=&&sd=&mmb=false`
-  )
+    `&carrier=${carrier}&airline=${carrier}&&sd=&mmb=false`
+  if (filter?.nonstop) url += '&stops=0'
+  return url
 }
 
 function fareToRow(price, flightDetails) {
@@ -132,29 +138,35 @@ async function scrapeLadderRung(browser, leadDays) {
   const today = new Date()
   const depart = new Date(today)
   depart.setDate(depart.getDate() + leadDays)
-  const url = resultsUrl(depart, 'Economy')
+  const fetchUrl = resultsUrl(depart, 'Economy')
 
-  const json = await fetchResults(browser, url)
+  const json = await fetchResults(browser, fetchUrl)
   const cheapest = pickFlight(json, TARGET_FLIGHT) ?? pickCheapest(json)
+  const sourceUrl = cheapest
+    ? resultsUrl(depart, 'Economy', { airlineCode: cheapest.airlineCode, nonstop: cheapest.stops === 0 })
+    : fetchUrl
 
   return {
     leadDays,
     departDate: depart.toISOString().slice(0, 10),
     scrapedAt: new Date().toISOString(),
-    sourceUrl: url,
+    sourceUrl,
     cheapest,
     cardCount: Object.keys(json.fares || {}).length,
   }
 }
 
 async function scrapeCabin(browser, depart, cabin) {
-  const url = resultsUrl(depart, cabin.param)
-  const json = await fetchResults(browser, url)
+  const fetchUrl = resultsUrl(depart, cabin.param)
+  const json = await fetchResults(browser, fetchUrl)
   const cheapest = pickCheapest(json)
+  const sourceUrl = cheapest
+    ? resultsUrl(depart, cabin.param, { airlineCode: cheapest.airlineCode, nonstop: cheapest.stops === 0 })
+    : fetchUrl
   return {
     cabin: cabin.label,
     scrapedAt: new Date().toISOString(),
-    sourceUrl: url,
+    sourceUrl,
     cheapest,
     cardCount: Object.keys(json.fares || {}).length,
   }
