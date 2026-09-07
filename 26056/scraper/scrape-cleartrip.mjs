@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 /**
- * Pulls real DEL-BOM fares from Cleartrip:
- *  - the cheapest Economy fare for each of the app's five lead-time buckets
- *    (T+1, T+7, T+15, T+30, T+45 days from today) -> liveFareLadder.json
+ * Pulls real IDR-BLR fares from Cleartrip:
+ *  - the price of one fixed non-stop flight (TARGET_FLIGHT) for each of the
+ *    app's lead-time buckets (T+0, T+1, T+7, T+15, T+30, T+45 days from
+ *    today) -> liveFareLadder.json. Pinning to a single flight number keeps
+ *    the comparison apples-to-apples: same airline, same routing, same
+ *    non-stop aircraft, only the booking window changes. Falls back to the
+ *    cheapest non-stop fare on dates where the target flight isn't offered.
  *  - the cheapest fare in each cabin (Economy, Premium Economy, Business)
  *    for one representative date (the T+15 departure) -> liveCabinCompare.json
  *
@@ -23,11 +27,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const LADDER_OUT_PATH = join(__dirname, '../frontend/src/data/liveFareLadder.json')
 const CABIN_OUT_PATH = join(__dirname, '../frontend/src/data/liveCabinCompare.json')
 
-const ORIGIN = 'DEL'
-const DEST = 'SXR'
-const ORIGIN_CITY = 'Delhi'
-const DEST_CITY = 'Srinagar'
+const ORIGIN = 'IDR'
+const DEST = 'BLR'
+const ORIGIN_CITY = 'Indore'
+const DEST_CITY = 'Bangalore'
 const LEAD_DAYS = [0, 1, 7, 15, 30, 45]
+// IndiGo's daily non-stop on this route — present in every lead-time bucket,
+// which is what makes the ladder a same-flight comparison rather than a
+// cheapest-available-that-day comparison (which can silently swap in a
+// 1-stop itinerary or a different carrier and confound the "book early"
+// story with a "different product" story).
+const TARGET_FLIGHT = '6E-6744'
 const CABIN_LEAD_DAYS = 15
 const CABINS = [
   { param: 'Economy', label: 'Economy' },
@@ -53,6 +63,19 @@ function resultsUrl(depart, cabinParam) {
   )
 }
 
+function fareToRow(price, flightDetails) {
+  const first = flightDetails[0]
+  const last = flightDetails[flightDetails.length - 1]
+  return {
+    price,
+    airlineCode: first?.airlineCode,
+    flightNumber: first ? `${first.airlineCode}-${first.fltNo}` : undefined,
+    stops: Math.max(flightDetails.length - 1, 0),
+    departTime: first?.departure?.airport?.time,
+    arriveTime: last?.arrival?.airport?.time,
+  }
+}
+
 function pickCheapest(json) {
   const fares = json.fares || {}
   let best = null
@@ -67,17 +90,26 @@ function pickCheapest(json) {
 
   const legs = best.fare.subTravelOptionFare.flatMap((s) => s.flightFare.map((ff) => ff.flightId))
   const flightDetails = legs.map((id) => json.flights?.[id]).filter(Boolean)
-  const first = flightDetails[0]
-  const last = flightDetails[flightDetails.length - 1]
+  return fareToRow(best.price, flightDetails)
+}
 
-  return {
-    price: best.price,
-    airlineCode: first?.airlineCode,
-    flightNumber: first ? `${first.airlineCode}-${first.fltNo}` : undefined,
-    stops: Math.max(flightDetails.length - 1, 0),
-    departTime: first?.departure?.airport?.time,
-    arriveTime: last?.arrival?.airport?.time,
+// Cheapest fare for one specific non-stop flight number (e.g. "6E-6744").
+// Returns null if that flight isn't offered on this date's search.
+function pickFlight(json, targetFlightNo) {
+  const fares = json.fares || {}
+  const flights = json.flights || {}
+  let best = null
+  for (const fareId of Object.keys(fares)) {
+    const fare = fares[fareId]
+    const price = fare?.pricing?.totalPricing?.totalPrice
+    if (typeof price !== 'number') continue
+    const legs = fare.subTravelOptionFare.flatMap((s) => s.flightFare.map((ff) => ff.flightId))
+    if (legs.length !== 1) continue
+    const f = flights[legs[0]]
+    if (!f || `${f.airlineCode}-${f.fltNo}` !== targetFlightNo) continue
+    if (!best || price < best.price) best = { price, flightDetails: [f] }
   }
+  return best ? fareToRow(best.price, best.flightDetails) : null
 }
 
 async function fetchResults(browser, url) {
@@ -103,7 +135,7 @@ async function scrapeLadderRung(browser, leadDays) {
   const url = resultsUrl(depart, 'Economy')
 
   const json = await fetchResults(browser, url)
-  const cheapest = pickCheapest(json)
+  const cheapest = pickFlight(json, TARGET_FLIGHT) ?? pickCheapest(json)
 
   return {
     leadDays,
