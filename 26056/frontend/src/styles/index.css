@@ -1,0 +1,99 @@
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource/ibm-plex-sans/400.css';
+@import '@fontsource/ibm-plex-sans/500.css';
+@import '@fontsource/ibm-plex-sans/600.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import '@fontsource/ibm-plex-mono/600.css';
+@import './tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* The plane carries a faint measurement grid: it reads as graph paper, which
+     is what a statistics product should feel like, and it keeps large empty
+     regions from looking unfinished. Painted as a plain background on the body
+     rather than a fixed pseudo-element, so it costs no compositor layer and
+     nothing repaints on scroll. */
+  body {
+    background-color: var(--vm-bg);
+    background-image:
+      linear-gradient(var(--vm-bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--vm-bg-grid) 1px, transparent 1px);
+    background-size: 46px 46px;
+    color: var(--vm-ink);
+    font-family: var(--vm-font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--vm-font-display);
+    letter-spacing: -0.015em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--vm-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--vm-accent-soft);
+  }
+
+  /* Scrollbars styled per mode so light mode does not inherit dark gutters. */
+  * {
+    scrollbar-color: var(--vm-line-strong) transparent;
+    scrollbar-width: thin;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--vm-line-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Numbers are tabular everywhere they sit in a column. */
+  .vm-num {
+    font-family: var(--vm-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* Recharts writes inline styles onto its tooltip wrapper; this keeps the
+     cursor line from repainting on top of the mark ring. */
+  .recharts-tooltip-wrapper {
+    outline: none !important;
+    z-index: 30;
+  }
+  .recharts-surface {
+    overflow: visible;
+  }
+}
+
+/* Everything that moves collapses to static under a reduced-motion request. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
