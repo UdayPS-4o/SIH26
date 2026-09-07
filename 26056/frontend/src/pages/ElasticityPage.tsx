@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import {
+  ArrowSquareOut,
   ArrowsHorizontal,
   Binoculars,
   CurrencyInr,
   Eye,
+  ShieldCheck,
   TrendDown,
   Warning,
 } from '@phosphor-icons/react'
@@ -15,6 +17,7 @@ import {
   MultiLine,
   PageHeader,
   Panel,
+  RankedBars,
   SegmentedControl,
   Select,
   StatTile,
@@ -23,7 +26,9 @@ import {
 } from '@/ds'
 import { elasticityCurve, fareAtLead, leadSpread } from '@/data/generate'
 import { LEAD_BUCKETS, SECTORS, sectorOf, type LeadBucket } from '@/data/reference'
-import { fmtInt, fmtLead, fmtRupee } from '@/lib/format'
+import { LIVE_FARE_LADDER, LIVE_FARE_LADDER_ROUTE, type LiveFareRung } from '@/data/liveFareLadder'
+import { LIVE_CABIN_COMPARE, LIVE_CABIN_COMPARE_ROUTE } from '@/data/liveCabinCompare'
+import { fmtDayFull, fmtInt, fmtLead, fmtRupee } from '@/lib/format'
 
 const SECTOR_OPTIONS = SECTORS.map((s) => ({
   value: s.id,
@@ -92,7 +97,47 @@ export function ElasticityPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-3">
+        <Panel
+          tone="good"
+          icon={ShieldCheck}
+          title="Live fare ladder"
+          meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · one real fare scraped from Cleartrip at each collection window`}
+          bleed
+          footnote="Each price is the cheapest Cleartrip fare for that exact departure date at scrape time. Click Verify to open the same search and compare."
+        >
+          <div className="grid grid-cols-1 divide-y divide-line sm:grid-cols-5 sm:divide-y-0 sm:divide-x">
+            {LIVE_FARE_LADDER.map((rung: LiveFareRung) => (
+              <div key={rung.leadDays} className="flex flex-col gap-1.5 p-4">
+                <span className="vm-num text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-3">
+                  {fmtLead(rung.leadDays)}
+                </span>
+                <span className="text-[11px] text-ink-3">{fmtDayFull(rung.departDate)}</span>
+                <span className="vm-num text-[22px] font-semibold leading-none text-ink">
+                  {fmtRupee(rung.price)}
+                </span>
+                <span className="text-[11px] leading-snug text-ink-2">
+                  {rung.airline} {rung.flightNumber}
+                  {rung.stops > 0 ? ` · ${rung.stops} stop${rung.stops > 1 ? 's' : ''}` : ' · non-stop'}
+                </span>
+                <a
+                  href={rung.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="mt-1 inline-flex w-fit items-center gap-1 rounded-control bg-surface-2 px-2 py-1 text-[10.5px]
+                             font-medium text-ink-2 ring-1 ring-line transition-colors duration-[var(--vm-dur-fast)]
+                             hover:bg-surface-3 hover:text-ink"
+                >
+                  Verify
+                  <ArrowSquareOut size={11} weight="bold" />
+                </a>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
           label={`${primary} booked 45 days out`}
           value={fmtRupee(t45)}
@@ -122,6 +167,57 @@ export function ElasticityPage() {
           tone="warn"
           note="VIMAAN captures all five windows, every night"
         />
+      </div>
+
+      <div className="mt-3">
+        <Panel
+          tone="good"
+          icon={ShieldCheck}
+          title="Live cabin comparison"
+          meta={`${LIVE_CABIN_COMPARE_ROUTE.originCity} (${LIVE_CABIN_COMPARE_ROUTE.originCode}) to ${LIVE_CABIN_COMPARE_ROUTE.destCity} (${LIVE_CABIN_COMPARE_ROUTE.destCode}), ${fmtDayFull(LIVE_CABIN_COMPARE_ROUTE.departDate)} (T+${LIVE_CABIN_COMPARE_ROUTE.leadDays}) · cheapest real Cleartrip fare in each cabin, same night`}
+          bleed
+          footnote="Each bar is the cheapest fare Cleartrip returned for that cabin on the same departure date. Click Verify to open the same search."
+        >
+          <div className="grid grid-cols-1 gap-3 p-4 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <RankedBars
+                rows={LIVE_CABIN_COMPARE.map((c) => ({
+                  label: c.cabin,
+                  value: c.price,
+                  note: `${c.airline} ${c.flightNumber} · ${c.stops > 0 ? `${c.stops} stop${c.stops > 1 ? 's' : ''}` : 'non-stop'}`,
+                }))}
+                valueFormat={fmtRupee}
+                height={200}
+              />
+            </div>
+            <div className="flex flex-col justify-center gap-2 lg:col-span-5">
+              {LIVE_CABIN_COMPARE.map((c) => (
+                <div
+                  key={c.cabin}
+                  className="flex items-center justify-between gap-3 rounded-control bg-surface-2 px-3 py-2 ring-1 ring-line"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-semibold leading-tight text-ink">{c.cabin}</p>
+                    <p className="vm-num mt-0.5 text-[15px] font-semibold leading-none text-ink">
+                      {fmtRupee(c.price)}
+                    </p>
+                  </div>
+                  <a
+                    href={c.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-control bg-surface-3 px-2 py-1 text-[10.5px]
+                               font-medium text-ink-2 ring-1 ring-line transition-colors duration-[var(--vm-dur-fast)]
+                               hover:bg-surface hover:text-ink"
+                  >
+                    Verify
+                    <ArrowSquareOut size={11} weight="bold" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Panel>
       </div>
 
       <Panel

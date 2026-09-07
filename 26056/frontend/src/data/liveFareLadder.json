@@ -1,0 +1,83 @@
+{
+  "origin": "DEL",
+  "dest": "BOM",
+  "originCity": "Delhi",
+  "destCity": "Mumbai",
+  "results": [
+    {
+      "leadDays": 1,
+      "departDate": "2026-09-08",
+      "scrapedAt": "2026-09-07T02:25:08.967Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F09%2F2026&from=DEL&to=BOM&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": {
+        "price": 6090,
+        "airlineCode": "6E",
+        "flightNumber": "6E-2298",
+        "stops": 1,
+        "departTime": "2026-09-08T09:45:00.000+05:30",
+        "arriveTime": "2026-09-08T16:15:00.000+05:30"
+      },
+      "cardCount": 218
+    },
+    {
+      "leadDays": 7,
+      "departDate": "2026-09-14",
+      "scrapedAt": "2026-09-07T02:25:17.333Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=14%2F09%2F2026&from=DEL&to=BOM&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": {
+        "price": 6500,
+        "airlineCode": "QP",
+        "flightNumber": "QP-2074",
+        "stops": 0,
+        "departTime": "2026-09-14T14:10:00.000+05:30",
+        "arriveTime": "2026-09-14T16:15:00.000+05:30"
+      },
+      "cardCount": 211
+    },
+    {
+      "leadDays": 15,
+      "departDate": "2026-09-22",
+      "scrapedAt": "2026-09-07T02:25:23.180Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=DEL&to=BOM&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": {
+        "price": 6090,
+        "airlineCode": "6E",
+        "flightNumber": "6E-2013",
+        "stops": 1,
+        "departTime": "2026-09-22T21:50:00.000+05:30",
+        "arriveTime": "2026-09-23T02:55:00.000+05:30"
+      },
+      "cardCount": 226
+    },
+    {
+      "leadDays": 30,
+      "departDate": "2026-10-07",
+      "scrapedAt": "2026-09-07T02:25:27.773Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=07%2F10%2F2026&from=DEL&to=BOM&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": {
+        "price": 6090,
+        "airlineCode": "6E",
+        "flightNumber": "6E-5119",
+        "stops": 1,
+        "departTime": "2026-10-07T05:10:00.000+05:30",
+        "arriveTime": "2026-10-07T09:35:00.000+05:30"
+      },
+      "cardCount": 247
+    },
+    {
+      "leadDays": 45,
+      "departDate": "2026-10-22",
+      "scrapedAt": "2026-09-07T02:25:33.854Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F10%2F2026&from=DEL&to=BOM&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": {
+        "price": 6500,
+        "airlineCode": "QP",
+        "flightNumber": "QP-2012",
+        "stops": 0,
+        "departTime": "2026-10-22T08:55:00.000+05:30",
+        "arriveTime": "2026-10-22T11:15:00.000+05:30"
+      },
+      "cardCount": 231
+    }
+  ]
+}
