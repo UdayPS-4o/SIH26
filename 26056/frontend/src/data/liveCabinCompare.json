@@ -8,8 +8,8 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-09-07T03:16:56.126Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:32:10.364Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8068,
         "airlineCode": "6E",
@@ -22,8 +22,8 @@
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-09-07T03:16:57.429Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:32:11.632Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 11169.87,
         "airlineCode": "AI",
@@ -36,8 +36,8 @@
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-09-07T03:16:58.774Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "scrapedAt": "2026-09-07T03:32:13.223Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=22%2F09%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 37439,
         "airlineCode": "AI",
