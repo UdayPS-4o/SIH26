@@ -2,6 +2,7 @@ import type { Icon } from '@phosphor-icons/react'
 import {
   ChartLineUp,
   ChartScatter,
+  CheckCircle,
   Function as FunctionIcon,
   Gauge,
   GridFour,
@@ -45,6 +46,7 @@ export const NAV: NavGroup[] = [
     items: [
       { to: '/heatmap', label: 'Sector heatmap', icon: GridFour, blurb: '20 sectors by 5 lead windows' },
       { to: '/elasticity', label: 'Lead-time curve', icon: TrendDown, blurb: 'Fare against days to departure' },
+      { to: '/cross-check', label: 'Aggregator cross-check', icon: CheckCircle, blurb: 'One flight, priced on eight sites' },
       { to: '/decomposition', label: 'Fare decomposition', icon: StackSimple, blurb: 'Base, taxes, UDF, convenience' },
     ],
   },

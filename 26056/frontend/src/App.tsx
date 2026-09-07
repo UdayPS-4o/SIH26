@@ -3,6 +3,7 @@ import { AppShell } from '@/components/AppShell'
 import { OverviewPage } from '@/pages/OverviewPage'
 import { HeatmapPage } from '@/pages/HeatmapPage'
 import { ElasticityPage } from '@/pages/ElasticityPage'
+import { CrossCheckPage } from '@/pages/CrossCheckPage'
 import { DecompositionPage } from '@/pages/DecompositionPage'
 import { MethodologyPage } from '@/pages/MethodologyPage'
 import { BacktestPage } from '@/pages/BacktestPage'
@@ -19,6 +20,7 @@ export function App() {
         <Route path="/" element={<OverviewPage />} />
         <Route path="/heatmap" element={<HeatmapPage />} />
         <Route path="/elasticity" element={<ElasticityPage />} />
+        <Route path="/cross-check" element={<CrossCheckPage />} />
         <Route path="/decomposition" element={<DecompositionPage />} />
         <Route path="/methodology" element={<MethodologyPage />} />
         <Route path="/backtest" element={<BacktestPage />} />
