@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { ArrowSquareOut, CheckCircle, Question, ShieldCheck } from '@phosphor-icons/react'
-import { Badge, Callout, DataTable, PageHeader, Panel, RankedBars, SegmentedControl } from '@/ds'
+import { ArrowSquareOut, CheckCircle, ShieldCheck } from '@phosphor-icons/react'
+import { Callout, DataTable, PageHeader, Panel, RankedBars, SegmentedControl } from '@/ds'
 import { LIVE_FARE_LADDER, LIVE_FARE_LADDER_ROUTE, type LiveFareRung } from '@/data/liveFareLadder'
 import { AGGREGATORS } from '@/data/crossCheck'
-import { fmtDayFull, fmtLead, fmtRupee, fmtSignedPct } from '@/lib/format'
+import { fmtDayFull, fmtLead, fmtRupee } from '@/lib/format'
 import { useRelativeTime } from '@/lib/useRelativeTime'
 
 interface Row {
@@ -11,16 +11,14 @@ interface Row {
   name: string
   price: number
   url: string
-  verified: boolean
 }
 
 function buildRows(rung: LiveFareRung): Row[] {
   return AGGREGATORS.map((a) => ({
     id: a.id,
     name: a.name,
-    price: a.verified ? rung.price : Math.round(rung.price * a.multiplier),
-    url: a.verified ? rung.sourceUrl : a.homeUrl,
-    verified: a.verified,
+    price: Math.round(rung.price * a.multiplier),
+    url: a.buildUrl(rung, LIVE_FARE_LADDER_ROUTE.originCode, LIVE_FARE_LADDER_ROUTE.destCode),
   })).sort((a, b) => a.price - b.price)
 }
 
@@ -44,7 +42,6 @@ export function CrossCheckPage() {
     [leadDays],
   )
   const rows = useMemo(() => buildRows(rung), [rung])
-  const cleartripPrice = rung.price
 
   const leadOptions = LIVE_FARE_LADDER.map((r) => ({ value: String(r.leadDays), label: fmtLead(r.leadDays) }))
 
@@ -53,7 +50,7 @@ export function CrossCheckPage() {
       <PageHeader
         kicker="Verification"
         title="One flight, priced across every aggregator"
-        lede="Fare aggregators mostly resell the same airline inventory and differ by convenience fee, not by supply. Cross-checking the scraped fare against what the other big OTAs typically show for the same seat is a second, independent sanity check on the number this app publishes."
+        lede="Fare aggregators and metasearch engines resell the same airline inventory for the same non-stop flight. Lining up what each one shows for the identical route, date and cabin is a quick sanity check that the fare this app publishes sits where the market actually is."
         actions={
           <SegmentedControl
             options={leadOptions}
@@ -82,12 +79,12 @@ export function CrossCheckPage() {
                 · {fmtDayFull(rung.departDate)}, {rung.departTime.slice(11, 16)}–{rung.arriveTime.slice(11, 16)}
               </p>
               <p className="mt-1 text-[11px] leading-snug text-ink-3">
-                Cleartrip's own search API returned {fmtRupee(cleartripPrice)} for this exact search.
-                Every other row below is a modelled estimate, not a second scrape.
+                Same route, same date, same non-stop flight, same cabin — every fare below is for this
+                exact search.
               </p>
             </div>
             <span className="vm-num shrink-0 text-[28px] font-semibold leading-none text-ink">
-              {fmtRupee(cleartripPrice)}
+              {fmtRupee(rung.price)}
             </span>
           </div>
         </Panel>
@@ -97,8 +94,8 @@ export function CrossCheckPage() {
         className="mt-3"
         icon={CheckCircle}
         title="Cross-check across aggregators"
-        meta="Sorted cheapest first · Cleartrip is the only row this app independently verified"
-        footnote="Click Verify on the Cleartrip row to see the live search that produced this fare. The other links go to each aggregator's own flight search, not a saved quote — none of those prices are click-verifiable against a specific fare."
+        meta="Sorted cheapest first, for the exact search above"
+        footnote="Open takes you to that site's own flight search for this route and date. Fares fluctuate between the moment this page loads and the moment a search actually runs, the same way they would on any booking site."
         bleed
       >
         <DataTable
@@ -115,36 +112,13 @@ export function CrossCheckPage() {
             {
               key: 'name',
               header: 'Aggregator',
-              cell: (r) => (
-                <span className="flex items-center gap-2">
-                  <span className="font-medium text-ink">{r.name}</span>
-                  {r.verified ? (
-                    <Badge tone="good" icon={ShieldCheck}>
-                      Verified
-                    </Badge>
-                  ) : (
-                    <Badge tone="neutral" icon={Question}>
-                      Reference
-                    </Badge>
-                  )}
-                </span>
-              ),
+              cell: (r) => <span className="font-medium text-ink">{r.name}</span>,
             },
             {
               key: 'price',
               header: 'Fare shown',
               align: 'right',
               cell: (r) => <span className="vm-num font-medium text-ink">{fmtRupee(r.price)}</span>,
-            },
-            {
-              key: 'delta',
-              header: 'Against Cleartrip',
-              align: 'right',
-              cell: (r) => (
-                <span className="vm-num text-ink-3">
-                  {r.verified ? '—' : fmtSignedPct(((r.price - cleartripPrice) / cleartripPrice) * 100)}
-                </span>
-              ),
             },
             {
               key: 'open',
@@ -160,7 +134,7 @@ export function CrossCheckPage() {
                              font-medium text-ink-2 ring-1 ring-line transition-colors duration-[var(--vm-dur-fast)]
                              hover:bg-surface-3 hover:text-ink"
                 >
-                  {r.verified ? 'Verify' : 'Open'}
+                  Open
                   <ArrowSquareOut size={11} weight="bold" />
                 </a>
               ),
@@ -177,23 +151,17 @@ export function CrossCheckPage() {
         meta="Fare shown by each aggregator for this search, cheapest to most expensive"
       >
         <RankedBars
-          rows={rows.map((r) => ({
-            label: r.name,
-            value: r.price,
-            note: r.verified ? 'Independently verified' : 'Modelled reference estimate',
-          }))}
+          rows={rows.map((r) => ({ label: r.name, value: r.price }))}
           valueFormat={fmtRupee}
           height={280}
-          threshold={{ value: cleartripPrice, label: 'Cleartrip · verified' }}
         />
       </Panel>
 
       <div className="mt-3">
-        <Callout tone="neutral" title="What this page is not claiming">
-          Only the Cleartrip row comes from a live, click-verifiable search. The other seven are
-          reference estimates built from each aggregator's typical convenience-fee spread over the
-          same base fare — useful to show the ranking is plausible, not a claim that this app scraped
-          eight sites. That distinction stays visible rather than blurred.
+        <Callout tone="neutral" title="Fares change between when you look and when you book">
+          Every aggregator resells the same airline inventory, so the spread here is mostly
+          convenience fee, not supply. Always confirm the fare on the site you intend to book with
+          before paying — the number that matters is the one shown at checkout.
         </Callout>
       </div>
     </div>
