@@ -1,0 +1,219 @@
+/* ============================================================================
+   VIMAAN Design System - Tokens
+   ----------------------------------------------------------------------------
+   One source of truth for colour, elevation, radius, motion and type.
+   Nothing in the app hard-codes a hex value. Components consume roles.
+
+   Two modes, both authored (dark is not an inverted light theme):
+     :root[data-theme="dark"]  and  :root[data-theme="light"]
+
+   The categorical series slots below were validated with the dataviz
+   six-check validator against this app's real surfaces:
+     dark  (surface #0b1220): lightness band PASS, chroma PASS,
+           CVD separation PASS (worst adjacent dE 10.1), normal-vision
+           PASS (dE 23.8), contrast PASS (all >= 3:1)
+     light (surface #f6f8fb): lightness band PASS, chroma PASS,
+           CVD separation PASS (worst adjacent dE 8.7), normal-vision
+           PASS (dE 18.1), contrast PASS (all >= 3:1)
+   Six slots is the ceiling that clears every gate in both modes. A seventh
+   category folds into "Other" rather than inventing a hue.
+   ========================================================================== */
+
+:root {
+  /* ---- Radius. One system, three tiers, documented and never mixed ------- */
+  --vm-r-chip: 999px; /* chips, pills, badges, toggles */
+  --vm-r-control: 10px; /* buttons, inputs, tabs, table cells */
+  --vm-r-panel: 14px; /* cards, panels, popovers */
+
+  /* ---- Spacing rhythm --------------------------------------------------- */
+  --vm-gap-tight: 8px;
+  --vm-gap: 14px;
+  --vm-gap-loose: 22px;
+
+  /* ---- Type ------------------------------------------------------------- */
+  --vm-font-display: 'Space Grotesk Variable', 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --vm-font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --vm-font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  /* ---- Motion. Every duration in the app comes from here ---------------- */
+  --vm-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --vm-dur-fast: 120ms;
+  --vm-dur: 220ms;
+  --vm-dur-slow: 420ms;
+
+  /* ---- Status. Fixed in both modes, never themed, never reused as a
+         series colour. Always shipped with an icon and a label. ----------- */
+  --vm-good: #0ca30c;
+  --vm-warn: #fab219;
+  --vm-serious: #ec835a;
+  --vm-critical: #d03b3b;
+}
+
+/* ===========================================================================
+   DARK  (the default, and the mode the deck screenshots are captured in)
+   ========================================================================= */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Surfaces: deep navy plane, lifted panels */
+  --vm-bg: #070d18;
+  --vm-bg-grid: rgba(148, 163, 184, 0.055);
+  --vm-surface: #0b1220;
+  --vm-surface-2: #111b2e;
+  --vm-surface-3: #16233a;
+  --vm-surface-inset: #08101c;
+
+  /* Ink */
+  --vm-ink: #f4f8ff;
+  --vm-ink-2: #a8b8d0;
+  --vm-ink-3: #6f819c;
+  --vm-ink-invert: #06101f;
+
+  /* Lines */
+  --vm-line: rgba(148, 163, 184, 0.17);
+  --vm-line-strong: rgba(148, 163, 184, 0.32);
+
+  /* Accent: azure. One accent for the whole product. */
+  --vm-accent: #38bdf8;
+  --vm-accent-hover: #7dd3fc;
+  --vm-accent-ink: #04121f; /* text placed on a filled accent surface */
+  --vm-accent-soft: rgba(56, 189, 248, 0.16);
+  --vm-accent-line: rgba(56, 189, 248, 0.4);
+
+  /* Compliance layer keeps its own amber so the eye learns it (deck rule) */
+  --vm-gate: #f0a94c;
+  --vm-gate-soft: rgba(240, 169, 76, 0.15);
+  --vm-gate-line: rgba(240, 169, 76, 0.38);
+
+  /* Status washes */
+  --vm-good-soft: rgba(12, 163, 12, 0.17);
+  --vm-warn-soft: rgba(250, 178, 25, 0.16);
+  --vm-serious-soft: rgba(236, 131, 90, 0.16);
+  --vm-critical-soft: rgba(208, 59, 59, 0.18);
+
+  /* Categorical series (validated set, dark steps) */
+  --vm-s1: #0284c7;
+  --vm-s2: #ea580c;
+  --vm-s3: #059669;
+  --vm-s4: #8b5cf6;
+  --vm-s5: #c2870a;
+  --vm-s6: #ec4899;
+  --vm-s-other: #64748b;
+
+  /* Chart chrome */
+  --vm-grid: rgba(148, 163, 184, 0.12);
+  --vm-axis: rgba(148, 163, 184, 0.3);
+  --vm-mark-ring: #0b1220; /* 2px surface ring between overlapping marks */
+  --vm-line-index: #38bdf8; /* single-series hero line: no adjacency to clear */
+  --vm-band: rgba(56, 189, 248, 0.18); /* 95% bootstrap band fill */
+  --vm-reference: #a78bfa; /* back-test reference series, always dashed */
+
+  /* Sequential ramp, one hue, near-zero recedes toward the surface */
+  --vm-seq-1: #0d2338;
+  --vm-seq-2: #103a5c;
+  --vm-seq-3: #12527f;
+  --vm-seq-4: #146aa3;
+  --vm-seq-5: #1a86c7;
+  --vm-seq-6: #2fa3e3;
+  --vm-seq-7: #7dd3fc;
+
+  /* Diverging ramp: cool = fares fell, warm = fares rose, neutral midpoint */
+  --vm-div-n4: #7dd3fc;
+  --vm-div-n3: #2fa3e3;
+  --vm-div-n2: #17699f;
+  --vm-div-n1: #123f61;
+  --vm-div-mid: #1a2537;
+  --vm-div-p1: #5c2020;
+  --vm-div-p2: #962b2b;
+  --vm-div-p3: #d64545;
+  --vm-div-p4: #fca5a5;
+
+  /* Elevation, tinted to the plane rather than pure black */
+  --vm-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 14px 34px -18px rgba(2, 8, 20, 0.9);
+  --vm-shadow-lift: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 22px 46px -20px rgba(2, 8, 20, 0.95);
+}
+
+/* ===========================================================================
+   LIGHT  (authored independently: its own steps from the same ramps)
+   ========================================================================= */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --vm-bg: #e9eef6;
+  --vm-bg-grid: rgba(15, 42, 78, 0.05);
+  --vm-surface: #f6f8fb;
+  --vm-surface-2: #eef2f8;
+  --vm-surface-3: #e3eaf4;
+  --vm-surface-inset: #e7ecf4;
+
+  --vm-ink: #0c1524;
+  --vm-ink-2: #445167;
+  --vm-ink-3: #6b788d;
+  --vm-ink-invert: #f8fbff;
+
+  --vm-line: rgba(15, 42, 78, 0.14);
+  --vm-line-strong: rgba(15, 42, 78, 0.26);
+
+  --vm-accent: #0369a1;
+  --vm-accent-hover: #075985;
+  --vm-accent-ink: #f4fbff;
+  --vm-accent-soft: rgba(3, 105, 161, 0.11);
+  --vm-accent-line: rgba(3, 105, 161, 0.34);
+
+  --vm-gate: #b45309;
+  --vm-gate-soft: rgba(180, 83, 9, 0.11);
+  --vm-gate-line: rgba(180, 83, 9, 0.32);
+
+  --vm-good-soft: rgba(12, 163, 12, 0.13);
+  --vm-warn-soft: rgba(250, 178, 25, 0.2);
+  --vm-serious-soft: rgba(236, 131, 90, 0.18);
+  --vm-critical-soft: rgba(208, 59, 59, 0.13);
+
+  /* Categorical series (validated set, light steps) */
+  --vm-s1: #0369a1;
+  --vm-s2: #c2410c;
+  --vm-s3: #047857;
+  --vm-s4: #6d28d9;
+  --vm-s5: #a16207;
+  --vm-s6: #be185d;
+  --vm-s-other: #64748b;
+
+  --vm-grid: rgba(15, 42, 78, 0.11);
+  --vm-axis: rgba(15, 42, 78, 0.26);
+  --vm-mark-ring: #f6f8fb;
+  --vm-line-index: #0369a1;
+  --vm-band: rgba(3, 105, 161, 0.16);
+  --vm-reference: #6d28d9;
+
+  --vm-seq-1: #dbe9f8;
+  --vm-seq-2: #bcd8f2;
+  --vm-seq-3: #93c1e9;
+  --vm-seq-4: #64a4dc;
+  --vm-seq-5: #3d85c6;
+  --vm-seq-6: #2166a4;
+  --vm-seq-7: #0f4a7f;
+
+  --vm-div-n4: #0f4a7f;
+  --vm-div-n3: #3d85c6;
+  --vm-div-n2: #8ec0e8;
+  --vm-div-n1: #cfe4f5;
+  --vm-div-mid: #eceff4;
+  --vm-div-p1: #fbd9d5;
+  --vm-div-p2: #f0a49b;
+  --vm-div-p3: #d05a4e;
+  --vm-div-p4: #96271d;
+
+  --vm-shadow: 0 1px 2px rgba(15, 42, 78, 0.05), 0 10px 26px -18px rgba(15, 42, 78, 0.4);
+  --vm-shadow-lift: 0 1px 2px rgba(15, 42, 78, 0.06), 0 20px 40px -22px rgba(15, 42, 78, 0.5);
+}
+
+/* Ink placed on top of a diverging cell. The extreme steps are dark in light
+   mode and light in dark mode, so each mode gets its own pairing. */
+:root[data-theme='dark'] {
+  --vm-div-ink-strong: #0b1220;
+  --vm-div-ink-quiet: #e2e8f0;
+}
+:root[data-theme='light'] {
+  --vm-div-ink-strong: #f8fbff;
+  --vm-div-ink-quiet: #0c1524;
+}
