@@ -12,7 +12,6 @@ import {
   Settings,
   X,
   Sparkles,
-  Brain,
   ScanSearch,
 } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
@@ -23,57 +22,75 @@ import pasture from '../../assets/sidebar-img.jpg'
 const openAlerts = ALERTS.filter((a) => a.status === 'open').length
 
 const items = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard' },
-  { to: '/animals', icon: Beef, label: 'nav.animals' },
-  { to: '/alerts', icon: BellRing, label: 'nav.alerts', badge: openAlerts },
-  { to: '/herd', icon: Network, label: 'nav.herd' },
-  { to: '/milk-quality', icon: Droplets, label: 'nav.milk' },
-  { to: '/environment', icon: CloudSun, label: 'nav.environment' },
-  { to: '/worker-hygiene', icon: ClipboardCheck, label: 'nav.workerHygiene' },
-  { to: '/simulator', icon: FlaskConical, label: 'nav.simulator' },
-  { to: '/analytics', icon: FileBarChart2, label: 'nav.analytics' },
-  { to: '/detection', icon: ScanSearch, label: 'nav.detection' },
-  { to: '/reports', icon: FileBarChart2, label: 'nav.reports' },
-  { to: '/settings', icon: Settings, label: 'nav.settings' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard', feature: 'OVERVIEW' },
+  { to: '/animals', icon: Beef, label: 'nav.animals', feature: 'MONITOR' },
+  { to: '/alerts', icon: BellRing, label: 'nav.alerts', badge: openAlerts, feature: 'PREDICT' },
+  { to: '/herd', icon: Network, label: 'nav.herd', feature: 'ANALYZE' },
+  { to: '/milk-quality', icon: Droplets, label: 'nav.milk', feature: 'TRACK' },
+  { to: '/environment', icon: CloudSun, label: 'nav.environment', feature: 'MONITOR' },
+  { to: '/worker-hygiene', icon: ClipboardCheck, label: 'nav.workerHygiene', feature: 'ANALYZE' },
+  { to: '/simulator', icon: FlaskConical, label: 'nav.simulator', feature: 'SIMULATE' },
+  { to: '/analytics', icon: FileBarChart2, label: 'nav.analytics', feature: 'INSIGHTS' },
+  { to: '/detection', icon: ScanSearch, label: 'nav.detection', feature: 'DETECT' },
+  { to: '/reports', icon: FileBarChart2, label: 'nav.reports', feature: 'EXPORT' },
+  { to: '/settings', icon: Settings, label: 'nav.settings', feature: 'CONFIG' },
 ]
+
+const featureColors = {
+  OVERVIEW: 'bg-ai/20 text-ai border-ai/30',
+  MONITOR: 'bg-forest-500/20 text-forest-400 border-forest-500/30',
+  PREDICT: 'bg-honey-500/20 text-honey-400 border-honey-500/30',
+  ANALYZE: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  TRACK: 'bg-sky-500/20 text-sky-400 border-sky-500/30',
+  SIMULATE: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  INSIGHTS: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+  DETECT: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
+  EXPORT: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
+  CONFIG: 'bg-sand-400/20 text-sand-400 border-sand-400/30',
+}
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const { t } = useI18n()
   return (
     <>
-      {mobileOpen && <div className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden" onClick={onClose} />}
+      {mobileOpen && <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-barn-900 via-barn-900 to-barn-950 text-sand-300 transition-transform dark:from-barn-950 dark:to-black lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-gradient-to-b from-forest-900 via-forest-900 to-barn-900 text-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand */}
-        <div className="relative flex items-center gap-3 px-5 pb-4 pt-5">
+        <div className="relative flex items-center gap-3 px-4 pb-3 pt-4">
           <div className="relative">
-            <img src={logoMark} alt="Gaurogya Setu" className="h-11 w-11 shrink-0 relative z-10" />
-            <div className="absolute inset-0 h-11 w-11 rounded-full bg-honey-400/30 blur-md" />
+            <img src={logoMark} alt="Gaurogya Setu" className="h-10 w-10 shrink-0 relative z-10 drop-shadow-lg" />
+            <div className="absolute -inset-1 rounded-full bg-honey-400/40 blur-md animate-pulse-soft" />
           </div>
           <div className="leading-tight">
-            <div className="text-lg font-bold text-white">
-              Gaurogya <span className="text-ai">Setu</span>
+            <div className="text-xl font-black text-white tracking-tight">
+              GAUROGYA <span className="text-honey-400">SETU</span>
             </div>
-            <div className="text-[10px] tracking-wide text-sand-400">
-              AI-Powered Herd Health Intelligence
+            <div className="text-[10px] font-bold tracking-widest text-forest-300 uppercase">
+              AI-Powered Dairy Intelligence
             </div>
           </div>
-          <button className="ml-auto text-sand-400 lg:hidden" onClick={onClose} aria-label="Close menu">
-            <X size={18} />
+          <button className="ml-auto rounded-lg p-1.5 text-forest-300 hover:bg-white/10 hover:text-white lg:hidden" onClick={onClose} aria-label="Close menu">
+            <X size={16} />
           </button>
         </div>
 
-        {/* AI Badge */}
-        <div className="mx-4 mb-3 rounded-lg border border-honey-400/30 bg-honey-400/10 px-3 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-honey-300">100% AI Powered</p>
-          <p className="mt-0.5 text-[10px] text-sand-400 leading-relaxed">Prediction · Prevention · Analysis · Detection · Suggestions</p>
+        {/* Feature Tags Banner */}
+        <div className="mx-3 mb-3 rounded-xl border border-honey-400/30 bg-gradient-to-r from-honey-500/20 via-forest-500/10 to-ai/20 px-3 py-2.5">
+          <div className="flex flex-wrap gap-1">
+            {['PREDICTION', 'PREVENTION', 'ANALYSIS', 'DETECTION', 'SUGGESTIONS'].map((feat) => (
+              <span key={feat} className="rounded-md bg-honey-500/20 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-honey-300 uppercase">
+                {feat}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Nav */}
-        <nav className="sidebar-scroll flex-1 space-y-1 overflow-y-auto px-3 py-3">
+        <nav className="sidebar-scroll flex-1 space-y-0.5 overflow-y-auto px-2.5 py-2">
           {items.map((item) => {
             const Icon = item.icon
             return (
@@ -82,19 +99,22 @@ export default function Sidebar({ mobileOpen, onClose }) {
                 to={item.to}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  `group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${
                     isActive
-                      ? 'bg-gradient-to-r from-honey-500 to-honey-600 text-white shadow-lg shadow-honey-500/30'
-                      : 'text-sand-300 hover:bg-white/10 hover:text-white'
+                      ? 'bg-gradient-to-r from-honey-500 to-honey-600 text-white shadow-lg shadow-honey-500/40'
+                      : 'text-forest-100 hover:bg-white/10 hover:text-white'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={18} className={isActive ? 'text-white' : 'text-sand-400 group-hover:text-honey-400'} />
+                    <Icon size={17} className={isActive ? 'text-white' : 'text-honey-400 group-hover:text-honey-300'} />
                     <span className="flex-1">{t(item.label)}</span>
+                    <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-black tracking-wider ${featureColors[item.feature] || 'bg-sand-400/20 text-sand-400 border-sand-400/30'}`}>
+                      {item.feature}
+                    </span>
                     {item.badge ? (
-                      <span className="grid h-5 min-w-[20px] place-items-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+                      <span className="grid h-5 min-w-[20px] place-items-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-lg shadow-red-500/40">
                         {item.badge}
                       </span>
                     ) : null}
@@ -106,10 +126,10 @@ export default function Sidebar({ mobileOpen, onClose }) {
         </nav>
 
         {/* Footer */}
-        <div className="px-5 pb-4 pt-2">
-          <div className="border-t border-sand-700/50 pt-3">
-            <p className="text-[10px] text-sand-500">Smart Dairy Intelligence</p>
-            <p className="text-[10px] text-honey-500 mt-0.5">Empowering Farmers with AI</p>
+        <div className="px-4 pb-3 pt-2">
+          <div className="border-t border-forest-700/60 pt-2.5">
+            <p className="text-[10px] font-bold text-honey-400">Empowering Farmers with AI</p>
+            <p className="text-[9px] text-forest-400">Gaurogya Setu  |  SIH 2026</p>
           </div>
         </div>
       </aside>
