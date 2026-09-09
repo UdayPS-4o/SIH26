@@ -9,6 +9,8 @@ import MilkQuality from './pages/MilkQuality.jsx'
 import Environment from './pages/Environment.jsx'
 import WorkerHygiene from './pages/WorkerHygiene.jsx'
 import Simulator from './pages/Simulator.jsx'
+import Analytics from './pages/Analytics.jsx'
+import Detection from './pages/Detection.jsx'
 import Reports from './pages/Reports.jsx'
 import Settings from './pages/Settings.jsx'
 
@@ -26,6 +28,8 @@ export default function App() {
         <Route path="/environment" element={<Environment />} />
         <Route path="/worker-hygiene" element={<WorkerHygiene />} />
         <Route path="/simulator" element={<Simulator />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/detection" element={<Detection />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
