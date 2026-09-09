@@ -27,6 +27,82 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* ===== THEME CUSTOMIZER: CSS custom property overrides ===== */
+:root {
+  --custom-bg: #fdf9f3;
+  --custom-card: #ffffff;
+  --custom-headline: #f59e0b;
+  --custom-button: #f59e0b;
+  --custom-text: #2d241b;
+  --custom-border: #e8dfd0;
+  --custom-muted: #9ca3af;
+  --custom-accent: #f59e0b;
+  --custom-surface: #ffffff;
+  --custom-font-heading: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --custom-font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --custom-font-scale: 1;
+  --custom-radius: 12px;
+}
+
+/* Apply custom properties when a non-default theme is active */
+[data-custom-theme] body {
+  background: var(--custom-bg) !important;
+  color: var(--custom-text) !important;
+}
+[data-custom-theme] .card,
+[data-custom-theme] .card-p {
+  background: var(--custom-card) !important;
+}
+[data-custom-theme] .hero-gradient-border,
+[data-custom-theme] h1, [data-custom-theme] h2 {
+  color: var(--custom-headline) !important;
+}
+[data-custom-theme] .btn-primary {
+  background: var(--custom-button) !important;
+}
+[data-custom-theme] .btn-primary:hover {
+  filter: brightness(0.9);
+}
+[data-custom-theme] input, [data-custom-theme] select, [data-custom-theme] textarea {
+  font-family: var(--custom-font-body) !important;
+}
+[data-custom-theme] h1, [data-custom-theme] h2, [data-custom-theme] h3,
+[data-custom-theme] .font-display, [data-custom-theme] [data-heading] {
+  font-family: var(--custom-font-heading) !important;
+}
+[data-custom-theme] * {
+  border-radius: var(--custom-radius) !important;
+}
+[data-custom-theme] {
+  font-size: calc(1em * var(--custom-font-scale));
+}
+
+/* High contrast mode */
+[data-high-contrast] {
+  --custom-text: #000000 !important;
+  --custom-headline: #000000 !important;
+}
+[data-high-contrast] body {
+  color: #000 !important;
+}
+[data-high-contrast] .card,
+[data-high-contrast] .card-p {
+  border-width: 2px !important;
+  border-color: #000 !important;
+}
+[data-high-contrast] .btn-primary {
+  border: 2px solid #000 !important;
+}
+
+/* Reduce motion */
+[data-reduce-motion] *,
+[data-reduce-motion] *::before,
+[data-reduce-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
 html.dark {
   color-scheme: dark;
 }
