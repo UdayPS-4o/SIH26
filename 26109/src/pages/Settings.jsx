@@ -114,13 +114,13 @@ export default function Settings() {
         <Card className="p-4 md:p-5">
           <SectionTitle>SMS Notification Log</SectionTitle>
           <div className="space-y-2">
-            {useMemo(() => [
+            {[
               { time: '2 min ago', to: 'Ramesh Kumar', msg: 'HIGH RISK — BUF-042, risk score 87%', status: 'delivered' },
               { time: '18 min ago', to: 'Vet Dr. Sharma', msg: 'ALERT — 3 animals need attention', status: 'delivered' },
               { time: '1 hr ago', to: 'Farm Manager', msg: 'Weekly summary — 12 alerts this week', status: 'delivered' },
               { time: '3 hrs ago', to: 'Ramesh Kumar', msg: 'Shed C temp above threshold (28°C)', status: 'delivered' },
               { time: 'Yesterday', to: 'Ramesh Kumar', msg: 'Moderate risk — BUF-033, score 62%', status: 'delivered' },
-            ], []).map((n, i) => (
+            ].map((n, i) => (
               <div key={i} className="flex items-start gap-2.5 rounded-lg border border-sand-100 bg-sand-50/70 px-3 py-2 dark:border-barn-800 dark:bg-barn-800/50">
                 <MessageSquare size={13} className="mt-0.5 shrink-0 text-forest-500" />
                 <div className="flex-1 min-w-0">

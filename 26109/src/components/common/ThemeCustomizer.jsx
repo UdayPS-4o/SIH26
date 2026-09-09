@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { X, Download, Upload, Palette, Type, Sliders, Sparkles, Check, Keyboard, Copy, RefreshCw } from 'lucide-react'
+import { X, Download, Upload, Type, Sliders, Sparkles, Check, Keyboard, Copy, RefreshCw, Palette } from 'lucide-react'
 import { THEME_SYSTEMS, exportThemeJSON, resolveTheme } from '../../data/themeSystems'
 import { useTheme } from '../../context/ThemeContext.jsx'
 
@@ -191,7 +191,6 @@ export default function ThemeCustomizer() {
 
   const selectTheme = useCallback((id) => {
     setConfig((prev) => ({ ...prev, themeId: id, overrides: {}, cssVars: {} }))
-    setTab('basic')
   }, [])
 
   const updateOverride = useCallback((key, value) => {
@@ -254,18 +253,6 @@ export default function ThemeCustomizer() {
     })
   }, [])
 
-  const Trigger = () => (
-    <button
-      onClick={() => setOpen((prev) => !prev)}
-      className="fixed bottom-6 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-2xl bg-honey-600 text-white shadow-lg shadow-honey-600/30 transition-all hover:bg-honey-700 hover:shadow-xl hover:shadow-honey-600/40 hover:scale-105 active:scale-95"
-      title="Theme Customizer (Shift+T)"
-    >
-      <Palette size={20} />
-    </button>
-  )
-
-  if (!open) return <Trigger />
-
   const c = resolved && resolved.resolved
 
   return (
@@ -326,33 +313,31 @@ export default function ThemeCustomizer() {
               {/* 3 picks */}
               <div className="mt-4 rounded-xl border border-honey-200 bg-honey-50/50 p-3 dark:border-honey-800/40 dark:bg-honey-900/10">
                 <p className="text-xs font-semibold text-honey-800 dark:text-honey-300">Recommended for Gaurogya Setu</p>
-                <div className="mt-2 space-y-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {[
-                    { id: 'warm-sand', reason: 'Warm farm aesthetic — honey/brown tones that feel natural for a cattle health app. Great readability in both modes.' },
-                    { id: 'sage-garden', reason: 'Green-forward with earthy card tones. Perfect for agriculture/veterinary context. The brown headline adds authority.' },
-                    { id: 'obsidian-amber', reason: 'Striking dark theme — amber accent on charcoal is energetic without being harsh. Great for analytics dashboards.' },
+                    { id: 'warm-sand', label: 'Warm Sand' },
+                    { id: 'sage-garden', label: 'Sage Garden' },
+                    { id: 'obsidian-amber', label: 'Obsidian Amber' },
                   ].map((pick) => {
                     const pt = THEME_SYSTEMS[pick.id]
+                    const isSelected = config.themeId === pick.id
                     return (
                       <button
                         key={pick.id}
                         onClick={() => selectTheme(pick.id)}
-                        className={`flex w-full items-start gap-3 rounded-lg border p-2.5 text-left transition-all ${
-                          config.themeId === pick.id
-                            ? 'border-honey-400 bg-white shadow-sm dark:bg-barn-800'
-                            : 'border-transparent bg-white/60 hover:bg-white dark:bg-barn-800/40'
+                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                          isSelected
+                            ? 'border-honey-400 bg-honey-100 text-honey-800 shadow-sm dark:bg-honey-900/30 dark:text-honey-300 dark:border-honey-700'
+                            : 'border-honey-200 bg-white text-sand-700 hover:bg-honey-50 dark:bg-barn-800 dark:text-sand-300 dark:border-barn-700 dark:hover:bg-barn-700'
                         }`}
                       >
-                        <div className="flex shrink-0 -space-x-1">
+                        <div className="flex -space-x-1">
                           {[pt.bg, pt.card, pt.headline, pt.button].map((cl, i) => (
-                            <span key={i} className="h-6 w-6 rounded-full border-2 border-white dark:border-barn-900" style={{ background: cl }} />
+                            <span key={i} className="h-3.5 w-3.5 rounded-full border border-white dark:border-barn-900" style={{ background: cl }} />
                           ))}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-sand-900 dark:text-sand-100">{pt.name}</p>
-                          <p className="mt-0.5 text-[11px] text-sand-500 dark:text-sand-400">{pick.reason}</p>
-                        </div>
-                        {config.themeId === pick.id && <Check size={14} className="mt-0.5 shrink-0 text-honey-600" />}
+                        <span>{pick.label}</span>
+                        {isSelected && <Check size={12} className="ml-0.5" />}
                       </button>
                     )
                   })}

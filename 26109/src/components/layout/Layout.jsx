@@ -3,7 +3,6 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar.jsx'
 import Topbar from './Topbar.jsx'
 import BottomNav from './BottomNav.jsx'
-import AiChatAssistant from '../common/AiChatAssistant.jsx'
 import OnboardingTour from '../common/OnboardingTour.jsx'
 import ThemeCustomizer from '../common/ThemeCustomizer.jsx'
 
@@ -24,7 +23,6 @@ export default function Layout() {
         </main>
         <BottomNav />
         <OnboardingTour />
-        <AiChatAssistant />
       </div>
       <ThemeCustomizer />
     </div>

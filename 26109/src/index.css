@@ -45,36 +45,249 @@ body {
 }
 
 /* Apply custom properties when a non-default theme is active */
-[data-custom-theme] body {
-  background: var(--custom-bg) !important;
+[data-custom-theme] body,
+[data-custom-theme] .app-bg-pattern {
+  background-color: var(--custom-bg) !important;
   color: var(--custom-text) !important;
 }
+
+/* All card/surface elements */
 [data-custom-theme] .card,
-[data-custom-theme] .card-p {
-  background: var(--custom-card) !important;
+[data-custom-theme] .card-p,
+[data-custom-theme] .dark\:bg-barn-900,
+[data-custom-theme] .dark\:bg-barn-900\/60,
+[data-custom-theme] .dark\:bg-barn-900\/40,
+[data-custom-theme] .dark\:bg-barn-800,
+[data-custom-theme] .dark\:bg-barn-800\/40,
+[data-custom-theme] .bg-sand-50,
+[data-custom-theme] .bg-sand-100,
+[data-custom-theme] .bg-white,
+[data-custom-theme] .bg-white\/60,
+[data-custom-theme] .bg-white\/80 {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
 }
-[data-custom-theme] .hero-gradient-border,
-[data-custom-theme] h1, [data-custom-theme] h2 {
+
+/* Sidebar */
+[data-custom-theme] aside,
+[data-custom-theme] .sidebar-scroll,
+[data-custom-theme] nav {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+}
+[data-custom-theme] aside *,
+[data-custom-theme] nav * {
+  color: var(--custom-text) !important;
+}
+[data-custom-theme] aside a,
+[data-custom-theme] nav a,
+[data-custom-theme] aside button,
+[data-custom-theme] nav button {
+  color: var(--custom-text) !important;
+}
+[data-custom-theme] aside a:hover,
+[data-custom-theme] nav a:hover {
+  opacity: 0.8;
+}
+
+/* Topbar */
+[data-custom-theme] header,
+[data-custom-theme] header * {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+  border-color: var(--custom-border) !important;
+}
+
+/* Headings */
+[data-custom-theme] h1,
+[data-custom-theme] h2,
+[data-custom-theme] h3,
+[data-custom-theme] h4,
+[data-custom-theme] h5,
+[data-custom-theme] h6,
+[data-custom-theme] .font-display,
+[data-custom-theme] [data-heading] {
   color: var(--custom-headline) !important;
 }
+
+/* Borders */
+[data-custom-theme] .card,
+[data-custom-theme] .card-p,
+[data-custom-theme] input,
+[data-custom-theme] select,
+[data-custom-theme] textarea,
+[data-custom-theme] .btn-ghost,
+[data-custom-theme] table,
+[data-custom-theme] tr,
+[data-custom-theme] td,
+[data-custom-theme] th,
+[data-custom-theme] .border-sand-200,
+[data-custom-theme] .border-sand-100,
+[data-custom-theme] .border-barn-700,
+[data-custom-theme] .border-barn-800,
+[data-custom-theme] .border-honey-200,
+[data-custom-theme] .border-honey-800\/40 {
+  border-color: var(--custom-border) !important;
+}
+
+/* Primary buttons */
 [data-custom-theme] .btn-primary {
   background: var(--custom-button) !important;
+  color: #fff !important;
 }
 [data-custom-theme] .btn-primary:hover {
-  filter: brightness(0.9);
+  filter: brightness(0.92) !important;
 }
-[data-custom-theme] input, [data-custom-theme] select, [data-custom-theme] textarea {
+
+/* Ghost/secondary buttons */
+[data-custom-theme] .btn-ghost {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+  border-color: var(--custom-border) !important;
+}
+
+/* Form inputs */
+[data-custom-theme] input,
+[data-custom-theme] select,
+[data-custom-theme] textarea,
+[data-custom-theme] .input {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+  border-color: var(--custom-border) !important;
   font-family: var(--custom-font-body) !important;
 }
-[data-custom-theme] h1, [data-custom-theme] h2, [data-custom-theme] h3,
-[data-custom-theme] .font-display, [data-custom-theme] [data-heading] {
-  font-family: var(--custom-font-heading) !important;
+
+/* Select dropdown */
+[data-custom-theme] select {
+  background-color: var(--custom-card) !important;
 }
-[data-custom-theme] * {
+
+/* Tables */
+[data-custom-theme] table,
+[data-custom-theme] thead,
+[data-custom-theme] tbody,
+[data-custom-theme] tr {
+  border-color: var(--custom-border) !important;
+}
+[data-custom-theme] th,
+[data-custom-theme] td {
+  border-color: var(--custom-border) !important;
+  color: var(--custom-text) !important;
+}
+[data-custom-theme] thead th {
+  background-color: var(--custom-surface) !important;
+  color: var(--custom-headline) !important;
+}
+
+/* Dropdown / modal overlays */
+[data-custom-theme] [role="dialog"],
+[data-custom-theme] .modal,
+[data-custom-theme] .dropdown,
+[data-custom-theme] [class*="dropdown"],
+[data-custom-theme] [class*="popover"] {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+  border-color: var(--custom-border) !important;
+}
+
+/* Scrollbar */
+[data-custom-theme] .sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.25) !important;
+  border-radius: 9999px;
+}
+
+/* Loading shimmer */
+[data-custom-theme] .shimmer-line {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--custom-bg) 85%, #000) 25%, color-mix(in srgb, var(--custom-bg) 75%, #000) 50%, color-mix(in srgb, var(--custom-bg) 85%, #000) 75%) !important;
+  background-size: 800px 100% !important;
+}
+
+/* Farm map markers */
+[data-custom-theme] .farm-marker__tooltip {
+  background: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+  border: 1px solid var(--custom-border) !important;
+}
+[data-custom-theme] .farm-marker__tooltip::after {
+  border-top-color: var(--custom-card) !important;
+}
+
+/* Hero gradient border */
+[data-custom-theme] .hero-gradient-border {
+  border-color: var(--custom-accent) !important;
+}
+
+/* Accent-colored elements */
+[data-custom-theme] .text-honey-600,
+[data-custom-theme] .text-honey-700,
+[data-custom-theme] .text-honey-800,
+[data-custom-theme] .text-forest-600,
+[data-custom-theme] .text-forest-500,
+[data-custom-theme] .dark\:text-honey-300,
+[data-custom-theme] .dark\:text-honey-600 {
+  color: var(--custom-headline) !important;
+}
+[data-custom-theme] .bg-honey-600,
+[data-custom-theme] .bg-honey-500,
+[data-custom-theme] .bg-forest-500 {
+  background-color: var(--custom-button) !important;
+}
+
+/* Muted text */
+[data-custom-theme] .text-sand-400,
+[data-custom-theme] .text-sand-500,
+[data-custom-theme] .text-barn-400,
+[data-custom-theme] .text-barn-500,
+[data-custom-theme] .dark\:text-sand-400,
+[data-custom-theme] .dark\:text-sand-300,
+[data-custom-theme] .text-sand-300,
+[data-custom-theme] .text-sand-200 {
+  color: var(--custom-text) !important;
+  opacity: 0.65 !important;
+}
+
+/* Bottom nav */
+[data-custom-theme] .bottom-nav,
+[data-custom-theme] nav[class*="fixed"],
+[data-custom-theme] [class*="bottom-nav"] {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+  border-color: var(--custom-border) !important;
+}
+
+/* Notification dropdown */
+[data-custom-theme] [class*="notification"],
+[data-custom-theme] [class*="dropdown"] {
+  background-color: var(--custom-card) !important;
+  color: var(--custom-text) !important;
+  border-color: var(--custom-border) !important;
+}
+
+/* Global border-radius */
+[data-custom-theme] .rounded-card,
+[data-custom-theme] .rounded-lg,
+[data-custom-theme] .rounded-xl,
+[data-custom-theme] .rounded-2xl,
+[data-custom-theme] .rounded-full {
   border-radius: var(--custom-radius) !important;
 }
-[data-custom-theme] {
-  font-size: calc(1em * var(--custom-font-scale));
+
+/* Font scale */
+[data-custom-theme] body {
+  font-size: calc(1rem * var(--custom-font-scale)) !important;
+}
+[data-custom-theme] h1 { font-size: calc(1.5rem * var(--custom-font-scale)) !important; }
+[data-custom-theme] h2 { font-size: calc(1.25rem * var(--custom-font-scale)) !important; }
+[data-custom-theme] h3 { font-size: calc(1.125rem * var(--custom-font-scale)) !important; }
+[data-custom-theme] .text-sm { font-size: calc(0.875rem * var(--custom-font-scale)) !important; }
+[data-custom-theme] .text-xs { font-size: calc(0.75rem * var(--custom-font-scale)) !important; }
+[data-custom-theme] .text-[11px] { font-size: calc(0.6875rem * var(--custom-font-scale)) !important; }
+[data-custom-theme] .text-lg { font-size: calc(1.125rem * var(--custom-font-scale)) !important; }
+[data-custom-theme] .text-xl { font-size: calc(1.25rem * var(--custom-font-scale)) !important; }
+
+/* Focus ring uses accent */
+[data-custom-theme] *:focus-visible {
+  outline-color: var(--custom-headline) !important;
 }
 
 /* High contrast mode */

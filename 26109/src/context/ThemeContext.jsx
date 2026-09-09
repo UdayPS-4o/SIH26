@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useLayoutEffect, useMemo } from 'react'
+import { THEME_SYSTEMS } from '../data/themeSystems'
 
 const STORAGE_KEY = 'gaurogya-theme'
 const CUSTOMIZER_KEY = 'gaurogya-theme-customizer'
@@ -39,11 +40,12 @@ export function ThemeProvider({ children }) {
   useLayoutEffect(() => {
     const root = document.documentElement
 
-    if (customConfig?.themeId && customConfig.themeId !== 'warm-sand') {
-      root.setAttribute('data-custom-theme', 'true')
-    } else if (!customConfig?.overrides?.bg && !customConfig?.cssVars?.['--bg']) {
-      root.removeAttribute('data-custom-theme')
-    } else if (customConfig?.overrides?.bg || customConfig?.cssVars?.['--bg']) {
+    const hasCustomTheme = customConfig && (
+      (customConfig.themeId && customConfig.themeId !== 'warm-sand') ||
+      (customConfig.overrides && Object.keys(customConfig.overrides).length > 0) ||
+      (customConfig.cssVars && Object.keys(customConfig.cssVars).some(k => customConfig.cssVars[k]))
+    )
+    if (hasCustomTheme) {
       root.setAttribute('data-custom-theme', 'true')
     } else {
       root.removeAttribute('data-custom-theme')
@@ -60,6 +62,33 @@ export function ThemeProvider({ children }) {
         if (value) root.style.setProperty(key, value)
         else root.style.removeProperty(key)
       })
+    }
+
+    // Apply theme CSS variables for site-wide theme switching
+    if (customConfig?.themeId) {
+      const base = THEME_SYSTEMS[customConfig.themeId]
+      if (base) {
+        const o = customConfig.overrides || {}
+        const cv = customConfig.cssVars || {}
+        root.style.setProperty('--custom-bg', cv['--bg'] || o.bg || base.bg)
+        root.style.setProperty('--custom-card', cv['--card'] || o.card || base.card)
+        root.style.setProperty('--custom-headline', cv['--headline'] || o.headline || base.headline)
+        root.style.setProperty('--custom-button', cv['--button'] || o.button || base.button)
+        root.style.setProperty('--custom-text', cv['--text'] || o.text || base.text)
+        root.style.setProperty('--custom-border', cv['--border'] || o.border || base.border || base.card)
+        root.style.setProperty('--custom-muted', cv['--muted'] || base.muted || '#9ca3af')
+        root.style.setProperty('--custom-accent', cv['--accent'] || base.headline)
+        root.style.setProperty('--custom-surface', cv['--surface'] || base.card)
+        root.style.setProperty('--custom-font-heading', cv['--font-heading'] || o.headingFont || base.headingFont)
+        root.style.setProperty('--custom-font-body', cv['--font-body'] || o.bodyFont || base.bodyFont)
+        root.style.setProperty('--custom-font-scale', String(customConfig.fontSizeScale || 1))
+        root.style.setProperty('--custom-radius', `${customConfig.borderRadius || 12}px`)
+
+        if (customConfig.highContrast) root.classList.add('high-contrast')
+        else root.classList.remove('high-contrast')
+        if (customConfig.reduceMotion) root.classList.add('reduce-motion')
+        else root.classList.remove('reduce-motion')
+      }
     }
   }, [customConfig])
 

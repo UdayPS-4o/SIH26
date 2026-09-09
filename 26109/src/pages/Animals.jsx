@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader, EmptyState, AiThinkingDots } from '../components/common/ui.jsx'
+import { AnimalTable } from '../components/shared.jsx'
 import { ANIMALS } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
 
