@@ -25,7 +25,7 @@ export function SectionTitle({ children, right }) {
 }
 
 export function Card({ children, className = '' }) {
-  return <div className={`rounded-card border border-sand-200 bg-white shadow-card dark:border-barn-800 dark:bg-barn-950/60 ${className}`}>{children}</div>
+  return <div className={`card-hover rounded-card border border-sand-200 bg-white shadow-card dark:border-barn-800 dark:bg-barn-950/60 ${className}`}>{children}</div>
 }
 
 const KPI_TONE = {
@@ -41,7 +41,7 @@ export function KpiCard({ icon: Icon, label, value, caption, progress, tone = 'n
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
   const trendColor = trend > 0 ? 'text-forest-600 dark:text-forest-400' : trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-sand-400'
   return (
-    <div className="rounded-card border border-sand-200 bg-white p-2.5 shadow-card transition-shadow hover:shadow-warm dark:border-barn-800 dark:bg-barn-950/60 sm:p-4 md:p-5">
+    <div className="card-hover rounded-card border border-sand-200 bg-white p-2.5 shadow-card transition-shadow hover:shadow-warm dark:border-barn-800 dark:bg-barn-950/60 sm:p-4 md:p-5">
       <div className="flex items-start justify-between">
         <span className={`grid h-8 w-8 place-items-center rounded-lg sm:h-10 sm:w-10 ${m.chip}`}>
           {Icon && <Icon size={15} className="sm:hidden" />}
@@ -83,26 +83,59 @@ export function RiskGauge({ score, size = 160, label }) {
   const { theme } = useTheme()
   const lvl = levelFromScore(score)
   const m = riskMeta(lvl)
-  const r = size / 2 - 12
+  const r = size / 2 - 14
   const c = 2 * Math.PI * r
   const dash = (score / 100) * c
   const trackColor = theme === 'dark' ? '#453018' : '#e8dfd0'
+  const strokeColor = theme === 'dark' ? '#f5efe0' : '#2d241b'
+  const isHighRisk = score > 70
+  const needleAngle = (score / 100) * 180 - 90
+  const needleLen = r - 8
+  const cx = size / 2
+  const cy = size / 2
+  const tipX = cx
+  const tipY = cy - needleLen
   return (
-    <div className="flex flex-col items-center">
+    <div className={`flex flex-col items-center ${isHighRisk ? 'gauge-pulse-high' : ''}`}>
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} className="-rotate-90">
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth="12" />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke={m.hex}
-            strokeWidth="12"
+        <svg width={size} height={size}>
+          <g transform={`rotate(-90 ${cx} ${cy})`}>
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth="12" />
+            <circle
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="none"
+              stroke={m.hex}
+              strokeWidth="12"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${c}`}
+              style={{ transition: 'stroke-dasharray .5s ease' }}
+            />
+          </g>
+          {/* Needle */}
+          <line
+            x1={cx}
+            y1={cy}
+            x2={tipX}
+            y2={tipY}
+            stroke={strokeColor}
+            strokeWidth="2.5"
             strokeLinecap="round"
-            strokeDasharray={`${dash} ${c}`}
-            style={{ transition: 'stroke-dasharray .5s ease' }}
+            transform={`rotate(${needleAngle} ${cx} ${cy})`}
+            style={{ transition: 'transform .8s cubic-bezier(.4,0,.2,1)' }}
           />
+          {/* Needle tip */}
+          <circle
+            cx={tipX}
+            cy={tipY}
+            r="4"
+            fill={m.hex}
+            transform={`rotate(${needleAngle} ${cx} ${cy})`}
+            style={{ transition: 'transform .8s cubic-bezier(.4,0,.2,1)' }}
+          />
+          {/* Center pivot */}
+          <circle cx={cx} cy={cy} r="5" fill={strokeColor} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-bold text-sand-900 dark:text-sand-100 sm:text-3xl">{score}%</span>
@@ -178,4 +211,12 @@ export function Pill({ tone = 'gray', children }) {
 export function AiDisclaimer({ className = '' }) {
   const { t } = useI18n()
   return <p className={`text-[11px] italic text-sand-400 dark:text-barn-500 ${className}`}>{t('disclaimer.ai')}</p>
+}
+
+export function AiThinkingDots() {
+  return (
+    <span className="ai-thinking" aria-label="AI processing">
+      <span /><span /><span />
+    </span>
+  )
 }

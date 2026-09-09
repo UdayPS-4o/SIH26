@@ -380,16 +380,21 @@ export function FarmMap() {
       <img src={farmMap} alt="Farm map" className="h-full w-full object-cover" />
       {SHEDS.map((s) => {
         const m = riskMeta(s.level)
+        const pulseClass = s.level === 'HIGH' ? 'shed-pulse--high' : s.level === 'MODERATE' ? 'shed-pulse--moderate' : ''
         return (
           <div
             key={s.id}
-            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white/95 px-1.5 py-1 text-[10px] font-bold shadow-md ring-1 ring-black/5 dark:bg-barn-900/95 dark:text-sand-100 dark:ring-white/10"
-            style={SHED_POS[s.id]}
+            className="farm-marker"
+            style={{ top: SHED_POS[s.id].top, left: SHED_POS[s.id].left }}
           >
-            <span className="flex items-center gap-1">
-              <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
+            <div className={`flex items-center gap-1 rounded-lg bg-white/95 px-1.5 py-1 text-[10px] font-bold shadow-md ring-1 ring-black/5 dark:bg-barn-900/95 dark:text-sand-100 dark:ring-white/10 ${pulseClass}`}>
+              <span className={`h-2 w-2 rounded-full ${m.dot}`} />
               {s.id} <span style={{ color: m.hex }}>{s.risk}%</span>
-            </span>
+            </div>
+            <div className="farm-marker__tooltip">
+              <div style={{ color: m.hex }}>{s.name} — {s.risk}%</div>
+              <div style={{ opacity: 0.7 }}>{s.animals} animals</div>
+            </div>
           </div>
         )
       })}

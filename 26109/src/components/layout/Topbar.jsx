@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, Bell, ChevronDown, Check, Globe, Home, Users, MapPin, CalendarDays, Sun, Moon } from 'lucide-react'
+import { Menu, Bell, ChevronDown, Check, Globe, Home, Users, MapPin, CalendarDays, Sun, Moon, Loader2 } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { FARMS, ALERTS, HERD_STATS } from '../../data/mockData'
@@ -34,6 +34,12 @@ export default function Topbar({ onMenu }) {
   const { t, lang, setLang } = useI18n()
   const { theme, toggleTheme } = useTheme()
   const [farm, setFarm] = useState(FARMS[0])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 1800)
+    return () => clearTimeout(t)
+  }, [])
 
   return (
     <header className="sticky top-0 z-20 flex h-14 items-center gap-2 overflow-hidden border-b border-sand-200 bg-white dark:border-barn-800 dark:bg-barn-900 md:h-16 md:gap-3 md:px-6 md:py-3">
@@ -41,114 +47,137 @@ export default function Topbar({ onMenu }) {
         <Menu size={20} />
       </button>
 
-      <Dropdown
-        align="left"
-        button={
-          <button className="flex items-center gap-1.5 rounded-lg border border-sand-200 px-2 py-2 text-sm hover:bg-sand-50 dark:border-barn-800 dark:hover:bg-barn-800 sm:gap-2 sm:px-3">
-            <Home size={14} className="shrink-0 text-honey-600" />
-            <span className="max-w-[5rem] truncate font-semibold text-sand-800 dark:text-sand-100 sm:max-w-[9rem]">{farm}</span>
-            <ChevronDown size={14} className="hidden shrink-0 text-sand-400 sm:block" />
-          </button>
-        }
-      >
-        {FARMS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setFarm(f)}
-            className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-sand-50 dark:text-sand-200 dark:hover:bg-barn-800"
+      {loading ? (
+        <div className="flex items-center gap-2.5 px-2">
+          <div className="spinner" />
+          <span className="text-xs font-medium text-sand-500 dark:text-sand-400">Initializing AI models…</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 overflow-hidden">
+          <Dropdown
+            align="left"
+            button={
+              <button className="flex items-center gap-1.5 rounded-lg border border-sand-200 px-2 py-2 text-sm hover:bg-sand-50 dark:border-barn-800 dark:hover:bg-barn-800 sm:gap-2 sm:px-3">
+                <Home size={14} className="shrink-0 text-honey-600" />
+                <span className="max-w-[5rem] truncate font-semibold text-sand-800 dark:text-sand-100 sm:max-w-[9rem]">{farm}</span>
+                <ChevronDown size={14} className="hidden shrink-0 text-sand-400 sm:block" />
+              </button>
+            }
           >
-            {f}
-            {f === farm && <Check size={14} className="text-honey-600" />}
-          </button>
-        ))}
-      </Dropdown>
+            {FARMS.map((f) => (
+              <button
+                key={f}
+                onClick={() => setFarm(f)}
+                className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-sand-50 dark:text-sand-200 dark:hover:bg-barn-800"
+              >
+                {f}
+                {f === farm && <Check size={14} className="text-honey-600" />}
+              </button>
+            ))}
+          </Dropdown>
 
-      <div className="hidden items-center gap-1.5 text-xs text-sand-500 dark:text-sand-400 xl:flex">
-        <Users size={14} className="text-sand-400" />
-        {HERD_STATS.totalAnimals} {t('nav.animals')}
-      </div>
-      <div className="hidden items-center gap-1.5 text-xs text-sand-500 dark:text-sand-400 xl:flex">
-        <MapPin size={14} className="text-sand-400" />
-        Mathura, Uttar Pradesh
-      </div>
+          <div className="hidden items-center gap-1.5 text-xs text-sand-500 dark:text-sand-400 xl:flex">
+            <Users size={14} className="text-sand-400" />
+            {HERD_STATS.totalAnimals} {t('nav.animals')}
+          </div>
+          <div className="hidden items-center gap-1.5 text-xs text-sand-500 dark:text-sand-400 xl:flex">
+            <MapPin size={14} className="text-sand-400" />
+            Mathura, Uttar Pradesh
+          </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-        <div className="hidden items-center gap-1.5 rounded-lg border border-sand-200 px-2.5 py-1.5 text-xs text-sand-600 dark:border-barn-800 dark:text-sand-300 sm:flex">
-          <CalendarDays size={14} className="text-sand-400" />
-          <span className="hidden sm:inline">Apr 27, 2025</span>
-        </div>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="hidden items-center gap-1.5 rounded-lg border border-sand-200 px-2.5 py-1.5 text-xs text-sand-600 dark:border-barn-800 dark:text-sand-300 sm:flex">
+              <CalendarDays size={14} className="text-sand-400" />
+              <span className="hidden sm:inline">Apr 27, 2025</span>
+            </div>
 
-        <button
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-sand-200 text-sand-500 hover:bg-sand-50 dark:border-barn-800 dark:text-sand-300 dark:hover:bg-barn-800"
-          onClick={toggleTheme}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
-
-        <Dropdown
-          button={
-            <button className="flex items-center gap-1 rounded-lg border border-sand-200 px-2 py-2 text-sm hover:bg-sand-50 dark:border-barn-800 dark:hover:bg-barn-800 sm:gap-2 sm:px-2.5" aria-label="Language">
-              <Globe size={14} className="shrink-0 text-sand-400" />
-              <span className="font-semibold text-sand-700 dark:text-sand-200 sm:hidden">{lang === 'en' ? 'EN' : 'हि'}</span>
-              <span className="hidden font-semibold text-sand-700 dark:text-sand-200 sm:inline">{lang === 'en' ? 'EN' : 'हिन्दी'}</span>
-              <ChevronDown size={14} className="hidden shrink-0 text-sand-400 sm:block" />
-            </button>
-          }
-        >
-          {[
-            { code: 'en', label: 'English' },
-            { code: 'hi', label: 'हिन्दी' },
-          ].map((l) => (
             <button
-              key={l.code}
-              onClick={() => setLang(l.code)}
-              className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-sand-50 dark:text-sand-200 dark:hover:bg-barn-800"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-sand-200 text-sand-500 hover:bg-sand-50 dark:border-barn-800 dark:text-sand-300 dark:hover:bg-barn-800"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {l.label}
-              {lang === l.code && <Check size={14} className="text-honey-600" />}
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
-          ))}
-        </Dropdown>
 
-        <Dropdown
-          width="w-64"
-          button={
-            <button className="relative grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-sand-200 text-sand-500 hover:bg-sand-50 dark:border-barn-800 dark:text-sand-300 dark:hover:bg-barn-800" aria-label="Notifications">
-              <Bell size={16} />
-              {openAlerts.length > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                  {openAlerts.length}
-                </span>
-              )}
-            </button>
-          }
-        >
-          <div className="border-b border-sand-200 px-3 py-2 text-xs font-bold uppercase tracking-wider text-sand-400 dark:border-barn-800">
-            {openAlerts.length} {t('alerts.title')}
-          </div>
-          {openAlerts.slice(0, 4).map((a) => (
-            <Link key={a.id} to={`/animals/${a.animalId}`} className="block px-3 py-2.5 text-sm hover:bg-sand-50 dark:hover:bg-barn-800">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-sand-900 dark:text-sand-100">{a.animalId}</span>
-                <span className="text-xs font-bold text-red-600 dark:text-red-400">{a.risk}%</span>
+            <Dropdown
+              button={
+                <button className="flex items-center gap-1 rounded-lg border border-sand-200 px-2 py-2 text-sm hover:bg-sand-50 dark:border-barn-800 dark:hover:bg-barn-800 sm:gap-2 sm:px-2.5" aria-label="Language">
+                  <Globe size={14} className="shrink-0 text-sand-400" />
+                  <span className="font-semibold text-sand-700 dark:text-sand-200 sm:hidden">{lang === 'en' ? 'EN' : 'हि'}</span>
+                  <span className="hidden font-semibold text-sand-700 dark:text-sand-200 sm:inline">{lang === 'en' ? 'EN' : 'हिन्दी'}</span>
+                  <ChevronDown size={14} className="hidden shrink-0 text-sand-400 sm:block" />
+                </button>
+              }
+            >
+              {[
+                { code: 'en', label: 'English' },
+                { code: 'hi', label: 'हिन्दी' },
+              ].map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => setLang(l.code)}
+                  className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-sand-50 dark:text-sand-200 dark:hover:bg-barn-800"
+                >
+                  {l.label}
+                  {lang === l.code && <Check size={14} className="text-honey-600" />}
+                </button>
+              ))}
+            </Dropdown>
+
+            <Dropdown
+              width="w-80"
+              button={
+                <button className="relative grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-sand-200 text-sand-500 hover:bg-sand-50 dark:border-barn-800 dark:text-sand-300 dark:hover:bg-barn-800 bell-pulse" aria-label="Notifications">
+                  <Bell size={16} />
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-barn-900">3</span>
+                </button>
+              }
+            >
+              <div className="border-b border-sand-200 px-3 py-2.5 dark:border-barn-800">
+                <p className="text-xs font-bold text-sand-900 dark:text-sand-100">Notifications</p>
+                <p className="text-[11px] text-sand-400">3 unread alerts</p>
               </div>
-              <p className="mt-0.5 text-xs text-sand-400">{a.time}</p>
-            </Link>
-          ))}
-        </Dropdown>
+              <div className="divide-y divide-sand-100 dark:divide-barn-800">
+                <div className="px-3 py-2.5 hover:bg-sand-50 dark:hover:bg-barn-800">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+                    <p className="text-xs font-medium text-sand-900 dark:text-sand-100">BUF-042: High risk detected (87%)</p>
+                  </div>
+                  <p className="mt-0.5 ml-3.5 text-[11px] text-sand-400">SCC rising rapidly - action required</p>
+                </div>
+                <div className="px-3 py-2.5 hover:bg-sand-50 dark:hover:bg-barn-800">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-honey-500" />
+                    <p className="text-xs font-medium text-sand-900 dark:text-sand-100">Shed C humidity exceeds threshold</p>
+                  </div>
+                  <p className="mt-0.5 ml-3.5 text-[11px] text-sand-400">Humidity at 82% - ventilation check needed</p>
+                </div>
+                <div className="px-3 py-2.5 hover:bg-sand-50 dark:hover:bg-barn-800">
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ai" />
+                    <p className="text-xs font-medium text-sand-900 dark:text-sand-100">Vet visit scheduled for tomorrow 9AM</p>
+                  </div>
+                  <p className="mt-0.5 ml-3.5 text-[11px] text-sand-400">Dr. Sharma - Shed B inspection</p>
+                </div>
+              </div>
+              <div className="border-t border-sand-200 px-3 py-2 dark:border-barn-800">
+                <button className="text-xs font-medium text-honey-600 hover:underline dark:text-honey-400">View all notifications →</button>
+              </div>
+            </Dropdown>
 
-        <div className="ml-1 flex shrink-0 items-center gap-2 border-l border-sand-200 pl-3 dark:border-barn-800">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-honey-400 to-honey-600 text-xs font-bold text-white">
-            RK
-          </span>
-          <div className="hidden leading-tight lg:block">
-            <div className="text-sm font-semibold text-sand-900 dark:text-sand-100">Ramesh Kumar</div>
-            <div className="text-[11px] text-sand-400">Farmer</div>
+            <div className="ml-1 flex shrink-0 items-center gap-2 border-l border-sand-200 pl-3 dark:border-barn-800">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-honey-400 to-honey-600 text-xs font-bold text-white">
+                RK
+              </span>
+              <div className="hidden leading-tight lg:block">
+                <div className="text-sm font-semibold text-sand-900 dark:text-sand-100">Ramesh Kumar</div>
+                <div className="text-[11px] text-sand-400">Farmer</div>
+              </div>
+              <ChevronDown size={14} className="hidden text-sand-400 lg:block" />
+            </div>
           </div>
-          <ChevronDown size={14} className="hidden text-sand-400 lg:block" />
         </div>
-      </div>
+      )}
     </header>
   )
 }
