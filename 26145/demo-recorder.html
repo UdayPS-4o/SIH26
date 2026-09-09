@@ -3,1449 +3,1311 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EKADHARA · See everything. Touch nothing.</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>EKADHARA v2.4.1 — Railway Network Threat Detection</title>
 <style>
 /* ═══════════════════════════════════════════════════════════════════
-   EKADHARA — Explosive Demo Edition
-   "See everything. Touch nothing."
+   EKADHARA — Desktop Application Edition
+   Native Win32/WinUI aesthetic
    ═══════════════════════════════════════════════════════════════════ */
 :root {
-  --ek-bg: #0a0e17;
-  --ek-surface: #0f1523;
-  --ek-surface2: #141c2b;
-  --ek-border: #1a2336;
-  --ek-text: #e2e8f0;
-  --ek-text2: #64748b;
-  --ek-cyan: #00d4ff;
-  --ek-green: #00ff88;
-  --ek-amber: #f59e0b;
-  --ek-red: #ef4444;
-  --ek-purple: #8b5cf6;
-  --ek-critical: #ef4444;
-  --ek-high: #f59e0b;
-  --ek-medium: #3b82f6;
-  --ek-low: #10b981;
-  --ek-info: #64748b;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'Space Grotesk', sans-serif;
-  background: var(--ek-bg);
-  color: var(--ek-text);
-  height: 100vh;
-  overflow: hidden;
-  position: relative;
-}
-
-/* Scanline overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg, transparent, transparent 2px,
-    rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* Grid background */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ── SPLASH SCREEN ────────────────────────────────────────────────── */
-#splash {
-  position: fixed;
-  inset: 0;
-  background: #000;
-  z-index: 10000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.8s ease, visibility 0.8s;
-}
-
-#splash.fade-out {
-  opacity: 0;
-  visibility: hidden;
-}
-
-#splash .logo {
-  font-size: 4rem;
-  font-weight: 700;
-  color: var(--ek-cyan);
-  letter-spacing: 0.3em;
-  text-shadow: 0 0 30px rgba(0,212,255,0.5), 0 0 60px rgba(0,212,255,0.3);
-  animation: splashPulse 2s ease-in-out infinite;
-}
-
-#splash .tagline {
-  font-size: 1rem;
-  color: var(--ek-text2);
-  letter-spacing: 0.2em;
-  margin-top: 0.5rem;
-  text-transform: uppercase;
-}
-
-#splash .terminal {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-  color: var(--ek-cyan);
-  margin-top: 3rem;
-  text-align: left;
-  width: 400px;
-  opacity: 0.8;
-}
-
-#splash .terminal .line {
-  margin: 0.3rem 0;
-  opacity: 0;
-  animation: typeLine 0.3s forwards;
-}
-
-#splash .scan-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--ek-cyan), transparent);
-  box-shadow: 0 0 20px var(--ek-cyan);
-  animation: scanDown 2s linear infinite;
-}
-
-@keyframes splashPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-@keyframes typeLine {
-  to { opacity: 1; }
-}
-
-@keyframes scanDown {
-  0% { top: 0; }
-  100% { top: 100%; }
-}
-
-/* ── APP LAYOUT ───────────────────────────────────────────────────── */
-#app {
-  display: none;
-  height: 100vh;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-#app.visible {
-  display: flex;
-  opacity: 1;
-}
-
-/* ── SIDEBAR ──────────────────────────────────────────────────────── */
-.sidebar {
-  width: 240px;
-  background: var(--ek-surface);
-  border-right: 1px solid var(--ek-border);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 10;
-}
-
-.sidebar-header {
-  padding: 1.5rem 1rem;
-  border-bottom: 1px solid var(--ek-border);
-  position: relative;
-  overflow: hidden;
-}
-
-.sidebar-header h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--ek-cyan);
-  letter-spacing: 0.2em;
-  text-shadow: 0 0 20px rgba(0,212,255,0.3);
-}
-
-.sidebar-header .subtitle {
-  font-size: 0.65rem;
-  color: var(--ek-text2);
-  letter-spacing: 0.15em;
-  margin-top: 0.25rem;
-  text-transform: uppercase;
-}
-
-.nav-section {
-  padding: 1rem 0;
-  flex: 1;
-}
-
-.nav-section .section-label {
-  font-size: 0.65rem;
-  color: var(--ek-text2);
-  letter-spacing: 0.1em;
-  padding: 0 1rem;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: var(--ek-text2);
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  border-left: 2px solid transparent;
-}
-
-.nav-item:hover {
-  color: var(--ek-text);
-  background: rgba(0,212,255,0.05);
-  border-left-color: var(--ek-cyan);
-}
-
-.nav-item.active {
-  color: var(--ek-cyan);
-  background: rgba(0,212,255,0.08);
-  border-left-color: var(--ek-cyan);
-}
-
-.nav-item svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-.sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid var(--ek-border);
-  font-size: 0.7rem;
-  color: var(--ek-text2);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* ── MAIN CONTENT ─────────────────────────────────────────────────── */
-.main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
-}
-
-/* ── TOP BAR ──────────────────────────────────────────────────────── */
-.topbar {
-  height: 60px;
-  background: var(--ek-surface);
-  border-bottom: 1px solid var(--ek-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  position: relative;
-  overflow: hidden;
-}
-
-/* Matrix rain canvas */
-.matrix-rain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.15;
-  pointer-events: none;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  z-index: 2;
-}
-
-.topbar-title {
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-}
-
-.topbar-stats {
-  display: flex;
-  gap: 1.5rem;
-}
-
-.topbar-stat {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.topbar-stat .stat-label {
-  color: var(--ek-text2);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.topbar-stat .stat-value {
-  color: var(--ek-green);
-  font-weight: 700;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  z-index: 2;
-}
-
-/* LIVE badge */
-.live-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(239,68,68,0.15);
-  border: 1px solid rgba(239,68,68,0.3);
-  padding: 0.35rem 0.75rem;
-  border-radius: 4px;
-  animation: livePulse 2s ease-in-out infinite;
-}
-
-.live-badge .dot {
-  width: 8px;
-  height: 8px;
-  background: var(--ek-red);
-  border-radius: 50%;
-  animation: dotPulse 1s step-end infinite;
-  box-shadow: 0 0 8px var(--ek-red);
-}
-
-.live-badge .live-text {
-  color: var(--ek-red);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-}
-
-.live-badge .rec-tag {
-  color: var(--ek-red);
-  font-size: 0.6rem;
-  font-weight: 700;
-  animation: recBlink 1s step-end infinite;
-  border: 1px solid var(--ek-red);
-  padding: 0 3px;
-}
-
-@keyframes livePulse {
-  0%, 100% { box-shadow: 0 0 10px rgba(239,68,68,0.2); }
-  50% { box-shadow: 0 0 20px rgba(239,68,68,0.4); }
-}
-
-@keyframes dotPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-@keyframes recBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-/* ── THREAT LEVEL BANNER ──────────────────────────────────────────── */
-.threat-banner {
-  background: linear-gradient(90deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
-  border-bottom: 1px solid rgba(245,158,11,0.2);
-  padding: 0.4rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.threat-banner .banner-label {
-  color: var(--ek-amber);
-  font-weight: 700;
-  text-shadow: 0 0 10px rgba(245,158,11,0.5);
-  animation: bannerPulse 3s ease-in-out infinite;
-}
-
-.threat-banner .banner-detail {
-  color: var(--ek-text2);
-  font-size: 0.7rem;
-}
-
-.threat-banner .banner-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--ek-amber);
-  border-radius: 50%;
-  animation: dotPulse 1.5s ease-in-out infinite;
-  box-shadow: 0 0 8px var(--ek-amber);
-}
-
-@keyframes bannerPulse {
-  0%, 100% { text-shadow: 0 0 10px rgba(245,158,11,0.5); }
-  50% { text-shadow: 0 0 20px rgba(245,158,11,0.8), 0 0 40px rgba(245,158,11,0.4); }
-}
-
-/* ── DASHBOARD CONTENT ────────────────────────────────────────────── */
-.dashboard-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.5rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto 1fr;
-  gap: 1rem;
-}
-
-/* ── METRICS CARDS ────────────────────────────────────────────────── */
-.metrics-row {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.metric-card {
-  background: var(--ek-surface);
-  border: 1px solid var(--ek-border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  position: relative;
-  overflow: hidden;
-  animation: cardFadeIn 0.6s ease-out forwards;
-  opacity: 0;
-}
-
-.metric-card:nth-child(1) { animation-delay: 0.1s; }
-.metric-card:nth-child(2) { animation-delay: 0.2s; }
-.metric-card:nth-child(3) { animation-delay: 0.3s; }
-.metric-card:nth-child(4) { animation-delay: 0.4s; }
-
-.metric-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--ek-cyan), transparent);
-  opacity: 0.5;
-}
-
-.metric-card .metric-icon {
-  width: 32px;
-  height: 32px;
-  color: var(--ek-cyan);
-  margin-bottom: 0.75rem;
-  opacity: 0.8;
-}
-
-.metric-card .metric-label {
-  font-size: 0.7rem;
-  color: var(--ek-text2);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 0.5rem;
-}
-
-.metric-card .metric-value {
-  font-size: 2rem;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--ek-text);
-  text-shadow: 0 0 20px rgba(0,212,255,0.3);
-  line-height: 1;
-}
-
-.metric-card .metric-sub {
-  font-size: 0.7rem;
-  color: var(--ek-text2);
-  margin-top: 0.5rem;
-}
-
-.metric-card .spark-line {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 40px;
-  opacity: 0.3;
-}
-
-@keyframes cardFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ── THREATS BLOCKED CARD ─────────────────────────────────────────── */
-.blocked-card {
-  grid-column: 1 / -1;
-  background: linear-gradient(135deg, rgba(0,255,136,0.08), var(--ek-surface));
-  border: 1px solid rgba(0,255,136,0.2);
-  border-radius: 8px;
-  padding: 1.25rem 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  animation: cardFadeIn 0.6s ease-out 0.5s forwards;
-  opacity: 0;
-}
-
-.blocked-card .blocked-label {
-  font-size: 0.8rem;
-  color: var(--ek-green);
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.blocked-card .blocked-label svg {
-  width: 24px;
-  height: 24px;
-  color: var(--ek-green);
-  filter: drop-shadow(0 0 8px rgba(0,255,136,0.5));
-}
-
-.blocked-card .blocked-count {
-  font-size: 2.5rem;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--ek-green);
-  text-shadow: 0 0 30px rgba(0,255,136,0.5);
-  animation: countGlow 2s ease-in-out infinite;
-}
-
-@keyframes countGlow {
-  0%, 100% { text-shadow: 0 0 30px rgba(0,255,136,0.5); }
-  50% { text-shadow: 0 0 50px rgba(0,255,136,0.8); }
-}
-
-/* ── ALERT FEED ───────────────────────────────────────────────────── */
-.alert-feed-panel {
-  background: var(--ek-surface);
-  border: 1px solid var(--ek-border);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-
-.panel-header {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--ek-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--ek-surface2);
-}
-
-.panel-header h3 {
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.panel-header .count {
-  background: rgba(239,68,68,0.15);
-  color: var(--ek-red);
-  padding: 0.15rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.alert-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.5rem;
-  max-height: 400px;
-}
-
-.alert-item {
-  padding: 0.6rem 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 0.4rem;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-  border-left: 3px solid;
-  background: var(--ek-surface2);
-  animation: alertSlideIn 0.4s ease-out;
-  transition: background 0.2s;
-}
-
-.alert-item:hover {
-  background: rgba(0,212,255,0.05);
-}
-
-.alert-item.critical {
-  border-left-color: var(--ek-critical);
-  animation: alertSlideIn 0.4s ease-out, criticalPulse 2s ease-in-out infinite;
-}
-
-.alert-item.high {
-  border-left-color: var(--ek-high);
-}
-
-.alert-item.medium {
-  border-left-color: var(--ek-medium);
-}
-
-.alert-item.low {
-  border-left-color: var(--ek-low);
-}
-
-.alert-severity-icon {
-  font-size: 1.1rem;
-  width: 24px;
-  text-align: center;
-}
-
-.alert-content {
-  min-width: 0;
-}
-
-.alert-threat-type {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--ek-text);
-}
-
-.alert-meta {
-  font-size: 0.65rem;
-  color: var(--ek-text2);
-  font-family: 'JetBrains Mono', monospace;
-  margin-top: 0.15rem;
-  display: flex;
-  gap: 0.75rem;
-}
-
-.alert-confidence {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.critical .alert-confidence { color: var(--ek-critical); }
-.high .alert-confidence { color: var(--ek-high); }
-.medium .alert-confidence { color: var(--ek-medium); }
-.low .alert-confidence { color: var(--ek-low); }
-
-@keyframes alertSlideIn {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes criticalPulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(239,68,68,0); }
-  50% { box-shadow: 0 0 15px rgba(239,68,68,0.3); }
-}
-
-/* ── DEGRADATION MATRIX ───────────────────────────────────────────── */
-.degradation-panel {
-  background: var(--ek-surface);
-  border: 1px solid var(--ek-border);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.deg-row {
-  padding: 0.6rem 1rem;
-  border-bottom: 1px solid var(--ek-border);
-  display: grid;
-  grid-template-columns: 1fr 1fr 80px;
-  gap: 0.75rem;
-  align-items: center;
-  animation: degFadeIn 0.5s ease-out forwards;
-  opacity: 0;
-}
-
-.deg-row:nth-child(1) { animation-delay: 0.1s; }
-.deg-row:nth-child(2) { animation-delay: 0.2s; }
-.deg-row:nth-child(3) { animation-delay: 0.3s; }
-.deg-row:nth-child(4) { animation-delay: 0.4s; }
-.deg-row:nth-child(5) { animation-delay: 0.5s; }
-.deg-row:nth-child(6) { animation-delay: 0.6s; }
-
-.deg-label {
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.deg-label .icon {
-  font-size: 1rem;
-}
-
-.deg-bar-container {
-  height: 8px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-.deg-bar {
-  height: 100%;
-  border-radius: 4px;
-  width: 0;
-  animation: barGrow 1.5s ease-out forwards;
-  position: relative;
-}
-
-.deg-bar::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: rgba(255,255,255,0.5);
-  border-radius: 0 4px 4px 0;
-}
-
-.deg-bar.full { background: linear-gradient(90deg, var(--ek-green), #00cc6a); }
-.deg-bar.diode { background: linear-gradient(90deg, var(--ek-amber), #d97706); }
-.deg-bar.null { background: rgba(100,116,139,0.3); width: 0 !important; }
-
-.deg-score {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  text-align: right;
-}
-
-.deg-score.good { color: var(--ek-green); }
-.deg-score.warn { color: var(--ek-amber); }
-.deg-score.bad { color: var(--ek-critical); }
-
-@keyframes barGrow {
-  from { width: 0; }
-}
-
-@keyframes degFadeIn {
-  from { opacity: 0; transform: translateX(10px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-
-/* ── DIODE TOGGLE ─────────────────────────────────────────────────── */
-.diode-section {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  padding: 1rem;
-  background: var(--ek-surface);
-  border: 1px solid var(--ek-border);
-  border-radius: 8px;
-  animation: cardFadeIn 0.6s ease-out 0.7s forwards;
-  opacity: 0;
-}
-
-.diode-control {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.diode-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ek-text2);
-}
-
-.diode-label.active {
-  color: var(--ek-red);
-  text-shadow: 0 0 10px rgba(239,68,68,0.5);
-}
-
-/* Hardware toggle switch */
-.toggle-switch {
-  width: 60px;
-  height: 32px;
-  background: linear-gradient(180deg, #1a1a2e, #0f0f1a);
-  border: 2px solid #2a2a3e;
-  border-radius: 6px;
-  cursor: pointer;
-  position: relative;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05);
-  transition: all 0.3s;
-}
-
-.toggle-switch .knob {
-  width: 24px;
-  height: 24px;
-  background: linear-gradient(180deg, #3a3a4e, #2a2a3e);
-  border-radius: 4px;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-  transition: all 0.3s;
-}
-
-.toggle-switch.active {
-  background: linear-gradient(180deg, #3a1515, #2a0f0f);
-  border-color: var(--ek-red);
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 15px rgba(239,68,68,0.3);
-}
-
-.toggle-switch.active .knob {
-  left: 30px;
-  background: linear-gradient(180deg, #ef4444, #dc2626);
-  box-shadow: 0 0 10px var(--ek-red), inset 0 1px 0 rgba(255,255,255,0.2);
-}
-
-.diode-warning {
-  display: none;
-  color: var(--ek-amber);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  padding: 0.35rem 0.75rem;
-  background: rgba(245,158,11,0.1);
-  border: 1px solid rgba(245,158,11,0.3);
-  border-radius: 4px;
-  animation: warningFlash 0.5s ease-out;
-}
-
-.diode-warning.visible {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-@keyframes warningFlash {
-  0% { opacity: 0; transform: scale(0.95); }
-  50% { opacity: 1; }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-/* ── MATRIX CANVAS ────────────────────────────────────────────────── */
-#matrixCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  opacity: 0.15;
-}
-
-/* ── SCROLLBAR ────────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--ek-bg);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--ek-border);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--ek-text2);
-}
-
-/* ── CRITICAL FLASH ───────────────────────────────────────────────── */
-.critical-flash {
-  position: fixed;
-  inset: 0;
-  border: 3px solid var(--ek-red);
-  pointer-events: none;
-  z-index: 9998;
-  opacity: 0;
-  animation: borderFlash 0.5s ease-out;
-}
-
-@keyframes borderFlash {
-  0% { opacity: 0.8; box-shadow: inset 0 0 50px rgba(239,68,68,0.5); }
-  100% { opacity: 0; box-shadow: inset 0 0 0 transparent; }
-}
-
-/* ── FOOTER / STATUS BAR ──────────────────────────────────────────── */
-.status-bar {
-  height: 28px;
-  background: var(--ek-surface);
-  border-top: 1px solid var(--ek-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1rem;
-  font-size: 0.65rem;
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--ek-text2);
-}
-
-.status-bar .status-left, .status-bar .status-right {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.status-indicator .status-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--ek-green);
-  animation: dotPulse 2s ease-in-out infinite;
-}
+  --bg:#1a1a2e; --surface:#16213e; --surface2:#1a1a2e; --surface3:#0f3460;
+  --border:#2a2a4a; --text:#e0e0e0; --text2:#a0a0b0; --text3:#606070;
+  --accent:#00d4ff; --accent-s:rgba(0,212,255,.1); --accent-b:rgba(0,212,255,.25);
+  --green:#00ff88; --green-s:rgba(0,255,136,.1);
+  --amber:#ffaa00; --amber-s:rgba(255,170,0,.1);
+  --red:#ff4466; --red-s:rgba(255,68,102,.1);
+  --purple:#aa66ff; --purple-s:rgba(170,102,255,.1);
+  --win-bg:#2d2d44; --win-hover:#3d3d5c; --win-active:#4a4a6a;
+  --titlebar:#1e1e32; --menu-hover:#0f3460;
+}
+[data-theme="light"] {
+  --bg:#f0f0f5; --surface:#ffffff; --surface2:#f5f5fa; --surface3:#e8e8f0;
+  --border:#d0d0e0; --text:#1a1a2e; --text2:#5a5a70; --text3:#8a8aa0;
+  --accent:#0066cc; --accent-s:rgba(0,102,204,.06); --accent-b:rgba(0,102,204,.2);
+  --green:#008855; --green-s:rgba(0,136,85,.06);
+  --amber:#cc8800; --amber-s:rgba(204,136,0,.06);
+  --red:#cc3344; --red-s:rgba(204,51,68,.06);
+  --purple:#7744cc; --purple-s:rgba(119,68,204,.06);
+  --win-bg:#e0e0ea; --win-hover:#d0d0e0; --win-active:#c0c0d0;
+  --titlebar:#e8e8f0; --menu-hover:#d8d8e8;
+}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){[data-theme="light"]{}}}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:12px;transition:background .3s}
+.mono{font-family:'Cascadia Code','Consolas','Courier New',monospace}
+
+/* ── WINDOW CHROME ──────────────────────────────────────────────── */
+.window{display:flex;flex-direction:column;height:100vh;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.titlebar{height:32px;background:var(--titlebar);display:flex;align-items:center;padding:0 8px;flex-shrink:0;user-select:none;border-bottom:1px solid var(--border)}
+.titlebar-icon{width:16px;height:16px;margin-right:8px;opacity:.8}
+.titlebar-text{flex:1;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px}
+.titlebar-text .app-name{color:var(--accent);font-weight:600}
+.titlebar-btns{display:flex;gap:0}
+.titlebar-btn{width:46px;height:32px;border:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s}
+.titlebar-btn:hover{background:var(--win-hover);color:var(--text)}
+.titlebar-btn.close:hover{background:var(--red);color:#fff}
+
+/* ── MENU BAR ───────────────────────────────────────────────────── */
+.menubar{height:24px;background:var(--titlebar);display:flex;align-items:center;padding:0 4px;flex-shrink:0;border-bottom:1px solid var(--border);gap:0}
+.menu-item{padding:4px 10px;color:var(--text2);cursor:pointer;font-size:11px;border-radius:3px;transition:all .1s;position:relative}
+.menu-item:hover{background:var(--menu-hover);color:var(--text)}
+.menu-sep{width:1px;height:14px;background:var(--border);margin:0 4px}
+
+/* ── TOOLBAR ────────────────────────────────────────────────────── */
+.toolbar{height:36px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 8px;gap:4px;flex-shrink:0}
+.tb-btn{height:28px;padding:0 10px;border:1px solid transparent;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;border-radius:4px;transition:all .15s;font-family:inherit}
+.tb-btn:hover{background:var(--accent-s);border-color:var(--accent-b);color:var(--accent)}
+.tb-btn.active{background:var(--accent-s);border-color:var(--accent-b);color:var(--accent)}
+.tb-btn svg{width:14px;height:14px;opacity:.8}
+.tb-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+.tb-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text3)}
+.tb-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── MAIN CONTENT ───────────────────────────────────────────────── */
+.main{flex:1;display:flex;overflow:hidden}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.sidebar-section{padding:8px 0}
+.sidebar-label{padding:6px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.side-item{display:flex;align-items:center;gap:8px;padding:6px 12px;color:var(--text2);cursor:pointer;transition:all .12s;font-size:11px;border-left:2px solid transparent;margin:1px 0}
+.side-item:hover{background:var(--accent-s);color:var(--text)}
+.side-item.active{background:var(--accent-s);color:var(--accent);border-left-color:var(--accent)}
+.side-item svg{width:14px;height:14px;opacity:.6;flex-shrink:0}
+.side-item.active svg{opacity:1}
+.side-badge{margin-left:auto;font-size:10px;font-family:'Cascadia Code',monospace;background:var(--red-s);color:var(--red);padding:1px 6px;border-radius:3px;font-weight:600}
+
+.content-area{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+
+/* ── TAB BAR ────────────────────────────────────────────────────── */
+.tabbar{height:32px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:flex-end;padding:0 8px;gap:2px;flex-shrink:0}
+.tab{height:28px;padding:0 12px;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:5px;font-size:11px;border-radius:5px 5px 0 0;transition:all .12s;font-family:inherit;position:relative}
+.tab:hover{background:var(--surface2);color:var(--text)}
+.tab.active{background:var(--bg);border-color:var(--border);color:var(--text);margin-bottom:-1px;padding-bottom:1px}
+.tab-close{width:14px;height:14px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;opacity:0;transition:all .12s;margin-left:4px}
+.tab:hover .tab-close{opacity:.6}
+.tab-close:hover{opacity:1;background:var(--win-hover)}
+
+/* ── PANELS ─────────────────────────────────────────────────────── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;overflow:hidden}
+.panel-header{padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.panel-header svg{width:13px;height:13px;opacity:.7;margin-right:5px}
+.panel-badge{font-family:'Cascadia Code',monospace;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
+.panel-body{flex:1;overflow-y:auto;padding:8px;min-height:0}
+.panel-body.pad{padding:12px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* ── METRICS GRID ───────────────────────────────────────────────── */
+.met-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.met-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:12px;position:relative;overflow:hidden}
+.met-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.5}
+.met-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.met-label svg{width:13px;height:13px;color:var(--accent);opacity:.7}
+.met-value{font-family:'Cascadia Code',monospace;font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.02em;line-height:1}
+.met-unit{font-size:11px;color:var(--text3);font-weight:400;margin-left:4px}
+.met-delta{font-size:10px;margin-top:4px;font-weight:500;display:flex;align-items:center;gap:3px}
+.met-delta.up{color:var(--green)}.met-delta.down{color:var(--red)}
+
+/* ── BLOCKED BAR ────────────────────────────────────────────────── */
+.blocked{background:linear-gradient(90deg,var(--green-s),var(--surface));border:1px solid rgba(0,255,136,.12);border-radius:6px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.blocked-left{display:flex;align-items:center;gap:8px}
+.blocked-icon{width:18px;height:18px;color:var(--green)}
+.blocked-label{font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.blocked-value{font-family:'Cascadia Code',monospace;font-size:26px;font-weight:700;color:var(--green);line-height:1}
+
+/* ── DUAL ROW ───────────────────────────────────────────────────── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-height:0}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* ── CHART ──────────────────────────────────────────────────────── */
+.chart-wrap{position:relative;flex:1;min-height:120px}
+.chart-wrap canvas{width:100%!important;height:100%!important}
+
+/* ── ALERTS ─────────────────────────────────────────────────────── */
+.al-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:4px;border-left:2px solid transparent;cursor:pointer;transition:all .12s;font-size:11px}
+.al-item:hover{background:var(--accent-s)}
+.al-item.crit{border-left-color:var(--red);background:var(--red-s)}.al-item.high{border-left-color:var(--amber)}.al-item.med{border-left-color:var(--accent)}.al-item.low{border-left-color:var(--green)}
+.al-ic{width:14px;height:14px;opacity:.6;flex-shrink:0}
+.al-body{flex:1;min-width:0}
+.al-type{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.al-meta{font-family:'Cascadia Code',monospace;font-size:10px;color:var(--text3);margin-top:1px;display:flex;gap:8px}
+.al-conf{font-family:'Cascadia Code',monospace;font-size:11px;font-weight:700;flex-shrink:0}
+.crit .al-conf{color:var(--red)}.high .al-conf{color:var(--amber)}.med .al-conf{color:var(--accent)}.low .al-conf{color:var(--green)}
+
+/* ── DEGRADATION MATRIX ─────────────────────────────────────────── */
+.deg-row{display:grid;grid-template-columns:1fr 1fr 60px;gap:8px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px}
+.deg-row:last-child{border-bottom:none}
+.deg-lb{display:flex;align-items:center;gap:6px;color:var(--text)}
+.deg-ic{font-size:12px;opacity:.6}
+.deg-bars{display:flex;gap:4px}
+.deg-bw{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.deg-b{height:100%;border-radius:3px;width:0;transition:width 1.2s cubic-bezier(.16,1,.3,1)}
+.deg-b.g{background:var(--green)}.deg-b.a{background:var(--amber)}.deg-b.r{background:var(--red)}.deg-b.m{background:var(--text3);opacity:.25}
+.deg-sc{font-family:'Cascadia Code',monospace;font-size:10px;text-align:right;font-weight:600}
+.deg-sc.g{color:var(--green)}.deg-sc.a{color:var(--amber)}.deg-sc.r{color:var(--red)}.deg-sc.m{color:var(--text3)}
+
+/* ── TOGGLES ────────────────────────────────────────────────────── */
+.ctrl-bar{display:flex;gap:12px;align-items:center;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+.ctrl-g{display:flex;align-items:center;gap:8px}
+.ctrl-lb{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;transition:color .2s}
+.ctrl-lb.on-d{color:var(--red)}.ctrl-lb.on-a{color:var(--purple)}
+.tog{width:36px;height:20px;background:var(--surface3);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;position:relative;transition:all .2s;padding:0;flex-shrink:0}
+.tog:hover{border-color:var(--text3)}
+.tog-k{width:14px;height:14px;background:var(--text3);border-radius:50%;position:absolute;top:2px;left:2px;transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.tog.diode{background:var(--red-s);border-color:var(--red)}.tog.diode .tog-k{left:18px;background:var(--red);box-shadow:0 0 6px rgba(255,68,102,.4)}
+.tog.ack{background:var(--purple-s);border-color:var(--purple)}.tog.ack .tog-k{left:18px;background:var(--purple);box-shadow:0 0 6px rgba(170,102,255,.4)}
+.ctrl-warn{margin-left:auto;font-size:10px;color:var(--amber);font-weight:600;letter-spacing:.04em;padding:3px 8px;background:var(--amber-s);border:1px solid rgba(255,170,0,.15);border-radius:4px;display:none;align-items:center;gap:4px}
+.ctrl-warn.vis{display:flex}
+.ctrl-warn svg{width:11px;height:11px;flex-shrink:0}
+
+/* ── TERMINAL CONSOLE ───────────────────────────────────────────── */
+.terminal{background:#0a0a14;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:'Cascadia Code',Consolas,monospace;font-size:10.5px;line-height:1.6;overflow-y:auto;max-height:150px;color:#888}
+.terminal .t-line{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.terminal .t-time{color:#555;margin-right:6px}
+.terminal .t-info{color:#00d4ff}.terminal .t-warn{color:#ffaa00}.terminal .t-error{color:#ff4466}.terminal .t-ok{color:#00ff88}.terminal .t-dim{color:#444}
+
+/* ── STATUS BAR ─────────────────────────────────────────────────── */
+.statusbar{height:24px;background:var(--titlebar);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-family:'Cascadia Code',monospace;font-size:10px;color:var(--text3);flex-shrink:0}
+.sbar-l,.sbar-r{display:flex;gap:12px;align-items:center}
+.sbar-dot{width:5px;height:5px;border-radius:50%;background:var(--green);display:inline-block;margin-right:4px;animation:pulse 2s ease-in-out infinite}
+
+/* ── BUTTONS ────────────────────────────────────────────────────── */
+.btn{padding:5px 12px;border-radius:4px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text);transition:all .12s;font-family:inherit}
+.btn:hover{border-color:var(--accent-b);background:var(--accent-s);color:var(--accent)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.15)}
+.btn.danger{border-color:var(--red);color:var(--red);background:var(--red-s)}
+.btn.danger:hover{background:var(--red);color:#fff}
+
+/* ── TABLE ──────────────────────────────────────────────────────── */
+.data-table{width:100%;border-collapse:collapse;font-size:11px}
+.data-table th{text-align:left;padding:6px 8px;background:var(--surface2);color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;font-size:10px;border-bottom:1px solid var(--border);position:sticky;top:0}
+.data-table td{padding:5px 8px;border-bottom:1px solid var(--border2);color:var(--text)}
+.data-table tr:hover td{background:var(--accent-s)}
+.data-table .mono{font-family:'Cascadia Code',monospace;font-size:10.5px}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;font-family:'Cascadia Code',monospace}
+.badge.crit{background:var(--red-s);color:var(--red)}.badge.high{background:var(--amber-s);color:var(--amber)}.badge.med{background:var(--accent-s);color:var(--accent)}.badge.low{background:var(--green-s);color:var(--green)}.badge.ok{background:var(--green-s);color:var(--green)}
+
+/* ── DEVICE GRID ────────────────────────────────────────────────── */
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px}
+.dev-card{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px;text-align:center;cursor:pointer;transition:all .15s}
+.dev-card:hover{border-color:var(--accent-b);transform:translateY(-1px)}
+.dev-card.crit{border-color:var(--red)}.dev-card.high{border-color:var(--amber)}.dev-card.ok{border-color:var(--green)}
+.dev-ic{font-size:1.3rem;margin-bottom:4px}
+.dev-nm{font-size:10px;font-weight:600;color:var(--text);margin-bottom:2px}
+.dev-ip{font-family:'Cascadia Code',monospace;font-size:9px;color:var(--text3)}
+.dev-st{font-size:9px;font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+.dev-st.ok{color:var(--green)}.dev-st.high{color:var(--amber)}.dev-st.crit{color:var(--red)}
+
+/* ── TOPOLOGY ───────────────────────────────────────────────────── */
+.topo-wrap{position:relative;flex:1;min-height:300px;background:var(--surface2);border-radius:6px;overflow:hidden}
+.topo-node{position:absolute;width:44px;height:44px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;font-size:1.1rem;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topo-node:hover{border-color:var(--accent);transform:scale(1.15);box-shadow:0 0 16px var(--accent-s)}
+.topo-node.crit{border-color:var(--red);animation:pulse 1.5s ease-in-out infinite}.topo-node.high{border-color:var(--amber)}.topo-node.ok{border-color:var(--green)}
+.topo-label{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text2);white-space:nowrap;font-weight:600;font-family:'Cascadia Code',monospace}
+.topo-edge{position:absolute;height:1px;background:var(--border);transform-origin:left center;z-index:1;opacity:.5}
+
+/* ── SEARCH ─────────────────────────────────────────────────────── */
+.search-box{position:relative;display:flex;align-items:center}
+.search-box input{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 8px 4px 26px;color:var(--text);font-family:inherit;font-size:11px;width:180px;outline:none;transition:all .2s}
+.search-box input:focus{border-color:var(--accent-b);width:220px}
+.search-box input::placeholder{color:var(--text3)}
+.search-box svg{position:absolute;left:7px;width:12px;height:12px;color:var(--text3);pointer-events:none}
+
+/* ── MODAL ──────────────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all .2s;backdrop-filter:blur(4px)}
+.modal-overlay.open{opacity:1;visibility:visible}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;width:600px;max-width:92vw;max-height:85vh;overflow:hidden;box-shadow:0 16px 64px rgba(0,0,0,.6);transform:scale(.95) translateY(10px);transition:transform .25s cubic-bezier(.16,1,.3,1)}
+.modal-overlay.open .modal{transform:scale(1) translateY(0)}
+.modal-hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--titlebar)}
+.modal-hd h3{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.modal-close:hover{background:var(--win-hover);color:var(--text)}
+.modal-body{padding:16px;overflow-y:auto;max-height:65vh}
+.modal-body .kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.modal-body .kv:last-child{border-bottom:none}
+.modal-body .k{color:var(--text3)}.modal-body .v{color:var(--text);font-family:'Cascadia Code',monospace;font-size:11px}
+.modal-ft{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ── TOAST ──────────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:40px;right:16px;background:var(--surface);border:1px solid var(--accent-b);border-radius:6px;padding:8px 14px;font-size:11px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:10001;transform:translateY(20px);opacity:0;transition:all .3s;display:flex;align-items:center;gap:6px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-ic{width:14px;height:14px;color:var(--green)}
+
+/* ── CRITICAL FLASH ─────────────────────────────────────────────── */
+.cflash{position:fixed;inset:0;border:2px solid var(--red);pointer-events:none;z-index:9998;opacity:0;animation:flash .5s ease-out}
+@keyframes flash{0%{opacity:.5;box-shadow:inset 0 0 40px rgba(255,68,102,.2)}100%{opacity:0;box-shadow:none}}
+
+/* ── MISC ───────────────────────────────────────────────────────── */
+@keyframes cardIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1;min-height:0}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.empty{display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;padding:40px;text-align:center}
+
+/* Protocol bars */
+.proto-row{display:flex;align-items:center;gap:8px;padding:5px 8px;font-size:11px;border-bottom:1px solid var(--border)}
+.proto-row:last-child{border-bottom:none}
+.proto-lb{min-width:50px;color:var(--text)}
+.proto-bar{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden}
+.proto-fill{height:100%;border-radius:3px;background:var(--accent);transition:width 1s ease-out}
+.proto-pct{font-family:'Cascadia Code',monospace;font-size:10px;color:var(--text2);min-width:32px;text-align:right}
+.proto-vol{font-family:'Cascadia Code',monospace;font-size:10px;color:var(--text3);min-width:50px;text-align:right}
 </style>
 </head>
 <body>
 
-<!-- SPLASH SCREEN -->
-<div id="splash">
-  <div class="scan-line"></div>
-  <div class="logo">EKADHARA</div>
-  <div class="tagline">See everything. Touch nothing.</div>
-  <div class="terminal" id="terminal"></div>
-</div>
+<div class="window" id="window">
+  <!-- TITLE BAR -->
+  <div class="titlebar">
+    <svg class="titlebar-icon" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <div class="titlebar-text">
+      <span class="app-name">EKADHARA</span>
+      <span>v2.4.1</span>
+      <span style="color:var(--text3)">|</span>
+      <span>Railway Network Threat Detection System</span>
+      <span style="color:var(--text3)">|</span>
+      <span id="titleStatus" style="color:var(--green)">Connected</span>
+    </div>
+    <div class="titlebar-btns">
+      <button class="titlebar-btn">─</button>
+      <button class="titlebar-btn">□</button>
+      <button class="titlebar-btn close">✕</button>
+    </div>
+  </div>
 
-<!-- MAIN APP -->
-<div id="app">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h1>EKADHARA</h1>
-      <div class="subtitle">See everything. Touch nothing.</div>
-    </div>
-    <nav class="nav-section">
-      <div class="section-label">Navigation</div>
-      <div class="nav-item active">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Dashboard
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        Alert Feed
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"/></svg>
-        Threat Matrix
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Evidence Vault
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Throughput
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        Settings
-      </div>
-    </nav>
-    <div class="nav-section">
-      <div class="section-label">System Status</div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        Capture <span style="color: var(--ek-green); margin-left: auto; font-size: 0.7rem;">ACTIVE</span>
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Analysis <span style="color: var(--ek-cyan); margin-left: auto; font-size: 0.7rem;">STREAMING</span>
-      </div>
-      <div class="nav-item">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Egress <span style="color: var(--ek-amber); margin-left: auto; font-size: 0.7rem;">LOCKED</span>
+  <!-- MENU BAR -->
+  <div class="menubar">
+    <div class="menu-item">File
+      <div style="position:absolute;top:100%;left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:100">
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Open PCAP File...</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Open Capture Interface...</div>
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Export Report...</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Save Session</div>
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Exit</div>
       </div>
     </div>
-    <div class="sidebar-footer">
-      <div class="section-label" style="padding: 0; margin-bottom: 0.5rem;">Uptime</div>
-      <div id="uptime" style="color: var(--ek-cyan); font-size: 0.85rem;">0d 0h 0m 0s</div>
+    <div class="menu-item">View
+      <div style="position:absolute;top:100%;left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:100">
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Dashboard</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Full Screen</div>
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Toggle Theme</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Zoom: 100%</div>
+      </div>
     </div>
-  </aside>
+    <div class="menu-item">Capture</div>
+    <div class="menu-item">Analysis</div>
+    <div class="menu-item">Tools
+      <div style="position:absolute;top:100%;left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:100">
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Packet Inspector</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Flow Analyzer</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Signature Manager</div>
+        <div style="height:1px;background:var(--border);margin:4px 0"></div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Diode Mode Toggle</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">ACK-Shadow Mode</div>
+      </div>
+    </div>
+    <div class="menu-item">Help
+      <div style="position:absolute;top:100%;left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px;min-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:100">
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">Documentation</div>
+        <div style="padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;border-radius:3px" onmouseover="this.style.background='var(--menu-hover)'" onmouseout="this.style.background='transparent'">About EKADHARA</div>
+      </div>
+    </div>
+    <div class="menu-sep"></div>
+    <div style="font-size:10px;color:var(--text3);margin-left:8px;font-family:'Cascadia Code',monospace" id="menuStatus">Ready</div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button class="tb-btn active" data-tool="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+    </button>
+    <button class="tb-btn" data-tool="alerts">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Alerts
+    </button>
+    <button class="tb-btn" data-tool="traffic">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Traffic
+    </button>
+    <button class="tb-btn" data-tool="topology">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"/></svg>
+      Topology
+    </button>
+    <button class="tb-btn" data-tool="packets">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20"/></svg>
+      Packets
+    </button>
+    <button class="tb-btn" data-tool="devices">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+      Devices
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="themeBtn" title="Toggle light/dark mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Theme
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btnDiode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Diode Mode
+    </button>
+    <button class="tb-btn" id="btnACK">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      ACK-Shadow
+    </button>
+    <div class="tb-status">
+      <span class="tb-dot"></span>
+      <span>LIVE</span>
+      <span style="color:var(--text3)">|</span>
+      <span id="tbRate">0 f/s</span>
+      <span style="color:var(--text3)">|</span>
+      <span id="tbAlerts">0 alerts</span>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tabbar">
+    <div class="tab active" data-tab="dashboard">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1.5"/></svg>
+      Dashboard
+      <span class="tab-close">✕</span>
+    </div>
+  </div>
 
   <!-- MAIN -->
   <div class="main">
-    <!-- TOP BAR -->
-    <div class="topbar">
-      <canvas id="matrixCanvas"></canvas>
-      <div class="topbar-left">
-        <div class="topbar-title">DASHBOARD</div>
-        <div class="topbar-stats">
-          <div class="topbar-stat">
-            <span class="stat-label">Capture</span>
-            <span class="stat-value">eth0 · enp0s3</span>
-          </div>
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Monitoring</div>
+        <div class="side-item active" data-page="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+          Dashboard
+        </div>
+        <div class="side-item" data-page="alerts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Alert Feed
+          <span class="side-badge" id="sideBadge">10</span>
+        </div>
+        <div class="side-item" data-page="traffic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Traffic Analysis
+        </div>
+        <div class="side-item" data-page="topology">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"/></svg>
+          Topology
         </div>
       </div>
-      <div class="topbar-right">
-        <div class="live-badge">
-          <div class="dot"></div>
-          <span class="live-text">LIVE</span>
-          <span class="rec-tag">REC</span>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Inspection</div>
+        <div class="side-item" data-page="packets">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/></svg>
+          Packet Inspector
+        </div>
+        <div class="side-item" data-page="timeline">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Timeline
+        </div>
+        <div class="side-item" data-page="devices">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>
+          Devices
         </div>
       </div>
-    </div>
-
-    <!-- THREAT BANNER -->
-    <div class="threat-banner">
-      <div class="banner-dot"></div>
-      <span class="banner-label">Threat Level: Elevated</span>
-      <span class="banner-detail">— Nation-state monitoring active</span>
-    </div>
-
-    <!-- DASHBOARD CONTENT -->
-    <div class="dashboard-content">
-      <!-- METRICS ROW -->
-      <div class="metrics-row">
-        <div class="metric-card">
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <div class="metric-label">Throughput</div>
-          <div class="metric-value" id="throughput">0</div>
-          <div class="metric-sub">flows/s</div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Management</div>
+        <div class="side-item" data-page="reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Reports
         </div>
-        <div class="metric-card">
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <div class="metric-label">Active Alerts</div>
-          <div class="metric-value" id="activeAlerts">0</div>
-          <div class="metric-sub">in last hour</div>
-        </div>
-        <div class="metric-card">
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <div class="metric-label">Detection Rate</div>
-          <div class="metric-value" id="detectionRate">0%</div>
-          <div class="metric-sub">true positive ratio</div>
-        </div>
-        <div class="metric-card">
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          <div class="metric-label">Avg Response</div>
-          <div class="metric-value" id="responseTime">0</div>
-          <div class="metric-sub">milliseconds</div>
+        <div class="side-item" data-page="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
         </div>
       </div>
-
-      <!-- THREATS BLOCKED -->
-      <div class="blocked-card">
-        <div class="blocked-label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          Threats Blocked
-        </div>
-        <div class="blocked-count" id="blockedCount">0</div>
-      </div>
-
-      <!-- ALERT FEED -->
-      <div class="alert-feed-panel">
-        <div class="panel-header">
-          <h3>Active Threat Feed</h3>
-          <span class="count" id="alertCount">0</span>
-        </div>
-        <div class="alert-list" id="alertList"></div>
-      </div>
-
-      <!-- DEGRADATION MATRIX -->
-      <div class="degradation-panel">
-        <div class="panel-header">
-          <h3>Detection Degradation Matrix</h3>
-          <span class="count" style="background: rgba(0,212,255,0.1); color: var(--ek-cyan);">MODE: FULL</span>
-        </div>
-        <div id="degradationMatrix"></div>
-      </div>
-
-      <!-- DIODE CONTROLS -->
-      <div class="diode-section">
-        <div class="diode-control">
-          <div class="diode-label" id="diodeLabel">Diode Mode</div>
-          <div class="toggle-switch" id="diodeToggle">
-            <div class="knob"></div>
-          </div>
-        </div>
-        <div class="diode-control">
-          <div class="diode-label" id="ackLabel">ACK-Shadow</div>
-          <div class="toggle-switch" id="ackToggle">
-            <div class="knob"></div>
-          </div>
-        </div>
-        <div class="diode-warning" id="diodeWarning">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          PERFORMANCE DEGRADATION DETECTED
-        </div>
+      <div style="margin-top:auto;padding:10px 12px;border-top:1px solid var(--border);font-size:10px;color:var(--text3)">
+        <div style="font-size:9px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;font-weight:600">Session Uptime</div>
+        <div style="font-family:'Cascadia Code',monospace;font-size:11px;color:var(--accent)" id="uptime">00:00:00</div>
       </div>
     </div>
 
-    <!-- STATUS BAR -->
-    <div class="status-bar">
-      <div class="status-left">
-        <div class="status-indicator">
-          <div class="status-dot"></div>
-          <span>SYSTEM NOMINAL</span>
-        </div>
-        <span>CPU: 23%</span>
-        <span>MEM: 4.2GB</span>
-      </div>
-      <div class="status-right">
-        <span id="currentTime"></span>
-        <span>v2.1.0</span>
-      </div>
+    <div class="content-area" id="contentArea">
+      <!-- Dynamic content rendered here -->
     </div>
   </div>
+
+  <!-- CONSOLE BAR -->
+  <div class="terminal" id="console">
+    <div class="t-line"><span class="t-time">[00:00:00]</span><span class="t-ok">[SYSTEM]</span> EKADHARA v2.4.1 initialized — awaiting capture engine...</div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div class="statusbar">
+    <div class="sbar-l">
+      <span><span class="sbar-dot"></span>System Nominal</span>
+      <span>CPU: <span id="cpuVal">23</span>%</span>
+      <span>MEM: <span id="memVal">4.2</span> GB</span>
+      <span>Disk: 128 GB free</span>
+      <span>Capture: eth0, enp0s3</span>
+    </div>
+    <div class="sbar-r">
+      <span id="pktCount">0 packets</span>
+      <span id="clock"></span>
+      <span style="color:var(--accent)">v2.4.1</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-hd"><h3 id="modalTitle">Details</h3><button class="modal-close" id="modalClose">&times;</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-ft">
+      <button class="btn" id="modalCopy">Copy to Clipboard</button>
+      <button class="btn primary" id="modalDone">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg class="toast-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  <span id="toastMsg"></span>
 </div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════════
-const THREATS = [
-  { type: 'Volumetric DDoS', icon: '🌊', severity: 'critical', src: '10.142.73.201', conf: 0.97 },
-  { type: 'Data Exfiltration', icon: '📤', severity: 'critical', src: '10.87.12.44', conf: 0.94 },
-  { type: 'C2 Beaconing', icon: '📡', severity: 'high', src: '10.201.55.88', conf: 0.91 },
-  { type: 'Port Scanning', icon: '🔍', severity: 'medium', src: '10.33.91.12', conf: 0.82 },
-  { type: 'DGA/DNS Tunnel', icon: '🔤', severity: 'medium', src: '10.66.44.27', conf: 0.78 },
-  { type: 'Encrypted Malware', icon: '🔒', severity: 'high', src: '10.99.18.63', conf: 0.89 },
-  { type: 'C2 Beaconing', icon: '📡', severity: 'high', src: '10.155.72.91', conf: 0.86 },
-  { type: 'Volumetric DDoS', icon: '🌊', severity: 'critical', src: '10.88.44.17', conf: 0.95 },
-  { type: 'Port Scanning', icon: '🔍', severity: 'low', src: '10.22.88.55', conf: 0.71 },
-  { type: 'Data Exfiltration', icon: '📤', severity: 'high', src: '10.177.33.89', conf: 0.88 },
+const THREATS=[
+  {type:'Volumetric DDoS',icon:'🌊',severity:'critical',src:'10.142.73.201',dst:'192.168.1.45',conf:.97,proto:'TCP',port:80,bytes:'2.4 GB',pkts:1847392,dur:'2.3s',hash:'a3f8c2...'},
+  {type:'Data Exfiltration',icon:'📤',severity:'critical',src:'10.87.12.44',dst:'203.0.113.5',conf:.94,proto:'HTTPS',port:443,bytes:'847 MB',pkts:28471,dur:'45.1s',hash:'7b2e91...'},
+  {type:'C2 Beaconing',icon:'📡',severity:'high',src:'10.201.55.88',dst:'185.220.101.34',conf:.91,proto:'DNS',port:53,bytes:'12 KB',pkts:3847,dur:'300s',hash:'c4d5a6...'},
+  {type:'Encrypted Malware',icon:'🔒',severity:'high',src:'10.99.18.63',dst:'10.99.18.1',conf:.89,proto:'TLS',port:8443,bytes:'34 MB',pkts:128473,dur:'1.2s',hash:'9e1f03...'},
+  {type:'C2 Beaconing',icon:'📡',severity:'high',src:'10.155.72.91',dst:'91.234.56.78',conf:.86,proto:'HTTP',port:8080,bytes:'8 KB',pkts:2103,dur:'180s',hash:'b7a8c4...'},
+  {type:'Data Exfiltration',icon:'📤',severity:'high',src:'10.177.33.89',dst:'198.51.100.23',conf:.88,proto:'SFTP',port:22,bytes:'1.2 GB',pkts:9451,dur:'120s',hash:'d2e3f4...'},
+  {type:'Volumetric DDoS',icon:'🌊',severity:'critical',src:'10.88.44.17',dst:'192.168.1.10',conf:.95,proto:'UDP',port:53,bytes:'5.1 GB',pkts:4782910,dur:'1.8s',hash:'e5f6a7...'},
+  {type:'DGA / DNS Tunnel',icon:'🔤',severity:'medium',src:'10.66.44.27',dst:'8.8.8.8',conf:.78,proto:'DNS',port:53,bytes:'156 KB',pkts:4892,dur:'12s',hash:'1a2b3c...'},
+  {type:'Port Scanning',icon:'🔍',severity:'medium',src:'10.33.91.12',dst:'192.168.1.0/24',conf:.82,proto:'TCP',port:22,bytes:'24 KB',pkts:4096,dur:'8.5s',hash:'4d5e6f...'},
+  {type:'Port Scanning',icon:'🔍',severity:'low',src:'10.22.88.55',dst:'192.168.1.0/24',conf:.71,proto:'TCP',port:3389,bytes:'12 KB',pkts:2048,dur:'15.2s',hash:'7g8h9i...'},
 ];
 
-const DEGRADATION_DATA = [
-  { threat: 'scan', label: 'Recon / Port Scan', icon: '🔍', fullScore: 0.94, diodeScore: 0.94 },
-  { threat: 'ddos', label: 'Volumetric DDoS', icon: '🌊', fullScore: 0.93, diodeScore: 0.92 },
-  { threat: 'beaconing', label: 'C2 Beaconing', icon: '📡', fullScore: 0.91, diodeScore: 0.87 },
-  { threat: 'dga', label: 'DGA/DNS Tunnel', icon: '🔤', fullScore: 0.88, diodeScore: 0.84 },
-  { threat: 'malware', label: 'Encrypted Malware', icon: '🔒', fullScore: 0.86, diodeScore: 0.55 },
-  { threat: 'exfil', label: 'Data Exfiltration', icon: '📤', fullScore: 0.89, diodeScore: null },
+const DEGRADATION=[
+  {label:'Recon / Port Scan',icon:'🔍',full:.94,diode:.94},
+  {label:'Volumetric DDoS',icon:'🌊',full:.93,diode:.92},
+  {label:'C2 Beaconing',icon:'📡',full:.91,diode:.87},
+  {label:'DGA / DNS Tunnel',icon:'🔤',full:.88,diode:.84},
+  {label:'Encrypted Malware',icon:'🔒',full:.86,diode:.55},
+  {label:'Data Exfiltration',icon:'📤',full:.89,diode:null},
 ];
 
-// ═══════════════════════════════════════════════════════════════════
-// SPLASH SCREEN
-// ═══════════════════════════════════════════════════════════════════
-function showSplash() {
-  const terminal = document.getElementById('terminal');
-  const lines = [
-    '> INITIALIZING DETECTION ENGINE...',
-    '> LOADING SIGNATURE DATABASE...',
-    '> CALIBRATING ML MODELS...',
-    '> ESTABLISHING SECURE ENCLAVE...',
-    '> SYSTEM READY.',
-  ];
+const PROTOCOLS=[
+  {name:'HTTPS',pct:42,vol:'12.4 GB'},{name:'DNS',pct:18,vol:'5.2 GB'},
+  {name:'TCP',pct:15,vol:'4.3 GB'},{name:'UDP',pct:12,vol:'3.5 GB'},
+  {name:'TLS 1.3',pct:8,vol:'2.3 GB'},{name:'HTTP/2',pct:3,vol:'890 MB'},{name:'SFTP',pct:2,vol:'620 MB'}
+];
 
-  lines.forEach((line, i) => {
-    setTimeout(() => {
-      const div = document.createElement('div');
-      div.className = 'line';
-      div.textContent = line;
-      div.style.animationDelay = '0s';
-      terminal.appendChild(div);
-    }, i * 400);
-  });
+const DEVICES=[
+  {name:'SIG-01',type:'router',status:'ok',ip:'192.168.1.1'},
+  {name:'SIG-02',type:'router',status:'ok',ip:'192.168.1.2'},
+  {name:'SW-01',type:'switch',status:'ok',ip:'192.168.1.10'},
+  {name:'SW-02',type:'switch',status:'high',ip:'192.168.1.11'},
+  {name:'FW-01',type:'firewall',status:'ok',ip:'192.168.1.20'},
+  {name:'FW-02',type:'firewall',status:'crit',ip:'192.168.1.21'},
+  {name:'IDS-01',type:'ids',status:'ok',ip:'192.168.1.30'},
+  {name:'IDS-02',type:'ids',status:'ok',ip:'192.168.1.31'},
+  {name:'SRV-01',type:'server',status:'ok',ip:'192.168.1.100'},
+  {name:'SRV-02',type:'server',status:'high',ip:'192.168.1.101'},
+  {name:'PLC-01',type:'plc',status:'ok',ip:'192.168.2.10'},
+  {name:'PLC-02',type:'plc',status:'ok',ip:'192.168.2.11'},
+  {name:'SCADA',type:'scada',status:'ok',ip:'192.168.2.20'},
+  {name:'GW-01',type:'gateway',status:'ok',ip:'10.0.0.1'},
+  {name:'GW-02',type:'gateway',status:'high',ip:'10.0.0.2'}
+];
 
-  setTimeout(() => {
-    document.getElementById('splash').classList.add('fade-out');
-    setTimeout(() => {
-      document.getElementById('splash').style.display = 'none';
-      document.getElementById('app').style.display = 'flex';
-      setTimeout(() => {
-        document.getElementById('app').classList.add('visible');
-        initDashboard();
-      }, 50);
-    }, 800);
-  }, lines.length * 400 + 600);
+const ML_MODELS=[
+  {name:'DDoS Detector',acc:.97,f1:.96,lat:'2.1ms'},
+  {name:'Beaconing Classifier',acc:.93,f1:.91,lat:'1.8ms'},
+  {name:'DGA Identifier',acc:.89,f1:.87,lat:'3.2ms'},
+  {name:'Exfil Analyst',acc:.94,f1:.92,lat:'4.5ms'},
+  {name:'Malware Scanner',acc:.91,f1:.88,lat:'5.1ms'},
+  {name:'Anomaly Engine',acc:.96,f1:.94,lat:'1.2ms'}
+];
+
+const DEV_ICONS={router:'🖧',switch:'🔀',firewall:'🛡️',ids:'👁️',server:'🖥️',plc:'⚙️',scada:'📊',gateway:'🌐'};
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+let page='dashboard',diodeOn=false,ackOn=false,alertFilter='all',searchQuery='';
+let trafficHist={},packetData=[],t0=Date.now(),totalPkts=0;
+
+// ═══════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════
+const $=id=>document.getElementById(id);
+const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+
+function timeAgo(){
+  const d=new Date(Date.now()-rand(0,3600000));
+  return d.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function toast(msg){
+  const t=$('toast');$('toastMsg').textContent=msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function modal(title,body){
+  $('modalTitle').textContent=title;$('modalBody').innerHTML=body;
+  $('modal').classList.add('open');
+}
+function modalClose(){$('modal').classList.remove('open')}
+
+function countUp(el,target,suffix='',dur=1200){
+  const s=performance.now();
+  function tick(now){
+    const t=Math.min((now-s)/dur,1),e=1-Math.pow(1-t,3);
+    const v=Math.floor(target*e);
+    el.innerHTML=v.toLocaleString()+(suffix?`<span class="met-unit">${suffix}</span>`:'');
+    if(t<1)requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// MATRIX RAIN
+// CONSOLE LOG
 // ═══════════════════════════════════════════════════════════════════
-function initMatrixRain() {
-  const canvas = document.getElementById('matrixCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+function log(msg,type='info'){
+  const c=$('console'),el=document.createElement('div');
+  el.className='t-line';
+  const ts=new Date().toLocaleTimeString('en-US',{hour12:false});
+  el.innerHTML=`<span class="t-time">[${ts}]</span><span class="t-${type}">[${type.toUpperCase()}]</span> ${msg}`;
+  c.appendChild(el);c.scrollTop=c.scrollHeight;
+  if(c.children.length>50)c.removeChild(c.firstChild);
+}
 
-  function resize() {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
-  }
-  resize();
-  window.addEventListener('resize', resize);
+// ═══════════════════════════════════════════════════════════════════
+// CANVAS CHART
+// ═══════════════════════════════════════════════════════════════════
+function drawChart(id,data,color,maxVal){
+  const canvas=document.getElementById(id);if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const parent=canvas.parentElement;
+  const w=parent.clientWidth-16||400,h=parent.clientHeight-16||120;
+  canvas.width=w;canvas.height=h;
+  const max=maxVal||Math.max(...data,1);
+  ctx.clearRect(0,0,w,h);
 
-  const chars = 'ｱｲｳｴｵｶｷｸｹｺ01010101';
-  const fontSize = 14;
-  let columns = Math.floor(canvas.width / fontSize);
-  let drops = Array(columns).fill(0);
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;
+  for(let i=1;i<4;i++){const y=(h/4)*i;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
 
-  function draw() {
-    ctx.fillStyle = 'rgba(10, 14, 23, 0.05)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(0, 212, 255, 0.5)';
-    ctx.font = fontSize + 'px monospace';
-
-    for (let i = 0; i < drops.length; i++) {
-      const text = chars[Math.floor(Math.random() * chars.length)];
-      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-        drops[i] = 0;
-      }
-      drops[i]++;
+  // Fill
+  const grad=ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,`rgba(${color},.18)`);grad.addColorStop(1,`rgba(${color},0)`);
+  ctx.beginPath();ctx.moveTo(0,h);
+  data.forEach((v,i)=>{
+    const x=(w/(data.length-1))*i,y=h-(v/max)*(h-8);
+    if(i===0)ctx.lineTo(x,y);else{
+      const px=(w/(data.length-1))*(i-1),py=h-(data[i-1]/max)*(h-8),cx2=(px+x)/2;
+      ctx.bezierCurveTo(cx2,py,cx2,y,x,y);
     }
-  }
+  });
+  ctx.lineTo(w,h);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
 
-  setInterval(draw, 50);
+  // Line
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x=(w/(data.length-1))*i,y=h-(v/max)*(h-8);
+    if(i===0)ctx.moveTo(x,y);else{
+      const px=(w/(data.length-1))*(i-1),py=h-(data[i-1]/max)*(h-8),cx2=(px+x)/2;
+      ctx.bezierCurveTo(cx2,py,cx2,y,x,y);
+    }
+  });
+  ctx.strokeStyle=`rgb(${color})`;ctx.lineWidth=1.5;ctx.stroke();
+
+  // End dot
+  const lx=w,ly=h-(data[data.length-1]/max)*(h-8);
+  ctx.beginPath();ctx.arc(lx-1,ly,2.5,0,Math.PI*2);ctx.fillStyle=`rgb(${color})`;ctx.fill();
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// COUNT UP ANIMATION
+// PAGES
 // ═══════════════════════════════════════════════════════════════════
-function countUp(element, target, suffix = '', duration = 1500) {
-  const start = 0;
-  const startTime = performance.now();
+const PAGES={};
 
-  function update(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.floor(start + (target - start) * eased);
-    element.textContent = current.toLocaleString() + suffix;
-    if (progress < 1) requestAnimationFrame(update);
-  }
-  requestAnimationFrame(update);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// UPTIME COUNTER
-// ═══════════════════════════════════════════════════════════════════
-let uptimeStart = Date.now();
-function updateUptime() {
-  const elapsed = Date.now() - uptimeStart;
-  const days = Math.floor(elapsed / 86400000);
-  const hours = Math.floor((elapsed % 86400000) / 3600000);
-  const mins = Math.floor((elapsed % 3600000) / 60000);
-  const secs = Math.floor((elapsed % 60000) / 1000);
-  const el = document.getElementById('uptime');
-  if (el) el.textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// CLOCK
-// ═══════════════════════════════════════════════════════════════════
-function updateClock() {
-  const now = new Date();
-  const el = document.getElementById('currentTime');
-  if (el) el.textContent = now.toLocaleTimeString('en-US', { hour12: false }) + ' UTC';
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ALERT FEED
-// ═══════════════════════════════════════════════════════════════════
-function createAlertElement(alert, index) {
-  const div = document.createElement('div');
-  div.className = `alert-item ${alert.severity}`;
-  div.style.animationDelay = `${index * 0.05}s`;
-  const time = new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString('en-US', { hour12: false });
-  div.innerHTML = `
-    <div class="alert-severity-icon">${alert.icon}</div>
-    <div class="alert-content">
-      <div class="alert-threat-type">${alert.type}</div>
-      <div class="alert-meta">
-        <span>${alert.src}</span>
-        <span>${time}</span>
+PAGES.dashboard=()=>{
+  const tp=rand(46000,51000),al=rand(1200,1300),dr=(97+Math.random()*2.5).toFixed(1);
+  const lt=rand(11,18),bl=rand(840,870);
+  return `
+  <div style="display:flex;flex-direction:column;gap:8px;flex:1;overflow:hidden;padding:8px">
+    <!-- Metrics -->
+    <div class="met-grid">
+      <div class="met-card">
+        <div class="met-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Throughput</div>
+        <div class="met-value" id="v-tp">0<span class="met-unit">flows/s</span></div>
+        <div class="met-delta up">▲ +2.3%</div>
+      </div>
+      <div class="met-card">
+        <div class="met-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Active Alerts</div>
+        <div class="met-value" id="v-al">0</div>
+        <div class="met-delta down">▼ +12 last 5min</div>
+      </div>
+      <div class="met-card">
+        <div class="met-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Detection Rate</div>
+        <div class="met-value" id="v-dr">0%</div>
+        <div class="met-delta up" style="color:var(--green)">True positive ratio</div>
+      </div>
+      <div class="met-card">
+        <div class="met-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Avg Latency</div>
+        <div class="met-value" id="v-lt">0<span class="met-unit">ms</span></div>
+        <div class="met-delta up">▲ -1.2ms improved</div>
       </div>
     </div>
-    <div class="alert-confidence">${(alert.conf * 100).toFixed(0)}%</div>
-  `;
-  return div;
+
+    <!-- Blocked -->
+    <div class="blocked">
+      <div class="blocked-left">
+        <svg class="blocked-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span class="blocked-label">Threats Blocked This Session</span>
+      </div>
+      <div class="blocked-value" id="v-bl">0</div>
+    </div>
+
+    <!-- Row: Chart + Distribution -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Throughput (Real-time)</span>
+          <span class="panel-badge" style="background:var(--accent-s);color:var(--accent)" id="chartRate">0 f/s</span>
+        </div>
+        <div class="panel-body"><div class="chart-wrap"><canvas id="chart-tp"></canvas></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Threat Distribution</span>
+        </div>
+        <div class="panel-body" style="padding:12px 8px 24px" id="threatBars"></div>
+      </div>
+    </div>
+
+    <!-- Row: Alerts + Degradation -->
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>Live Alert Feed</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="alertSearch" placeholder="Filter alerts...">
+            </div>
+            <span class="panel-badge" style="background:var(--red-s);color:var(--red)" id="alertBadge">10 active</span>
+          </div>
+        </div>
+        <div class="panel-body" id="alertList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>Detection Degradation Matrix</span>
+          <span class="panel-badge" id="degMode" style="background:var(--accent-s);color:var(--accent)">FULL-DUPLEX</span>
+        </div>
+        <div class="panel-body" id="degMatrix" style="padding:.5rem 0"></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="ctrl-bar">
+      <div class="ctrl-g">
+        <span class="ctrl-lb" id="diodeLabel">Diode Mode</span>
+        <button class="tog" id="diodeToggle"><div class="tog-k"></div></button>
+      </div>
+      <div class="ctrl-g">
+        <span class="ctrl-lb" id="ackLabel">ACK-Shadow</span>
+        <button class="tog" id="ackToggle"><div class="tog-k"></div></button>
+      </div>
+      <div class="ctrl-warn" id="diodeWarning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Performance degradation: encrypted traffic not inspectable in diode mode
+      </div>
+    </div>`;
+};
+
+PAGES.alerts=()=>`
+  <div class="panel" style="flex:1">
+    <div class="panel-header">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>All Alerts (${THREATS.length})</span>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="alertSearch2" placeholder="Search...">
+      </div>
+    </div>
+    <div class="panel-body" style="padding:0" id="alertListFull"></div>
+  </div>`;
+
+PAGES.traffic=()=>`
+  <div style="display:flex;flex-direction:column;gap:8px;flex:1;padding:8px">
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Network Throughput</span><span class="panel-badge" style="background:var(--accent-s);color:var(--accent)">LIVE</span></div>
+        <div class="panel-body"><div class="chart-wrap" style="min-height:160px"><canvas id="chart-tp2"></canvas></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Protocol Breakdown</span></div>
+        <div class="panel-body" id="protoList"></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Packet Rate (pkts/s)</span></div>
+        <div class="panel-body"><div class="chart-wrap" style="min-height:130px"><canvas id="chart-pr"></canvas></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>Anomaly Score</span></div>
+        <div class="panel-body"><div class="chart-wrap" style="min-height:130px"><canvas id="chart-an"></canvas></div></div>
+      </div>
+    </div>`;
+
+PAGES.topology=()=>`
+  <div class="grid2" style="flex:1">
+    <div class="panel">
+      <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"/></svg>Network Topology</span><span class="panel-badge" style="background:var(--accent-s);color:var(--accent)">${DEVICES.length} nodes</span></div>
+      <div class="panel-body" id="topoArea" style="padding:8px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>Node Status</span></div>
+      <div class="panel-body" id="topoStatus" style="padding:8px"></div>
+    </div>
+  </div>`;
+
+PAGES.packets=()=>`
+  <div class="panel" style="flex:1">
+    <div class="panel-header">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20"/></svg>Packet Inspector</span>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="pktFilter" placeholder="Filter IP/protocol...">
+      </div>
+    </div>
+    <div style="overflow-y:auto;flex:1" id="pktTable"></div>
+    <div style="padding:8px 12px;background:var(--surface2);border-top:1px solid var(--border);font-family:'Cascadia Code',monospace;font-size:10px;color:var(--text2);min-height:28px;display:none" id="pktDetail"></div>
+  </div>`;
+
+PAGES.timeline=()=>`
+  <div class="panel" style="flex:1">
+    <div class="panel-header">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Threat Timeline</span>
+      <select id="tlFilter" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text);font-size:10px;font-family:inherit;outline:none">
+        <option value="all">All Severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
+      </select>
+    </div>
+    <div class="panel-body"><div id="timeline"></div></div>
+  </div>`;
+
+PAGES.devices=()=>`
+  <div class="panel" style="flex:1">
+    <div class="panel-header">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>Device Health Grid</span>
+      <span class="panel-badge" style="background:var(--accent-s);color:var(--accent)">${DEVICES.length} devices</span>
+    </div>
+    <div class="panel-body"><div class="dev-grid" id="devGrid"></div></div>
+  </div>`;
+
+PAGES.reports=()=>`
+  <div style="display:flex;flex-direction:column;gap:8px;flex:1;padding:8px">
+    <div class="grid3">
+      <div class="panel" style="padding:14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600">Scans Today</div>
+        <div style="font-family:'Cascadia Code',monospace;font-size:24px;font-weight:700;color:var(--accent)">1,247</div>
+        <div style="font-size:10px;color:var(--green);margin-top:4px">▲ +12% from yesterday</div>
+      </div>
+      <div class="panel" style="padding:14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600">Packets Analyzed</div>
+        <div style="font-family:'Cascadia Code',monospace;font-size:24px;font-weight:700;color:var(--text)">4.2M</div>
+        <div style="font-size:10px;color:var(--green);margin-top:4px">1.2 TB processed</div>
+      </div>
+      <div class="panel" style="padding:14px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600">Model Uptime</div>
+        <div style="font-family:'Cascadia Code',monospace;font-size:24px;font-weight:700;color:var(--green)">99.97%</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px">Last 30 days</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>ML Model Performance</span></div>
+        <div class="panel-body" style="padding:8px">
+          <table class="data-table">
+            <thead><tr><th>Model</th><th>Accuracy</th><th>F1 Score</th><th>Latency</th></tr></thead>
+            <tbody>${ML_MODELS.map(m=>`<tr><td>${m.name}</td><td style="color:var(--green);font-weight:600">${(m.acc*100).toFixed(1)}%</td><td>${(m.f1*100).toFixed(1)}%</td><td style="color:var(--accent)">${m.lat}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export Reports</span></div>
+        <div class="panel-body" style="padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:11px;color:var(--text2)">Download threat intelligence data in your preferred format for compliance and analysis.</div>
+          <button class="btn" onclick="exportData('csv')">📊 Export as CSV</button>
+          <button class="btn" onclick="exportData('json')">📋 Export as JSON</button>
+          <button class="btn primary" onclick="exportData('report')">📄 Generate PDF Report</button>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">Last export: ${new Date().toLocaleString()}</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>System Information</span></div>
+      <div class="panel-body" style="padding:14px">
+        <table class="data-table">
+          <thead><tr><th>Property</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td style="color:var(--text3)">Version</td><td class="mono">2.4.1 (Build 2026.09.09)</td></tr>
+            <tr><td style="color:var(--text3)">Model</td><td class="mono">EK-Rail-v3</td></tr>
+            <tr><td style="color:var(--text3)">Signature Database</td><td class="mono">12,847 rules loaded</td></tr>
+            <tr><td style="color:var(--text3)">ML Models</td><td class="mono">6 active (DDoS, Beaconing, DGA, Exfil, Malware, Anomaly)</td></tr>
+            <tr><td style="color:var(--text3)">Capture Interfaces</td><td class="mono">eth0, enp0s3</td></tr>
+            <tr><td style="color:var(--text3)">License</td><td class="mono">On-premise (Indian Railways)</td></tr>
+            <tr><td style="color:var(--text3)">Install Path</td><td class="mono">C:\\Program Files\\EKADHARA\\</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+PAGES.settings=()=>`
+  <div style="display:flex;flex-direction:column;gap:8px;flex:1;padding:8px">
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>Detection Settings</span></div>
+        <div class="panel-body pad" style="display:flex;flex-direction:column;gap:14px">
+          ${[
+            ['Real-time Detection','Enable live threat analysis on all interfaces',true],
+            ['Auto-block Critical','Automatically block critical threats',true],
+            ['Deep Packet Inspection','Inspect packet payloads (requires diode off)',false],
+            ['Alert Notifications','Desktop notifications for critical alerts',true],
+            ['Alert Sound','Play alert sound on critical threats',false],
+            ['Log All Packets','Write full packet capture to disk',false]
+          ].map(([name,desc,on])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-size:12px;font-weight:500;color:var(--text)">${name}</div><div style="font-size:10px;color:var(--text3)">${desc}</div></div>
+              <button class="tog ${on?'diode':''}" onclick="this.classList.toggle('diode')"><div class="tog-k"></div></button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Security Policy</span></div>
+        <div class="panel-body pad" style="display:flex;flex-direction:column;gap:14px">
+          <div><label style="font-size:11px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Detection Sensitivity</label>
+            <select style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:6px;color:var(--text);font-family:inherit;font-size:11px;outline:none">
+              <option>High (more alerts, fewer false negatives)</option><option selected>Balanced</option><option>Low (fewer alerts, fewer false positives)</option>
+            </select>
+          </div>
+          <div><label style="font-size:11px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Alert Cooldown</label>
+            <input type="range" min="1" max="60" value="5" style="width:100%;accent-color:var(--accent)">
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px"><span>1s</span><span>30s</span><span>60s</span></div>
+          </div>
+          <div><label style="font-size:11px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Max Alerts Displayed</label>
+            <input type="number" value="50" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:6px;color:var(--text);font-family:'Cascadia Code',monospace;font-size:11px;outline:none">
+          </div>
+          <div><label style="font-size:11px;font-weight:500;color:var(--text);display:block;margin-bottom:4px">Diode Mode Interfaces</label>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+              ${['eth0','enp0s3','eth1','enp0s8'].map(iface=>`<span class="badge ok" style="padding:3px 8px;font-size:10px;cursor:pointer" onclick="this.classList.toggle('ok');this.classList.toggle('crit')">${iface}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderAlerts(containerId,filter='all',search=''){
+  const c=document.getElementById(containerId);if(!c)return;
+  let items=THREATS;
+  if(filter!=='all')items=items.filter(t=>t.severity===filter);
+  if(search){const q=search.toLowerCase();items=items.filter(t=>t.type.toLowerCase().includes(q)||t.src.includes(q)||t.dst.includes(q))}
+  c.innerHTML=items.map((t,i)=>`
+    <div class="al-item ${t.severity}" onclick="modal('${t.type}','${alertDetail(t)}')">
+      <span class="al-ic">${t.icon}</span>
+      <div class="al-body">
+        <div class="al-type">${t.type}</div>
+        <div class="al-meta"><span>${t.src} → ${t.dst}</span><span>${timeAgo()}</span></div>
+      </div>
+      <span class="al-conf">${(t.conf*100).toFixed(0)}%</span>
+    </div>
+  `).join('');
+  const badge=containerId==='alertList'?'alertBadge':'';
+  if(badge)badge.textContent=`${items.length} active`;
+  const sideBadge=$('sideBadge');if(sideBadge)sideBadge.textContent=THREATS.length;
 }
 
-function populateAlerts() {
-  const list = document.getElementById('alertList');
-  const countEl = document.getElementById('alertCount');
-  if (!list) return;
+function alertDetail(t){
+  return `<div class="kv"><span class="k">Type</span><span class="v">${t.icon} ${t.type}</span></div>
+    <div class="kv"><span class="k">Severity</span><span class="v"><span class="badge ${t.severity}">${t.severity.toUpperCase()}</span></span></div>
+    <div class="kv"><span class="k">Source IP</span><span class="v">${t.src}</span></div>
+    <div class="kv"><span class="k">Destination IP</span><span class="v">${t.dst}</span></div>
+    <div class="kv"><span class="k">Confidence</span><span class="v">${(t.conf*100).toFixed(1)}%</span></div>
+    <div class="kv"><span class="k">Protocol</span><span class="v">${t.proto} : ${t.port}</span></div>
+    <div class="kv"><span class="k">Data Volume</span><span class="v">${t.bytes}</span></div>
+    <div class="kv"><span class="k">Total Packets</span><span class="v">${t.pkts.toLocaleString()}</span></div>
+    <div class="kv"><span class="k">Duration</span><span class="v">${t.dur}</span></div>
+    <div class="kv"><span class="k">First Packet Hash</span><span class="v">${t.hash}</span></div>`;
+}
 
-  THREATS.forEach((threat, i) => {
-    const alert = createAlertElement(threat, i);
-    list.appendChild(alert);
+function renderDegradation(){
+  const c=document.getElementById('degMatrix');if(!c)return;
+  c.innerHTML=DEGRADATION.map((r,i)=>{
+    const fp=Math.round(r.full*100),dp=r.diode!==null?Math.round(r.diode*100):0;
+    const fc=r.full>.85?'g':r.full>.7?'a':'r';
+    const dc=r.diode===null?'m':r.diode>.85?'g':r.diode>.7?'a':'r';
+    return `<div class="deg-row">
+      <div class="deg-lb"><span class="deg-ic">${r.icon}</span>${r.label}</div>
+      <div class="deg-bars"><div class="deg-bw"><div class="deg-b ${fc}" data-w="${fp}%"></div></div><div class="deg-bw"><div class="deg-b ${dc}" data-w="${dp}%"></div></div></div>
+      <div class="deg-sc ${fc}">${fp}%</div>
+    </div>`;
+  }).join('');
+  setTimeout(()=>{document.querySelectorAll('.deg-b').forEach(b=>b.style.width=b.dataset.w)},300);
+}
+
+function renderTopology(){
+  const c=document.getElementById('topoArea');if(!c)return;
+  const rect=c.getBoundingClientRect(),w=rect.width||400,h=rect.height||300;
+  const nodes=DEVICES.map((d,i)=>{
+    const cols=5,rows=Math.ceil(DEVICES.length/cols);
+    const col=i%cols,row=Math.floor(i/cols);
+    return {x:50+col*((w-100)/(cols-1||1)),y:40+row*((h-80)/(rows-1||1)),...d};
   });
-  if (countEl) countEl.textContent = THREATS.length;
-}
+  let edges='';
+  for(let i=0;i<nodes.length-1;i++){
+    const a=nodes[i],b=nodes[i+1];
+    if(Math.abs(a.x-b.x)<160&&Math.abs(a.y-b.y)<120){
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.sqrt(dx*dx+dy*dy);
+      edges+=`<div class="topo-edge" style="left:${a.x+22}px;top:${a.y+22}px;width:${len-44}px;transform:rotate(${Math.atan2(dy,dx)}rad)"></div>`;
+    }
+  }
+  c.innerHTML=`<div style="position:relative;width:100%;height:100%">${edges+nodes.map(n=>`
+    <div class="topo-node ${n.status}" style="left:${n.x}px;top:${n.y}px" onclick="modal('${n.name}','<div class=\\'kv\\'><span class=\\'k\\'>Device</span><span class=\\'v\\'>${n.name}</span></div><div class=\\'kv\\'><span class=\\'k\\'>Type</span><span class=\\'v\\'>${n.type}</span></div><div class=\\'kv\\'><span class=\\'k\\'>IP Address</span><span class=\\'v\\'>${n.ip}</span></div><div class=\\'kv\\'><span class=\\'k\\'>Status</span><span class=\\'v\\'><span class=\\'badge ${n.status}\\'>${n.status.toUpperCase()}</span></span></div>')">
+      ${DEV_ICONS[n.type]||'📦'}
+      <div class="topo-label">${n.name}</div>
+    </div>
+  `).join('')}</div>`;
 
-function addRandomAlert() {
-  const list = document.getElementById('alertList');
-  if (!list) return;
-  const threat = THREATS[Math.floor(Math.random() * THREATS.length)];
-  const alert = createAlertElement(threat, 0);
-  list.insertBefore(alert, list.firstChild);
-  if (list.children.length > 15) list.removeChild(list.lastChild);
-  const countEl = document.getElementById('alertCount');
-  if (countEl) countEl.textContent = list.children.length;
-
-  // Critical flash
-  if (threat.severity === 'critical') {
-    const flash = document.createElement('div');
-    flash.className = 'critical-flash';
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 600);
+  const s=document.getElementById('topoStatus');if(s){
+    s.innerHTML=DEVICES.map(d=>`
+      <div class="al-item ${d.status}" style="animation:none;opacity:1;border-left-width:2px;padding:4px 6px">
+        <span style="font-size:.85rem">${DEV_ICONS[d.type]||'📦'}</span>
+        <div class="al-body"><div class="al-type" style="font-size:10px">${d.name}</div><div class="al-meta"><span>${d.type}</span><span>${d.ip}</span></div></div>
+        <span class="al-conf" style="font-size:9px;text-transform:uppercase">${d.status}</span>
+      </div>
+    `).join('');
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// DEGRADATION MATRIX
-// ═══════════════════════════════════════════════════════════════════
-function buildDegradationMatrix() {
-  const container = document.getElementById('degradationMatrix');
-  if (!container) return;
+function renderPackets(){
+  const c=document.getElementById('pktTable');if(!c)return;
+  const pkts=[];
+  const flags=['SYN','ACK','FIN','RST','PSH','URG'];
+  for(let i=0;i<50;i++){
+    const t=THREATS[i%THREATS.length];
+    const flag=flags[rand(0,flags.length-1)];
+    pkts.push({time:timeAgo(),src:t.src,dst:t.dst,proto:t.proto,len:rand(64,1500),sev:t.severity,flag,sport:rand(1024,65535),dport:t.port,ttl:rand(32,128),win:rand(1024,65535)});
+  }
+  c.innerHTML=`<table class="data-table">
+    <thead><tr><th>Time</th><th>Source</th><th>Protocol</th><th>Length</th><th>Flags</th></tr></thead>
+    <tbody>${pkts.map((p,i)=>`<tr class="${p.sev}" style="cursor:pointer" onclick="showPkt(${i},'${p.src}','${p.dst}','${p.proto}',${p.len},'${p.flag}',${p.sport},${p.dport},${p.ttl},${p.win})">
+      <td class="mono">${p.time}</td><td class="mono">${p.src}</td><td><span class="badge med">${p.proto}</span></td><td class="mono">${p.len}B</td><td><span class="badge ${p.flag==='SYN'||p.flag==='RST'?'crit':p.flag==='ACK'?'ok':'med'}">${p.flag}</span></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+  window._pkts=pkts;
+}
 
-  DEGRADATION_DATA.forEach((row) => {
-    const div = document.createElement('div');
-    div.className = 'deg-row';
-    const fullPct = (row.fullScore * 100).toFixed(0);
-    const diodePct = row.diodeScore !== null ? (row.diodeScore * 100).toFixed(0) : 'N/A';
-    const diodeClass = row.diodeScore !== null ? (row.diodeScore < 0.8 ? 'warn' : 'good') : 'bad';
-    const fullClass = 'good';
+function showPkt(i,src,dst,proto,len,flag,sport,dport,ttl,win){
+  const d=$('pktDetail');
+  d.style.display='block';
+  d.innerHTML=`<strong>Packet #${i}</strong> &nbsp;|&nbsp; ${proto} ${sport} → ${dport} &nbsp;|&nbsp; Flags: ${flag} &nbsp;|&nbsp; Src: ${src} &nbsp;|&nbsp; Dst: ${dst} &nbsp;|&nbsp; Len: ${len}B &nbsp;|&nbsp; TTL: ${ttl} &nbsp;|&nbsp; Win: ${win}`;
+}
 
-    div.innerHTML = `
-      <div class="deg-label">
-        <span class="icon">${row.icon}</span>
-        <span>${row.label}</span>
-      </div>
-      <div class="deg-bar-container">
-        <div class="deg-bar full" style="width: ${fullPct}%"></div>
-      </div>
-      <div class="deg-bar-container" style="margin-left: 0.5rem;">
-        <div class="deg-bar ${row.diodeScore !== null ? 'diode' : 'null'}" style="width: ${row.diodeScore !== null ? diodePct : 0}%"></div>
-      </div>
-    `;
-    container.appendChild(div);
+function renderTimeline(){
+  const c=document.getElementById('timeline');if(!c)return;
+  const filter=document.getElementById('tlFilter')?.value||'all';
+  let items=THREATS.slice(0,20);
+  if(filter!=='all')items=items.filter(t=>t.severity===filter);
+  c.innerHTML=items.map((t,i)=>{
+    const mins=rand(0,120),h=String(Math.floor(mins/60)).padStart(2,'0'),m=String(mins%60).padStart(2,'0');
+    return `<div class="al-item ${t.severity}" style="animation:cardIn .3s ease-out ${i*.03}s forwards;opacity:0">
+      <span style="font-family:'Cascadia Code',monospace;font-size:10px;color:var(--text3);min-width:36px;text-align:right">${h}:${m}</span>
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--${t.severity==='critical'?'red':t.severity==='high'?'amber':t.severity==='medium'?'accent':'green'});flex-shrink:0"></span>
+      <div class="al-body"><div class="al-type">${t.icon} ${t.type}</div><div class="al-meta"><span>${t.src}</span><span>→ ${t.dst}</span></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDevices(){
+  const c=document.getElementById('devGrid');if(!c)return;
+  c.innerHTML=DEVICES.map(d=>`
+    <div class="dev-card ${d.status}">
+      <div class="dev-ic">${DEV_ICONS[d.type]||'📦'}</div>
+      <div class="dev-nm">${d.name}</div>
+      <div class="dev-ip">${d.ip}</div>
+      <div class="dev-st ${d.status}">${d.status}</div>
+    </div>
+  `).join('');
+}
+
+function renderThreatBars(){
+  const c=document.getElementById('threatBars');if(!c)return;
+  const types=['DDoS','Exfil','Beacon','Malware','DGA','Scan'];
+  const vals=[42,28,18,12,8,5];
+  const colors=['var(--red)','var(--red)','var(--amber)','var(--amber)','var(--accent)','var(--green)'];
+  c.innerHTML=`<div style="display:flex;align-items:flex-end;gap:8px;height:70px;padding-bottom:22px">${types.map((t,i)=>`
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="font-size:10px;color:var(--text2);font-family:'Cascadia Code',monospace;font-weight:600">${vals[i]}%</div>
+      <div style="width:100%;background:${colors[i]};border-radius:3px 3px 0 0;height:${vals[i]*1.5}px;opacity:.85;transition:height .8s"></div>
+      <div style="font-size:9px;color:var(--text3);margin-top:4px">${t}</div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderProtocols(){
+  const c=document.getElementById('protoList');if(!c)return;
+  c.innerHTML=PROTOCOLS.map(p=>`
+    <div class="proto-row">
+      <span class="proto-lb">${p.name}</span>
+      <div class="proto-bar"><div class="proto-fill" style="width:0%" data-w="${p.pct}%"></div></div>
+      <span class="proto-pct">${p.pct}%</span>
+      <span class="proto-vol">${p.vol}</span>
+    </div>
+  `).join('');
+  setTimeout(()=>{document.querySelectorAll('.proto-fill').forEach(b=>b.style.width=b.dataset.w)},400);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+function navigate(p){
+  page=p;
+  const area=document.getElementById('contentArea');
+  if(PAGES[p])area.innerHTML=PAGES[p]();
+
+  // Active states
+  document.querySelectorAll('.side-item').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
+  document.querySelectorAll('.tb-btn[data-tool]').forEach(el=>el.classList.toggle('active',el.dataset.tool===p));
+
+  requestAnimationFrame(()=>{
+    if(p==='dashboard'){
+      countUp($('v-tp'),rand(46000,51000),'flows/s');
+      countUp($('v-al'),rand(1200,1300));
+      countUp($('v-dr'),parseFloat((97+Math.random()*2.5).toFixed(1)),'%');
+      countUp($('v-lt'),rand(11,18),'ms');
+      countUp($('v-bl'),rand(840,870));
+      renderAlerts('alertList',alertFilter,searchQuery);
+      renderDegradation();
+      renderThreatBars();
+      trafficHist.dashboard=Array(40).fill(0).map(()=>rand(30,80));
+      setTimeout(()=>drawChart('chart-tp',trafficHist.dashboard,'0,212,255',100),300);
+      log('Dashboard view loaded','ok');
+    }
+    if(p==='alerts'){renderAlerts('alertListFull',alertFilter,searchQuery);log('Alert feed loaded — '+THREATS.length+' active alerts','info')}
+    if(p==='traffic'){
+      ['tp2','pr','an'].forEach(id=>{trafficHist[id]=Array(40).fill(0).map(()=>rand(30,80))});
+      setTimeout(()=>{drawChart('chart-tp2',trafficHist.tp2,'0,212,255',100);drawChart('chart-pr',trafficHist.pr,'0,255,136',100);drawChart('chart-an',trafficHist.an,'255,170,0',100)},200);
+      renderProtocols();log('Traffic analysis initialized','ok');
+    }
+    if(p==='topology'){renderTopology();log('Topology map rendered — '+DEVICES.length+' nodes','ok')}
+    if(p==='packets'){renderPackets();log('Packet inspector active — 50 packets captured','ok')}
+    if(p==='timeline'){renderTimeline();log('Timeline loaded — '+THREATS.length+' events','info')}
+    if(p==='devices'){renderDevices();log('Device grid loaded — '+DEVICES.length+' devices','ok')}
+    if(p==='reports'){log('Report center loaded','info')}
+    if(p==='settings'){log('Settings opened','info')}
   });
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DIODE TOGGLES
+// FLUCTUATE
 // ═══════════════════════════════════════════════════════════════════
-let diodeOn = false;
-let ackOn = false;
+function fluctuate(){
+  const tp=rand(46000,51000),al=rand(1200,1300);
+  const dr=(97+Math.random()*2.5).toFixed(1);
+  const lt=rand(11,18),bl=rand(840,870);
 
-function initToggles() {
-  const diodeToggle = document.getElementById('diodeToggle');
-  const ackToggle = document.getElementById('ackToggle');
-  const diodeLabel = document.getElementById('diodeLabel');
-  const ackLabel = document.getElementById('ackLabel');
-  const diodeWarning = document.getElementById('diodeWarning');
+  const tpEl=$('v-tp');if(tpEl)tpEl.innerHTML=tp.toLocaleString()+'<span class="met-unit">flows/s</span>';
+  const alEl=$('v-al');if(alEl)alEl.innerHTML=al.toLocaleString();
+  const drEl=$('v-dr');if(drEl)drEl.textContent=dr+'%';
+  const ltEl=$('v-lt');if(ltEl)ltEl.innerHTML=lt+'<span class="met-unit">ms</span>';
+  const blEl=$('v-bl');if(blEl)blEl.textContent=bl.toLocaleString();
 
-  if (diodeToggle) {
-    diodeToggle.addEventListener('click', () => {
-      diodeOn = !diodeOn;
-      diodeToggle.classList.toggle('active', diodeOn);
-      diodeLabel.classList.toggle('active', diodeOn);
-      if (diodeOn) {
-        diodeWarning.classList.add('visible');
-      } else {
-        diodeWarning.classList.remove('visible');
-      }
+  $('tbRate').textContent=tp.toLocaleString()+' f/s';
+  $('tbAlerts').textContent=al+' alerts';
+  totalPkts+=rand(500,2000);
+  $('pktCount').textContent=totalPkts.toLocaleString()+' packets';
+
+  // CPU/MEM fluctuate
+  $('cpuVal').textContent=rand(18,35);
+  $('memVal').textContent=(4+Math.random()*1.5).toFixed(1);
+
+  // Traffic chart
+  if(page==='dashboard'){
+    trafficHist.dashboard=trafficHist.dashboard||Array(40).fill(0).map(()=>rand(30,80));
+    trafficHist.dashboard.push(rand(30,95));
+    if(trafficHist.dashboard.length>40)trafficHist.dashboard.shift();
+    drawChart('chart-tp',trafficHist.dashboard,'0,212,255',100);
+  }
+  if(page==='traffic'){
+    ['tp2','pr','an'].forEach(id=>{
+      if(!trafficHist[id])return;
+      trafficHist[id].push(rand(30,95));
+      if(trafficHist[id].length>40)trafficHist[id].shift();
+      const colors={tp2:'0,212,255',pr:'0,255,136',an:'255,170,0'};
+      drawChart(id,trafficHist[id],colors[id],100);
     });
   }
+}
 
-  if (ackToggle) {
-    ackToggle.addEventListener('click', () => {
-      ackOn = !ackOn;
-      ackToggle.classList.toggle('active', ackOn);
-      ackLabel.classList.toggle('active', ackOn);
-    });
+function addAlert(){
+  const t=THREATS[rand(0,THREATS.length-1)];
+  THREATS.unshift({...t,time:Date.now()});
+  if(THREATS.length>15)THREATS.pop();
+
+  if(page==='dashboard')renderAlerts('alertList',alertFilter,searchQuery);
+  else if(page==='alerts'){renderAlerts('alertList',alertFilter,searchQuery);renderAlerts('alertListFull',alertFilter,searchQuery)}
+
+  if(t.severity==='critical'){
+    const f=document.createElement('div');f.className='cflash';document.body.appendChild(f);
+    setTimeout(()=>f.remove(),600);
+    log(`CRITICAL: ${t.type} detected from ${t.src}`,'error');
+  }else if(t.severity==='high'){
+    log(`WARNING: ${t.type} from ${t.src}`,'warn');
+  }else{
+    log(`INFO: ${t.type} detected — confidence ${(t.conf*100).toFixed(0)}%`,'info');
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// METRICS FLUCTUATION
+// EXPORT
 // ═══════════════════════════════════════════════════════════════════
-function fluctuateMetrics() {
-  const throughput = document.getElementById('throughput');
-  const activeAlerts = document.getElementById('activeAlerts');
-  const detectionRate = document.getElementById('detectionRate');
-  const responseTime = document.getElementById('responseTime');
-  const blockedCount = document.getElementById('blockedCount');
+function exportData(format){
+  const data=THREATS.map(t=>({type:t.type,severity:t.severity,src:t.src,dst:t.dst,confidence:t.conf,protocol:t.proto,port:t.port,bytes:t.bytes,packets:t.pkts,duration:t.dur}));
+  let content='',mime='',ext='';
+  if(format==='csv'){
+    content='Type,Severity,Source,Destination,Confidence,Protocol,Port,Bytes,Packets,Duration\n';
+    content+=data.map(r=>`${r.type},${r.severity},${r.src},${r.dst},${r.conf},${r.proto},${r.port},${r.bytes},${r.packets},${r.duration}`).join('\n');
+    mime='text/csv';ext='csv';
+  }else if(format==='json'){
+    content=JSON.stringify(data,null,2);mime='application/json';ext='json';
+  }else{
+    content=`EKADHARA Threat Intelligence Report\nGenerated: ${new Date().toLocaleString()}\n${'='.repeat(60)}\n\n`+data.map(r=>`[${r.severity.toUpperCase()}] ${r.type}\n  Source: ${r.src}\n  Destination: ${r.dst}\n  Confidence: ${(r.conf*100).toFixed(0)}%\n  Protocol: ${r.proto}:${r.port}\n  Volume: ${r.bytes}\n  Packets: ${r.packets.toLocaleString()}\n  Duration: ${r.dur}\n`).join('\n');
+    mime='text/plain';ext='txt';
+  }
+  const blob=new Blob([content],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`ekadhara-report-${Date.now()}.${ext}`;a.click();
+  URL.revokeObjectURL(url);
+  toast(`Report exported as .${ext}`);
+  log(`Report exported: ${ext.toUpperCase()} format`,'ok');
+}
 
-  if (throughput) {
-    const base = 47000 + Math.floor(Math.random() * 5000 - 2500);
-    throughput.textContent = base.toLocaleString();
-  }
-  if (activeAlerts) {
-    const base = 1240 + Math.floor(Math.random() * 50 - 25);
-    activeAlerts.textContent = base.toLocaleString();
-  }
-  if (detectionRate) {
-    const base = 97.2 + Math.random() * 2;
-    detectionRate.textContent = base.toFixed(1) + '%';
-  }
-  if (responseTime) {
-    const base = 12 + Math.floor(Math.random() * 8);
-    responseTime.textContent = base;
-  }
-  if (blockedCount) {
-    const base = 847 + Math.floor(Math.random() * 20);
-    blockedCount.textContent = base.toLocaleString();
-  }
+// ═══════════════════════════════════════════════════════════════════
+// CLOCK & UPTIME
+// ═══════════════════════════════════════════════════════════════════
+function tickClock(){
+  const now=new Date();
+  $('clock').textContent=now.toLocaleTimeString('en-US',{hour12:false})+' UTC';
+  const s=Math.floor((Date.now()-t0)/1000);
+  const h=String(Math.floor(s/3600)).padStart(2,'0');
+  const m=String(Math.floor((s%3600)/60)).padStart(2,'0');
+  const sc=String(s%60).padStart(2,'0');
+  const up=$('uptime');if(up)up.textContent=`${h}:${m}:${sc}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════
-function initDashboard() {
-  initMatrixRain();
-  buildDegradationMatrix();
-  populateAlerts();
-  initToggles();
+function init(){
+  navigate('dashboard');
 
-  // Count-up animations
-  countUp(document.getElementById('throughput'), 47300);
-  countUp(document.getElementById('activeAlerts'), 1247);
-  countUp(document.getElementById('detectionRate'), 97, '%');
-  countUp(document.getElementById('responseTime'), 14);
-  countUp(document.getElementById('blockedCount'), 847);
+  // Nav
+  document.querySelectorAll('.side-item').forEach(btn=>{
+    btn.addEventListener('click',()=>navigate(btn.dataset.page));
+  });
+  document.querySelectorAll('.tb-btn[data-tool]').forEach(btn=>{
+    btn.addEventListener('click',()=>navigate(btn.dataset.tool));
+  });
+
+  // Theme
+  const themeBtn=document.getElementById('themeBtn');
+  if(localStorage.getItem('ek-theme')==='light')document.documentElement.setAttribute('data-theme','light');
+  document.getElementById('themeBtn')?.addEventListener('click',()=>{
+    const isLight=document.documentElement.getAttribute('data-theme')==='light';
+    document.documentElement.setAttribute('data-theme',isLight?'dark':'light');
+    localStorage.setItem('ek-theme',isLight?'dark':'light');
+  });
+
+  // Diode/ACK
+  document.getElementById('diodeToggle')?.addEventListener('click',()=>{
+    diodeOn=!diodeOn;
+    document.getElementById('diodeToggle').className='tog'+(diodeOn?' diode':'');
+    document.getElementById('diodeLabel').className='ctrl-lb'+(diodeOn?' on-d':'');
+    document.getElementById('diodeWarning').className='ctrl-warn'+(diodeOn?' vis':'');
+    const dm=document.getElementById('degMode');
+    if(dm){dm.textContent=diodeOn?'DIODE':'FULL-DUPLEX';dm.style.background=diodeOn?'var(--amber-s)':'var(--accent-s)';dm.style.color=diodeOn?'var(--amber)':'var(--accent)';}
+    log(diodeOn?'Diode mode ENABLED — DPI disabled for encrypted traffic':'Diode mode DISABLED — full duplex restored',diodeOn?'warn':'ok');
+  });
+  document.getElementById('ackToggle')?.addEventListener('click',()=>{
+    ackOn=!ackOn;
+    document.getElementById('ackToggle').className='tog'+(ackOn?' ack':'');
+    document.getElementById('ackLabel').className='ctrl-lb'+(ackOn?' on-a':'');
+    log(ackOn?'ACK-Shadow mode ENABLED':'ACK-Shadow mode DISABLED',ackOn?'ok':'info');
+  });
+  document.getElementById('btnDiode')?.addEventListener('click',()=>{document.getElementById('diodeToggle')?.click()});
+  document.getElementById('btnACK')?.addEventListener('click',()=>{document.getElementById('ackToggle')?.click()});
+
+  // Search
+  const doSearch=(val)=>{searchQuery=val;renderAlerts('alertList',alertFilter,val)};
+  document.getElementById('alertSearch')?.addEventListener('input',e=>doSearch(e.target.value));
+  document.getElementById('alertSearch2')?.addEventListener('input',e=>renderAlerts('alertListFull',alertFilter,e.target.value));
+  document.getElementById('pktFilter')?.addEventListener('input',()=>renderPackets());
+  document.getElementById('tlFilter')?.addEventListener('change',renderTimeline);
+
+  // Modal
+  document.getElementById('modalClose').addEventListener('click',modalClose);
+  document.getElementById('modalDone').addEventListener('click',modalClose);
+  document.getElementById('modal').addEventListener('click',e=>{if(e.target===$('modal'))modalClose()});
+  document.getElementById('modalCopy')?.addEventListener('click',()=>{navigator.clipboard.writeText($('modalBody').innerText).then(()=>toast('Copied to clipboard'))});
+
+  // Menu items
+  document.querySelectorAll('.menu-item').forEach(item=>{
+    item.addEventListener('mouseenter',()=>{
+      const dd=item.querySelector('div');if(dd)dd.style.display='block';
+    });
+    item.addEventListener('mouseleave',()=>{
+      const dd=item.querySelector('div');if(dd)dd.style.display='none';
+    });
+  });
 
   // Intervals
-  setInterval(updateUptime, 1000);
-  setInterval(updateClock, 1000);
-  setInterval(fluctuateMetrics, 2000);
-  setInterval(addRandomAlert, 3000);
+  setInterval(tickClock,1000);
+  setInterval(fluctuate,2500);
+  setInterval(addAlert,4000);
 
-  updateUptime();
-  updateClock();
+  // Boot console messages
+  setTimeout(()=>log('Capture engine started on eth0, enp0s3','ok'),500);
+  setTimeout(()=>log('Signature database loaded: 12,847 rules','info'),1200);
+  setTimeout(()=>log('ML models initialized: 6 active','info'),1800);
+  setTimeout(()=>log('Diode mode: OFF (full-duplex)','info'),2200);
+  setTimeout(()=>log('ACK-Shadow mode: OFF','info'),2600);
+  setTimeout(()=>log('Detection engine ready — monitoring active','ok'),3000);
+
+  tickClock();
 }
 
-// Boot
-showSplash();
+init();
 </script>
 </body>
 </html>

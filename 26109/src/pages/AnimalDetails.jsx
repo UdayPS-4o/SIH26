@@ -77,30 +77,30 @@ export default function AnimalDetails() {
 
   return (
     <div>
-      <Link to="/animals" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800">
+      <Link to="/animals" className="mb-3 md:mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-sand-500 hover:text-sand-800">
         <ArrowLeft size={15} /> {t('detail.back')}
       </Link>
 
       {/* Hero */}
-      <Card className="mb-6 overflow-hidden">
-        <div className="grid gap-6 p-6 md:grid-cols-3">
+      <Card className="mb-4 md:mb-6 overflow-hidden">
+        <div className="grid gap-4 md:gap-6 p-4 md:p-6 md:grid-cols-3">
           <div className="md:col-span-2">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{animal.id}</h1>
+              <h1 className="text-xl md:text-2xl font-semibold text-sand-900 dark:text-sand-100">{animal.id}</h1>
               <RiskBadge level={animal.riskLevel} score={animal.riskScore} />
             </div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-sm text-sand-500 dark:text-sand-400">
               {animal.name} · {animal.breed} {animal.species} · {animal.age} years · Lactation {animal.lactation} · Shed {animal.shed}
             </p>
 
-            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="mt-4 md:mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <MiniStat label={t('animals.col.yield')} value={`${animal.milkYield} L`} />
               <MiniStat label="SCC" value={`${animal.scc}k`} />
               <MiniStat label={t('animals.col.activity')} value={`${animal.activity}%`} />
               <MiniStat label={t('common.riskWindow')} value={prediction.predictionWindow} />
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
+            <div className="mt-4 md:mt-5 flex flex-wrap gap-2">
               <button className="btn-primary" onClick={() => setReviewed(true)} disabled={reviewed}>
                 <CheckCircle2 size={15} /> {reviewed ? t('detail.reviewed') : t('detail.markReviewed')}
               </button>
@@ -110,19 +110,19 @@ export default function AnimalDetails() {
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center rounded-xl bg-gray-50 p-5 dark:bg-gray-800/60">
-            <span className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">{t('detail.risk')}</span>
+          <div className="flex flex-col items-center justify-center rounded-card bg-sand-50 p-4 md:p-5 dark:bg-barn-800/60">
+            <span className="mb-2 text-xs font-medium uppercase tracking-wide text-sand-400">{t('detail.risk')}</span>
             <RiskGauge score={animal.riskScore} />
           </div>
         </div>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
         {/* Why at risk */}
-        <Card className="p-5 lg:col-span-2">
+        <Card className="p-4 md:p-5 lg:col-span-2">
           <SectionTitle>{t('detail.why')}</SectionTitle>
           <RiskFactors factors={factorRows} />
-          <p className="mt-4 rounded-lg bg-brand-50 px-3 py-2.5 text-xs leading-relaxed text-brand-900 dark:bg-brand-900/20 dark:text-brand-200">
+          <p className="mt-3 md:mt-4 rounded-lg bg-forest-50 px-3 py-2.5 text-xs leading-relaxed text-forest-900 dark:bg-forest-900/20 dark:text-forest-200">
             The current risk score is primarily influenced by the rising SCC trend, reduced milk production, and
             behavioural changes compared with this animal's historical baseline.
             {(feeding.feedingScore < 65 || feeding.housingScore < 65) && (
@@ -136,23 +136,23 @@ export default function AnimalDetails() {
               </>
             )}
           </p>
-          <AiDisclaimer className="mt-3" />
+          <AiDisclaimer className="mt-2 md:mt-3" />
         </Card>
 
         {/* Timeline */}
-        <Card className="p-5">
+        <Card className="p-4 md:p-5">
           <SectionTitle>{t('detail.timeline')}</SectionTitle>
           <HealthTimeline items={buildTimeline(animal)} />
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="mt-6">
+      <div className="mt-4 md:mt-6">
         <SectionTitle>{t('detail.charts')}</SectionTitle>
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:gap-6 md:grid-cols-2 xl:grid-cols-3">
           {charts.map((c) => (
-            <Card key={c.key} className="p-5">
-              <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">{c.title}</p>
+            <Card key={c.key} className="p-4 md:p-5">
+              <p className="mb-2 text-sm font-medium text-sand-700 dark:text-sand-300">{c.title}</p>
               <AreaTrend data={c.data} dataKey="value" color={c.color} name={c.title} height={170} />
             </Card>
           ))}
@@ -160,14 +160,14 @@ export default function AnimalDetails() {
       </div>
 
       {/* Recommendations */}
-      <div className="mt-6">
+      <div className="mt-4 md:mt-6">
         <SectionTitle>{t('detail.recs')}</SectionTitle>
         <div className="grid gap-3 md:grid-cols-2">
           {prediction.recommendations.map((r, i) => (
             <RecommendationCard key={r.title} rec={r} index={i} />
           ))}
         </div>
-        <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+        <p className="mt-2 md:mt-3 text-xs text-sand-400 dark:text-sand-500">
           Recommendations are preventive guidance only. This prototype does not prescribe medicines or dosages.
         </p>
       </div>
@@ -177,9 +177,9 @@ export default function AnimalDetails() {
 
 function MiniStat({ label, value }) {
   return (
-    <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">{value}</p>
+    <div className="rounded-card border border-sand-200 p-3 dark:border-barn-800">
+      <p className="text-xs text-sand-400">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-sand-900 dark:text-sand-100">{value}</p>
     </div>
   )
 }

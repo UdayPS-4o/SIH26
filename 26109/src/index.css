@@ -42,6 +42,79 @@ html.dark body {
 @media print {
   aside, header, nav { display: none !important; }
   main { padding: 0 !important; }
+  .no-print { display: none !important; }
+  .card { break-inside: avoid; border: 1px solid #ddd !important; box-shadow: none !important; }
+  body { font-size: 11pt; }
+  h1 { font-size: 18pt; }
+  h2 { font-size: 14pt; }
+}
+
+/* ===== Feature 4: Risk gauge pulse ===== */
+@keyframes gauge-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.3)); }
+  50% { filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.7)); }
+}
+.gauge-pulse-high {
+  animation: gauge-pulse 1.8s ease-in-out infinite;
+}
+
+/* ===== Feature 3: AI scanning line ===== */
+@keyframes scan-line {
+  0%   { top: 0%; }
+  50%  { top: calc(100% - 2px); }
+  100% { top: 0%; }
+}
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #3B9EFF, #6366f1, #3B9EFF, transparent);
+  box-shadow: 0 0 12px rgba(59, 158, 255, 0.5), 0 0 24px rgba(99, 102, 241, 0.25);
+  animation: scan-line 2.4s ease-in-out infinite;
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* ===== Feature 6: Count-up numbers ===== */
+.count-up {
+  display: inline-block;
+}
+
+/* ===== Feature 7: Loading shimmer ===== */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer-line {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f0ebe0 25%, #e8dfd0 50%, #f0ebe0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+html.dark .shimmer-line {
+  background: linear-gradient(90deg, #453018 25%, #5a3e22 50%, #453018 75%);
+  background-size: 800px 100%;
+}
+
+/* ===== Feature 1: Live sensor flash ===== */
+@keyframes sensor-flash {
+  0%   { background-color: inherit; }
+  30%  { background-color: rgba(59, 158, 255, 0.08); }
+  100% { background-color: inherit; }
+}
+.sensor-flash {
+  animation: sensor-flash 0.5s ease-out;
+}
+
+/* ===== Feature 2: Notification pulse ===== */
+@keyframes bell-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+.bell-pulse {
+  animation: bell-pulse 2s ease-in-out infinite;
 }
 
 @layer components {
@@ -66,6 +139,205 @@ html.dark body {
   .label {
     @apply text-xs font-medium uppercase tracking-wide text-sand-500 dark:text-sand-400;
   }
+}
+
+/* ===== PAGE TRANSITIONS ===== */
+.page-enter {
+  animation: pageFadeIn 0.35s ease-out both;
+}
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== LOADING SPINNER ===== */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(245, 158, 11, 0.2);
+  border-top-color: #f59e0b;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.spinner--sm { width: 14px; height: 14px; border-width: 2px; }
+.spinner--lg { width: 28px; height: 28px; border-width: 3px; }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== GRADIENT BORDER ANIMATION ===== */
+@keyframes borderGlow {
+  0%, 100% { border-color: rgba(245, 158, 11, 0.3); }
+  50%      { border-color: rgba(245, 158, 11, 0.7); }
+}
+.hero-gradient-border {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* ===== AI THINKING DOTS ===== */
+.ai-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  vertical-align: middle;
+}
+.ai-thinking span {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #3B9EFF;
+  animation: aiBounce 1.3s ease-in-out infinite;
+}
+.ai-thinking span:nth-child(2) { animation-delay: 0.15s; }
+.ai-thinking span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes aiBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%           { transform: translateY(-5px); opacity: 1; }
+}
+
+/* ===== FARM MAP SHED PULSE ===== */
+.shed-dot-pulse {
+  position: relative;
+}
+.shed-dot-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  animation: shedPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+.shed-dot-pulse--high::after  { background: rgba(239, 68, 68, 0.35); }
+.shed-dot-pulse--moderate::after { background: rgba(245, 158, 11, 0.3); }
+@keyframes shedPulse {
+  0%, 100% { transform: scale(1); opacity: 0; }
+  50%      { transform: scale(2.2); opacity: 1; }
+}
+
+/* Shed marker pulse on farm map */
+.shed-pulse--high {
+  animation: shedMarkerPulse 2s ease-in-out infinite;
+}
+.shed-pulse--moderate {
+  animation: shedMarkerPulse 2.5s ease-in-out infinite;
+}
+@keyframes shedMarkerPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50%      { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); }
+}
+.shed-pulse--moderate {
+  animation-name: shedMarkerPulseMod;
+}
+@keyframes shedMarkerPulseMod {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  50%      { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2); }
+}
+
+/* FarmMap marker hover */
+.farm-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.farm-marker:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  z-index: 10;
+}
+.farm-marker__tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: #2d241b;
+  color: #f5efe0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.farm-marker__tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #2d241b;
+}
+.farm-marker:hover .farm-marker__tooltip {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+html.dark .farm-marker__tooltip {
+  background: #fdf9f3;
+  color: #2d241b;
+}
+html.dark .farm-marker__tooltip::after {
+  border-top-color: #fdf9f3;
+}
+
+/* ===== BACKGROUND PATTERN ===== */
+.app-bg-pattern {
+  background-color: #fdf9f3;
+  background-image:
+    radial-gradient(ellipse at 15% 10%, rgba(245, 158, 11, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 90%, rgba(34, 197, 94, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(59, 158, 255, 0.03) 0%, transparent 60%);
+}
+html.dark .app-bg-pattern {
+  background-color: #1a110b;
+  background-image:
+    radial-gradient(ellipse at 15% 10%, rgba(245, 158, 11, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 90%, rgba(34, 197, 94, 0.03) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(59, 158, 255, 0.02) 0%, transparent 60%);
+}
+
+/* ===== FOCUS RING (accessibility) ===== */
+*:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+html.dark *:focus-visible {
+  outline-color: #fbbf24;
+}
+
+/* ===== CARD HOVER (utility override) ===== */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px -6px rgb(180 130 60 / 0.2);
+}
+html.dark .card-hover:hover {
+  box-shadow: 0 8px 30px -6px rgb(0 0 0 / 0.4);
+}
+
+/* ===== TOPBAR LOADING ===== */
+.topbar-loading-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #f59e0b, #22c55e, #3B9EFF, #f59e0b);
+  background-size: 300% 100%;
+  animation: loadingBar 1.5s ease-in-out infinite;
+  border-radius: 0 1px 1px 0;
+}
+@keyframes loadingBar {
+  0%   { background-position: 100% 0; width: 30%; }
+  50%  { background-position: 0% 0; width: 70%; }
+  100% { background-position: 100% 0; width: 30%; }
 }
 
 /* range slider */

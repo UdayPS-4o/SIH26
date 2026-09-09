@@ -1,5 +1,5 @@
 import { Thermometer, Droplets, Bed, SprayCan, GlassWater, Home } from 'lucide-react'
-import { PageHeader, Card, SectionTitle, AiDisclaimer, Pill } from '../components/common/ui.jsx'
+import { PageHeader, Card, SectionTitle, AiDisclaimer, AiThinkingDots, Pill } from '../components/common/ui.jsx'
 import { TrendChart } from '../components/common/charts.jsx'
 import { ENV_NOW, ENV_TREND } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
@@ -35,24 +35,24 @@ export default function Environment() {
     <div>
       <PageHeader title={t('env.title')} subtitle={t('env.sub')} />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
         {cards.map((c) => {
           const Icon = c.icon
           return (
             <div key={c.label} className="card-p">
               <div className="flex items-center justify-between">
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                  <Icon size={16} />
+                <span className="grid h-8 w-8 md:h-9 md:w-9 place-items-center rounded-lg bg-sand-50 text-sand-500 dark:bg-barn-800 dark:text-sand-400">
+                  <Icon size={15} />
                 </span>
                 <Pill tone={c.tone}>{c.value}</Pill>
               </div>
-              <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{c.label}</p>
+              <p className="mt-2 md:mt-3 text-sm text-sand-500 dark:text-sand-400">{c.label}</p>
             </div>
           )
         })}
       </div>
 
-      <Card className="mt-6 p-5">
+      <Card className="mt-4 md:mt-6 p-4 md:p-5">
         <SectionTitle>{t('env.trend')}</SectionTitle>
         <TrendChart
           data={ENV_TREND}
@@ -63,23 +63,23 @@ export default function Environment() {
         />
       </Card>
 
-      <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
+      <div className="mt-4 md:mt-6 rounded-card border border-red-200 bg-red-50 p-3 md:p-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">
         {t('env.insight')}
       </div>
 
-      <div className="mt-6">
-        <SectionTitle>Recommendations</SectionTitle>
+      <div className="mt-4 md:mt-6">
+        <SectionTitle>{t('env.recs') || 'AI Recommendations'} <AiThinkingDots /></SectionTitle>
         <ul className="space-y-2">
           {recs.map((r, i) => (
-            <li key={i} className="flex gap-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+            <li key={i} className="rounded-card border border-sand-200 bg-white p-3 md:p-4 text-sm text-sand-600 dark:border-barn-800 dark:bg-barn-900 dark:text-sand-400">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-forest-50 text-xs font-semibold text-forest-700 dark:bg-forest-900/40 dark:text-forest-400">
                 {i + 1}
               </span>
               {r}
             </li>
           ))}
         </ul>
-        <AiDisclaimer className="mt-3" />
+        <AiDisclaimer className="mt-2 md:mt-3" />
       </div>
     </div>
   )

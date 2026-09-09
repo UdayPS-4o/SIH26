@@ -12,7 +12,7 @@ import {
   Clock,
   ShieldCheck,
 } from 'lucide-react'
-import { PageHeader, Card, SectionTitle, Pill, EmptyState } from '../components/common/ui.jsx'
+import { PageHeader, Card, SectionTitle, Pill, EmptyState, AiThinkingDots } from '../components/common/ui.jsx'
 import AnomalyPanel from '../components/common/AnomalyPanel.jsx'
 import SensorHealth from '../components/common/SensorHealth.jsx'
 import DetectionBadge from '../components/common/DetectionBadge.jsx'
@@ -116,11 +116,13 @@ export default function Detection() {
       {/* Tab panels */}
       {activeTab === 'anomalies' && (
         <div className="space-y-6">
-          <Card className="p-5">
+          <Card className="p-5 relative overflow-hidden">
+            {/* AI Scanning animation overlay */}
+            <div className="scan-line" />
             <SectionTitle
               right={
-                <span className="text-xs text-sand-400">
-                  Showing {anomalyFeed.length} animals with active anomalies
+                <span className="flex items-center gap-1.5 text-[10px] font-medium text-ai-dark dark:text-ai">
+                  <AiThinkingDots /> AI Analyzing
                 </span>
               }
             >

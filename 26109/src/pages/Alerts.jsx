@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { PageHeader, EmptyState } from '../components/common/ui.jsx'
+import { PageHeader, EmptyState, AiThinkingDots } from '../components/common/ui.jsx'
 import { AlertCard } from '../components/shared.jsx'
 import { ALERTS } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
@@ -30,9 +30,13 @@ export default function Alerts() {
 
   return (
     <div>
-      <PageHeader title={t('alerts.title')} subtitle={t('alerts.sub')} />
+      <PageHeader title={t('alerts.title')} subtitle={
+        <span className="inline-flex items-center gap-1.5">
+          {t('alerts.sub')} <AiThinkingDots />
+        </span>
+      } />
 
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-4 md:mb-5 flex flex-wrap gap-2">
         {tabs.map((tb) => (
           <button
             key={tb.key}
@@ -48,7 +52,7 @@ export default function Alerts() {
       {list.length === 0 ? (
         <EmptyState title="No alerts in this view" hint="You're all caught up." />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-3">
           {list.map((a) => (
             <AlertCard key={a.id} alert={a} onReview={(id) => setReviewed((r) => [...r, id])} />
           ))}

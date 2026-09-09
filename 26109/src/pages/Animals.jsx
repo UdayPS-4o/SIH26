@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
-import { PageHeader } from '../components/common/ui.jsx'
-import { AnimalTable } from '../components/shared.jsx'
-import { EmptyState } from '../components/common/ui.jsx'
+import { PageHeader, EmptyState, AiThinkingDots } from '../components/common/ui.jsx'
 import { ANIMALS } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
 
@@ -45,10 +43,10 @@ export default function Animals() {
     <div>
       <PageHeader title={t('animals.title')} subtitle={`${ANIMALS.length} animals across 4 sheds`} />
 
-      <div className="card-p mb-5">
+      <div className="card-p mb-4 md:mb-5">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <div className="relative lg:col-span-1">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-sand-400 dark:text-sand-500" />
             <input
               className="input pl-9"
               placeholder={t('animals.searchId')}
@@ -83,8 +81,12 @@ export default function Animals() {
         <EmptyState title={t('common.noData')} hint="Try adjusting your filters." />
       ) : (
         <>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-sand-500 dark:text-sand-400">{t('animals.title')}</span>
+            <AiThinkingDots />
+          </div>
           <AnimalTable animals={pageItems} />
-          <div className="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+          <div className="mt-3 md:mt-4 flex items-center justify-between text-sm text-sand-500 dark:text-sand-400">
             <span>
               {t('animals.showing')} {(current - 1) * PAGE_SIZE + 1}–{Math.min(current * PAGE_SIZE, filtered.length)} {t('animals.of')} {filtered.length}
             </span>
@@ -101,7 +103,7 @@ export default function Animals() {
                   key={i}
                   onClick={() => setPage(i + 1)}
                   className={`h-8 w-8 rounded-lg text-sm font-medium ${
-                    current === i + 1 ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                    current === i + 1 ? 'bg-forest-600 text-white' : 'text-sand-500 hover:bg-sand-100 dark:text-sand-400 dark:hover:bg-barn-800'
                   }`}
                 >
                   {i + 1}

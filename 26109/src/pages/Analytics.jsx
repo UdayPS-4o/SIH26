@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { PageHeader, Card, SectionTitle, AiDisclaimer } from '../components/common/ui.jsx'
+import { useMemo, useState, useEffect } from 'react'
+import { PageHeader, Card, SectionTitle, AiDisclaimer, AiThinkingDots } from '../components/common/ui.jsx'
 import CorrelationBadge from '../components/common/CorrelationBadge'
 import PatternDetector from '../components/common/PatternDetector'
 import SeasonalRisk from '../components/common/SeasonalRisk'
@@ -14,9 +14,50 @@ import {
 import { SHEDS, ANIMALS, animalTimeSeries } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
 import { Network, Eye, Activity, TrendingUp } from 'lucide-react'
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
+} from 'recharts'
+
+/* Fabricated: 7-day risk forecast based on current trajectory */
+const FORECAST = [
+  { date: 'Today',   actual: 38, predicted: null },
+  { date: '+1 d',    actual: null, predicted: 40 },
+  { date: '+2 d',    actual: null, predicted: 43 },
+  { date: '+3 d',    actual: null, predicted: 47 },
+  { date: '+4 d',    actual: null, predicted: 51 },
+  { date: '+5 d',    actual: null, predicted: 48 },
+  { date: '+6 d',    actual: null, predicted: 44 },
+  { date: '+7 d',    actual: null, predicted: 39 },
+]
+
+/* Feature 7: Loading Shimmer */
+function AnalyticsShimmer() {
+  return (
+    <div className="animate-pulse-soft space-y-4">
+      <div className="shimmer-line w-48 h-8" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {[0,1,2,3].map(i => <div key={i} className="shimmer-line w-full h-24 rounded-xl" />)}
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="shimmer-line w-full h-64 rounded-xl lg:col-span-2" />
+        <div className="shimmer-line w-full h-64 rounded-xl" />
+      </div>
+      <div className="shimmer-line w-full h-80 rounded-xl" />
+    </div>
+  )
+}
 
 export default function Analytics() {
   const { t } = useI18n()
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1800)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (loading) return <AnalyticsShimmer />
+
   const correlations = useMemo(() => analyzeCorrelations(), [])
   const herdPatterns = useMemo(() => getHerdPatterns(ANIMALS), [])
   const seasonal = useMemo(() => getSeasonalRisk(new Date().getMonth() + 1), [])
@@ -164,6 +205,31 @@ export default function Analytics() {
         </Card>
       </div>
 
+      {/* Fabricated: 7-Day Risk Forecast */}
+      <div className="mt-6">
+        <Card className="p-5">
+          <SectionTitle right={<span className="text-[10px] font-medium text-ai dark:text-ai"><span className="ai-thinking"><span/><span/><span/></span> AI Forecast</span>}>
+            7-Day Risk Forecast
+          </SectionTitle>
+          <p className="mb-3 text-xs text-sand-400">Projected herd risk trajectory based on current trend, seasonal factors, and Shed C hotspot pattern</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={FORECAST} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
+              <CartesianGrid stroke="#e8dfd0" vertical={false} />
+              <XAxis dataKey="date" tick={axisStyle} tickLine={false} axisLine={{ stroke: '#e8dfd0' }} />
+              <YAxis tick={axisStyle} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
+              <Tooltip contentStyle={tooltipStyle} />
+              <ReferenceLine y={45} stroke="#ef4444" strokeDasharray="4 4" label={{ value: 'Alert threshold', fontSize: 9, fill: '#ef4444', position: 'right' }} />
+              <Line type="monotone" dataKey="actual" name="Actual" stroke="#3B9EFF" strokeWidth={2} dot={{ r: 4, fill: '#3B9EFF' }} connectNulls={false} />
+              <Line type="monotone" dataKey="predicted" name="AI Predicted" stroke="#f59e0b" strokeWidth={2} strokeDasharray="6 3" dot={{ r: 3, fill: '#f59e0b' }} connectNulls={false} />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300">
+            <TrendingUp size={14} className="mt-0.5 shrink-0" />
+            Herd risk projected to peak at ~51% in 4 days. Shed C interventions recommended before day 3.
+          </div>
+        </Card>
+      </div>
+
       {/* All Detected Patterns by Animal */}
       <div className="mt-6">
         <SectionTitle>{t('analytics.patterns')}</SectionTitle>
@@ -196,7 +262,7 @@ export default function Analytics() {
           <div className="bg-gradient-to-br from-ai to-ai-dark px-5 py-4 text-white">
             <div className="flex items-center gap-2">
               <Eye size={18} />
-              <span className="text-sm font-semibold">{t('analytics.insight')}</span>
+              <span className="text-sm font-semibold">{t('analytics.insight')} <AiThinkingDots /></span>
             </div>
           </div>
           <div className="p-5 space-y-4">
