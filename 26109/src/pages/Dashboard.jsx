@@ -4,7 +4,6 @@ import {
   HeartPulse,
   AlertTriangle,
   ShieldAlert,
-  ShieldCheck,
   Bell,
   Droplets,
   Lightbulb,
@@ -41,189 +40,142 @@ export default function Dashboard() {
   const { t } = useI18n()
   const { theme } = useTheme()
   const dark = theme === 'dark'
-  const axisStyle = { fontSize: 11, fill: dark ? '#9099a8' : '#9ca3af' }
-  const gridColor = dark ? '#2a2f3a' : '#eef0f2'
+  const axisStyle = { fontSize: 10, fill: dark ? '#9099a8' : '#9ca3af' }
+  const gridColor = dark ? '#3a3028' : '#e8dfd0'
   const tooltipStyle = {
-    borderRadius: 10,
-    border: dark ? '1px solid #374151' : '1px solid #e5e7eb',
-    fontSize: 12,
-    backgroundColor: dark ? '#111827' : '#fff',
-    color: dark ? '#e5e7eb' : '#111827',
+    borderRadius: 8,
+    border: dark ? '1px solid #453018' : '1px solid #e8dfd0',
+    fontSize: 11,
+    backgroundColor: dark ? '#2d241b' : '#fffdf5',
+    color: dark ? '#f5efe0' : '#2d241b',
   }
   const urgent = ALERTS.filter((a) => a.status === 'open').slice(0, 3)
   const recent = [...ANIMALS].sort((a, b) => b.riskScore - a.riskScore).slice(0, 5)
   const pct = (n) => Math.round((n / HERD_STATS.totalAnimals) * 100)
 
   return (
-    <div>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
-        {/* ---------------- MAIN COLUMN ---------------- */}
-        <div className="space-y-6">
-          {/* Hero */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
-            <img src={heroCow} alt="" className="absolute inset-y-0 right-0 h-full w-2/3 object-cover object-left opacity-50" />
-            <div
-              className="absolute inset-0 bg-white dark:bg-gray-900"
-              style={{
-                maskImage: 'linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 42%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.15) 64%, transparent 75%)',
-                WebkitMaskImage: 'linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 42%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.15) 64%, transparent 75%)',
-              }}
-            />
-            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex-1">
-                <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {t('dash.greeting')} <Hand size={22} className="text-amber-500" />
-                </h1>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t('dash.sub')}</p>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white/90 backdrop-blur p-3.5 shadow-sm sm:max-w-[230px] dark:border-gray-700 dark:bg-gray-900/90">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
-                  <ShieldCheck size={17} />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('dash.hero.ew.title')}</p>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{t('dash.hero.ew.sub')}</p>
-                </div>
-              </div>
-            </div>
+    <div className="space-y-3 md:space-y-6">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-xl border border-sand-200 bg-gradient-to-r from-white via-honey-50/30 to-sand-50 p-4 dark:border-barn-800 dark:from-barn-900 dark:via-barn-900 dark:to-barn-950 md:p-6">
+        <img src={heroCow} alt="" className="absolute inset-y-0 right-0 h-full w-2/3 object-cover object-left opacity-40 md:opacity-50" />
+        <div
+          className="absolute inset-0 bg-white dark:bg-barn-900"
+          style={{
+            maskImage: 'linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 42%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.15) 64%, transparent 75%)',
+            WebkitMaskImage: 'linear-gradient(to right, black 0%, black 30%, rgba(0,0,0,0.85) 42%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.15) 64%, transparent 75%)',
+          }}
+        />
+        <div className="relative z-10 flex flex-col gap-2.5 sm:flex-row sm:items-center md:gap-4">
+          <div className="flex-1">
+            <h1 className="flex items-center gap-2 text-xl font-bold text-sand-900 dark:text-sand-100 md:text-2xl">
+              {t('dash.greeting')} <Hand size={20} className="text-honey-500 md:hidden" />
+            </h1>
+            <p className="mt-0.5 text-xs text-sand-500 dark:text-sand-400 md:text-sm">{t('dash.sub')}</p>
           </div>
-
-          {/* KPI cards */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <KpiCard
-              icon={Beef}
-              tone="info"
-              label={t('dash.kpi.total')}
-              value={HERD_STATS.totalAnimals}
-              trend={1}
-              trendLabel={`↑ ${t('dash.kpi.total.cap')}`}
-            />
-            <KpiCard
-              icon={HeartPulse}
-              tone="good"
-              label={t('dash.kpi.healthy')}
-              value={HERD_STATS.healthy}
-              caption={`${pct(HERD_STATS.healthy)}% ${t('dash.kpi.ofTotal')}`}
-              progress={pct(HERD_STATS.healthy)}
-            />
-            <KpiCard
-              icon={AlertTriangle}
-              tone="warn"
-              label={t('dash.kpi.atRisk')}
-              value={HERD_STATS.atRisk}
-              caption={`${pct(HERD_STATS.atRisk)}% ${t('dash.kpi.ofTotal')}`}
-              progress={pct(HERD_STATS.atRisk) * 3}
-            />
-            <KpiCard
-              icon={ShieldAlert}
-              tone="bad"
-              label={t('dash.kpi.highRisk')}
-              value={HERD_STATS.highRisk}
-              caption={`${pct(HERD_STATS.highRisk)}% ${t('dash.kpi.ofTotal')}`}
-              progress={pct(HERD_STATS.highRisk) * 3}
-            />
-          </div>
-
-          {/* Distribution + Trend */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="p-5">
-              <SectionTitle>{t('dash.riskDist')}</SectionTitle>
-              <RiskDistribution data={RISK_DISTRIBUTION} centerLabel={`${HERD_STATS.totalAnimals}`} centerSub={t('nav.animals')} />
-            </Card>
-
-            <Card className="p-5">
-              <SectionTitle>{t('dash.trend')}</SectionTitle>
-              <ResponsiveContainer width="100%" height={230}>
-                <LineChart data={DASH_TREND} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                  <CartesianGrid stroke={gridColor} vertical={false} />
-                  <XAxis dataKey="day" tick={axisStyle} tickLine={false} axisLine={{ stroke: gridColor }} />
-                  <YAxis tick={axisStyle} tickLine={false} axisLine={false} unit="%" domain={[0, 100]} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Line type="monotone" dataKey="herdRisk" name={t('dash.trend.herdRisk')} stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="highRiskAnimals" name={t('dash.trend.highRiskAnimals')} stroke="#ef4444" strokeWidth={2.5} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
-
-          {/* Bottom row: shed / recent / map */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="p-5">
-              <SectionTitle right={<Link to="/herd" className="text-xs font-medium text-brand-700 hover:underline">{t('dash.viewDetails')} →</Link>}>
-                {t('dash.riskByShed')}
-              </SectionTitle>
-              <div className="space-y-4">
-                {SHEDS.map((s) => (
-                  <ShedRiskBar key={s.id} shed={s} />
-                ))}
-              </div>
-            </Card>
-
-            <Card className="p-5">
-              <SectionTitle right={<Link to="/animals" className="text-xs font-medium text-brand-700 hover:underline">{t('dash.viewAll')} →</Link>}>
-                {t('dash.recentHighRisk')}
-              </SectionTitle>
-              <RecentHighRiskTable animals={recent} />
-            </Card>
-
-            <Card className="p-5">
-              <SectionTitle>{t('dash.farmMap')}</SectionTitle>
-              <FarmMap />
-            </Card>
-          </div>
-
-          {/* Footer */}
-          <div className="flex flex-col justify-between gap-1 border-t border-gray-200 pt-4 text-xs text-gray-400 dark:border-gray-800 sm:flex-row">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-brand-500" />
-              {t('dash.systemOnline')} &nbsp;|&nbsp; {t('dash.lastUpdated')}
+          <div className="flex items-start gap-2.5 rounded-xl border border-honey-200 bg-white/90 backdrop-blur p-2.5 shadow-sm sm:max-w-[200px] md:max-w-[230px] dark:border-barn-800 dark:bg-barn-950/90">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-honey-100 text-honey-700 dark:bg-honey-900/40 dark:text-honey-400">
+              <ShieldCheck size={16} />
             </span>
-            <span>{t('dash.footer')}</span>
-          </div>
-        </div>
-
-        {/* ---------------- RIGHT RAIL ---------------- */}
-        <div className="flex flex-col gap-6">
-          <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-red-100 bg-red-50 px-4 py-3 dark:border-red-900/40 dark:bg-red-950/30">
-              <span className="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-400">
-                <Bell size={16} /> {t('dash.urgentAlerts')}
-                <span className="grid h-5 min-w-[20px] place-items-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
-                  {urgent.length}
-                </span>
-              </span>
-              <Link to="/alerts" className="text-xs font-medium text-red-600 hover:underline dark:text-red-400">{t('dash.viewAll')} →</Link>
-            </div>
-            <div className="px-4 py-2">
-              {urgent.map((a) => (
-                <UrgentAlertItem key={a.id} alert={a} />
-              ))}
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <SectionTitle>{t('dash.quickActions')}</SectionTitle>
-            <div className="space-y-2.5">
-              <QuickAction icon={Beef} label={t('dash.qa.animals')} to="/animals" />
-              <QuickAction icon={Droplets} label={t('dash.qa.milk')} to="/milk-quality" />
-              <QuickAction icon={Lightbulb} label={t('dash.qa.recs')} to="/animals/BUF-042" />
-              <QuickAction icon={FlaskConical} label={t('dash.qa.sim')} to="/simulator" />
-            </div>
-          </Card>
-
-          <div className="flex flex-1 flex-col justify-between rounded-xl border border-brand-200 bg-brand-50 p-5 dark:border-brand-900/40 dark:bg-brand-950/20">
             <div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-brand-800 dark:text-brand-400">
-                <Sparkles size={16} /> {t('dash.aiInsight')}
-              </div>
-              <p className="mt-2 text-sm leading-relaxed text-brand-800/90 dark:text-brand-300/90">{t('dash.aiInsight.body')}</p>
+              <p className="text-xs font-semibold text-sand-900 dark:text-sand-100 md:text-sm">{t('dash.hero.ew.title')}</p>
+              <p className="mt-0.5 text-[11px] text-sand-500 dark:text-sand-400 md:text-xs">{t('dash.hero.ew.sub')}</p>
             </div>
-            <Link to="/herd" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline dark:text-brand-400">
-              {t('common.viewShed')} <ArrowRight size={14} />
-            </Link>
           </div>
         </div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
+        <KpiCard
+          icon={Beef}
+          tone="info"
+          label={t('dash.kpi.total')}
+          value={HERD_STATS.totalAnimals}
+          trend={1}
+          trendLabel={`↑ ${t('dash.kpi.total.cap')}`}
+        />
+        <KpiCard
+          icon={HeartPulse}
+          tone="good"
+          label={t('dash.kpi.healthy')}
+          value={HERD_STATS.healthy}
+          caption={`${pct(HERD_STATS.healthy)}% ${t('dash.kpi.ofTotal')}`}
+          progress={pct(HERD_STATS.healthy)}
+        />
+        <KpiCard
+          icon={AlertTriangle}
+          tone="warn"
+          label={t('dash.kpi.atRisk')}
+          value={HERD_STATS.atRisk}
+          caption={`${pct(HERD_STATS.atRisk)}% ${t('dash.kpi.ofTotal')}`}
+          progress={pct(HERD_STATS.atRisk) * 3}
+        />
+        <KpiCard
+          icon={ShieldAlert}
+          tone="bad"
+          label={t('dash.kpi.highRisk')}
+          value={HERD_STATS.highRisk}
+          caption={`${pct(HERD_STATS.highRisk)}% ${t('dash.kpi.ofTotal')}`}
+          progress={pct(HERD_STATS.highRisk) * 3}
+        />
+      </div>
+
+      {/* Distribution + Trend */}
+      <div className="grid gap-3 md:gap-6 lg:grid-cols-2">
+        <Card className="p-3 md:p-5">
+          <SectionTitle>{t('dash.riskDist')}</SectionTitle>
+          <RiskDistribution data={RISK_DISTRIBUTION} centerLabel={`${HERD_STATS.totalAnimals}`} centerSub={t('nav.animals')} />
+        </Card>
+
+        <Card className="p-3 md:p-5">
+          <SectionTitle>{t('dash.trend')}</SectionTitle>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={DASH_TREND} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+              <CartesianGrid stroke={gridColor} vertical={false} />
+              <XAxis dataKey="day" tick={axisStyle} tickLine={false} axisLine={{ stroke: gridColor }} />
+              <YAxis tick={axisStyle} tickLine={false} axisLine={false} unit="%" domain={[0, 100]} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Line type="monotone" dataKey="herdRisk" name={t('dash.trend.herdRisk')} stroke="#3B9EFF" strokeWidth={2} dot={{ r: 2.5 }} />
+              <Line type="monotone" dataKey="highRiskAnimals" name={t('dash.trend.highRiskAnimals')} stroke="#ef4444" strokeWidth={2} dot={{ r: 2.5 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+
+      {/* Bottom row: shed / recent / map */}
+      <div className="grid gap-3 md:gap-6 lg:grid-cols-3">
+        <Card className="p-3 md:p-5">
+          <SectionTitle right={<Link to="/herd" className="text-xs font-medium text-honey-600 hover:underline">{t('dash.viewDetails')} →</Link>}>
+            {t('dash.riskByShed')}
+          </SectionTitle>
+          <div className="space-y-2.5">
+            {SHEDS.map((s) => (
+              <ShedRiskBar key={s.id} shed={s} />
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-3 md:p-5">
+          <SectionTitle right={<Link to="/animals" className="text-xs font-medium text-honey-600 hover:underline">{t('dash.viewAll')} →</Link>}>
+            {t('dash.recentHighRisk')}
+          </SectionTitle>
+          <RecentHighRiskTable animals={recent} />
+        </Card>
+
+        <Card className="p-3 md:p-5">
+          <SectionTitle>{t('dash.farmMap')}</SectionTitle>
+          <FarmMap />
+        </Card>
+      </div>
+
+      {/* Footer */}
+      <div className="flex flex-col justify-between gap-0.5 border-t border-sand-200 pt-2.5 text-[11px] text-sand-400 dark:border-barn-800 sm:flex-row">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-forest-500 animate-pulse-soft" />
+          {t('dash.systemOnline')} &nbsp;|&nbsp; {t('dash.lastUpdated')}
+        </span>
+        <span>{t('dash.footer')}</span>
       </div>
     </div>
   )
