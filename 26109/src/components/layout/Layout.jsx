@@ -4,6 +4,8 @@ import Sidebar from './Sidebar.jsx'
 import Topbar from './Topbar.jsx'
 import BottomNav from './BottomNav.jsx'
 import AiChatAssistant from '../common/AiChatAssistant.jsx'
+import OnboardingTour from '../common/OnboardingTour.jsx'
+import ThemeCustomizer from '../common/ThemeCustomizer.jsx'
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -21,8 +23,10 @@ export default function Layout() {
           </div>
         </main>
         <BottomNav />
+        <OnboardingTour />
         <AiChatAssistant />
       </div>
+      <ThemeCustomizer />
     </div>
   )
 }
