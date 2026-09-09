@@ -11,6 +11,9 @@ import {
   FileBarChart2,
   Settings,
   X,
+  Sparkles,
+  Brain,
+  ScanSearch,
 } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
 import { ALERTS } from '../../data/mockData'
@@ -28,6 +31,8 @@ const items = [
   { to: '/environment', icon: CloudSun, label: 'nav.environment' },
   { to: '/worker-hygiene', icon: ClipboardCheck, label: 'nav.workerHygiene' },
   { to: '/simulator', icon: FlaskConical, label: 'nav.simulator' },
+  { to: '/analytics', icon: FileBarChart2, label: 'nav.analytics' },
+  { to: '/detection', icon: ScanSearch, label: 'nav.detection' },
   { to: '/reports', icon: FileBarChart2, label: 'nav.reports' },
   { to: '/settings', icon: Settings, label: 'nav.settings' },
 ]
@@ -38,24 +43,33 @@ export default function Sidebar({ mobileOpen, onClose }) {
     <>
       {mobileOpen && <div className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-navy-800 to-navy-950 text-slate-300 transition-transform dark:from-navy-950 dark:to-black lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-barn-900 via-barn-900 to-barn-950 text-sand-300 transition-transform dark:from-barn-950 dark:to-black lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand */}
-        <div className="flex items-center gap-3 px-5 pb-4 pt-5">
-          <img src={logoMark} alt="Gaurogya Setu" className="h-11 w-11 shrink-0" />
+        <div className="relative flex items-center gap-3 px-5 pb-4 pt-5">
+          <div className="relative">
+            <img src={logoMark} alt="Gaurogya Setu" className="h-11 w-11 shrink-0 relative z-10" />
+            <div className="absolute inset-0 h-11 w-11 rounded-full bg-honey-400/30 blur-md" />
+          </div>
           <div className="leading-tight">
             <div className="text-lg font-bold text-white">
               Gaurogya <span className="text-ai">Setu</span>
             </div>
-            <div className="text-[10px] tracking-wide text-slate-400">
-              Healthy Animals&nbsp;|&nbsp;Safe Milk&nbsp;|&nbsp;Better Future
+            <div className="text-[10px] tracking-wide text-sand-400">
+              AI-Powered Herd Health Intelligence
             </div>
           </div>
-          <button className="ml-auto text-slate-400 lg:hidden" onClick={onClose} aria-label="Close menu">
+          <button className="ml-auto text-sand-400 lg:hidden" onClick={onClose} aria-label="Close menu">
             <X size={18} />
           </button>
+        </div>
+
+        {/* AI Badge */}
+        <div className="mx-4 mb-3 rounded-lg border border-honey-400/30 bg-honey-400/10 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-honey-300">100% AI Powered</p>
+          <p className="mt-0.5 text-[10px] text-sand-400 leading-relaxed">Prediction · Prevention · Analysis · Detection · Suggestions</p>
         </div>
 
         {/* Nav */}
@@ -68,16 +82,16 @@ export default function Sidebar({ mobileOpen, onClose }) {
                 to={item.to}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                  `group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
                     isActive
-                      ? 'bg-[#1c6fd0] text-white shadow-lg shadow-[#1c6fd0]/30'
-                      : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                      ? 'bg-gradient-to-r from-honey-500 to-honey-600 text-white shadow-lg shadow-honey-500/30'
+                      : 'text-sand-300 hover:bg-white/10 hover:text-white'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} />
+                    <Icon size={18} className={isActive ? 'text-white' : 'text-sand-400 group-hover:text-honey-400'} />
                     <span className="flex-1">{t(item.label)}</span>
                     {item.badge ? (
                       <span className="grid h-5 min-w-[20px] place-items-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
@@ -91,17 +105,12 @@ export default function Sidebar({ mobileOpen, onClose }) {
           })}
         </nav>
 
-        {/* Footer art */}
-        <div className="relative mt-2">
-          <p className="px-5 pb-2 font-script text-2xl leading-none text-emerald-300/90">
-            Healthy Herd
-            <br />
-            Profitable Farm
-          </p>
-          <div
-            className="h-28 w-full bg-cover bg-bottom"
-            style={{ backgroundImage: `url(${pasture})` }}
-          />
+        {/* Footer */}
+        <div className="px-5 pb-4 pt-2">
+          <div className="border-t border-sand-700/50 pt-3">
+            <p className="text-[10px] text-sand-500">Smart Dairy Intelligence</p>
+            <p className="text-[10px] text-honey-500 mt-0.5">Empowering Farmers with AI</p>
+          </div>
         </div>
       </aside>
     </>

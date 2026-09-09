@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { RotateCcw, Sparkles } from 'lucide-react'
 import { PageHeader, Card, SectionTitle, RiskGauge, Toggle } from '../components/common/ui.jsx'
 import { RiskFactors } from '../components/shared.jsx'
+import SuggestionCard from '../components/common/SuggestionCard.jsx'
+import VetEscalation from '../components/common/VetEscalation.jsx'
 import { predictMastitisRisk } from '../services/predictionService'
 import { useI18n } from '../i18n/i18n.jsx'
 
@@ -104,6 +106,24 @@ export default function Simulator() {
               <p className="text-sm text-gray-400">No dominant risk factors at these settings.</p>
             )}
           </Card>
+
+          {/* Detailed Suggestions */}
+          <Card className="p-5 lg:col-span-3">
+            <SectionTitle>{t('suggest.title')}</SectionTitle>
+            <p className="text-xs text-gray-400 mb-4">{t('suggest.sub')}</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {result.recommendations.map((r, i) => (
+                <SuggestionCard key={r.title} rec={r} index={i} />
+              ))}
+            </div>
+          </Card>
+
+          {/* Vet Escalation for high simulated risk */}
+          {result.riskScore >= 60 && (
+            <Card className="p-5 lg:col-span-3">
+              <VetEscalation animalId="Simulated" riskScore={result.riskScore} />
+            </Card>
+          )}
         </div>
       </div>
 
