@@ -36,11 +36,6 @@ export interface ServiceState {
   operator: string
 }
 
-/** Persist operator to sessionStorage. */
-export function storeOperator(name: string): void {
-  try { sessionStorage.setItem('codeone.operator', name.trim()) } catch { /* storage unavailable */ }
-}
-
 /** Read persisted operator from sessionStorage, falling back to a sensible default. */
 function readStoredOperator(): string {
   try {

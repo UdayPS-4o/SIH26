@@ -55,14 +55,12 @@ export const COPY = {
   // Kept short on purpose: this row carries a pending-count badge, and the longer
   // wording truncated against it at the sidebar's fixed width.
   navDuplicates: { simple: 'Duplicates', technical: 'Matching and review' },
-  navSavings: { simple: 'Savings', technical: 'Savings and analytics' },
+  navSavings: { simple: 'Savings', technical: 'Savings' },
   navRegistry: { simple: 'National code book', technical: 'CNMC registry' },
   navImport: { simple: 'Add new data', technical: 'Ingestion' },
   navNormalize: { simple: 'Name cleaner', technical: 'Normalization' },
   navActivity: { simple: 'Activity history', technical: 'Audit trail' },
   navEngine: { simple: 'Settings', technical: 'Engine configuration' },
-  navIntegration: { simple: 'Integrations', technical: 'SAP / ERP Integration' },
-  navMigration: { simple: 'Migration', technical: 'Legacy code migration' },
 
   /* ----------------------------------------------------------- page titles */
   dashboardTitle: {
@@ -133,27 +131,10 @@ export const COPY = {
     technical: 'Scoring weights, decision thresholds, dictionary rules and connector registry.',
   },
 
-  integrationTitle: { simple: 'SAP / ERP connections', technical: 'SAP / ERP Integration' },
-  integrationLead: {
-    simple: 'Which company computer system is connected and talking to CodeOne.',
-    technical: 'Live connector status for all four participating organisations.',
-  },
-
-  /* ---------------------------------------------------------- migration page */
-  migrationTitle: { simple: 'Legacy code migration', technical: 'Legacy code migration' },
-  migrationLead: {
-    simple: 'Map every company\'s existing material code to the new national standard.',
-    technical: 'Per-CPSE legacy code to CNMC national code mappings. PS capability #7 deliverable.',
-  },
-  migrationSubtitle: {
-    simple: 'Every company code, mapped to its national standard',
-    technical: 'Per-CPSE legacy code to CNMC national code mappings',
-  },
-
   /* ------------------------------------------------------------- verdicts */
   verdictSame: { simple: 'Same item', technical: 'Above accept threshold' },
   verdictReview: { simple: 'Probably the same, needs a check', technical: 'Between thresholds' },
-  verdictDifferent: { simple: 'Not a match', technical: 'Below review threshold' },
+  verdictDifferent: { simple: 'Different items', technical: 'Below review threshold' },
 
   /* --------------------------------------------------------------- actions */
   approve: { simple: 'Yes, same item', technical: 'Approve' },

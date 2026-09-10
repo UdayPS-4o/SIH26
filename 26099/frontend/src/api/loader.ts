@@ -23,7 +23,7 @@ import type { ParsedRow } from './types'
 import { CPSES } from '@/engine/corpus'
 import { buildClusters, buildPairs, normalizeAll } from '@/engine/cluster'
 import { normalize } from '@/engine/normalize'
-import { familyFromLabel, type ActivityEntry, type Cpse, type MaterialFamily, type MaterialRecord } from '@/engine/types'
+import { familyFromLabel, type Cpse, type MaterialFamily, type MaterialRecord } from '@/engine/types'
 import { pushActivity } from './endpoints'
 
 /* --------------------------------------------------------------------- shapes */
@@ -153,7 +153,6 @@ function guessFamily(text: string): MaterialFamily {
 /* ------------------------------------------------------------------ restore */
 
 const REMEMBERED = 'codeone.loaded'
-const ACTIVITY_KEY = 'codeone.activity'
 
 /**
  * The masters that are already in when the console opens.
@@ -172,41 +171,13 @@ const ACTIVITY_KEY = 'codeone.activity'
 export const SEEDED_SOURCES: Cpse['code'][] = ['IOCL', 'NTPC', 'SAIL']
 
 /** Note which masters are in, so a stray reload does not empty the room's screen. */
-export function remember() {
+function remember() {
   try {
     sessionStorage.setItem(REMEMBERED, JSON.stringify(serviceState.loaded))
   } catch {
     // A browser with storage disabled loses the session on reload. Nothing else
     // depends on this, so it is not worth interrupting a load over.
   }
-}
-
-/** Persist the activity log so the audit trail survives page reloads. */
-export function rememberActivity() {
-  try {
-    sessionStorage.setItem(ACTIVITY_KEY, JSON.stringify(serviceState.activity))
-  } catch {
-    /* storage unavailable */
-  }
-}
-
-/**
- * Restore the activity log from sessionStorage.
- *
- * Original entries (from the live run) are kept intact. If nothing was stored,
- * returns an empty array — the caller decides what to show.
- */
-export function restoreActivity(): ActivityEntry[] {
-  try {
-    const stored = sessionStorage.getItem(ACTIVITY_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored) as ActivityEntry[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch {
-    /* storage unavailable or corrupt */
-  }
-  return []
 }
 
 /**
@@ -219,23 +190,9 @@ export function restoreActivity(): ActivityEntry[] {
 export function forgetLoaded() {
   try {
     sessionStorage.setItem(REMEMBERED, JSON.stringify(SEEDED_SOURCES))
-    sessionStorage.removeItem(ACTIVITY_KEY)
   } catch {
     /* see remember() */
   }
-}
-
-/**
- * Resolve an extract CSV path through import.meta.env.BASE_URL so that deep
- * links work regardless of where the app is deployed.
- */
-function resolveExtract(path: string): string {
-  const base = (import.meta.env.BASE_URL as string) ?? '/'
-  // BASE_URL always ends with '/' in Vite. Prepend it to absolute paths.
-  if (path.startsWith('/')) {
-    return base + path.slice(1)
-  }
-  return base + path
 }
 
 /**
@@ -259,52 +216,33 @@ export async function restoreLoaded(): Promise<boolean> {
   }
   if (!Array.isArray(codes) || codes.length === 0) return false
 
-  // Restore the activity log from the previous session, if available.
-  const previousActivity = restoreActivity()
-  if (previousActivity.length > 0) {
-    serviceState.activity = previousActivity
-  }
-
-  let anyLoaded = false
   for (const code of codes) {
     const source = CPSES.find(c => c.code === code)
-    if (!source || serviceState.loaded.includes(code)) {
-      anyLoaded = true
-      continue
-    }
-    let loaded = false
-    // Retry once if the first fetch fails.
-    for (let attempt = 0; attempt < 2 && !loaded; attempt++) {
-      try {
-        const url = resolveExtract(source.extract)
-        const response = await fetch(url, { headers: { Accept: 'text/csv' } })
-        if (!response.ok) continue
-        const preview = parseCsv(await response.text())
-        const rows = applyMapping(preview, preview.mapping, source.code)
-        serviceState.records.push(...rowsToRecords(rows, source.code))
-        serviceState.loaded.push(source.code)
-        if (previousActivity.length === 0) {
-          serviceState.activity.unshift({
-            id: `ACT-${source.code}-restore`,
-            ts: Date.now(),
-            action: 'ingest',
-            actor: 'Harmonization service',
-            cpse: source.code,
-            detail: `Restored ${rows.length} items from ${source.name} after a page reload.`,
-            endpoint: `POST /sources/${source.code}/load`,
-          })
-        }
-        loaded = true
-        anyLoaded = true
-      } catch {
-        // A source that cannot be re-read is simply left out; the loader will offer
-        // it again rather than the page pretending it is present.
-      }
+    if (!source || serviceState.loaded.includes(code)) continue
+    try {
+      const response = await fetch(source.extract, { headers: { Accept: 'text/csv' } })
+      if (!response.ok) continue
+      const preview = parseCsv(await response.text())
+      const rows = applyMapping(preview, preview.mapping, source.code)
+      serviceState.records.push(...rowsToRecords(rows, source.code))
+      serviceState.loaded.push(source.code)
+      serviceState.activity.unshift({
+        id: `ACT-${source.code}-restore`,
+        ts: Date.now(),
+        action: 'ingest',
+        actor: 'Harmonization service',
+        cpse: source.code,
+        detail: `Restored ${rows.length} items from ${source.name} after a page reload.`,
+        endpoint: `POST /sources/${source.code}/load`,
+      })
+    } catch {
+      // A source that cannot be re-read is simply left out; the loader will offer
+      // it again rather than the page pretending it is present.
     }
   }
 
   bumpVersion()
-  return anyLoaded
+  return serviceState.loaded.length > 0
 }
 
 /* ------------------------------------------------------------------- staging */
@@ -663,6 +601,15 @@ export function streamMasterLoad(
     finished = true
     commitTo(incoming.length)
     if (!serviceState.loaded.includes(cpse)) serviceState.loaded.push(cpse)
+    const matched = pairsAfter.filter(
+      pair => incomingIds.has(pair.left.id) || incomingIds.has(pair.right.id),
+    ).filter(p => p.verdict === 'same').length
+    const heldForReview = pairsAfter.filter(
+      pair => incomingIds.has(pair.left.id) || incomingIds.has(pair.right.id),
+    ).filter(p => p.verdict === 'review').length
+    const accepted = pairsAfter.filter(
+      pair => pair.verdict === 'same' && (incomingIds.has(pair.left.id) || incomingIds.has(pair.right.id)),
+    ).length
     serviceState.activity.unshift({
       id: `ACT-${cpse}-${Date.now()}`,
       ts: Date.now(),
@@ -698,8 +645,6 @@ export function streamMasterLoad(
       })
     }
     bumpVersion()
-    remember()
-    rememberActivity()
     handlers.onCommit()
   }
 

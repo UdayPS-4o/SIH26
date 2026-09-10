@@ -9,8 +9,8 @@
 import { NavLink } from 'react-router-dom'
 import {
   ArrowsMerge,
-  ArrowRight,
   ChartBar,
+  CheckCircle,
   ClockCounterClockwise,
   Compass,
   Drop,
@@ -19,7 +19,6 @@ import {
   Lightning,
   MagnifyingGlass,
   Mountains,
-  Plugs,
   Sliders,
   SquaresFour,
   Stack,
@@ -27,14 +26,13 @@ import {
   UploadSimple,
 } from '@phosphor-icons/react'
 import { useCopy } from '@/copy'
-import type { CopyKey } from '@/copy'
-import type { Icon } from '@phosphor-icons/react'
+import { ByMode } from '@/components/Gate'
 import { useViewMode } from '@/store/viewmode'
 import { useService } from '@/store/service'
+import { serviceState } from '@/api/state'
 import { cx } from './ui/tokens'
 import { IconTile, Num } from './ui'
-import type { Cpse } from '@/engine/types'
-import { CPSES } from '@/engine/corpus'
+import { useState, useRef, useEffect } from 'react'
 
 interface NavItem {
   to: string
@@ -45,6 +43,84 @@ interface NavItem {
   badge?: 'pending'
 }
 
+const STEWARD_NAMES = ['Rahul Sharma', 'Priya Menon', 'Amit Verma', 'Sneha Iyer', 'Karthik Rao']
+
+function StewardInput() {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(serviceState.operator)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [confirmed, setConfirmed] = useState(false)
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [editing])
+
+  const save = () => {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== serviceState.operator) {
+      serviceState.operator = trimmed
+      try { sessionStorage.setItem('codeone.operator', trimmed) } catch {}
+    }
+    setEditing(false)
+    setConfirmed(true)
+    setTimeout(() => setConfirmed(false), 2000)
+  }
+
+  const selectName = (name: string) => {
+    setDraft(name)
+    serviceState.operator = name
+    try { sessionStorage.setItem('codeone.operator', name) } catch {}
+    setConfirmed(true)
+    setTimeout(() => setConfirmed(false), 2000)
+  }
+
+  if (!editing) {
+    return (
+      <div className="px-5 pt-3 pb-2">
+        <div className="text-[11px] uppercase tracking-widest text-ink-3 mb-1.5">Steward</div>
+        <button
+          onClick={() => setEditing(true)}
+          className="flex items-center gap-2 w-full rounded-lg border border-rule bg-surface-hover px-3 py-2 text-left text-[13px] text-ink hover:border-accent transition-colors group"
+        >
+          <span className="flex-1 truncate">{serviceState.operator}</span>
+          <span className="text-[10px] text-ink-3 group-hover:text-accent">edit</span>
+        </button>
+        {confirmed && (
+          <div className="mt-1 text-[11px] text-positive">Saved</div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="px-5 pt-3 pb-2">
+      <div className="text-[11px] uppercase tracking-widest text-ink-3 mb-1.5">Steward</div>
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={e => e.key === 'Enter' && save()}
+        className="w-full rounded-lg border border-accent bg-surface px-3 py-2 text-[13px] text-ink outline-none"
+        placeholder="Your name"
+      />
+      <div className="mt-1.5 flex flex-wrap gap-1">
+        {STEWARD_NAMES.map(name => (
+          <button
+            key={name}
+            onClick={() => selectName(name)}
+            className="rounded-md border border-rule px-2 py-[3px] text-[11px] text-ink-2 hover:border-accent hover:text-accent transition-colors"
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 const ITEMS: NavItem[] = [
   { to: '/', key: 'navDashboard', icon: SquaresFour, simple: true },
   { to: '/overview', key: 'navOverview', icon: Compass, simple: true },
@@ -56,8 +132,6 @@ const ITEMS: NavItem[] = [
   { to: '/activity', key: 'navActivity', icon: ClockCounterClockwise, simple: true },
   { to: '/normalize', key: 'navNormalize', icon: TextAa, simple: false },
   { to: '/engine', key: 'navEngine', icon: Sliders, simple: false },
-  { to: '/integration', key: 'navIntegration', icon: Plugs, simple: false },
-  { to: '/migration', key: 'navMigration', icon: ArrowRight, simple: true },
 ]
 
 /**
@@ -132,9 +206,10 @@ export default function Sidebar() {
             </ul>
           </>
         ) : null}
+        <StewardInput />
       </nav>
 
-      <IntegrationStatus loaded={loaded} />
+      <SourceStrip loaded={loaded} />
     </aside>
   )
 }
@@ -186,65 +261,60 @@ function Row({ item, pending }: { item: NavItem; pending: number }) {
 }
 
 /**
- * Quick-glance connectivity strip for the four ERP sources.
+ * Which item lists are in, at the bottom of every page.
  *
- * Shows each CPSE, its ERP system, and a live / pending dot. The count below each
- * row is the total records available from that source. This is not a connection
- * poll: the dot reflects whether the source's data has been loaded into the local
- * registry (green) or not yet (amber).
+ * The state shown is loaded or not loaded, which is something this tab knows
+ * for certain because it read the extract itself. It is deliberately not a
+ * connection light: nothing here polls an ERP, so a green dot per source would
+ * be asserting a connection that does not exist.
  */
-function IntegrationStatus({ loaded }: { loaded: string[] }) {
-  const active = CPSES.filter(cpse => loaded.includes(cpse.code)).length
-
+function SourceStrip({ loaded }: { loaded: string[] }) {
   return (
     <div className="border-t border-rule px-3 py-3">
       <div className="flex items-baseline justify-between gap-2 px-2 pb-2">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
-          Integrations
+          <ByMode simple="Item lists" technical="Material masters" />
         </span>
-        <span className="font-mono text-[10.5px] text-ink-3">
-          {active}/{CPSES.length} active
-        </span>
+        <Num size="2xs" className="text-ink-3">
+          {loaded.length}/{CPSES.length}
+        </Num>
       </div>
 
       <ul className="flex flex-col">
         {CPSES.map(cpse => {
           const mark = SOURCE_MARK[cpse.code]
           const Glyph = mark.icon
-          const isConnected = loaded.includes(cpse.code)
+          const isLoaded = loaded.includes(cpse.code)
           return (
             <li
               key={cpse.code}
               className={cx(
-                'flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors',
-                'hover:bg-surface-hover',
+                'flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors',
+                isLoaded ? 'hover:bg-surface-hover' : 'opacity-60',
               )}
             >
               <Glyph
-                size={16}
-                weight="regular"
-                className={cx('shrink-0', isConnected ? mark.text : 'text-ink-3')}
+                size={17}
+                weight={isLoaded ? 'fill' : 'regular'}
+                className={cx('shrink-0', isLoaded ? mark.text : 'text-ink-3')}
               />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-mono text-[12px] font-medium text-ink">
-                    {cpse.code}
-                  </span>
-                  <span className="truncate font-mono text-[10.5px] text-ink-3">
-                    {shortErp(cpse.erp)}
-                  </span>
+                <div className="font-mono text-[12.5px] font-medium tracking-[0.04em] text-ink">
+                  {cpse.code}
                 </div>
-                <div className="font-mono text-[10.5px] text-ink-3">
-                  {(cpse.totalRecords / 100_000).toFixed(2)} lakh records
+                <div className="truncate font-mono text-[10.5px] text-ink-3">
+                  {shortErp(cpse.erp)} · {formatCount(cpse.totalRecords)}
                 </div>
               </div>
-              <span
-                className={cx(
-                  'h-[7px] w-[7px] shrink-0 rounded-full',
-                  isConnected ? 'bg-positive' : 'bg-attention',
-                )}
-                title={isConnected ? 'Connected' : 'Pending'}
-              />
+              {isLoaded ? (
+                <CheckCircle size={15} weight="fill" className="shrink-0 text-positive" />
+              ) : (
+                <span
+                  className="h-[9px] w-[9px] shrink-0 rounded-full border border-rule-strong"
+                  aria-hidden
+                />
+              )}
+              <span className="sr-only">{isLoaded ? 'loaded' : 'not loaded yet'}</span>
             </li>
           )
         })}
