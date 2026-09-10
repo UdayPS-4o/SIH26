@@ -100,7 +100,7 @@ function bucketOf(pair: MatchPair, decision: Decision): Exclude<Bucket, 'all'> {
 const SHORT_VERDICT: Record<MatchPair['verdict'], string> = {
   same: 'Same',
   review: 'Needs a check',
-  different: 'Different',
+  different: 'Below threshold',
 }
 
 const SLOT_LABEL: Record<AttributeSlot, string> = {
@@ -535,6 +535,24 @@ function Tuner() {
             technical="Combined score of every pending pair, bucketed in 0.05 steps, with the accept and review thresholds marked."
           />
         </p>
+        <p className="mt-2 max-w-[62ch] text-[11.5px] leading-snug text-ink-3">
+          <ByMode
+            simple={
+              <>
+                Pairs with unmatched significant tokens always route to review regardless of
+                score. This is deliberate — a storekeeper would not sign off on merging a
+                gate valve with a rising stem gate valve without looking.
+              </>
+            }
+            technical={
+              <>
+                Any pair with unmatched significant tokens caps out at review even above the
+                accept threshold. The sliders above govern the score bands only; this safety
+                check is hardcoded in the verdict function.
+              </>
+            }
+          />
+        </p>
         <div className="mt-3">
           <ThresholdHistogram
             buckets={histogramBuckets}
@@ -564,7 +582,7 @@ function Tuner() {
           total={counts.same + counts.review + counts.different}
         />
         <Band
-          label="Different items"
+          label="Below threshold"
           value={counts.different}
           tone="negative"
           icon={<XCircle size={16} weight="regular" />}
@@ -871,7 +889,7 @@ function Side({
     <div className="flex min-w-0 items-baseline gap-2">
       <Mono className="shrink-0">{record.cpse}</Mono>
       <div className="min-w-0">
-        <p className="text-[13px] leading-snug text-ink">
+        <p className="truncate text-[13px] leading-snug text-ink">
           <Marked text={record.rawDescription} only={only} />
         </p>
         <TechnicalOnly>

@@ -24,6 +24,7 @@ import { CPSES } from '@/engine/corpus'
 import { buildClusters, buildPairs, normalizeAll } from '@/engine/cluster'
 import { normalize } from '@/engine/normalize'
 import { familyFromLabel, type Cpse, type MaterialFamily, type MaterialRecord } from '@/engine/types'
+import { pushActivity } from './endpoints'
 
 /* --------------------------------------------------------------------- shapes */
 
@@ -600,9 +601,17 @@ export function streamMasterLoad(
     finished = true
     commitTo(incoming.length)
     if (!serviceState.loaded.includes(cpse)) serviceState.loaded.push(cpse)
-    remember()
+    const matched = pairsAfter.filter(
+      pair => incomingIds.has(pair.left.id) || incomingIds.has(pair.right.id),
+    ).filter(p => p.verdict === 'same').length
+    const heldForReview = pairsAfter.filter(
+      pair => incomingIds.has(pair.left.id) || incomingIds.has(pair.right.id),
+    ).filter(p => p.verdict === 'review').length
+    const accepted = pairsAfter.filter(
+      pair => pair.verdict === 'same' && (incomingIds.has(pair.left.id) || incomingIds.has(pair.right.id)),
+    ).length
     serviceState.activity.unshift({
-      id: `ACT-${cpse}-${serviceState.activity.length + 1}`,
+      id: `ACT-${cpse}-${Date.now()}`,
       ts: Date.now(),
       action: 'ingest',
       actor: 'Harmonization service',
@@ -612,6 +621,29 @@ export function streamMasterLoad(
         : `Read ${inr(incoming.length)} items from ${source.name}. This is the first list, so there is nothing to compare it against yet.`,
       endpoint: `POST /sources/${cpse}/load`,
     })
+    pushActivity({
+      action: 'normalize',
+      actor: 'Harmonization service',
+      cpse,
+      detail: `Normalized ${inr(incoming.length)} descriptions from ${source.name}: ${inr(tokensExpanded)} abbreviation expansions applied, ${inr(incoming.length)} canonical signatures written.`,
+      endpoint: `POST /sources/${cpse}/load`,
+    })
+    pushActivity({
+      action: 'match',
+      actor: 'Harmonization service',
+      cpse,
+      detail: `Scored ${inr(candidatePairs)} candidate pairs for ${source.name} at weights lexical ${serviceState.weights.lexical.toFixed(2)} / attribute ${serviceState.weights.attribute.toFixed(2)} / numeric ${serviceState.weights.numeric.toFixed(2)}. ${inr(accepted)} accepted at ≥${serviceState.accept.toFixed(2)}, ${inr(heldForReview)} held for review at ≥${serviceState.review.toFixed(2)}.`,
+      endpoint: `POST /sources/${cpse}/load`,
+    })
+    if (newCodes > 0) {
+      pushActivity({
+        action: 'mint',
+        actor: 'Harmonization service',
+        cpse,
+        detail: `Minted ${inr(newCodes)} new CNMC code${newCodes !== 1 ? 's' : ''} for unmatched items from ${source.name}. Registry now holds ${inr(clustersAfter.length)} codes.`,
+        endpoint: `POST /sources/${cpse}/load`,
+      })
+    }
     bumpVersion()
     handlers.onCommit()
   }

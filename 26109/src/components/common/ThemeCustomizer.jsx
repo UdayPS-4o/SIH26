@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { X, Download, Upload, Type, Sliders, Sparkles, Check, Keyboard, Copy, RefreshCw, Palette } from 'lucide-react'
+import { X, Download, Upload, Type, Sliders, Sparkles, Check, Keyboard, Copy, RefreshCw, Palette, LayoutDashboard } from 'lucide-react'
 import { THEME_SYSTEMS, exportThemeJSON, resolveTheme } from '../../data/themeSystems'
 import { useTheme } from '../../context/ThemeContext.jsx'
 
@@ -99,6 +99,7 @@ function TabBar({ active, onChange }) {
   const tabs = [
     { id: 'presets', label: 'Presets', icon: Palette },
     { id: 'basic', label: 'Basic', icon: Type },
+    { id: 'sidebar', label: 'Sidebar', icon: LayoutDashboard },
     { id: 'advanced', label: 'Advanced', icon: Sliders },
     { id: 'export', label: 'Export', icon: Download },
   ]
@@ -423,6 +424,77 @@ export default function ThemeCustomizer() {
                     <p className="mt-1 text-[11px]" style={{ fontFamily: config.overrides.bodyFont || (c && c.bodyFont) }}>
                       Ag {config.overrides.bodyFont || (c && c.bodyFont)}
                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'sidebar' && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-sand-200 p-4 dark:border-barn-700">
+                <p className="text-xs font-semibold text-sand-700 dark:text-sand-300 mb-3">Sidebar Gradient</p>
+                <div className="space-y-2.5">
+                  {[
+                    { key: 'sidebarFrom', label: 'Top Color', default: '#14532d' },
+                    { key: 'sidebarVia', label: 'Middle Color', default: '#14532d' },
+                    { key: 'sidebarTo', label: 'Bottom Color', default: '#78350f' },
+                  ].map(({ key, label, default: def }) => (
+                    <div key={key} className="flex items-center gap-2.5">
+                      <input
+                        type="color"
+                        value={config.overrides[key] || def}
+                        onChange={(e) => updateOverride(key, e.target.value)}
+                        className="h-8 w-8 cursor-pointer rounded-lg border-2 border-sand-200 bg-transparent p-0.5"
+                      />
+                      <div className="flex-1">
+                        <span className="text-[11px] font-medium text-sand-500">{label}</span>
+                        <div className="font-mono text-[10px] text-sand-400">{config.overrides[key] || def}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-sand-200 p-4 dark:border-barn-700">
+                <p className="text-xs font-semibold text-sand-700 dark:text-sand-300 mb-3">Sidebar Text</p>
+                <div className="space-y-2.5">
+                  {[
+                    { key: 'sidebarText', label: 'Primary Text', default: '#f0fdf4' },
+                    { key: 'sidebarMuted', label: 'Muted Text', default: '#86efac' },
+                    { key: 'sidebarActive', label: 'Active Item', default: '#f59e0b' },
+                  ].map(({ key, label, default: def }) => (
+                    <div key={key} className="flex items-center gap-2.5">
+                      <input
+                        type="color"
+                        value={config.overrides[key] || def}
+                        onChange={(e) => updateOverride(key, e.target.value)}
+                        className="h-8 w-8 cursor-pointer rounded-lg border-2 border-sand-200 bg-transparent p-0.5"
+                      />
+                      <div className="flex-1">
+                        <span className="text-[11px] font-medium text-sand-500">{label}</span>
+                        <div className="font-mono text-[10px] text-sand-400">{config.overrides[key] || def}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-sand-200 p-4 dark:border-barn-700">
+                <p className="text-xs font-semibold text-sand-700 dark:text-sand-300 mb-3">Preview</p>
+                <div className="rounded-lg overflow-hidden" style={{
+                  background: `linear-gradient(to bottom, ${config.overrides.sidebarFrom || '#14532d'}, ${config.overrides.sidebarVia || '#14532d'}, ${config.overrides.sidebarTo || '#78350f'})`
+                }}>
+                  <div className="p-3 space-y-1.5">
+                    {['Dashboard', 'Animals', 'Alerts', 'Settings'].map((item, i) => (
+                      <div key={item} className="flex items-center gap-2 px-2 py-1.5 rounded-md" style={{
+                        background: i === 0 ? (config.overrides.sidebarActive || '#f59e0b') : 'transparent',
+                        color: i === 0 ? '#ffffff' : (config.overrides.sidebarText || '#f0fdf4')
+                      }}>
+                        <div className="h-3 w-3 rounded-sm" style={{ background: i === 0 ? '#fff' : (config.overrides.sidebarActive || '#f59e0b'), opacity: i === 0 ? 0.8 : 0.5 }} />
+                        <span className="text-[11px] font-medium">{item}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

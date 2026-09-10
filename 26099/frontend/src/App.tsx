@@ -16,6 +16,36 @@ const NormalizePage = lazy(() => import('@/pages/NormalizePage'))
 const ActivityPage = lazy(() => import('@/pages/ActivityPage'))
 const EnginePage = lazy(() => import('@/pages/EnginePage'))
 
+function RedirectIfEmpty({ children }: { children: JSX.Element }) {
+  const loaded = useService(s => s.ready)
+  const loadedCount = useService(s => s.records?.length ?? 0)
+
+  // While the service is still loading, show the skeleton (original behaviour).
+  if (!loaded) {
+    return (
+      <div className="flex h-[100dvh] w-full overflow-hidden bg-paper text-ink antialiased">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Header />
+          <main className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1600px] px-6 py-8 pb-20">
+              <Skeleton rows={8} />
+            </div>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  // Once loaded, if no data has been imported, redirect to Overview so the user
+  // can load item lists rather than staring at an empty queue.
+  if (loadedCount === 0) {
+    return <Navigate to="/overview" replace />
+  }
+
+  return children
+}
+
 export default function App() {
   const bootstrap = useService(s => s.bootstrap)
 
@@ -29,26 +59,28 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
         <main className="flex-1 overflow-y-auto">
-          {/* Wide on purpose. This is a records console, not an article: the
-              tables carry eight to ten columns and at 1180px they were being
-              horizontally scrolled on a 1920px screen, which put the national
-              code, the column the whole product is about, off the right edge. */}
           <div className="mx-auto w-full max-w-[1600px] px-6 py-8 pb-20">
             <Suspense fallback={<Skeleton rows={6} />}>
               <Routes>
-                {/* The dashboard lands, the walkthrough is one click away. The
-                    guided run used to sit on "/" and was the first thing a
-                    visitor met, before they had any sense of the scale of what
-                    it was walking them through. */}
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/overview" element={<OverviewPage />} />
                 <Route path="/explorer" element={<ExplorerPage />} />
-                <Route path="/duplicates" element={<DuplicatesPage />} />
-                <Route path="/savings" element={<SavingsPage />} />
-                <Route path="/registry" element={<RegistryPage />} />
+                <Route path="/duplicates" element={
+                  <RedirectIfEmpty><DuplicatesPage /></RedirectIfEmpty>
+                } />
+                <Route path="/savings" element={
+                  <RedirectIfEmpty><SavingsPage /></RedirectIfEmpty>
+                } />
+                <Route path="/registry" element={
+                  <RedirectIfEmpty><RegistryPage /></RedirectIfEmpty>
+                } />
                 <Route path="/import" element={<ImportPage />} />
-                <Route path="/normalize" element={<NormalizePage />} />
-                <Route path="/activity" element={<ActivityPage />} />
+                <Route path="/normalize" element={
+                  <RedirectIfEmpty><NormalizePage /></RedirectIfEmpty>
+                } />
+                <Route path="/activity" element={
+                  <RedirectIfEmpty><ActivityPage /></RedirectIfEmpty>
+                } />
                 <Route path="/engine" element={<EnginePage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>

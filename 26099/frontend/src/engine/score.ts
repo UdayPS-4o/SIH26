@@ -22,8 +22,9 @@ import {
 export const DEFAULT_WEIGHTS: ScoringWeights = { lexical: 0.3, attribute: 0.45, numeric: 0.25 }
 
 /** Above this a pair is treated as the same item. Between the two it needs a human. */
-export const DEFAULT_ACCEPT = 0.88
-export const DEFAULT_REVIEW = 0.72
+export const DEFAULT_ACCEPT = 0.85
+export const DEFAULT_REVIEW = 0.78
+export const DEFAULT_EQUIVALENT = 0.65
 
 /** Sub-scores are rounded to two decimals before combination so that what is shown
  *  and what is computed are the same numbers. */

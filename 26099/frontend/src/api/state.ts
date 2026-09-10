@@ -36,6 +36,17 @@ export interface ServiceState {
   operator: string
 }
 
+/** Read persisted operator from sessionStorage, falling back to a sensible default. */
+function readStoredOperator(): string {
+  try {
+    const stored = sessionStorage.getItem('codeone.operator')
+    if (stored && stored.trim()) return stored.trim()
+  } catch {
+    /* storage unavailable */
+  }
+  return 'Steward'
+}
+
 export const serviceState: ServiceState = {
   weights: { ...DEFAULT_WEIGHTS },
   accept: DEFAULT_ACCEPT,
@@ -46,7 +57,7 @@ export const serviceState: ServiceState = {
   records: [],
   loaded: [],
   activity: [],
-  operator: 'A. Deshmukh',
+  operator: readStoredOperator(),
 }
 
 /** Bumped on every mutation. The React store watches this to know when its cached

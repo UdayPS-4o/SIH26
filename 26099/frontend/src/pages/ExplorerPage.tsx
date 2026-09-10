@@ -249,7 +249,7 @@ export default function ExplorerPage() {
     <>
       <PageHead title={c('explorerTitle')} lead={c('explorerLead')} />
 
-      <SampleNote sliceSize={records.length} />
+      <SampleNote sliceSize={records.length} records={records} />
 
       <Panel flush className="mt-6">
         <PanelHead
@@ -537,7 +537,9 @@ function SampleNote({ sliceSize }: { sliceSize: number }) {
         <p className="text-[13.5px] leading-relaxed text-ink">
           This table holds <Num size="sm">{formatExact(sliceSize)}</Num> records, drawn from a
           corpus of <Num size="sm">{formatExact(TOTAL_RECORDS)}</Num> held across the four
-          organisations.
+          organisations. The slice is selected to reflect high-spend items across all four
+          CPSEs — it is not a random or systematic sample, so corpus-wide figures extrapolated
+          from it carry that sampling bias as an explicit assumption.
         </p>
       </div>
       <p className="mt-2 max-w-[76ch] text-[13px] leading-relaxed text-ink-2">

@@ -49,15 +49,27 @@ const featureColors = {
   CONFIG: 'bg-sand-400/20 text-sand-400 border-sand-400/30',
 }
 
+const sidebarBadgeColors = {
+  PREDICTION: 'var(--sidebar-badge-prediction, #f59e0b)',
+  PREVENTION: 'var(--sidebar-badge-prevention, #22c55e)',
+  ANALYSIS: 'var(--sidebar-badge-analysis, #3B9EFF)',
+  DETECTION: 'var(--sidebar-badge-detection, #ef4444)',
+  SUGGESTIONS: 'var(--sidebar-badge-suggestions, #a855f7)',
+}
+
 export default function Sidebar({ mobileOpen, onClose }) {
   const { t } = useI18n()
+
   return (
     <>
       {mobileOpen && <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-gradient-to-b from-forest-900 via-forest-900 to-barn-900 text-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-gradient-to-b text-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{
+          background: `linear-gradient(to bottom, var(--custom-sidebar-from, #14532d), var(--custom-sidebar-via, #14532d), var(--custom-sidebar-to, #78350f))`,
+        }}
       >
         {/* Brand */}
         <div className="relative flex items-center gap-3 px-4 pb-3 pt-4">
@@ -66,14 +78,14 @@ export default function Sidebar({ mobileOpen, onClose }) {
             <div className="absolute -inset-1 rounded-full bg-honey-400/40 blur-md animate-pulse-soft" />
           </div>
           <div className="leading-tight">
-            <div className="text-xl font-black text-white tracking-tight">
+            <div className="text-xl font-black tracking-tight" style={{ color: 'var(--sidebar-text, #f0fdf4)' }}>
               GAUROGYA <span className="text-honey-400">SETU</span>
             </div>
-            <div className="text-[10px] font-bold tracking-widest text-forest-300 uppercase">
+            <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--sidebar-muted, #86efac)' }}>
               AI-Powered Dairy Intelligence
             </div>
           </div>
-          <button className="ml-auto rounded-lg p-1.5 text-forest-300 hover:bg-white/10 hover:text-white lg:hidden" onClick={onClose} aria-label="Close menu">
+          <button className="ml-auto rounded-lg p-1.5 hover:bg-white/10 hover:text-white lg:hidden" onClick={onClose} aria-label="Close menu" style={{ color: 'var(--sidebar-muted, #86efac)' }}>
             <X size={16} />
           </button>
         </div>
@@ -81,11 +93,18 @@ export default function Sidebar({ mobileOpen, onClose }) {
         {/* Feature Tags Banner */}
         <div className="mx-3 mb-3 rounded-xl border border-honey-400/30 bg-gradient-to-r from-honey-500/20 via-forest-500/10 to-ai/20 px-3 py-2.5">
           <div className="flex flex-wrap gap-1">
-            {['PREDICTION', 'PREVENTION', 'ANALYSIS', 'DETECTION', 'SUGGESTIONS'].map((feat) => (
-              <span key={feat} className="rounded-md bg-honey-500/20 px-1.5 py-0.5 text-[9px] font-black tracking-wider text-honey-300 uppercase">
-                {feat}
-              </span>
-            ))}
+            {['PREDICTION', 'PREVENTION', 'ANALYSIS', 'DETECTION', 'SUGGESTIONS'].map((feat) => {
+              const badgeColor = sidebarBadgeColors[feat] || '#f59e0b'
+              return (
+                <span key={feat} className="rounded-md px-1.5 py-0.5 text-[9px] font-black tracking-wider uppercase" style={{
+                  backgroundColor: `${badgeColor}22`,
+                  color: badgeColor,
+                  border: `1px solid ${badgeColor}44`
+                }}>
+                  {feat}
+                </span>
+              )
+            })}
           </div>
         </div>
 
@@ -98,18 +117,13 @@ export default function Sidebar({ mobileOpen, onClose }) {
                 key={item.to}
                 to={item.to}
                 onClick={onClose}
-                className={({ isActive }) =>
-                  `group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-honey-500 to-honey-600 text-white shadow-lg shadow-honey-500/40'
-                      : 'text-forest-100 hover:bg-white/10 hover:text-white'
-                  }`
-                }
               >
                 {({ isActive }) => (
-                  <>
+                  <div className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${isActive ? 'text-white shadow-lg shadow-honey-500/40' : ''}`}
+                    style={{ background: isActive ? 'linear-gradient(to right, var(--custom-sidebar-active, #f59e0b), #d97706)' : 'transparent' }}
+                  >
                     <Icon size={17} className={isActive ? 'text-white' : 'text-honey-400 group-hover:text-honey-300'} />
-                    <span className="flex-1">{t(item.label)}</span>
+                    <span className="flex-1" style={{ color: isActive ? '#fff' : 'var(--sidebar-text, #f0fdf4)' }}>{t(item.label)}</span>
                     <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-black tracking-wider ${featureColors[item.feature] || 'bg-sand-400/20 text-sand-400 border-sand-400/30'}`}>
                       {item.feature}
                     </span>
@@ -118,7 +132,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
                         {item.badge}
                       </span>
                     ) : null}
-                  </>
+                  </div>
                 )}
               </NavLink>
             )

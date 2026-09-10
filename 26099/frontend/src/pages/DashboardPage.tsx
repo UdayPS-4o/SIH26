@@ -99,7 +99,7 @@ export default function DashboardPage() {
     () => [
       { name: 'Same item', value: counts.same },
       { name: 'Needs a person', value: counts.review },
-      { name: 'Different items', value: counts.different },
+      { name: 'Below threshold', value: counts.different },
     ],
     [counts],
   )

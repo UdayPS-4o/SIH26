@@ -8,19 +8,10 @@
  * extend tokens.ts and this file together so the meaning stays documented.
  */
 
-import {
-  forwardRef,
-  useEffect,
-  useRef,
-  useState,
-  type ButtonHTMLAttributes,
-  type InputHTMLAttributes,
-  type ReactNode,
-  type SelectHTMLAttributes,
-  type TextareaHTMLAttributes,
-} from 'react'
+import { forwardRef, useEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { animate, useReducedMotion } from 'framer-motion'
 import { cx } from './tokens'
+import { IS_LIVE } from '@/api/client'
 
 export type Tone = 'neutral' | 'accent' | 'primary' | 'attention' | 'negative' | 'positive' | 'info'
 
@@ -612,6 +603,10 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
  *
  * Shown in technical view only. It is the honest version of a status light: rather
  * than asserting the service is online, it names the request and how long it took.
+ *
+ * In embedded mode (the default), calls resolve in-process against the harmonization
+ * core — there is no HTTP request. The tag shows the call that produced the data,
+ * with a mode prefix so the viewer knows what they are reading.
  */
 export function EndpointTag({
   method,
@@ -626,7 +621,10 @@ export function EndpointTag({
 }) {
   return (
     <span className="inline-flex items-center gap-2 font-mono text-[10.5px] text-ink-3">
-      <span className="text-accent">{method}</span>
+      <span className="text-accent">
+        {method}
+        {!IS_LIVE && <span className="ml-1 text-ink-3">embedded</span>}
+      </span>
       <span>{endpoint}</span>
       <span className="tabular-nums">{ms} ms</span>
       {scanned ? <span className="tabular-nums">{scanned.toLocaleString('en-IN')} read</span> : null}

@@ -84,6 +84,19 @@ export function ThemeProvider({ children }) {
         root.style.setProperty('--custom-font-scale', String(customConfig.fontSizeScale || 1))
         root.style.setProperty('--custom-radius', `${customConfig.borderRadius || 12}px`)
 
+        /* Sidebar overrides */
+        const hasSidebarOverrides = o.sidebarFrom || o.sidebarVia || o.sidebarTo || o.sidebarText || o.sidebarMuted || o.sidebarActive
+        if (hasSidebarOverrides) {
+          root.style.setProperty('--custom-sidebar-from', cv['--sidebar-from'] || o.sidebarFrom || '#14532d')
+          root.style.setProperty('--custom-sidebar-via', cv['--sidebar-via'] || o.sidebarVia || '#14532d')
+          root.style.setProperty('--custom-sidebar-to', cv['--sidebar-to'] || o.sidebarTo || '#78350f')
+          root.style.setProperty('--custom-sidebar-text', cv['--sidebar-text'] || o.sidebarText || '#f0fdf4')
+          root.style.setProperty('--custom-sidebar-muted', cv['--sidebar-muted'] || o.sidebarMuted || '#86efac')
+          root.style.setProperty('--custom-sidebar-active', cv['--sidebar-active'] || o.sidebarActive || '#f59e0b')
+        } else {
+          ;['--custom-sidebar-from', '--custom-sidebar-via', '--custom-sidebar-to', '--custom-sidebar-text', '--custom-sidebar-muted', '--custom-sidebar-active'].forEach(k => root.style.removeProperty(k))
+        }
+
         if (customConfig.highContrast) root.classList.add('high-contrast')
         else root.classList.remove('high-contrast')
         if (customConfig.reduceMotion) root.classList.add('reduce-motion')

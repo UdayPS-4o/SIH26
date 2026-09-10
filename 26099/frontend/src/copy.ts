@@ -55,7 +55,7 @@ export const COPY = {
   // Kept short on purpose: this row carries a pending-count badge, and the longer
   // wording truncated against it at the sidebar's fixed width.
   navDuplicates: { simple: 'Duplicates', technical: 'Matching and review' },
-  navSavings: { simple: 'Savings', technical: 'Analytics' },
+  navSavings: { simple: 'Savings', technical: 'Savings' },
   navRegistry: { simple: 'National code book', technical: 'CNMC registry' },
   navImport: { simple: 'Add new data', technical: 'Ingestion' },
   navNormalize: { simple: 'Name cleaner', technical: 'Normalization' },
@@ -74,7 +74,7 @@ export const COPY = {
       'Corpus, matching and consolidation measures over the loaded masters. Headline figures are extrapolated from the inspectable slice and say so.',
   },
 
-  overviewTitle: { simple: 'Overview', technical: 'Guided walkthrough' },
+  overviewTitle: { simple: 'How this works', technical: 'Guided walkthrough' },
   // The page opens on the premise in full, so the lead says what to do rather
   // than repeating it in smaller type directly above itself.
   overviewLead: {
