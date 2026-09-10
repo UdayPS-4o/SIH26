@@ -7,7 +7,7 @@
  * FastAPI service.
  */
 
-import { call, type ApiResult } from './client'
+import { call, sleep, type ApiResult } from './client'
 import { serviceState, bumpVersion } from './state'
 import { parseCsv } from './csv'
 import type { IngestPreview, ParsedRow } from './types'
@@ -47,10 +47,11 @@ export interface NormalizeResponse {
 }
 
 /** POST /normalize */
-export function normalizeDescription(
+export async function normalizeDescription(
   description: string,
   uom = 'NOS',
 ): Promise<ApiResult<NormalizeResponse>> {
+  await sleep(200 + Math.random() * 400)
   return call(
     'POST',
     '/normalize',
@@ -72,10 +73,11 @@ export interface ScorePairResponse {
 }
 
 /** POST /match/score */
-export function scorePair(
+export async function scorePair(
   left: { description: string; uom?: string },
   right: { description: string; uom?: string },
 ): Promise<ApiResult<ScorePairResponse>> {
+  await sleep(200 + Math.random() * 400)
   return call(
     'POST',
     '/match/score',
@@ -104,8 +106,9 @@ export interface ProposalsResponse {
 }
 
 /** GET /match/proposals */
-export function fetchProposals(): Promise<ApiResult<ProposalsResponse>> {
+export async function fetchProposals(): Promise<ApiResult<ProposalsResponse>> {
   const records = allRecords()
+  await sleep(200 + Math.random() * 400)
   return call(
     'GET',
     '/match/proposals',
@@ -134,7 +137,8 @@ export function fetchProposals(): Promise<ApiResult<ProposalsResponse>> {
 }
 
 /** PUT /match/weights */
-export function updateWeights(weights: ScoringWeights): Promise<ApiResult<{ weights: ScoringWeights }>> {
+export async function updateWeights(weights: ScoringWeights): Promise<ApiResult<{ weights: ScoringWeights }>> {
+  await sleep(200 + Math.random() * 400)
   return call(
     'PUT',
     '/match/weights',
@@ -149,7 +153,8 @@ export function updateWeights(weights: ScoringWeights): Promise<ApiResult<{ weig
 }
 
 /** PUT /match/thresholds */
-export function updateThresholds(accept: number, review: number) {
+export async function updateThresholds(accept: number, review: number) {
+  await sleep(200 + Math.random() * 400)
   return call(
     'PUT',
     '/match/thresholds',
@@ -494,6 +499,8 @@ export function allRecords(): MaterialRecord[] {
 }
 
 let activitySeq = 0
+const ACTIVITY_KEY = 'codeone.activity'
+
 export function pushActivity(entry: Omit<ActivityEntry, 'id' | 'ts'>) {
   activitySeq += 1
   serviceState.activity.unshift({
@@ -501,6 +508,12 @@ export function pushActivity(entry: Omit<ActivityEntry, 'id' | 'ts'>) {
     id: `ACT-${(activitySeq + 100).toString()}`,
     ts: Date.now(),
   })
+  // Persist to sessionStorage so the audit trail survives a page reload.
+  try {
+    sessionStorage.setItem(ACTIVITY_KEY, JSON.stringify(serviceState.activity))
+  } catch {
+    /* storage unavailable */
+  }
 }
 
 function guessFamily(normalized: NormalizedRecord): MaterialRecord['family'] {
@@ -523,5 +536,5 @@ function guessFamily(normalized: NormalizedRecord): MaterialRecord['family'] {
 export { applyMapping } from './csv'
 export { parseCsv }
 export type { ParsedRow, ColumnMapping, IngestPreview } from './types'
-export { streamMasterLoad, rowsToRecords, restoreLoaded, forgetLoaded } from './loader'
+export { streamMasterLoad, rowsToRecords, restoreLoaded, forgetLoaded, rememberActivity, restoreActivity } from './loader'
 export type { LoadEvent, LoadSummary, PipelineStage, RegistrySnapshot, StageReport } from './loader'

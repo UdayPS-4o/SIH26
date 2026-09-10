@@ -15,6 +15,8 @@ const ImportPage = lazy(() => import('@/pages/ImportPage'))
 const NormalizePage = lazy(() => import('@/pages/NormalizePage'))
 const ActivityPage = lazy(() => import('@/pages/ActivityPage'))
 const EnginePage = lazy(() => import('@/pages/EnginePage'))
+const MigrationPage = lazy(() => import('@/pages/MigrationPage'))
+const IntegrationPage = lazy(() => import('@/pages/IntegrationPage'))
 
 function RedirectIfEmpty({ children }: { children: JSX.Element }) {
   const loaded = useService(s => s.ready)
@@ -63,6 +65,7 @@ export default function App() {
             <Suspense fallback={<Skeleton rows={6} />}>
               <Routes>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/overview" element={<OverviewPage />} />
                 <Route path="/explorer" element={<ExplorerPage />} />
                 <Route path="/duplicates" element={
@@ -82,6 +85,8 @@ export default function App() {
                   <RedirectIfEmpty><ActivityPage /></RedirectIfEmpty>
                 } />
                 <Route path="/engine" element={<EnginePage />} />
+                <Route path="/integration" element={<IntegrationPage />} />
+                <Route path="/migration" element={<MigrationPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

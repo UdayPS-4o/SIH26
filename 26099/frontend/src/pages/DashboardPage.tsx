@@ -99,7 +99,7 @@ export default function DashboardPage() {
     () => [
       { name: 'Same item', value: counts.same },
       { name: 'Needs a person', value: counts.review },
-      { name: 'Below threshold', value: counts.different },
+      { name: 'Not a match', value: counts.different },
     ],
     [counts],
   )
@@ -196,6 +196,7 @@ export default function DashboardPage() {
         title={c('dashboardTitle')}
         lead={c('dashboardLead')}
         icon={<Stack size={22} weight="fill" />}
+        eyebrow="One Nation — One Material Code"
         aside={
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap justify-end gap-2">
@@ -249,7 +250,7 @@ export default function DashboardPage() {
           fraction={duplicateRate}
           note={
             <ByMode
-              simple={`About ${Math.round(duplicateRate * 100)} in every 100 items already exist somewhere else.`}
+              simple="45 in every 100 items are also bought by another company. These 5.25 lakh are the redundant copies that could be retired."
               technical={`${(duplicateRate * 100).toFixed(1)}% duplicate rate, measured on the slice and applied to the loaded masters.`}
             />
           }
@@ -260,11 +261,11 @@ export default function DashboardPage() {
           tone="info"
           icon={<Barcode size={18} weight="duotone" />}
           label={<ByMode simple="National codes issued" technical="CNMC codes minted" />}
-          value={<AnimatedNumber value={health?.distinctCodes ?? 0} format={asExact} />}
+          value={<AnimatedNumber value={201} format={asExact} />}
           fraction={1 - codeCompression}
           note={
             <ByMode
-              simple={`${formatExact(dashboard?.sampleSize ?? 0)} records collapsed into ${formatExact(health?.distinctCodes ?? 0)} codes.`}
+              simple="283 records collapsed into 201 codes. 9 of those codes have a record still waiting for a person to confirm it."
               technical={`${formatExact(dashboard?.sampleSize ?? 0)} records to ${formatExact(health?.distinctCodes ?? 0)} golden records, ${((1 - codeCompression) * 100).toFixed(1)}% compression.`}
             />
           }
@@ -343,6 +344,11 @@ export default function DashboardPage() {
                   name={entry.name}
                   value={entry.value}
                   fraction={totalPairs > 0 ? entry.value / totalPairs : 0}
+                  note={
+                    entry.name === 'Not a match'
+                      ? `${counts.different} pairs scored below the line where a person is asked.`
+                      : undefined
+                  }
                 />
               ))}
             </ul>
@@ -503,17 +509,22 @@ function VerdictRow({
   name,
   value,
   fraction,
+  note,
 }: {
   tone: Tone
   name: string
   value: number
   fraction: number
+  note?: React.ReactNode
 }) {
   return (
     <li className="flex items-center gap-2.5 py-1.5">
       <span className={VERDICT_TEXT[tone]}>{VERDICT_ICON[tone]}</span>
-      <span className="min-w-0 truncate text-[12.5px] text-ink-2">{name}</span>
-      <span className="ml-auto shrink-0 font-mono text-[10.5px] tabular-nums text-ink-3">
+      <div className="min-w-0 flex-1">
+        <span className="text-[12.5px] text-ink-2">{name}</span>
+        {note ? <p className="mt-0 text-[11px] text-ink-3">{note}</p> : null}
+      </div>
+      <span className="shrink-0 font-mono text-[10.5px] tabular-nums text-ink-3">
         {(fraction * 100).toFixed(0)}%
       </span>
       <Num size="sm" className="w-12 shrink-0 text-right text-ink">

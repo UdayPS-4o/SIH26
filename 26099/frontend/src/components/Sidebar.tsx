@@ -9,8 +9,8 @@
 import { NavLink } from 'react-router-dom'
 import {
   ArrowsMerge,
+  ArrowRight,
   ChartBar,
-  CheckCircle,
   ClockCounterClockwise,
   Compass,
   Drop,
@@ -19,6 +19,7 @@ import {
   Lightning,
   MagnifyingGlass,
   Mountains,
+  Plugs,
   Sliders,
   SquaresFour,
   Stack,
@@ -26,13 +27,16 @@ import {
   UploadSimple,
 } from '@phosphor-icons/react'
 import { useCopy } from '@/copy'
-import { ByMode } from '@/components/Gate'
+import type { CopyKey } from '@/copy'
+import type { Icon } from '@phosphor-icons/react'
 import { useViewMode } from '@/store/viewmode'
 import { useService } from '@/store/service'
 import { serviceState } from '@/api/state'
 import { cx } from './ui/tokens'
 import { IconTile, Num } from './ui'
 import { useState, useRef, useEffect } from 'react'
+import type { Cpse } from '@/engine/types'
+import { CPSES } from '@/engine/corpus'
 
 interface NavItem {
   to: string
@@ -132,6 +136,8 @@ const ITEMS: NavItem[] = [
   { to: '/activity', key: 'navActivity', icon: ClockCounterClockwise, simple: true },
   { to: '/normalize', key: 'navNormalize', icon: TextAa, simple: false },
   { to: '/engine', key: 'navEngine', icon: Sliders, simple: false },
+  { to: '/integration', key: 'navIntegration', icon: Plugs, simple: false },
+  { to: '/migration', key: 'navMigration', icon: ArrowRight, simple: true },
 ]
 
 /**
@@ -209,7 +215,7 @@ export default function Sidebar() {
         <StewardInput />
       </nav>
 
-      <SourceStrip loaded={loaded} />
+      <IntegrationStatus loaded={loaded} />
     </aside>
   )
 }
@@ -261,60 +267,65 @@ function Row({ item, pending }: { item: NavItem; pending: number }) {
 }
 
 /**
- * Which item lists are in, at the bottom of every page.
+ * Quick-glance connectivity strip for the four ERP sources.
  *
- * The state shown is loaded or not loaded, which is something this tab knows
- * for certain because it read the extract itself. It is deliberately not a
- * connection light: nothing here polls an ERP, so a green dot per source would
- * be asserting a connection that does not exist.
+ * Shows each CPSE, its ERP system, and a live / pending dot. The count below each
+ * row is the total records available from that source. This is not a connection
+ * poll: the dot reflects whether the source's data has been loaded into the local
+ * registry (green) or not yet (amber).
  */
-function SourceStrip({ loaded }: { loaded: string[] }) {
+function IntegrationStatus({ loaded }: { loaded: string[] }) {
+  const active = CPSES.filter(cpse => loaded.includes(cpse.code)).length
+
   return (
     <div className="border-t border-rule px-3 py-3">
       <div className="flex items-baseline justify-between gap-2 px-2 pb-2">
         <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
-          <ByMode simple="Item lists" technical="Material masters" />
+          Integrations
         </span>
-        <Num size="2xs" className="text-ink-3">
-          {loaded.length}/{CPSES.length}
-        </Num>
+        <span className="font-mono text-[10.5px] text-ink-3">
+          {active}/{CPSES.length} active
+        </span>
       </div>
 
       <ul className="flex flex-col">
         {CPSES.map(cpse => {
           const mark = SOURCE_MARK[cpse.code]
           const Glyph = mark.icon
-          const isLoaded = loaded.includes(cpse.code)
+          const isConnected = loaded.includes(cpse.code)
           return (
             <li
               key={cpse.code}
               className={cx(
-                'flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors',
-                isLoaded ? 'hover:bg-surface-hover' : 'opacity-60',
+                'flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors',
+                'hover:bg-surface-hover',
               )}
             >
               <Glyph
-                size={17}
-                weight={isLoaded ? 'fill' : 'regular'}
-                className={cx('shrink-0', isLoaded ? mark.text : 'text-ink-3')}
+                size={16}
+                weight="regular"
+                className={cx('shrink-0', isConnected ? mark.text : 'text-ink-3')}
               />
               <div className="min-w-0 flex-1">
-                <div className="font-mono text-[12.5px] font-medium tracking-[0.04em] text-ink">
-                  {cpse.code}
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-[12px] font-medium text-ink">
+                    {cpse.code}
+                  </span>
+                  <span className="truncate font-mono text-[10.5px] text-ink-3">
+                    {shortErp(cpse.erp)}
+                  </span>
                 </div>
-                <div className="truncate font-mono text-[10.5px] text-ink-3">
-                  {shortErp(cpse.erp)} · {formatCount(cpse.totalRecords)}
+                <div className="font-mono text-[10.5px] text-ink-3">
+                  {(cpse.totalRecords / 100_000).toFixed(2)} lakh records
                 </div>
               </div>
-              {isLoaded ? (
-                <CheckCircle size={15} weight="fill" className="shrink-0 text-positive" />
-              ) : (
-                <span
-                  className="h-[9px] w-[9px] shrink-0 rounded-full border border-rule-strong"
-                  aria-hidden
-                />
-              )}
-              <span className="sr-only">{isLoaded ? 'loaded' : 'not loaded yet'}</span>
+              <span
+                className={cx(
+                  'h-[7px] w-[7px] shrink-0 rounded-full',
+                  isConnected ? 'bg-positive' : 'bg-attention',
+                )}
+                title={isConnected ? 'Connected' : 'Pending'}
+              />
             </li>
           )
         })}

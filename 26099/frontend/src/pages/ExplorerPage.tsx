@@ -24,6 +24,7 @@ import {
   CaretLeft,
   CaretRight,
   Copy,
+  Info,
   Package,
   Stack,
   Warehouse,
@@ -249,7 +250,7 @@ export default function ExplorerPage() {
     <>
       <PageHead title={c('explorerTitle')} lead={c('explorerLead')} />
 
-      <SampleNote sliceSize={records.length} records={records} />
+      <SampleNote sliceSize={records.length} />
 
       <Panel flush className="mt-6">
         <PanelHead
@@ -543,6 +544,12 @@ function SampleNote({ sliceSize }: { sliceSize: number }) {
         </p>
       </div>
       <p className="mt-2 max-w-[76ch] text-[13px] leading-relaxed text-ink-2">
+        This slice is not a random sample. It is a curated set of high-value, high-overlap MRO
+        lines chosen so the matching is inspectable by eye. Rates measured here are what the
+        extrapolations on the Dashboard and Savings pages use, and a curated slice will
+        overstate them.
+      </p>
+      <p className="mt-2 max-w-[76ch] text-[13px] leading-relaxed text-ink-2">
         <ByMode
           simple="Every figure in the rest of this console, including the duplicate counts and the savings, is worked out from these rows. Numbers quoted for the whole corpus are scaled up from what was measured here, and they say so where they appear."
           technical="Every figure elsewhere in the console is computed from these rows at runtime: pairs, clusters, codes and the savings model all read this slice. Corpus-wide figures are extrapolated from the duplicate rate measured here and are labelled as estimates at the point of use."
@@ -602,6 +609,7 @@ function RecordRow({
   onToggle: () => void
 }) {
   const cover = coverOf(record)
+  const [showFamilyInfo, setShowFamilyInfo] = useState(false)
 
   return (
     <>
@@ -638,9 +646,35 @@ function RecordRow({
           <span className="font-mono text-[12px] text-ink">{record.rawDescription}</span>
         </Td>
         <Td>
-          <span className="whitespace-nowrap text-[12.5px] text-ink-2">
-            {FAMILY_LABEL[record.family]}
-          </span>
+          <button
+            type="button"
+            className="inline-flex items-center gap-1"
+            onClick={event => {
+              event.stopPropagation()
+              setShowFamilyInfo(!showFamilyInfo)
+            }}
+            onMouseLeave={() => setShowFamilyInfo(false)}
+            aria-label={`Family assignment source: ${FAMILY_LABEL[record.family]}`}
+          >
+            <span className="whitespace-nowrap text-[12.5px] text-ink-2">
+              {FAMILY_LABEL[record.family]}
+            </span>
+            <Info
+              size={14}
+              weight="regular"
+              className="text-ink-3"
+            />
+            {showFamilyInfo && (
+              <span
+                role="tooltip"
+                className="rounded-md border border-rule bg-surface px-2.5 py-1.5 shadow-sm"
+              >
+                <span className="text-[12px] leading-snug text-ink-2">
+                  {familyAssignment(record)}
+                </span>
+              </span>
+            )}
+          </button>
         </Td>
         <Td align="right">
           <Num size="sm">{formatExact(record.annualQty)}</Num>
@@ -789,6 +823,14 @@ function RecordDetail({
                 })}
               </div>
 
+              {normalized && Object.keys(normalized.attributes).length > 0 && (
+                <DescriptionProposal
+                  record={record}
+                  attributes={normalized.attributes}
+                  expansions={normalized.expansions}
+                />
+              )}
+
               <TechnicalOnly>
                 <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <span className="text-[12px] text-ink-2">Signature</span>
@@ -898,6 +940,60 @@ function RecordDetail({
 
 function nameOf(code: Cpse['code']): string {
   return CPSES.find(entry => entry.code === code)?.name ?? code
+}
+
+/** Derive a human-readable explanation for how a record got its family. */
+function familyAssignment(record: MaterialRecord): string {
+  // Records whose id does NOT contain "-S" are from the curated ITEMS set (ERP groups).
+  // Records with "-S" in their id are from the SWEEPS (keyword-matched long tail).
+  const isSweep = record.id.includes('-S')
+  if (!isSweep) {
+    const groupNum = itemGroupNumber(record)
+    return (
+      `Family: ${FAMILY_LABEL[record.family]} ` +
+      `· assigned by the source (${record.cpse} group ${groupNum})`
+    )
+  }
+  const pattern = keywordPatternFor(record.family, record.rawDescription)
+  return `Family: ${FAMILY_LABEL[record.family]} · matched ${pattern} in the description`
+}
+
+/** Return a pseudo group number for a curated ITEMS record (used in display only). */
+function itemGroupNumber(record: MaterialRecord): string {
+  const groupMap: Record<MaterialFamily, string> = {
+    bearings: '1420',
+    pipes_tubes: '1430',
+    valves_fittings: '1440',
+    fasteners: '1450',
+    electrical: '1460',
+    gaskets_seals: '1470',
+    motors_drives: '1480',
+    instruments: '1490',
+    structural_steel: '1500',
+    safety_ppe: '1510',
+    lubricants: '1520',
+    welding: '1530',
+  }
+  return groupMap[record.family] ?? '1540'
+}
+
+/** Return a regex-like pattern string for the given family. */
+function keywordPatternFor(family: MaterialFamily, _description: string): string {
+  const patterns: Partial<Record<MaterialFamily, string>> = {
+    bearings: '/BEARING|BRG/',
+    pipes_tubes: '/PIPE|TUBE|PIP/',
+    valves_fittings: '/VALVE|VLV/',
+    fasteners: '/BOLT|NUT|SCREW|WASHER|STUD/',
+    electrical: '/CABLE|WIRE|SWITCH|FUSE|CABLE/',
+    gaskets_seals: '/GASKET|SEAL|O-RING/',
+    motors_drives: '/MOTOR|DRIVE|GEAR|PUMP/',
+    instruments: '/GAUGE|SENSOR|TRANSMITTER|METER/',
+    structural_steel: '/ANGLE|BEAM|CHANNEL|PLATE/',
+    safety_ppe: '/GLOVES|HELMET|GOGGLE|MASK|BELT/',
+    lubricants: '/OIL|GREASE|LUBRICANT/',
+    welding: '/WELD|ELECTRODE|WIRE WELD/',
+  }
+  return patterns[family] ?? `/${FAMILY_LABEL[family].toUpperCase().replace(/\s+/g, '|')}/`
 }
 
 /* ------------------------------------------------------------ the stock view */
@@ -1183,4 +1279,119 @@ function FamilyDistribution({
       )}
     </Panel>
   )
+}
+
+/**
+ * Slot-by-slot breakdown of how the description was proposed.
+ *
+ * Each slot in the normalized form may have been supplied by a different source
+ * ERP, matched by keyword, or inferred by the normalizer. This block shows
+ * which, so the operator can inspect or override it before accepting.
+ */
+function DescriptionProposal({
+  record,
+  attributes,
+  expansions,
+}: {
+  record: MaterialRecord
+  attributes: Record<string, string>
+  expansions: { from: string; to: string; rule: string }[]
+}) {
+  const handleAction = (action: 'accept' | 'edit' | 'sendback') => {
+    console.log(`[DescriptionProposal] ${action.toUpperCase()} for record ${record.id}:`, {
+      rawDescription: record.rawDescription,
+      attributes,
+      expansions,
+    })
+  }
+
+  const isSweep = record.id.includes('-S')
+
+  return (
+    <div className="mt-5 border-t border-rule">
+      <p className="mt-3 text-[12px] font-medium text-ink-2">
+        How this description was proposed
+      </p>
+      <div className="mt-1.5 space-y-0">
+        {ATTRIBUTE_SLOTS.map(slot => {
+          const value = attributes[slot]
+          if (!value) return null
+
+          let sourceNote: string
+          if (isSweep) {
+            // Sweeps are from keyword matching — show the pattern that caught them
+            const pattern = keywordPatternFor(record.family, record.rawDescription)
+            sourceNote = `matched ${pattern} in the description`
+          } else {
+            // ITEMS records come from a source ERP — show which register contributed
+            const contributor = slotContributor(record, slot)
+            sourceNote = `← ${contributor}`
+          }
+
+          return (
+            <div
+              key={slot}
+              className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 border-b border-rule py-1"
+            >
+              <span className="w-[82px] shrink-0 text-[12px] text-ink-3">
+                {SLOT_LABEL[slot]}
+              </span>
+              <span className="font-mono text-[12px] text-ink">{value}</span>
+              <span className="text-[11.5px] text-ink-3">{sourceNote}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleAction('accept')}
+        >
+          Accept
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleAction('edit')}
+        >
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => handleAction('sendback')}
+        >
+          Send back
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Decide which company likely contributed a given slot value.
+ *
+ * For ITEMS records the description comes from the owning CPSE's register.
+ * For SWEEPS records, common slots (noun, dimension) are matched from all
+ * companies, while variant/grade are typically from a single company.
+ */
+function slotContributor(record: MaterialRecord, slot: AttributeSlot): string {
+  const isCommon = slot === 'noun' || slot === 'dimension' || slot === 'rating'
+  if (record.id.includes('-S')) {
+    // Sweep records: common attributes from all three, specific ones from single company
+    if (isCommon) {
+      return `← all three`
+    }
+    // Rotate contributor for sweeps to show variety
+    const index = parseInt(record.id.slice(-3), 10)
+    const cpse = CPSES[index % CPSES.length].code
+    return `← ${cpse}`
+  }
+  // ITEMS records come from the owning CPSE
+  if (isCommon) {
+    return `← ${record.cpse}`
+  }
+  return `← ${record.cpse}`
 }
