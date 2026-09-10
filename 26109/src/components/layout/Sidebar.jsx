@@ -10,6 +10,8 @@ import {
   FlaskConical,
   FileBarChart2,
   Settings,
+  Cpu,
+  Database,
   X,
 } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
@@ -27,10 +29,13 @@ const items = [
   { to: '/milk-quality', icon: Droplets, label: 'nav.milk' },
   { to: '/environment', icon: CloudSun, label: 'nav.environment' },
   { to: '/worker-hygiene', icon: ClipboardCheck, label: 'nav.workerHygiene' },
+  { to: '/devices', icon: Cpu, label: 'nav.devices' },
+  { to: '/model', icon: Database, label: 'nav.model' },
   { to: '/simulator', icon: FlaskConical, label: 'nav.simulator' },
   { to: '/reports', icon: FileBarChart2, label: 'nav.reports' },
   { to: '/settings', icon: Settings, label: 'nav.settings' },
 ]
+
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const { t } = useI18n()
