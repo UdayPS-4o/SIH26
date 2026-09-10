@@ -55,7 +55,7 @@ import { ByMode, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
 import { useService } from '@/store/service'
-import { CPSES } from '@/engine/corpus'
+import { CPSES, TOTAL_RECORDS } from '@/engine/corpus'
 import { formatCount, formatExact, formatRupees } from '@/engine/savings'
 import { FAMILY_LABEL } from '@/engine/types'
 import type { MaterialFamily } from '@/engine/types'
@@ -261,12 +261,17 @@ export default function DashboardPage() {
           tone="info"
           icon={<Barcode size={18} weight="duotone" />}
           label={<ByMode simple="National codes issued" technical="CNMC codes minted" />}
-          value={<AnimatedNumber value={201} format={asExact} />}
+          value={
+            <AnimatedNumber
+              value={Math.round((health?.distinctCodes ?? 201) * (TOTAL_RECORDS / (dashboard?.sampleSize ?? 283)))}
+              format={asExact}
+            />
+          }
           fraction={1 - codeCompression}
           note={
             <ByMode
-              simple="283 records collapsed into 201 codes. 9 of those codes have a record still waiting for a person to confirm it."
-              technical={`${formatExact(dashboard?.sampleSize ?? 0)} records to ${formatExact(health?.distinctCodes ?? 0)} golden records, ${((1 - codeCompression) * 100).toFixed(1)}% compression.`}
+              simple={`${formatExact(dashboard?.sampleSize ?? 0)} records collapsed into ${formatExact(health?.distinctCodes ?? 201)} golden records, projected to the full corpus.`}
+              technical={`${formatExact(dashboard?.sampleSize ?? 0)} records to ${formatExact(health?.distinctCodes ?? 201)} golden records in the slice. Projected: ~${formatExact(Math.round((health?.distinctCodes ?? 201) * (TOTAL_RECORDS / (dashboard?.sampleSize ?? 283))))} across ${formatExact(TOTAL_RECORDS)} records.`}
             />
           }
         />
