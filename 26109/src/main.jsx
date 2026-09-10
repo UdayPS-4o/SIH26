@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { I18nProvider } from './i18n/i18n.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { AlertProvider } from './context/AlertContext.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -11,7 +12,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ThemeProvider>
         <I18nProvider>
-          <App />
+          <AlertProvider>
+            <App />
+          </AlertProvider>
         </I18nProvider>
       </ThemeProvider>
     </BrowserRouter>

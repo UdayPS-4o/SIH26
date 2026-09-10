@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { Menu, Bell, ChevronDown, Check, Globe, Home, Users, MapPin, CalendarDays, Sun, Moon } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
@@ -32,13 +32,25 @@ function Dropdown({ button, children, align = 'right', width = 'w-56' }) {
   )
 }
 
+import { useAlerts } from '../../context/AlertContext.jsx'
+
 export default function Topbar({ onMenu }) {
   const { t, lang, setLang } = useI18n()
   const { theme, toggleTheme } = useTheme()
+  const { isReviewed } = useAlerts()
   const [farm, setFarm] = useState(FARMS[0])
 
+  const openAlerts = useMemo(
+    () => ALERTS.filter((a) => a.status === 'open' && !isReviewed(a.id) && !isReviewed(a.animalId)),
+    [isReviewed]
+  )
+
+  const todayStr = useMemo(() => {
+    return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }, [])
+
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 overflow-hidden border-b border-gray-200 bg-white px-3 dark:border-gray-800 dark:bg-gray-900 sm:gap-3 sm:px-4 lg:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-gray-200 bg-white px-3 dark:border-gray-800 dark:bg-gray-900 sm:gap-3 sm:px-4 lg:px-6">
       <button className="shrink-0 text-gray-500 dark:text-gray-400 lg:hidden" onClick={onMenu} aria-label="Open menu">
         <Menu size={20} />
       </button>
@@ -49,7 +61,7 @@ export default function Topbar({ onMenu }) {
           <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 sm:gap-2 sm:px-3">
             <Home size={15} className="shrink-0 text-brand-600" />
             <span className="max-w-[5rem] truncate font-semibold text-gray-800 dark:text-gray-100 sm:max-w-[9rem]">{farm}</span>
-            <ChevronDown size={14} className="hidden shrink-0 text-gray-400 sm:block" />
+            <ChevronDown size={14} className="shrink-0 text-gray-400" />
           </button>
         }
       >
@@ -75,9 +87,9 @@ export default function Topbar({ onMenu }) {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-        <div className="hidden items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 sm:flex">
+        <div className="hidden items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 md:flex">
           <CalendarDays size={15} className="text-gray-400" />
-          Apr 27, 2025
+          {todayStr}
         </div>
 
         <button
@@ -94,7 +106,7 @@ export default function Topbar({ onMenu }) {
               <Globe size={15} className="shrink-0 text-gray-400" />
               <span className="font-medium text-gray-700 dark:text-gray-200 sm:hidden">{lang === 'en' ? 'EN' : 'हि'}</span>
               <span className="hidden font-medium text-gray-700 dark:text-gray-200 sm:inline">{lang === 'en' ? 'English' : 'हिन्दी'}</span>
-              <ChevronDown size={14} className="hidden shrink-0 text-gray-400 sm:block" />
+              <ChevronDown size={14} className="shrink-0 text-gray-400" />
             </button>
           }
         >
@@ -140,16 +152,28 @@ export default function Topbar({ onMenu }) {
           ))}
         </Dropdown>
 
-        <div className="ml-1 flex shrink-0 items-center gap-2 border-l border-gray-200 pl-3 dark:border-gray-700">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
-            RK
-          </span>
-          <div className="hidden leading-tight lg:block">
-            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Ramesh Kumar</div>
-            <div className="text-[11px] text-gray-400">Farmer</div>
+        <Dropdown
+          width="w-48"
+          button={
+            <button className="ml-1 flex shrink-0 items-center gap-2 border-l border-gray-200 pl-3 dark:border-gray-700 hover:opacity-90">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+                RK
+              </span>
+              <div className="hidden leading-tight lg:block text-left">
+                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Ramesh Kumar</div>
+                <div className="text-[11px] text-gray-400">Farmer</div>
+              </div>
+              <ChevronDown size={14} className="shrink-0 text-gray-400" />
+            </button>
+          }
+        >
+          <div className="px-3 py-2 text-xs font-semibold border-b border-gray-100 dark:border-gray-800 text-gray-500">
+            Ramesh Kumar (Farmer)
           </div>
-          <ChevronDown size={14} className="hidden text-gray-400 lg:block" />
-        </div>
+          <Link to="/settings" className="block px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 dark:text-gray-200">
+            {t('nav.settings')}
+          </Link>
+        </Dropdown>
       </div>
     </header>
   )

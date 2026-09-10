@@ -37,9 +37,12 @@ import { useI18n } from '../i18n/i18n.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
 import heroCow from '../assets/hero-section.png'
 
+import { useAlerts } from '../context/AlertContext.jsx'
+
 export default function Dashboard() {
   const { t } = useI18n()
   const { theme } = useTheme()
+  const { isReviewed } = useAlerts()
   const dark = theme === 'dark'
   const axisStyle = { fontSize: 11, fill: dark ? '#9099a8' : '#9ca3af' }
   const gridColor = dark ? '#2a2f3a' : '#eef0f2'
@@ -50,7 +53,7 @@ export default function Dashboard() {
     backgroundColor: dark ? '#111827' : '#fff',
     color: dark ? '#e5e7eb' : '#111827',
   }
-  const urgent = ALERTS.filter((a) => a.status === 'open').slice(0, 3)
+  const urgent = ALERTS.filter((a) => a.status === 'open' && !isReviewed(a.id) && !isReviewed(a.animalId)).slice(0, 3)
   const recent = [...ANIMALS].sort((a, b) => b.riskScore - a.riskScore).slice(0, 5)
   const pct = (n) => Math.round((n / HERD_STATS.totalAnimals) * 100)
 
