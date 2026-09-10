@@ -80,22 +80,17 @@ export function PageHead({
   lead,
   aside,
   icon,
-  eyebrow,
 }: {
   title: string
   lead: string
   aside?: ReactNode
   icon?: ReactNode
-  eyebrow?: ReactNode
 }) {
   return (
     <header className="mb-7 flex flex-wrap items-start justify-between gap-4 border-b border-rule pb-6">
       <div className="flex min-w-0 items-start gap-4">
         {icon ? <IconTile icon={icon} tone="accent" size="lg" /> : null}
         <div className="min-w-0">
-          {eyebrow ? (
-            <div className="mb-1 font-display text-[13px] font-bold uppercase tracking-[0.18em] text-accent">{eyebrow}</div>
-          ) : null}
           <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight text-ink">
             {title}
           </h1>
@@ -625,10 +620,7 @@ export function EndpointTag({
   scanned?: number
 }) {
   return (
-    <span
-      className="inline-flex items-center gap-2 font-mono text-[10.5px] text-ink-3"
-      title="Resolved against the embedded harmonization core in this build; the path shown is the live-mode FastAPI route."
-    >
+    <span className="inline-flex items-center gap-2 font-mono text-[10.5px] text-ink-3">
       <span className="text-accent">
         {method}
         {!IS_LIVE && <span className="ml-1 text-ink-3">embedded</span>}

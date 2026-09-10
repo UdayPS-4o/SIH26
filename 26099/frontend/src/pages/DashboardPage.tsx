@@ -55,7 +55,7 @@ import { ByMode, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
 import { useService } from '@/store/service'
-import { CPSES, TOTAL_RECORDS } from '@/engine/corpus'
+import { CPSES } from '@/engine/corpus'
 import { formatCount, formatExact, formatRupees } from '@/engine/savings'
 import { FAMILY_LABEL } from '@/engine/types'
 import type { MaterialFamily } from '@/engine/types'
@@ -99,7 +99,7 @@ export default function DashboardPage() {
     () => [
       { name: 'Same item', value: counts.same },
       { name: 'Needs a person', value: counts.review },
-      { name: 'Not a match', value: counts.different },
+      { name: 'Below threshold', value: counts.different },
     ],
     [counts],
   )
@@ -196,7 +196,6 @@ export default function DashboardPage() {
         title={c('dashboardTitle')}
         lead={c('dashboardLead')}
         icon={<Stack size={22} weight="fill" />}
-        eyebrow="One Nation — One Material Code"
         aside={
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap justify-end gap-2">
@@ -250,7 +249,7 @@ export default function DashboardPage() {
           fraction={duplicateRate}
           note={
             <ByMode
-              simple="45 in every 100 items are also bought by another company. These 5.25 lakh are the redundant copies that could be retired."
+              simple={`About ${Math.round(duplicateRate * 100)} in every 100 items already exist somewhere else.`}
               technical={`${(duplicateRate * 100).toFixed(1)}% duplicate rate, measured on the slice and applied to the loaded masters.`}
             />
           }
@@ -261,17 +260,12 @@ export default function DashboardPage() {
           tone="info"
           icon={<Barcode size={18} weight="duotone" />}
           label={<ByMode simple="National codes issued" technical="CNMC codes minted" />}
-          value={
-            <AnimatedNumber
-              value={Math.round((health?.distinctCodes ?? 201) * (TOTAL_RECORDS / (dashboard?.sampleSize ?? 283)))}
-              format={asExact}
-            />
-          }
+          value={<AnimatedNumber value={health?.distinctCodes ?? 0} format={asExact} />}
           fraction={1 - codeCompression}
           note={
             <ByMode
-              simple={`${formatExact(dashboard?.sampleSize ?? 0)} records collapsed into ${formatExact(health?.distinctCodes ?? 201)} golden records, projected to the full corpus.`}
-              technical={`${formatExact(dashboard?.sampleSize ?? 0)} records to ${formatExact(health?.distinctCodes ?? 201)} golden records in the slice. Projected: ~${formatExact(Math.round((health?.distinctCodes ?? 201) * (TOTAL_RECORDS / (dashboard?.sampleSize ?? 283))))} across ${formatExact(TOTAL_RECORDS)} records.`}
+              simple={`${formatExact(dashboard?.sampleSize ?? 0)} records collapsed into ${formatExact(health?.distinctCodes ?? 0)} codes.`}
+              technical={`${formatExact(dashboard?.sampleSize ?? 0)} records to ${formatExact(health?.distinctCodes ?? 0)} golden records, ${((1 - codeCompression) * 100).toFixed(1)}% compression.`}
             />
           }
         />
@@ -349,11 +343,6 @@ export default function DashboardPage() {
                   name={entry.name}
                   value={entry.value}
                   fraction={totalPairs > 0 ? entry.value / totalPairs : 0}
-                  note={
-                    entry.name === 'Not a match'
-                      ? `${counts.different} pairs scored below the line where a person is asked.`
-                      : undefined
-                  }
                 />
               ))}
             </ul>
@@ -514,22 +503,17 @@ function VerdictRow({
   name,
   value,
   fraction,
-  note,
 }: {
   tone: Tone
   name: string
   value: number
   fraction: number
-  note?: React.ReactNode
 }) {
   return (
     <li className="flex items-center gap-2.5 py-1.5">
       <span className={VERDICT_TEXT[tone]}>{VERDICT_ICON[tone]}</span>
-      <div className="min-w-0 flex-1">
-        <span className="text-[12.5px] text-ink-2">{name}</span>
-        {note ? <p className="mt-0 text-[11px] text-ink-3">{note}</p> : null}
-      </div>
-      <span className="shrink-0 font-mono text-[10.5px] tabular-nums text-ink-3">
+      <span className="min-w-0 truncate text-[12.5px] text-ink-2">{name}</span>
+      <span className="ml-auto shrink-0 font-mono text-[10.5px] tabular-nums text-ink-3">
         {(fraction * 100).toFixed(0)}%
       </span>
       <Num size="sm" className="w-12 shrink-0 text-right text-ink">
