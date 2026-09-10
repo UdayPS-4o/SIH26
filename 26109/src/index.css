@@ -4,6 +4,28 @@
 
 :root {
   color-scheme: light;
+
+  /* Sidebar custom theme tokens */
+  --sidebar-from: #14532d;
+  --sidebar-via: #14532d;
+  --sidebar-to: #78350f;
+  --sidebar-text: #f0fdf4;
+  --sidebar-muted: #86efac;
+  --sidebar-active: #f59e0b;
+  --sidebar-badge-prediction: #f59e0b;
+  --sidebar-badge-prevention: #22c55e;
+  --sidebar-badge-analysis: #3B9EFF;
+  --sidebar-badge-detection: #ef4444;
+  --sidebar-badge-suggestions: #a855f7;
+}
+
+[data-custom-theme="true"] {
+  --sidebar-from: var(--custom-sidebar-from, #14532d);
+  --sidebar-via: var(--custom-sidebar-via, #14532d);
+  --sidebar-to: var(--custom-sidebar-to, #78350f);
+  --sidebar-text: var(--custom-sidebar-text, #f0fdf4);
+  --sidebar-muted: var(--custom-sidebar-muted, #86efac);
+  --sidebar-active: var(--custom-sidebar-active, #f59e0b);
 }
 
 html,
