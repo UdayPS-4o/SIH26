@@ -8,21 +8,16 @@
  * which is the honest version of a status light.
  */
 
-import { ArrowCounterClockwise, CaretDown, Moon, Sun, User } from '@phosphor-icons/react'
-import { useEffect, useState } from 'react'
+import { ArrowCounterClockwise, Moon, Sun } from '@phosphor-icons/react'
 import { useCopy } from '@/copy'
 import { useViewMode } from '@/store/viewmode'
 import { useTheme } from '@/store/theme'
 import { useService } from '@/store/service'
-import { serviceState } from '@/api/state'
 import { TechnicalOnly } from './Gate'
 import { EndpointTag, Num, Segmented } from './ui'
-import { cx } from '@/components/ui/tokens'
 import { formatCount } from '@/engine/savings'
 import { CPSES } from '@/engine/corpus'
 import { IS_LIVE } from '@/api/client'
-
-const STEWARD_NAMES = ['Rahul Sharma', 'Priya Menon', 'Amit Verma', 'Sneha Iyer', 'Karthik Rao', 'A. Deshmukh']
 
 export default function Header() {
   const c = useCopy()
@@ -37,16 +32,6 @@ export default function Header() {
   const mostRecent = Object.values(lastCall).sort((a, b) => b.at - a.at)[0]
   const loaded = dashboard?.loaded.length ?? 0
   const records = dashboard?.totalRecords ?? 0
-
-  const [stewardOpen, setStewardOpen] = useState(false)
-  const [stewardName, setStewardName] = useState(serviceState.operator)
-
-  useEffect(() => {
-    const handler = () => setStewardOpen(false)
-    if (!stewardOpen) return
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [stewardOpen])
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b border-rule bg-surface px-6">
@@ -106,43 +91,6 @@ export default function Header() {
           {IS_LIVE ? 'service: network' : 'service: in-process'}
         </span>
       </TechnicalOnly>
-
-      {/* Steward identity selector */}
-      <div className="relative">
-        <button
-          onClick={() => setStewardOpen(v => !v)}
-          className="flex items-center gap-1.5 rounded-full border border-rule-strong px-2.5 py-1.5 text-[11.5px] text-ink-2 transition-colors hover:bg-surface-hover hover:text-ink"
-          title="Steward identity"
-        >
-          <User size={12} weight="regular" />
-          <span className="max-w-[100px] truncate">{stewardName}</span>
-          <CaretDown size={10} weight="regular" />
-        </button>
-        {stewardOpen ? (
-          <div className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-lg border border-rule bg-surface shadow-md">
-            <div className="px-2.5 py-1.5 text-[10px] uppercase tracking-widest text-ink-3 border-b border-rule">
-              Operator
-            </div>
-            {STEWARD_NAMES.map(name => (
-              <button
-                key={name}
-                onClick={() => {
-                  serviceState.operator = name
-                  setStewardName(name)
-                  setStewardOpen(false)
-                }}
-                className={cx(
-                  'w-full text-left px-2.5 py-[5px] text-[12px] transition-colors',
-                  name === stewardName ? 'text-accent bg-accent-bg' : 'text-ink-2 hover:bg-surface-hover hover:text-ink',
-                )}
-              >
-                {name === stewardName && <span className="mr-1.5">&#x2713;</span>}
-                {name}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
 
       <Segmented
         size="sm"

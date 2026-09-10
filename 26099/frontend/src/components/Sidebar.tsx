@@ -31,10 +31,8 @@ import type { CopyKey } from '@/copy'
 import type { Icon } from '@phosphor-icons/react'
 import { useViewMode } from '@/store/viewmode'
 import { useService } from '@/store/service'
-import { serviceState } from '@/api/state'
 import { cx } from './ui/tokens'
 import { IconTile, Num } from './ui'
-import { useState, useRef, useEffect } from 'react'
 import type { Cpse } from '@/engine/types'
 import { CPSES } from '@/engine/corpus'
 
@@ -47,84 +45,6 @@ interface NavItem {
   badge?: 'pending'
 }
 
-const STEWARD_NAMES = ['Rahul Sharma', 'Priya Menon', 'Amit Verma', 'Sneha Iyer', 'Karthik Rao']
-
-function StewardInput() {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(serviceState.operator)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [confirmed, setConfirmed] = useState(false)
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
-    }
-  }, [editing])
-
-  const save = () => {
-    const trimmed = draft.trim()
-    if (trimmed && trimmed !== serviceState.operator) {
-      serviceState.operator = trimmed
-      try { sessionStorage.setItem('codeone.operator', trimmed) } catch {}
-    }
-    setEditing(false)
-    setConfirmed(true)
-    setTimeout(() => setConfirmed(false), 2000)
-  }
-
-  const selectName = (name: string) => {
-    setDraft(name)
-    serviceState.operator = name
-    try { sessionStorage.setItem('codeone.operator', name) } catch {}
-    setConfirmed(true)
-    setTimeout(() => setConfirmed(false), 2000)
-  }
-
-  if (!editing) {
-    return (
-      <div className="px-5 pt-3 pb-2">
-        <div className="text-[11px] uppercase tracking-widest text-ink-3 mb-1.5">Steward</div>
-        <button
-          onClick={() => setEditing(true)}
-          className="flex items-center gap-2 w-full rounded-lg border border-rule bg-surface-hover px-3 py-2 text-left text-[13px] text-ink hover:border-accent transition-colors group"
-        >
-          <span className="flex-1 truncate">{serviceState.operator}</span>
-          <span className="text-[10px] text-ink-3 group-hover:text-accent">edit</span>
-        </button>
-        {confirmed && (
-          <div className="mt-1 text-[11px] text-positive">Saved</div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div className="px-5 pt-3 pb-2">
-      <div className="text-[11px] uppercase tracking-widest text-ink-3 mb-1.5">Steward</div>
-      <input
-        ref={inputRef}
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onBlur={save}
-        onKeyDown={e => e.key === 'Enter' && save()}
-        className="w-full rounded-lg border border-accent bg-surface px-3 py-2 text-[13px] text-ink outline-none"
-        placeholder="Your name"
-      />
-      <div className="mt-1.5 flex flex-wrap gap-1">
-        {STEWARD_NAMES.map(name => (
-          <button
-            key={name}
-            onClick={() => selectName(name)}
-            className="rounded-md border border-rule px-2 py-[3px] text-[11px] text-ink-2 hover:border-accent hover:text-accent transition-colors"
-          >
-            {name}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 const ITEMS: NavItem[] = [
   { to: '/', key: 'navDashboard', icon: SquaresFour, simple: true },
   { to: '/overview', key: 'navOverview', icon: Compass, simple: true },
@@ -212,7 +132,6 @@ export default function Sidebar() {
             </ul>
           </>
         ) : null}
-        <StewardInput />
       </nav>
 
       <IntegrationStatus loaded={loaded} />
