@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "node api.js && vite",
     "build": "vite build",
     "electron-dev": "electron .",
     "electron-build": "vite build && electron ."

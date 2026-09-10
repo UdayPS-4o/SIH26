@@ -50,12 +50,7 @@ redis.dump
 meili_data/
 
 # Environment Variables & Secrets
-.env
-.env.local
 .env.*.local
-.env.development
-.env.production
-.env.staging
 !.env.example
 *.pem
 *.key
@@ -63,7 +58,6 @@ meili_data/
 secrets/
 
 # IDE / Editor Files
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -101,3 +95,4 @@ uploads/
 
 # Claude Code session state and worktrees
 .claude/
+config.bat
