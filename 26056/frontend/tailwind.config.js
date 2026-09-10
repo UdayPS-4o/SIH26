@@ -1,3 +1,5 @@
+
+
 /** @type {import('tailwindcss').Config} */
 
 // Tailwind is bound to the design-system tokens rather than to raw palettes.
@@ -93,4 +95,4 @@ export default {
     },
   },
   plugins: [],
-}
+};
