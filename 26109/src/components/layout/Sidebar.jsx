@@ -13,8 +13,6 @@ import {
   Cpu,
   Database,
   X,
-  Sparkles,
-  ScanSearch,
 } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
 import { ALERTS } from '../../data/mockData'
@@ -41,57 +39,32 @@ const items = [
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const { t } = useI18n()
-
   return (
     <>
-      {mobileOpen && <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden" onClick={onClose} />}
+      {mobileOpen && <div className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-gradient-to-b text-white transition-transform lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-navy-800 to-navy-950 text-slate-300 transition-transform dark:from-navy-950 dark:to-black lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{
-          background: `linear-gradient(to bottom, var(--custom-sidebar-from, #14532d), var(--custom-sidebar-via, #14532d), var(--custom-sidebar-to, #78350f))`,
-        }}
       >
         {/* Brand */}
-        <div className="relative flex items-center gap-3 px-4 pb-3 pt-4">
-          <div className="relative">
-            <img src={logoMark} alt="Gaurogya Setu" className="h-10 w-10 shrink-0 relative z-10 drop-shadow-lg" />
-            <div className="absolute -inset-1 rounded-full bg-honey-400/40 blur-md animate-pulse-soft" />
-          </div>
+        <div className="flex items-center gap-3 px-5 pb-4 pt-5">
+          <img src={logoMark} alt="Gaurogya Setu" className="h-11 w-11 shrink-0" />
           <div className="leading-tight">
-            <div className="text-xl font-black tracking-tight" style={{ color: 'var(--sidebar-text, #f0fdf4)' }}>
-              GAUROGYA <span className="text-honey-400">SETU</span>
+            <div className="text-lg font-bold text-white">
+              Gaurogya <span className="text-ai">Setu</span>
             </div>
-            <div className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--sidebar-muted, #86efac)' }}>
-              AI-Powered Dairy Intelligence
+            <div className="text-[10px] tracking-wide text-slate-400">
+              Healthy Animals&nbsp;|&nbsp;Safe Milk&nbsp;|&nbsp;Better Future
             </div>
           </div>
-          <button className="ml-auto rounded-lg p-1.5 hover:bg-white/10 hover:text-white lg:hidden" onClick={onClose} aria-label="Close menu" style={{ color: 'var(--sidebar-muted, #86efac)' }}>
-            <X size={16} />
+          <button className="ml-auto text-slate-400 lg:hidden" onClick={onClose} aria-label="Close menu">
+            <X size={18} />
           </button>
         </div>
 
-        {/* Feature Tags Banner */}
-        <div className="mx-3 mb-3 rounded-xl border border-honey-400/30 bg-gradient-to-r from-honey-500/20 via-forest-500/10 to-ai/20 px-3 py-2.5">
-          <div className="flex flex-wrap gap-1">
-            {['PREDICTION', 'PREVENTION', 'ANALYSIS', 'DETECTION', 'SUGGESTIONS'].map((feat) => {
-              const badgeColor = sidebarBadgeColors[feat] || '#f59e0b'
-              return (
-                <span key={feat} className="rounded-md px-1.5 py-0.5 text-[9px] font-black tracking-wider uppercase" style={{
-                  backgroundColor: `${badgeColor}22`,
-                  color: badgeColor,
-                  border: `1px solid ${badgeColor}44`
-                }}>
-                  {feat}
-                </span>
-              )
-            })}
-          </div>
-        </div>
-
         {/* Nav */}
-        <nav className="sidebar-scroll flex-1 space-y-0.5 overflow-y-auto px-2.5 py-2">
+        <nav className="sidebar-scroll flex-1 space-y-1 overflow-y-auto px-3 py-3">
           {items.map((item) => {
             const Icon = item.icon
             return (
@@ -99,34 +72,41 @@ export default function Sidebar({ mobileOpen, onClose }) {
                 key={item.to}
                 to={item.to}
                 onClick={onClose}
+                className={({ isActive }) =>
+                  `group flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-[#1c6fd0] text-white shadow-lg shadow-[#1c6fd0]/30'
+                      : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  }`
+                }
               >
                 {({ isActive }) => (
-                  <div className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-semibold transition-all ${isActive ? 'text-white shadow-lg shadow-honey-500/40' : ''}`}
-                    style={{ background: isActive ? 'linear-gradient(to right, var(--custom-sidebar-active, #f59e0b), #d97706)' : 'transparent' }}
-                  >
-                    <Icon size={17} className={isActive ? 'text-white' : 'text-honey-400 group-hover:text-honey-300'} />
-                    <span className="flex-1" style={{ color: isActive ? '#fff' : 'var(--sidebar-text, #f0fdf4)' }}>{t(item.label)}</span>
-                    <span className={`rounded-md border px-1.5 py-0.5 text-[9px] font-black tracking-wider ${featureColors[item.feature] || 'bg-sand-400/20 text-sand-400 border-sand-400/30'}`}>
-                      {item.feature}
-                    </span>
+                  <>
+                    <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'} />
+                    <span className="flex-1">{t(item.label)}</span>
                     {item.badge ? (
-                      <span className="grid h-5 min-w-[20px] place-items-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold text-white shadow-lg shadow-red-500/40">
+                      <span className="grid h-5 min-w-[20px] place-items-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
                         {item.badge}
                       </span>
                     ) : null}
-                  </div>
+                  </>
                 )}
               </NavLink>
             )
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-4 pb-3 pt-2">
-          <div className="border-t border-forest-700/60 pt-2.5">
-            <p className="text-[10px] font-bold text-honey-400">Empowering Farmers with AI</p>
-            <p className="text-[9px] text-forest-400">Gaurogya Setu  |  SIH 2026</p>
-          </div>
+        {/* Footer art */}
+        <div className="relative mt-2">
+          <p className="px-5 pb-2 font-script text-2xl leading-none text-emerald-300/90">
+            Healthy Herd
+            <br />
+            Profitable Farm
+          </p>
+          <div
+            className="h-28 w-full bg-cover bg-bottom"
+            style={{ backgroundImage: `url(${pasture})` }}
+          />
         </div>
       </aside>
     </>
