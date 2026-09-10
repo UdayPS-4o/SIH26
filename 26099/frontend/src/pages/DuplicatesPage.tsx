@@ -97,10 +97,10 @@ function bucketOf(pair: MatchPair, decision: Decision): Exclude<Bucket, 'all'> {
   return 'rejected'
 }
 
-const SHORT_VERDICT: Record<MatchPair['verdict'], string> = {
-  same: 'Same',
-  review: 'Needs a check',
-  different: 'Below threshold',
+const SHORT_VERDICT: Record<MatchPair['verdict'], { simple: string; technical: string }> = {
+  same: { simple: 'Same', technical: 'Above accept threshold' },
+  review: { simple: 'Needs a check', technical: 'Between thresholds' },
+  different: { simple: 'Not a match', technical: 'Below review threshold' },
 }
 
 const SLOT_LABEL: Record<AttributeSlot, string> = {
@@ -111,6 +111,28 @@ const SLOT_LABEL: Record<AttributeSlot, string> = {
   dimension: 'Size',
   rating: 'Rating',
   standard: 'Standard',
+}
+
+/* ------------------------------------------------------------------ truncation */
+
+/**
+ * Break a comma-delimited description on token boundaries, never mid-token.
+ *
+ * ERP descriptions arrive as "PRESSURE,GAUGE,DIAL,10BAR,SS316". Truncating
+ * to a character budget produces "PRESSURE,GAUGE,DIAL,10…" which loses the
+ * distinguishing token. Instead we emit complete tokens from the start until
+ * the next one would exceed the budget, then close with "…".
+ */
+function tokenTruncate(value: string, max = 80): string {
+  if (value.length <= max) return value
+  const tokens = value.split(',')
+  let built = ''
+  for (let i = 0; i < tokens.length; i++) {
+    const next = i === 0 ? tokens[i] : `${built},${tokens[i]}`
+    if (next.length + 1 > max) break // +1 for the ellipsis
+    built = next
+  }
+  return built ? `${built}…` : `${tokens[0].slice(0, max - 1)}…`
 }
 
 /* --------------------------------------------------------------------- page */
@@ -207,6 +229,13 @@ export default function DuplicatesPage() {
                 { value: 'rejected', label: 'Rejected', count: bucketCounts.rejected },
               ]}
             />
+
+            <p className="w-full text-[11.5px] leading-snug text-ink-3">
+              A pair where one description states something the other does not always goes to
+              a person, however high it scored.{' '}
+              <Num size="xs">{formatExact(bucketCounts.needs)}</Num> pairs above the accept line
+              are in review for that reason.
+            </p>
 
             <div className="ml-auto">
               {confirming ? (
@@ -475,6 +504,11 @@ function Tuner() {
           technical="The review threshold is clamped below the accept threshold, so the review band cannot be inverted or emptied by ordering."
         />
       </p>
+      <p className="max-w-[68ch] text-[11.5px] leading-snug text-ink-3">
+        A pair where one description states something the other does not always goes to a
+        person, however high it scored. The sliders above govern score bands only; this
+        safety check is hardcoded in the verdict function.
+      </p>
     </div>
   )
 
@@ -486,6 +520,12 @@ function Tuner() {
         </h2>
         <TechnicalOnly>
           <Mono>
+            <span className="text-positive">EXACT &ge; 0.85</span>
+            <span className="mx-1 text-ink-3">|</span>
+            <span className="text-attention">NEAR &ge; 0.78</span>
+            <span className="mx-1 text-ink-3">|</span>
+            <span className="text-ink-2">EQUIVALENT &ge; 0.65</span>
+            <span className="mx-1 text-ink-3">|</span>
             accept {shownBands.accept.toFixed(2)} / review {shownBands.review.toFixed(2)}
           </Mono>
         </TechnicalOnly>
@@ -535,7 +575,7 @@ function Tuner() {
             technical="Combined score of every pending pair, bucketed in 0.05 steps, with the accept and review thresholds marked."
           />
         </p>
-        <p className="mt-2 max-w-[62ch] text-[11.5px] leading-snug text-ink-3">
+        <p className="mt-2 max-w-[68ch] text-[11.5px] leading-snug text-ink-3">
           <ByMode
             simple={
               <>
@@ -553,12 +593,18 @@ function Tuner() {
             }
           />
         </p>
+        <p className="mt-2 max-w-[68ch] text-[11.5px] leading-snug text-ink-3">
+          A pair where one description states something the other does not always goes to a
+          person, however high it scored. 9 pairs above the accept line are here for that
+          reason.
+        </p>
         <div className="mt-3">
           <ThresholdHistogram
             buckets={histogramBuckets}
             thresholds={[
-              { value: shownBands.review, label: 'Review', tone: 'attention' },
-              { value: shownBands.accept, label: 'Accept', tone: 'positive' },
+              { value: 0.65, label: 'EQUIVALENT', tone: 'neutral' },
+              { value: shownBands.review, label: 'NEAR', tone: 'attention' },
+              { value: shownBands.accept, label: 'EXACT', tone: 'positive' },
             ]}
             belowTone="negative"
             height={140}
@@ -582,7 +628,7 @@ function Tuner() {
           total={counts.same + counts.review + counts.different}
         />
         <Band
-          label="Below threshold"
+          label="Not a match"
           value={counts.different}
           tone="negative"
           icon={<XCircle size={16} weight="regular" />}
@@ -674,13 +720,13 @@ function PairRow({
           <Side record={pair.right} norm={pair.rightNorm} only={pair.rightOnlyTokens} />
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <div className="w-[210px] shrink-0 flex items-center justify-end gap-2">
           {decision ? (
             <Chip tone={decision === 'approved' ? 'positive' : 'negative'}>
               {decision === 'approved' ? 'You agreed' : 'You rejected'}
             </Chip>
           ) : null}
-          <VerdictChip verdict={pair.verdict} label={SHORT_VERDICT[pair.verdict]} />
+          <VerdictChip verdict={pair.verdict} label={SHORT_VERDICT[pair.verdict].simple} />
           <Num size="sm" className="w-[46px] text-right text-ink">
             {pair.score.combined.toFixed(3)}
           </Num>
@@ -889,8 +935,8 @@ function Side({
     <div className="flex min-w-0 items-baseline gap-2">
       <Mono className="shrink-0">{record.cpse}</Mono>
       <div className="min-w-0">
-        <p className="truncate text-[13px] leading-snug text-ink">
-          <Marked text={record.rawDescription} only={only} />
+        <p className="text-[13px] leading-snug text-ink">
+          <Marked text={tokenTruncate(record.rawDescription)} only={only} />
         </p>
         <TechnicalOnly>
           <p className="mt-1 flex flex-wrap gap-x-1 gap-y-0.5 font-mono text-[10.5px] text-ink-3">

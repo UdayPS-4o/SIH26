@@ -25,6 +25,7 @@ import {
   Check,
   Coins,
   Copy,
+  Download,
   Hash,
   SealCheck,
   X,
@@ -58,14 +59,146 @@ import { useCopy } from '@/copy'
 import { useIsTechnical } from '@/store/viewmode'
 import { useService } from '@/store/service'
 import { codeDerivation } from '@/engine/cluster'
+import { normalize } from '@/engine/normalize'
 import { formatCount, formatExact, formatRupees } from '@/engine/savings'
-import { FAMILY_LABEL, type Cluster, type MaterialFamily } from '@/engine/types'
+import {
+  ATTRIBUTE_SLOTS,
+  FAMILY_LABEL,
+  type Cluster,
+  type MaterialFamily,
+  type MaterialRecord,
+} from '@/engine/types'
 
 type Scope = 'all' | 'shared' | 'single'
 type SortKey = 'spend' | 'code' | 'description' | 'members'
+type MigrationAction = 'MAP' | 'MERGE' | 'HOLD'
 
 const PAGE_SIZE = 40
 const COLUMNS = 6
+
+const SLOT_LABELS: Record<string, string> = {
+  noun: 'Noun',
+  variant: 'Variant',
+  material: 'Material',
+  grade: 'Grade',
+  dimension: 'Dimension',
+  rating: 'Rating',
+  standard: 'Standard',
+}
+
+/**
+ * Deduplicate clusters by code, merging members where a code appears more than once.
+ * The representative with the richest signature wins the merged cluster.
+ */
+function deduplicateClusters(clusters: Cluster[]): Cluster[] {
+  const byCode = new Map<string, Cluster[]>()
+  for (const cluster of clusters) {
+    const group = byCode.get(cluster.code)
+    if (group) group.push(cluster)
+    else byCode.set(cluster.code, [cluster])
+  }
+
+  const result: Cluster[] = []
+  for (const [, group] of byCode) {
+    if (group.length === 1) {
+      result.push(group[0])
+    } else {
+      const mergedMembers = group.flatMap(c => c.members)
+      const mergedCpses = [...new Set(mergedMembers.map(m => m.cpse))]
+      const totalSpend = mergedMembers.reduce((s, m) => s + m.annualQty * m.unitPrice, 0)
+
+      // Pick representative with richest signature
+      const best = group
+        .slice()
+        .sort((a, b) => b.signature.length - a.signature.length)[0]
+
+      result.push({
+        ...best,
+        members: mergedMembers,
+        cpses: mergedCpses,
+        annualSpend: totalSpend,
+      })
+    }
+  }
+  return result.sort((a, b) => b.annualSpend - a.annualSpend)
+}
+
+/**
+ * Build the slot-by-slot attribute description for a raw ERP description.
+ */
+function describeBuild(rawDescription: string, rawUom: string): {
+  slots: { label: string; value: string }[]
+  tokens: string[]
+} {
+  const norm = normalize(rawDescription, rawUom)
+  const slots = ATTRIBUTE_SLOTS.map(slot => ({
+    label: SLOT_LABELS[slot] ?? slot,
+    value: norm.attributes[slot] ?? '',
+  }))
+  return { slots, tokens: norm.normalizedTokens }
+}
+
+/**
+ * Generate a migration CSV from the deduplicated clusters.
+ *
+ * Columns: cpse, local_code, local_description, local_uom,
+ *          national_code, standard_description, canonical_uom,
+ *          family, unspsc, action
+ *
+ * action values:
+ *   MAP   - the record maps 1-to-1 onto a national code (only member in its cluster)
+ *   MERGE - the record shares a code with other records and needs consolidation
+ *   HOLD  - reserved for records under human review
+ */
+function buildMigrationCsv(
+  clusters: Cluster[],
+  records: MaterialRecord[],
+): string {
+  const memberCluster = new Map<string, Cluster>()
+  for (const cluster of clusters) {
+    for (const member of cluster.members) {
+      memberCluster.set(member.id, cluster)
+    }
+  }
+
+  const sorted = [...records].sort((a, b) => {
+    if (a.cpse !== b.cpse) return a.cpse.localeCompare(b.cpse)
+    return a.localCode.localeCompare(b.localCode)
+  })
+
+  const lines: string[] = []
+  lines.push(
+    'cpse,local_code,local_description,local_uom,national_code,standard_description,canonical_uom,family,unspsc,action',
+  )
+
+  for (const record of sorted) {
+    const cluster = memberCluster.get(record.id)
+    if (!cluster) continue
+
+    const action: MigrationAction =
+      cluster.members.length === 1 ? 'MAP' : 'MERGE'
+
+    const esc = (s: string) =>
+      s.includes(',') || s.includes('"')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s
+
+    lines.push([
+      record.cpse,
+      esc(record.localCode),
+      esc(record.rawDescription),
+      record.rawUom,
+      cluster.code,
+      esc(cluster.standardDescription),
+      cluster.uom,
+      cluster.family,
+      cluster.unspsc,
+      action,
+    ].join(','))
+  }
+
+  return lines.join('\n')
+}
 
 export default function RegistryPage() {
   const c = useCopy()
@@ -85,16 +218,30 @@ export default function RegistryPage() {
   const [page, setPage] = useState(0)
   const [openCode, setOpenCode] = useState<string | null>(null)
 
-  /* Families that actually occur, so the control never offers an empty result. */
-  const families = useMemo(() => {
-    const present = new Set<MaterialFamily>(clusters.map(cluster => cluster.family))
-    return [...present].sort((a, b) => FAMILY_LABEL[a].localeCompare(FAMILY_LABEL[b]))
+  /* Deduplicated clusters: one row per distinct national code. */
+  const distinctClusters = useMemo(() => deduplicateClusters(clusters), [clusters])
+
+  /* How many extra rows existed before dedup (codes appearing in multiple groups). */
+  const duplicateCodeCount = useMemo(() => {
+    const seen = new Set<string>()
+    let dupeRows = 0
+    for (const cluster of clusters) {
+      if (seen.has(cluster.code)) dupeRows += 1
+      else seen.add(cluster.code)
+    }
+    return dupeRows
   }, [clusters])
+
+  /* Families that actually occur among distinct codes. */
+  const families = useMemo(() => {
+    const present = new Set<MaterialFamily>(distinctClusters.map(cluster => cluster.family))
+    return [...present].sort((a, b) => FAMILY_LABEL[a].localeCompare(FAMILY_LABEL[b]))
+  }, [distinctClusters])
 
   /* Search and family, before scope, so the scope control can count its own options. */
   const base = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return clusters.filter(cluster => {
+    return distinctClusters.filter(cluster => {
       if (family !== 'all' && cluster.family !== family) return false
       if (!needle) return true
       if (cluster.code.toLowerCase().includes(needle)) return true
@@ -107,7 +254,7 @@ export default function RegistryPage() {
           member.rawDescription.toLowerCase().includes(needle),
       )
     })
-  }, [clusters, family, query])
+  }, [distinctClusters, family, query])
 
   const scopeCounts = useMemo(
     () => ({
@@ -146,6 +293,22 @@ export default function RegistryPage() {
   const start = current * PAGE_SIZE
   const visible = rows.slice(start, start + PAGE_SIZE)
 
+  const handleDownload = useMemo(() => {
+    return () => {
+      const allMembers = distinctClusters.flatMap(c => c.members)
+      const csv = buildMigrationCsv(distinctClusters, allMembers)
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `migration-${new Date().toISOString().slice(0, 10)}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }
+  }, [distinctClusters])
+
   if (error) {
     return (
       <>
@@ -182,23 +345,35 @@ export default function RegistryPage() {
       <p className="mb-5 max-w-[76ch] text-[13.5px] leading-relaxed text-ink-2">
         <ByMode
           simple={
-            <>
-              <Num size="sm">{formatCount(clusters.length)}</Num> agreed entries cover{' '}
+            <span>
+              <Num size="sm">{formatCount(distinctClusters.length)}</Num> agreed entries cover{' '}
               <Num size="sm">{formatCount(health?.records ?? 0)}</Num> company records.{' '}
+              {duplicateCodeCount > 0
+                ? <>
+                    <Num size="sm">{formatCount(duplicateCodeCount)}</Num> codes appeared in more
+                    than one group and have been merged into one row.
+                  </>
+                : 'Every code is unique.'}{' '}
               <Num size="sm">{formatCount(scopeCounts.shared)}</Num> of them bring together entries
               from more than one company. The rest are stocked by a single company, and that is
               normal: most items in a warehouse are bought by one place only.
-            </>
+            </span>
           }
           technical={
-            <>
-              <Num size="sm">{formatCount(clusters.length)}</Num> distinct codes over{' '}
+            <span>
+              <Num size="sm">{formatCount(distinctClusters.length)}</Num> distinct codes over{' '}
               <Num size="sm">{formatCount(health?.records ?? 0)}</Num> inspectable records.{' '}
+              {duplicateCodeCount > 0
+                ? <>
+                    <Num size="sm">{formatCount(duplicateCodeCount)}</Num> duplicate codes were
+                    deduplicated.
+                  </>
+                : null}{' '}
               <Num size="sm">{formatCount(scopeCounts.shared)}</Num> clusters span more than one
               CPSE; largest cluster is{' '}
               <Num size="sm">{formatExact(health?.largestCluster ?? 0)}</Num> members. The
               distribution is the expected long tail, and it is not filtered out of this view.
-            </>
+            </span>
           }
         />
       </p>
@@ -207,18 +382,28 @@ export default function RegistryPage() {
         <PanelHead
           title={technical ? 'Golden records' : 'Every agreed entry'}
           icon={<Books size={18} weight="regular" />}
-          meta={`${formatExact(clusters.length)} codes`}
+          meta={`${formatExact(distinctClusters.length)} codes`}
           action={
-            <TechnicalOnly>
-              {registryCall ? (
-                <EndpointTag
-                  method={registryCall.method}
-                  endpoint={registryCall.endpoint}
-                  ms={registryCall.ms}
-                  scanned={registryCall.scanned}
-                />
-              ) : null}
-            </TechnicalOnly>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleDownload}
+                icon={<Download size={14} weight="regular" />}
+              >
+                {technical ? 'Download migration file' : 'Download the migration file'}
+              </Button>
+              <TechnicalOnly>
+                {registryCall ? (
+                  <EndpointTag
+                    method={registryCall.method}
+                    endpoint={registryCall.endpoint}
+                    ms={registryCall.ms}
+                    scanned={registryCall.scanned}
+                  />
+                ) : null}
+              </TechnicalOnly>
+            </div>
           }
         />
 
@@ -295,12 +480,12 @@ export default function RegistryPage() {
                 {rows.length === 0 ? '' : `-${formatExact(Math.min(start + PAGE_SIZE, rows.length))}`}
               </Num>{' '}
               of <Num size="sm">{formatExact(rows.length)}</Num>{' '}
-              {rows.length === clusters.length ? (
+              {rows.length === distinctClusters.length ? (
                 'codes'
               ) : (
                 <>
-                  matching codes, out of <Num size="sm">{formatExact(clusters.length)}</Num> in the
-                  book
+                  matching codes, out of <Num size="sm">{formatExact(distinctClusters.length)}</Num>{' '}
+                  in the book
                 </>
               )}
             </p>
@@ -398,6 +583,14 @@ function RegistryRow({
   open: boolean
   onToggle: () => void
 }) {
+  const agreementLine = useMemo(() => {
+    if (cluster.members.length <= 1) return null
+    if (cluster.cpses.length > 1) {
+      return `${formatExact(cluster.cpses.length)} companies agreed · ${formatExact(cluster.members.length)} records merged`
+    }
+    return `${formatExact(cluster.members.length)} records under one code`
+  }, [cluster])
+
   return (
     <>
       <tr
@@ -436,9 +629,14 @@ function RegistryRow({
           </Num>
         </Td>
         <Td align="right" className="whitespace-nowrap">
-          <Num size="sm" className={cluster.cpses.length > 1 ? 'text-ink' : 'text-ink-3'}>
-            {formatExact(cluster.members.length)}
-          </Num>
+          <div className="flex flex-col items-end gap-0.5">
+            <Num size="sm" className={cluster.cpses.length > 1 ? 'text-ink' : 'text-ink-3'}>
+              {formatExact(cluster.members.length)}
+            </Num>
+            {agreementLine ? (
+              <span className="text-[11px] text-ink-3">{agreementLine}</span>
+            ) : null}
+          </div>
         </Td>
         <Td align="right" className="whitespace-nowrap">
           <Num size="sm">{formatRupees(cluster.annualSpend)}</Num>
@@ -468,8 +666,15 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
   const single = cluster.members.length === 1
   const soleOwner = cluster.members[0]
 
-  /* Spend split by contributing CPSE, aggregated across members from the same
-   * company. Only worth a chart once there is more than one company to split. */
+  /* Build the slot-by-slot description from the longest raw description. */
+  const buildDescription = useMemo(() => {
+    const representative = cluster.members
+      .slice()
+      .sort((a, b) => b.rawDescription.length - a.rawDescription.length)[0]
+    return describeBuild(representative.rawDescription, representative.rawUom)
+  }, [cluster.members])
+
+  /* Spend split by contributing CPSE, aggregated across members from the same company. */
   const cpseSpend = useMemo(() => {
     const totals = new Map<string, number>()
     for (const member of cluster.members) {
@@ -577,6 +782,47 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
           />
         </p>
       ) : null}
+
+      {/* ----------------------------------------------------- description build */}
+      <section className="mt-6 border-t border-rule pt-4">
+        <div className="mb-3 flex items-center gap-3">
+          <IconTile icon={<Hash size={14} weight="regular" />} tone="neutral" size="sm" />
+          <h3 className="font-display text-[13px] font-semibold tracking-tight text-ink">
+            {technical ? 'How this description was proposed' : 'How this description was built'}
+          </h3>
+        </div>
+        <div className="max-w-[78ch]">
+          <div className="mb-3">
+            <p className="text-[12px] text-ink-3">Expanded tokens</p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {buildDescription.tokens.map(token => (
+                <Mono key={token}>{token}</Mono>
+              ))}
+            </div>
+          </div>
+          <div className="border border-rule">
+            {buildDescription.slots.map(({ label, value }) => (
+              <div
+                key={label}
+                className="flex items-baseline justify-between gap-4 border-b border-rule last:border-b-0 py-1.5 px-3"
+              >
+                <span className="text-[12px] text-ink-2">{label}</span>
+                {value ? (
+                  <span className="font-mono text-[12px] text-ink">{value}</span>
+                ) : (
+                  <span className="text-[12px] text-ink-3">not stated</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 max-w-[78ch] text-[13px] leading-relaxed text-ink-2">
+            <ByMode
+              simple="Each slot is filled from the cleaned-up description. The standard description above is these values joined together, in the same order, so it can be checked against what the system stored."
+              technical="Attribute slots extracted by the normalizer in canonical order. The signature is these values joined by pipe; the code is a hash of that signature. Any other record that fills the same slots the same way produces the same code."
+            />
+          </p>
+        </div>
+      </section>
 
       {/* ----------------------------------------------------------- members */}
       <section className="mt-6 border-t border-rule pt-4">

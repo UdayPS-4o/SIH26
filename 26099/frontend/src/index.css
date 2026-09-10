@@ -253,17 +253,564 @@
   }
 }
 
-/* --------------------------------------------------------------------------
-   Motion
-   -------------------------------------------------------------------------- */
+/* ==========================================================================
+   ArchitectureDiagram  --  animated data-flow diagram
+   ========================================================================== */
+
+/* ---- entrance ------------------------------------------------------- */
+
+.arch-diagram {
+  --arch-radius: 14px;
+  --arch-pad: 20px;
+  --arch-gap: 14px;
+}
+
+.arch-entering {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.arch-mounted {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+/* ---- heading -------------------------------------------------------- */
+
+.arch-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.arch-title {
+  font-family: 'Karla', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ink);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.arch-subtitle {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin: 4px 0 0;
+}
+
+.arch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--primary-edge);
+  background: var(--primary-bg);
+  color: var(--accent);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ---- 3-column grid -------------------------------------------------- */
+
+.arch-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0;
+  align-items: stretch;
+  min-height: 260px;
+}
+
+.arch-variant-compact .arch-grid {
+  min-height: 200px;
+}
+
+/* ---- shared column padding ------------------------------------------ */
+
+.arch-col-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 10px;
+}
+
+/* ---- Column 1 : Sources --------------------------------------------- */
+
+.arch-col-sources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arch-gap);
+  padding-right: 18px;
+}
+
+.arch-source-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arch-source-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--arch-radius);
+  background: var(--src-bg, var(--surface-2));
+  border: 1px solid var(--src-border, var(--rule));
+  transition: border-color 0.2s, box-shadow 0.2s;
+  animation: archFadeSlideIn 0.5s ease-out both;
+}
+
+.arch-source-card:nth-child(1) { animation-delay: 0.05s; }
+.arch-source-card:nth-child(2) { animation-delay: 0.1s; }
+.arch-source-card:nth-child(3) { animation-delay: 0.15s; }
+.arch-source-card:nth-child(4) { animation-delay: 0.2s; }
+
+.arch-source-card:hover {
+  border-color: var(--src-color, var(--primary-edge));
+  box-shadow: 0 0 0 3px var(--src-bg, transparent);
+}
+
+.arch-source-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arch-source-icon {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.8;
+}
+
+.arch-source-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.arch-source-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.arch-source-erp {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.arch-source-bottom {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.arch-source-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.arch-source-records-label {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+/* status dot */
+
+.arch-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--positive);
+  box-shadow: 0 0 0 2px var(--positive-bg);
+  animation: archPulse 2s ease-in-out infinite;
+}
+
+/* total row */
+
+.arch-total-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--rule);
+}
+
+.arch-total-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.arch-total-label {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+/* ---- Flow connector lines ------------------------------------------- */
+
+.arch-col-connector-left,
+.arch-col-connector-right {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  min-width: 60px;
+}
+
+.arch-flow-line {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--accent) 0,
+    var(--accent) 8px,
+    transparent 8px,
+    transparent 14px
+  );
+  background-size: 14px 3px;
+  background-repeat: repeat-x;
+  animation: archFlow 0.8s linear infinite;
+}
+
+.arch-flow-v {
+  width: 3px;
+  height: 100%;
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--accent) 0,
+    var(--accent) 8px,
+    transparent 8px,
+    transparent 14px
+  );
+  background-size: 3px 14px;
+  background-repeat: repeat-y;
+}
+
+/* ---- Column 2 : Pipeline -------------------------------------------- */
+
+.arch-col-pipeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--arch-radius);
+  background: linear-gradient(135deg, var(--accent-bg), var(--primary-bg));
+  border: 1.5px solid var(--primary-edge);
+  position: relative;
+  overflow: hidden;
+}
+
+.arch-pipeline-title {
+  font-family: 'Karla', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  margin: 0;
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 1;
+}
+
+.arch-pipeline-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.arch-pipeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--primary-edge);
+  min-width: 62px;
+  animation: archFadeSlideIn 0.4s ease-out both;
+  animation-delay: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.arch-pipeline-step:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.arch-pipeline-icon {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.arch-pipeline-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* pulsing glow behind the pipeline */
+
+.arch-pipeline-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--arch-radius);
+  background: radial-gradient(ellipse at center, var(--accent) 0%, transparent 70%);
+  opacity: 0.06;
+  animation: archGlow 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---- Column 3 : Outputs --------------------------------------------- */
+
+.arch-col-outputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--arch-gap);
+  padding-left: 18px;
+}
+
+.arch-output-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arch-output-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--arch-radius);
+  background: var(--out-bg, var(--positive-bg));
+  border: 1px solid var(--out-border, var(--positive-edge));
+  animation: archFadeSlideIn 0.5s ease-out both;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.arch-output-card:nth-child(1) { animation-delay: 0.25s; }
+.arch-output-card:nth-child(2) { animation-delay: 0.3s; }
+.arch-output-card:nth-child(3) { animation-delay: 0.35s; }
+
+.arch-output-card:hover {
+  border-color: var(--out-color, var(--positive-edge));
+  box-shadow: 0 0 0 3px var(--out-bg, transparent);
+}
+
+.arch-output-icon {
+  display: inline-flex;
+  opacity: 0.85;
+}
+
+.arch-output-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.arch-output-stat {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--out-color, var(--positive));
+}
+
+/* ---- count-up numeral ----------------------------------------------- */
+
+.arch-count-num {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+}
+
+/* ---- footer --------------------------------------------------------- */
+
+.arch-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+}
+
+.arch-footer-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.arch-footer-muted {
+  font-style: italic;
+}
+
+/* ---- keyframes ------------------------------------------------------ */
+
+@keyframes archFlow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 28px 0;
+  }
+}
+
+@keyframes archPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+}
+
+@keyframes archGlow {
+  0%,
+  100% {
+    opacity: 0.04;
+  }
+  50% {
+    opacity: 0.12;
+  }
+}
+
+@keyframes archFadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- responsive ----------------------------------------------------- */
+
+@media (max-width: 1023px) {
+  .arch-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .arch-col-sources {
+    padding-right: 0;
+  }
+
+  .arch-col-connector-left,
+  .arch-col-connector-right {
+    display: none;
+  }
+
+  .arch-col-pipeline {
+    order: -1;
+    padding: 16px;
+  }
+
+  .arch-col-outputs {
+    padding-left: 0;
+  }
+
+  .arch-pipeline-steps {
+    gap: 8px;
+  }
+
+  .arch-pipeline-step {
+    min-width: 54px;
+    padding: 7px 8px;
+  }
+
+  .arch-pipeline-label {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 480px) {
+  .arch-pipeline-steps {
+    gap: 6px;
+  }
+
+  .arch-pipeline-step {
+    min-width: 44px;
+    padding: 6px 6px;
+  }
+
+  .arch-pipeline-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .arch-pipeline-label {
+    font-size: 8px;
+  }
+
+  .arch-source-grid {
+    gap: 6px;
+  }
+
+  .arch-source-card {
+    padding: 8px 10px;
+  }
+}
+
+/* ---- reduced-motion ------------------------------------------------ */
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  .arch-diagram,
+  .arch-source-card,
+  .arch-output-card,
+  .arch-pipeline-step {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+  }
+
+  .arch-flow-line {
+    animation: none;
+  }
+
+  .arch-dot {
+    animation: none;
+  }
+
+  .arch-pipeline-glow {
+    animation: none;
+    opacity: 0.06;
   }
 }

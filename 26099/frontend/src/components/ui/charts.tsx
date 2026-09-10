@@ -71,10 +71,17 @@ function readChartColors(): ChartColors {
   }
 }
 
-/** Keeps a single category tick to one line, since recharts wraps a long tick
- *  label into stacked tspans that collide with the row above and below. */
-function truncateLabel(value: string, max = 26): string {
-  return value.length > max ? `${value.slice(0, max - 1)}…` : value
+/**
+ * Truncate from the END, keeping the distinguishing suffix visible.
+ *
+ * Standard ERP descriptions share long common prefixes ("CABLE, ARMOURED …"
+ * appears for many cables). Cutting from the beginning keeps the token that
+ * actually distinguishes one row from the next.
+ */
+export function truncateLabel(value: string, max = 26): string {
+  if (value.length <= max) return value
+  const keep = Math.max(1, max - 1)
+  return `…${value.slice(value.length - keep)}`
 }
 
 /** Re-reads the CSS custom properties whenever <html> gains or loses .dark, so

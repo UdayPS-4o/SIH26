@@ -83,6 +83,7 @@ function modelledLatency(scanned: number, perRecordUs: number): number {
 }
 
 const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms))
+export { sleep }
 
 export interface CallOptions {
   /** Records the resolver will examine, used for latency and reporting. */

@@ -271,8 +271,9 @@ export default function EnginePage() {
 
   const histogramThresholds: HistogramThreshold[] = useMemo(
     () => [
-      { value: draftReview, label: 'Review', tone: 'attention' },
-      { value: draftAccept, label: 'Accept', tone: 'positive' },
+      { value: 0.65, label: 'EQUIVALENT', tone: 'neutral' },
+      { value: draftReview, label: 'NEAR', tone: 'attention' },
+      { value: draftAccept, label: 'EXACT', tone: 'positive' },
     ],
     [draftReview, draftAccept],
   )
@@ -711,7 +712,7 @@ export default function EnginePage() {
 
               <div className="mt-4 space-y-4">
                 <Slider
-                  label="Accept"
+                  label="Accept (EXACT &ge; 0.85)"
                   value={draftAccept}
                   onChange={onAccept}
                   min={0.5}
@@ -719,7 +720,7 @@ export default function EnginePage() {
                   hint="At or above this a pair is treated as the same item without a human."
                 />
                 <Slider
-                  label="Review"
+                  label="Review (NEAR &ge; 0.78)"
                   value={draftReview}
                   onChange={onReview}
                   min={HIST_FLOOR}
@@ -727,6 +728,11 @@ export default function EnginePage() {
                   hint="Between the two a pair waits for a decision. Held below accept."
                 />
               </div>
+              <p className="max-w-[68ch] text-[11.5px] leading-snug text-ink-3">
+                A pair where one description states something the other does not always goes to
+                a person, however high it scored. The sliders above govern score bands only;
+                this safety check is hardcoded in the verdict function.
+              </p>
             </div>
 
             <div className="bg-surface px-5 py-4">
