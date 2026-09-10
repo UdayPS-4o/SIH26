@@ -42,7 +42,7 @@ export default function Animals() {
 
   return (
     <div>
-      <PageHeader title={t('animals.title')} subtitle={`${ANIMALS.length} animals across 4 sheds`} />
+      <PageHeader title={t('animals.title')} subtitle="Total herd size: 128 animals across 4 sheds (19 with live multi-sensor telemetry)" />
 
       <div className="card-p mb-4 md:mb-5">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">

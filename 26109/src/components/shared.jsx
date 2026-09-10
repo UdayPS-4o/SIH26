@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowUpRight,
@@ -13,6 +14,9 @@ import {
   Smartphone,
   MessageSquare,
   PhoneCall,
+  Volume2,
+  VolumeX,
+  Leaf,
 } from 'lucide-react'
 import { RiskBadge, Pill } from './common/ui.jsx'
 import { riskMeta, levelFromScore } from '../utils/riskUtils'
@@ -56,13 +60,57 @@ export function ChannelBadges({ level }) {
 export function AlertCard({ alert, onReview, compact = false }) {
   const { t } = useI18n()
   const m = riskMeta(alert.level)
+  const [speaking, setSpeaking] = useState(false)
+
+  const speakHindiIVR = () => {
+    if (!('speechSynthesis' in window)) {
+      alert('Browser speech synthesis is not supported')
+      return
+    }
+
+    if (speaking) {
+      window.speechSynthesis.cancel()
+      setSpeaking(false)
+      return
+    }
+
+    window.speechSynthesis.cancel()
+    const levelText = alert.level === 'HIGH' ? 'उच्च' : 'मध्यम'
+    const text = `सावधान! पशु ${alert.animalId}, शेड ${alert.shed} में मैस्टाइटिस जोखिम ${alert.risk} प्रतिशत है। जोखिम का स्तर ${levelText} है। अनुशंसित कार्यवाही: ${alert.action || 'तुरंत पशु चिकित्सक से परामर्श लें'}`
+
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'hi-IN'
+    utterance.rate = 0.9
+
+    const voices = window.speechSynthesis.getVoices()
+    const hiVoice = voices.find((v) => v.lang.includes('hi') || v.lang.includes('Hindi'))
+    if (hiVoice) utterance.voice = hiVoice
+
+    utterance.onstart = () => setSpeaking(true)
+    utterance.onend = () => setSpeaking(false)
+    utterance.onerror = () => setSpeaking(false)
+
+    window.speechSynthesis.speak(utterance)
+  }
+
   return (
     <div className={`card overflow-hidden`}>
       <div className={`flex items-center justify-between border-l-4 px-3 py-2 sm:px-4 sm:py-2.5 ${m.border} ${m.bg}`} style={{ borderLeftColor: m.hex }}>
         <span className={`text-[11px] font-semibold uppercase tracking-wide sm:text-xs ${m.text}`}>{t(`risk.${alert.level}`)}</span>
         <span className="flex items-center gap-2">
           <ChannelBadges level={alert.level} />
-          <span className="text-[11px] text-sand-400">{alert.time}</span>
+          <button
+            onClick={speakHindiIVR}
+            title="Play Hindi IVR Voice Alert"
+            className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold transition-all shadow-sm ${speaking
+              ? 'bg-red-500 text-white animate-pulse ring-2 ring-red-300'
+              : 'bg-white/80 text-gray-700 hover:bg-brand-600 hover:text-white dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-brand-600'
+              }`}
+          >
+            {speaking ? <VolumeX size={13} /> : <Volume2 size={13} />}
+            <span>IVR</span>
+          </button>
+          <span className="text-xs text-gray-400">{alert.time}</span>
         </span>
       </div>
       <div className="p-3 sm:p-4">
@@ -181,20 +229,26 @@ export function HealthTimeline({ items }) {
   )
 }
 
-/* ---------------- RecommendationCard ---------------- */
 export function RecommendationCard({ rec, index }) {
   const toneMap = { High: 'red', Medium: 'amber', Low: 'gray' }
+  const isAyurvedic = rec.title.toLowerCase().includes('ayurvedic')
+
   return (
-    <div className="flex gap-2.5 rounded-xl border border-sand-200 bg-white p-3 dark:border-barn-800 dark:bg-barn-950/60 sm:p-4">
-      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-honey-100 text-xs font-bold text-honey-700 dark:bg-honey-900/40 dark:text-honey-400 sm:h-7 sm:w-7">
-        {index + 1}
+    <div className={`flex gap-3 rounded-xl border p-4 ${isAyurvedic ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40 relative overflow-hidden' : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'}`}>
+      {isAyurvedic && <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-100 opacity-50 dark:bg-emerald-900/30"></div>}
+
+      <span className={`relative grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-semibold ${isAyurvedic ? 'bg-emerald-200 text-emerald-800 dark:bg-emerald-800/80 dark:text-emerald-200' : 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400'}`}>
+        {isAyurvedic ? <Leaf size={14} /> : index + 1}
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="relative min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-medium text-sand-900 dark:text-sand-100 sm:text-sm">{rec.title}</p>
-          <Pill tone={toneMap[rec.priority]}>{rec.priority}</Pill>
+          <p className={`text-sm font-medium ${isAyurvedic ? 'text-emerald-900 dark:text-emerald-100 flex items-center gap-2' : 'text-gray-900 dark:text-gray-100'}`}>
+            {rec.title}
+            {isAyurvedic && <span className="rounded bg-gradient-to-r from-emerald-500 to-green-600 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">Ayurveda</span>}
+          </p>
+          <Pill tone={isAyurvedic ? 'emerald' : toneMap[rec.priority]}>{rec.priority}</Pill>
         </div>
-        <p className="mt-0.5 text-[11px] text-sand-500 dark:text-sand-400 sm:text-xs">{rec.reason}</p>
+        <p className={`mt-1 text-xs ${isAyurvedic ? 'text-emerald-700 dark:text-emerald-300 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>{rec.reason}</p>
       </div>
     </div>
   )
@@ -283,12 +337,13 @@ export function ShedRiskCard({ shed }) {
 
 /* ---------------- ShedRiskBar ---------------- */
 export function ShedRiskBar({ shed }) {
+  const { t } = useI18n()
   const m = riskMeta(shed.level)
   return (
     <div>
-      <div className="flex items-center justify-between text-xs sm:text-sm">
-        <span className="font-medium text-sand-700 dark:text-sand-300">{shed.name}</span>
-        <span className="font-bold" style={{ color: m.hex }}>{shed.risk}%</span>
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium text-gray-700 dark:text-gray-300">{t(`shed.${shed.id}`)}</span>
+        <span className="font-semibold" style={{ color: m.hex }}>{shed.risk}%</span>
       </div>
       <div className="mt-1 h-2 overflow-hidden rounded-full bg-sand-100 dark:bg-barn-800 sm:mt-1.5 sm:h-2.5">
         <div className="h-full rounded-full" style={{ width: `${shed.risk}%`, background: m.hex }} />
@@ -347,9 +402,9 @@ export function RecentHighRiskTable({ animals }) {
                 <td className="py-2">
                   <Link to={`/animals/${a.id}`} className="font-semibold text-sand-900 hover:text-honey-700 dark:text-sand-100">{a.id}</Link>
                 </td>
-                <td className="py-2 text-sand-500 dark:text-sand-400">{a.species}</td>
-                <td className="py-2">
-                  <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${m.bg} ${m.text}`}>{a.riskScore}%</span>
+                <td className="py-2.5 text-gray-500 dark:text-gray-400">{t(`species.${a.species.toLowerCase()}`)}</td>
+                <td className="py-2.5">
+                  <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${m.bg} ${m.text}`}>{a.riskScore}%</span>
                 </td>
                 <td className="py-2">
                   <span className="flex items-center gap-1.5">
@@ -367,50 +422,102 @@ export function RecentHighRiskTable({ animals }) {
 }
 
 /* ---------------- FarmMap ---------------- */
-const SHED_POS = {
-  A: { top: '20%', left: '20%' },
-  B: { top: '16%', left: '68%' },
-  C: { top: '68%', left: '70%' },
-  D: { top: '70%', left: '20%' },
-}
+// Interactive SVG Farm Map with real layout structure, risk hotspots & halos
 export function FarmMap() {
   const { t } = useI18n()
+  const [hoverShed, setHoverShed] = useState(null)
+
+  const shedCoords = {
+    A: { x: 50, y: 40, w: 120, h: 70, label: 'Shed A (Low)' },
+    B: { x: 210, y: 40, w: 120, h: 70, label: 'Shed B (Moderate)' },
+    C: { x: 210, y: 150, w: 120, h: 70, label: 'Shed C (HOTSPOT)' },
+    D: { x: 50, y: 150, w: 120, h: 70, label: 'Shed D (Low)' },
+  }
+
   return (
-    <div className="relative overflow-hidden rounded-xl border border-sand-200 dark:border-barn-800">
-      <img src={farmMap} alt="Farm map" className="h-full w-full object-cover" />
-      {SHEDS.map((s) => {
-        const m = riskMeta(s.level)
-        const pulseClass = s.level === 'HIGH' ? 'shed-pulse--high' : s.level === 'MODERATE' ? 'shed-pulse--moderate' : ''
-        return (
-          <div
-            key={s.id}
-            className="farm-marker"
-            style={{ top: SHED_POS[s.id].top, left: SHED_POS[s.id].left }}
-          >
-            <div className={`flex items-center gap-1 rounded-lg bg-white/95 px-1.5 py-1 text-[10px] font-bold shadow-md ring-1 ring-black/5 dark:bg-barn-900/95 dark:text-sand-100 dark:ring-white/10 ${pulseClass}`}>
-              <span className={`h-2 w-2 rounded-full ${m.dot}`} />
-              {s.id} <span style={{ color: m.hex }}>{s.risk}%</span>
-            </div>
-            <div className="farm-marker__tooltip">
-              <div style={{ color: m.hex }}>{s.name} — {s.risk}%</div>
-              <div style={{ opacity: 0.7 }}>{s.animals} animals</div>
-            </div>
-          </div>
-        )
-      })}
-      <div className="absolute bottom-1.5 left-1.5 flex flex-wrap gap-1.5 rounded-lg bg-white/95 px-2 py-1 text-[10px] shadow ring-1 ring-black/5 dark:bg-barn-900/95 dark:ring-white/10">
-        {[['NONE', t('risk.NONE')], ['LOW', t('risk.LOW')], ['MODERATE', t('risk.MODERATE')], ['HIGH', t('risk.HIGH')]].map(
-          ([k, lbl]) => (
-            <span key={k} className="flex items-center gap-1 text-sand-600 dark:text-sand-300">
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: riskMeta(k).hex }} />
-              {lbl}
-            </span>
-          ),
-        )}
-      </div>
-      <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-lg bg-white/95 text-sand-500 shadow ring-1 ring-black/5 dark:bg-barn-900/95 dark:text-sand-400 dark:ring-white/10">
-        <Maximize2 size={11} />
-      </span>
+    <div className="relative overflow-hidden rounded-xl border border-gray-200 bg-emerald-950/10 dark:border-gray-800 dark:bg-gray-950">
+      <svg viewBox="0 0 380 250" className="w-full h-auto">
+        <defs>
+          <radialGradient id="hotspotGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+          </radialGradient>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-gray-300/40 dark:text-gray-800" />
+          </pattern>
+        </defs>
+
+        {/* Background Grid & Roads */}
+        <rect width="380" height="250" fill="url(#grid)" />
+        <path d="M 180 10 L 180 240 M 30 130 L 350 130" stroke="#cbd5e1" strokeWidth="12" strokeLinecap="round" className="dark:stroke-gray-800" />
+
+        {/* Hotspot risk halo on Shed C */}
+        <circle cx="270" cy="185" r="55" fill="url(#hotspotGlow)" className="animate-ping" style={{ animationDuration: '3s' }} />
+
+        {/* Milking Parlour & Water Point */}
+        <rect x="160" y="115" width="40" height="30" rx="4" fill="#0284c7" fillOpacity="0.2" stroke="#0284c7" strokeWidth="1.5" />
+        <text x="180" y="133" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#0284c7">Parlour</text>
+
+        {/* Sheds */}
+        {SHEDS.map((s) => {
+          const c = shedCoords[s.id]
+          const m = riskMeta(s.level)
+          const isHot = s.id === 'C'
+          return (
+            <g key={s.id} className="cursor-pointer transition-all hover:opacity-90" onMouseEnter={() => setHoverShed(s)} onMouseLeave={() => setHoverShed(null)}>
+              {/* Outer boundary */}
+              <rect
+                x={c.x}
+                y={c.y}
+                width={c.w}
+                height={c.h}
+                rx="6"
+                fill={isHot ? '#fef2f2' : '#ffffff'}
+                stroke={m.hex}
+                strokeWidth={isHot ? '2.5' : '1.5'}
+                className="dark:fill-gray-900"
+              />
+              {/* Roof line details */}
+              <line x1={c.x} y1={c.y + c.h / 2} x2={c.x + c.w} y2={c.y + c.h / 2} stroke={m.hex} strokeDasharray="3 3" strokeWidth="0.8" opacity="0.6" />
+              {/* Status Pill */}
+              <circle cx={c.x + 15} cy={c.y + 16} r="5" fill={m.hex} />
+              <text x={c.x + 26} y={c.y + 20} fontSize="11" fontWeight="bold" fill="currentColor" className="dark:fill-gray-100">
+                {t(`shed.${s.id}`)}
+              </text>
+              <text x={c.x + c.w - 12} y={c.y + 20} fontSize="11" fontWeight="bold" textAnchor="end" fill={m.hex}>
+                {s.risk}%
+              </text>
+              <text x={c.x + 15} y={c.y + 45} fontSize="9" fill="#64748b" className="dark:fill-gray-400">
+                {s.animals} animals
+              </text>
+              {isHot && (
+                <rect x={c.x + 10} y={c.y + c.h - 18} width="100" height="13" rx="3" fill="#ef4444" fillOpacity="0.15">
+                  <title>Hotspot Interventions required</title>
+                </rect>
+              )}
+              {isHot && (
+                <text x={c.x + 60} y={c.y + c.h - 8} fontSize="8" fontWeight="bold" textAnchor="middle" fill="#dc2626">
+                  🔥 HOTSPOT CLUSTER
+                </text>
+              )}
+            </g>
+          )
+        })}
+
+        {/* Legend */}
+        <g transform="translate(10, 230)">
+          <text x="0" y="0" fontSize="9" fill="#94a3b8">N ↑</text>
+        </g>
+      </svg>
+
+      {/* Tooltip Overlay */}
+      {hoverShed && (
+        <div className="absolute top-2 right-2 rounded-lg bg-gray-900/90 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur">
+          <p className="font-bold">{t(`shed.${hoverShed.id}`)} Details</p>
+          <p>Risk: <span style={{ color: riskMeta(hoverShed.level).hex }}>{hoverShed.risk}% ({hoverShed.level})</span></p>
+          <p>Animals: {hoverShed.animals}</p>
+        </div>
+      )}
     </div>
   )
 }

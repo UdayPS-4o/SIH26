@@ -10,6 +10,8 @@ import {
   FlaskConical,
   FileBarChart2,
   Settings,
+  Cpu,
+  Database,
   X,
   Sparkles,
   ScanSearch,
@@ -22,40 +24,20 @@ import pasture from '../../assets/sidebar-img.jpg'
 const openAlerts = ALERTS.filter((a) => a.status === 'open').length
 
 const items = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard', feature: 'OVERVIEW' },
-  { to: '/animals', icon: Beef, label: 'nav.animals', feature: 'MONITOR' },
-  { to: '/alerts', icon: BellRing, label: 'nav.alerts', badge: openAlerts, feature: 'PREDICT' },
-  { to: '/herd', icon: Network, label: 'nav.herd', feature: 'ANALYZE' },
-  { to: '/milk-quality', icon: Droplets, label: 'nav.milk', feature: 'TRACK' },
-  { to: '/environment', icon: CloudSun, label: 'nav.environment', feature: 'MONITOR' },
-  { to: '/worker-hygiene', icon: ClipboardCheck, label: 'nav.workerHygiene', feature: 'ANALYZE' },
-  { to: '/simulator', icon: FlaskConical, label: 'nav.simulator', feature: 'SIMULATE' },
-  { to: '/analytics', icon: FileBarChart2, label: 'nav.analytics', feature: 'INSIGHTS' },
-  { to: '/detection', icon: ScanSearch, label: 'nav.detection', feature: 'DETECT' },
-  { to: '/reports', icon: FileBarChart2, label: 'nav.reports', feature: 'EXPORT' },
-  { to: '/settings', icon: Settings, label: 'nav.settings', feature: 'CONFIG' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard' },
+  { to: '/animals', icon: Beef, label: 'nav.animals' },
+  { to: '/alerts', icon: BellRing, label: 'nav.alerts', badge: openAlerts },
+  { to: '/herd', icon: Network, label: 'nav.herd' },
+  { to: '/milk-quality', icon: Droplets, label: 'nav.milk' },
+  { to: '/environment', icon: CloudSun, label: 'nav.environment' },
+  { to: '/worker-hygiene', icon: ClipboardCheck, label: 'nav.workerHygiene' },
+  { to: '/devices', icon: Cpu, label: 'nav.devices' },
+  { to: '/model', icon: Database, label: 'nav.model' },
+  { to: '/simulator', icon: FlaskConical, label: 'nav.simulator' },
+  { to: '/reports', icon: FileBarChart2, label: 'nav.reports' },
+  { to: '/settings', icon: Settings, label: 'nav.settings' },
 ]
 
-const featureColors = {
-  OVERVIEW: 'bg-ai/20 text-ai border-ai/30',
-  MONITOR: 'bg-forest-500/20 text-forest-400 border-forest-500/30',
-  PREDICT: 'bg-honey-500/20 text-honey-400 border-honey-500/30',
-  ANALYZE: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  TRACK: 'bg-sky-500/20 text-sky-400 border-sky-500/30',
-  SIMULATE: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-  INSIGHTS: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
-  DETECT: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
-  EXPORT: 'bg-teal-500/20 text-teal-400 border-teal-500/30',
-  CONFIG: 'bg-sand-400/20 text-sand-400 border-sand-400/30',
-}
-
-const sidebarBadgeColors = {
-  PREDICTION: 'var(--sidebar-badge-prediction, #f59e0b)',
-  PREVENTION: 'var(--sidebar-badge-prevention, #22c55e)',
-  ANALYSIS: 'var(--sidebar-badge-analysis, #3B9EFF)',
-  DETECTION: 'var(--sidebar-badge-detection, #ef4444)',
-  SUGGESTIONS: 'var(--sidebar-badge-suggestions, #a855f7)',
-}
 
 export default function Sidebar({ mobileOpen, onClose }) {
   const { t } = useI18n()
