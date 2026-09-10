@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, Bell, ChevronDown, Check, Globe, Home, Users, MapPin, CalendarDays, Sun, Moon, Loader2 } from 'lucide-react'
+import { Menu, Bell, ChevronDown, Check, Globe, Home, Users, MapPin, CalendarDays, Sun, Moon } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { FARMS, ALERTS, HERD_STATS } from '../../data/mockData'
-
-const openAlerts = ALERTS.filter((a) => a.status === 'open')
+import { useAlerts } from '../../context/AlertContext.jsx'
 
 function Dropdown({ button, children, align = 'right', width = 'w-56' }) {
   const [open, setOpen] = useState(false)
@@ -20,7 +19,9 @@ function Dropdown({ button, children, align = 'right', width = 'w-56' }) {
       <div onClick={() => setOpen((o) => !o)}>{button}</div>
       {open && (
         <div
-          className={`absolute z-50 mt-2 ${width} overflow-hidden rounded-xl border border-sand-200 bg-white shadow-warm-lg dark:border-barn-800 dark:bg-barn-900`}
+          className={`absolute z-50 mt-2 ${width} overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900 ${
+            align === 'right' ? 'right-0' : 'left-0'
+          }`}
           onClick={() => setOpen(false)}
         >
           {children}
@@ -30,19 +31,11 @@ function Dropdown({ button, children, align = 'right', width = 'w-56' }) {
   )
 }
 
-import { useAlerts } from '../../context/AlertContext.jsx'
-
 export default function Topbar({ onMenu }) {
   const { t, lang, setLang } = useI18n()
   const { theme, toggleTheme } = useTheme()
   const { isReviewed } = useAlerts()
   const [farm, setFarm] = useState(FARMS[0])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 1800)
-    return () => clearTimeout(t)
-  }, [])
 
   const openAlerts = useMemo(
     () => ALERTS.filter((a) => a.status === 'open' && !isReviewed(a.id) && !isReviewed(a.animalId)),
@@ -75,26 +68,20 @@ export default function Topbar({ onMenu }) {
             onClick={() => setFarm(f)}
             className="flex w-full items-center justify-between px-3 py-2.5 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
           >
-            {FARMS.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFarm(f)}
-                className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-sand-50 dark:text-sand-200 dark:hover:bg-barn-800"
-              >
-                {f}
-                {f === farm && <Check size={14} className="text-honey-600" />}
-              </button>
-            ))}
-          </Dropdown>
+            {f}
+            {f === farm && <Check size={14} className="text-brand-600" />}
+          </button>
+        ))}
+      </Dropdown>
 
-          <div className="hidden items-center gap-1.5 text-xs text-sand-500 dark:text-sand-400 xl:flex">
-            <Users size={14} className="text-sand-400" />
-            {HERD_STATS.totalAnimals} {t('nav.animals')}
-          </div>
-          <div className="hidden items-center gap-1.5 text-xs text-sand-500 dark:text-sand-400 xl:flex">
-            <MapPin size={14} className="text-sand-400" />
-            Mathura, Uttar Pradesh
-          </div>
+      <div className="hidden items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 xl:flex">
+        <Users size={15} className="text-gray-400" />
+        {HERD_STATS.totalAnimals} {t('nav.animals')}
+      </div>
+      <div className="hidden items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 xl:flex">
+        <MapPin size={15} className="text-gray-400" />
+        Mathura, Uttar Pradesh
+      </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <div className="hidden items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300 md:flex">
@@ -125,78 +112,52 @@ export default function Topbar({ onMenu }) {
             { code: 'hi', label: 'हिन्दी' },
           ].map((l) => (
             <button
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-sand-200 text-sand-500 hover:bg-sand-50 dark:border-barn-800 dark:text-sand-300 dark:hover:bg-barn-800"
-              onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              key={l.code}
+              onClick={() => setLang(l.code)}
+              className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
             >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+              {l.label}
+              {lang === l.code && <Check size={14} className="text-brand-600" />}
             </button>
+          ))}
+        </Dropdown>
 
-            <Dropdown
-              button={
-                <button className="flex items-center gap-1 rounded-lg border border-sand-200 px-2 py-2 text-sm hover:bg-sand-50 dark:border-barn-800 dark:hover:bg-barn-800 sm:gap-2 sm:px-2.5" aria-label="Language">
-                  <Globe size={14} className="shrink-0 text-sand-400" />
-                  <span className="font-semibold text-sand-700 dark:text-sand-200 sm:hidden">{lang === 'en' ? 'EN' : 'हि'}</span>
-                  <span className="hidden font-semibold text-sand-700 dark:text-sand-200 sm:inline">{lang === 'en' ? 'EN' : 'हिन्दी'}</span>
-                  <ChevronDown size={14} className="hidden shrink-0 text-sand-400 sm:block" />
-                </button>
-              }
-            >
-              {[
-                { code: 'en', label: 'English' },
-                { code: 'hi', label: 'हिन्दी' },
-              ].map((l) => (
-                <button
-                  key={l.code}
-                  onClick={() => setLang(l.code)}
-                  className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-sand-50 dark:text-sand-200 dark:hover:bg-barn-800"
-                >
-                  {l.label}
-                  {lang === l.code && <Check size={14} className="text-honey-600" />}
-                </button>
-              ))}
-            </Dropdown>
-
-            <Dropdown
-              width="w-80"
-              button={
-                <button className="relative grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-sand-200 text-sand-500 hover:bg-sand-50 dark:border-barn-800 dark:text-sand-300 dark:hover:bg-barn-800 bell-pulse" aria-label="Notifications">
-                  <Bell size={16} />
-                  <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-barn-900">3</span>
-                </button>
-              }
-            >
-              <div className="border-b border-sand-200 px-3 py-2.5 dark:border-barn-800">
-                <p className="text-xs font-bold text-sand-900 dark:text-sand-100">Notifications</p>
-                <p className="text-[11px] text-sand-400">3 unread alerts</p>
-              </div>
-              <div className="divide-y divide-sand-100 dark:divide-barn-800">
-                <div className="px-3 py-2.5 hover:bg-sand-50 dark:hover:bg-barn-800">
+        <Dropdown
+          width="w-80"
+          button={
+            <button className="relative grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 bell-pulse" aria-label="Notifications">
+              <Bell size={16} />
+              {openAlerts.length > 0 && (
+                <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-gray-900">
+                  {openAlerts.length}
+                </span>
+              )}
+            </button>
+          }
+        >
+          <div className="border-b border-gray-100 px-3 py-2.5 dark:border-gray-800">
+            <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Notifications</p>
+            <p className="text-[11px] text-gray-400">{openAlerts.length} unread alerts</p>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-800">
+            {openAlerts.length === 0 ? (
+              <div className="px-3 py-3 text-xs text-gray-400">No unread alerts</div>
+            ) : (
+              openAlerts.slice(0, 3).map((a) => (
+                <div key={a.id} className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
-                    <p className="text-xs font-medium text-sand-900 dark:text-sand-100">BUF-042: High risk detected (87%)</p>
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${a.level === 'HIGH' ? 'bg-red-500' : a.level === 'MODERATE' ? 'bg-honey-500' : 'bg-ai'}`} />
+                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100">{a.title}</p>
                   </div>
-                  <p className="mt-0.5 ml-3.5 text-[11px] text-sand-400">SCC rising rapidly - action required</p>
+                  <p className="mt-0.5 ml-3.5 text-[11px] text-gray-400">{a.excerpt}</p>
                 </div>
-                <div className="px-3 py-2.5 hover:bg-sand-50 dark:hover:bg-barn-800">
-                  <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-honey-500" />
-                    <p className="text-xs font-medium text-sand-900 dark:text-sand-100">Shed C humidity exceeds threshold</p>
-                  </div>
-                  <p className="mt-0.5 ml-3.5 text-[11px] text-sand-400">Humidity at 82% - ventilation check needed</p>
-                </div>
-                <div className="px-3 py-2.5 hover:bg-sand-50 dark:hover:bg-barn-800">
-                  <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-ai" />
-                    <p className="text-xs font-medium text-sand-900 dark:text-sand-100">Vet visit scheduled for tomorrow 9AM</p>
-                  </div>
-                  <p className="mt-0.5 ml-3.5 text-[11px] text-sand-400">Dr. Sharma - Shed B inspection</p>
-                </div>
-              </div>
-              <div className="border-t border-sand-200 px-3 py-2 dark:border-barn-800">
-                <button className="text-xs font-medium text-honey-600 hover:underline dark:text-honey-400">View all notifications →</button>
-              </div>
-            </Dropdown>
+              ))
+            )}
+          </div>
+          <div className="border-t border-gray-100 px-3 py-2 dark:border-gray-800">
+            <button className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">View all notifications →</button>
+          </div>
+        </Dropdown>
 
         <Dropdown
           width="w-48"

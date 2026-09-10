@@ -1,27 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar.jsx'
 import Topbar from './Topbar.jsx'
 import BottomNav from './BottomNav.jsx'
 import OnboardingTour from '../common/OnboardingTour.jsx'
-import ThemeCustomizer from '../common/ThemeCustomizer.jsx'
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [themeOpen, setThemeOpen] = useState(false)
   const location = useLocation()
-
-  const handleKeyDown = useCallback((e) => {
-    if (e.shiftKey && e.key.toLowerCase() === 't') {
-      e.preventDefault()
-      setThemeOpen(prev => !prev)
-    }
-  }, [])
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
 
   return (
     <div className="flex min-h-screen app-bg-pattern">
@@ -38,7 +24,6 @@ export default function Layout() {
         <BottomNav />
         <OnboardingTour />
       </div>
-      <ThemeCustomizer open={themeOpen} onClose={() => setThemeOpen(false)} />
     </div>
   )
 }
