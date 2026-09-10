@@ -37,15 +37,24 @@ function riskLevelFromScore(s) {
   return 'NONE'
 }
 
-// Curated leading animals so the demo story matches task.md
+export const ALERT_BUDGET = {
+  dailyMax: 6, // ≤5% of herd/day (128 animals * 0.05 ≈ 6)
+  used: 4,
+  limitPercentage: 5,
+  hysteresisThreshold: 10, // Must drop 10% below threshold to resolve alert
+}
+
+// Curated leading animals so the demo story matches deck requirements
 const CURATED = [
-  { id: 'BUF-042', breed: 'Murrah', age: 6, lactation: 3, milkYield: 6.1, scc: 420, activity: -18, rumination: -15, temperature: 39.9, previousMastitis: true, riskScore: 87, shed: 'C', trend: 'up' },
-  { id: 'COW-018', breed: 'Holstein Friesian', age: 5, lactation: 2, milkYield: 14.2, scc: 260, activity: -14, rumination: -7, temperature: 39.2, previousMastitis: false, riskScore: 64, shed: 'B', trend: 'up' },
-  { id: 'BUF-076', breed: 'Murrah', age: 7, lactation: 4, milkYield: 5.9, scc: 235, activity: -8, rumination: -6, temperature: 39.6, previousMastitis: true, riskScore: 58, shed: 'C', trend: 'up' },
-  { id: 'COW-053', breed: 'Crossbred', age: 5, lactation: 2, milkYield: 10.6, scc: 210, activity: -5, rumination: -3, temperature: 39.0, previousMastitis: false, riskScore: 52, shed: 'B', trend: 'flat' },
-  { id: 'BUF-091', breed: 'Murrah', age: 8, lactation: 5, milkYield: 6.4, scc: 190, activity: -3, rumination: -1, temperature: 38.9, previousMastitis: true, riskScore: 46, shed: 'B', trend: 'down' },
-  { id: 'COW-055', breed: 'Sahiwal', age: 4, lactation: 1, milkYield: 8.1, scc: 140, activity: -2, rumination: 1, temperature: 38.7, previousMastitis: false, riskScore: 28, shed: 'A', trend: 'flat' },
-  { id: 'COW-112', breed: 'Gir', age: 6, lactation: 3, milkYield: 7.8, scc: 95, activity: 3, rumination: 2, temperature: 38.5, previousMastitis: false, riskScore: 9, shed: 'A', trend: 'down' },
+  { id: 'BUF-042', breed: 'Murrah', age: 6, lactation: 3, milkYield: 6.1, scc: 420, baselineScc: 150, conductivity: 6.2, ph: 7.1, activity: -18, rumination: -15, temperature: 39.9, previousMastitis: true, riskScore: 87, shed: 'C', trend: 'up' },
+  { id: 'COW-018', breed: 'Holstein Friesian', age: 5, lactation: 2, milkYield: 14.2, scc: 260, baselineScc: 160, conductivity: 5.6, ph: 6.8, activity: -14, rumination: -7, temperature: 39.2, previousMastitis: false, riskScore: 64, shed: 'B', trend: 'up' },
+  { id: 'BUF-076', breed: 'Murrah', age: 7, lactation: 4, milkYield: 5.9, scc: 235, baselineScc: 145, conductivity: 5.5, ph: 6.9, activity: -8, rumination: -6, temperature: 39.6, previousMastitis: true, riskScore: 58, shed: 'C', trend: 'up' },
+  { id: 'COW-136', breed: 'Crossbred', age: 4, lactation: 2, milkYield: 11.0, scc: 306, baselineScc: 130, conductivity: 5.7, ph: 6.9, activity: -9, rumination: -7, temperature: 39.1, previousMastitis: true, riskScore: 58, shed: 'B', trend: 'up' },
+  { id: 'COW-053', breed: 'Crossbred', age: 5, lactation: 2, milkYield: 10.6, scc: 210, baselineScc: 150, conductivity: 5.3, ph: 6.7, activity: -5, rumination: -3, temperature: 39.0, previousMastitis: false, riskScore: 52, shed: 'B', trend: 'flat' },
+  { id: 'BUF-091', breed: 'Murrah', age: 8, lactation: 5, milkYield: 6.4, scc: 190, baselineScc: 140, conductivity: 5.2, ph: 6.7, activity: -3, rumination: -1, temperature: 38.9, previousMastitis: true, riskScore: 46, shed: 'B', trend: 'down' },
+  { id: 'COW-055', breed: 'Sahiwal', age: 4, lactation: 1, milkYield: 8.1, scc: 140, baselineScc: 135, conductivity: 4.9, ph: 6.6, activity: -2, rumination: 1, temperature: 38.7, previousMastitis: false, riskScore: 28, shed: 'A', trend: 'flat' },
+  { id: 'COW-202', breed: 'Gir', age: 5, lactation: 2, milkYield: 9.8, scc: 118, baselineScc: 115, conductivity: 4.8, ph: 6.6, activity: 1, rumination: 2, temperature: 38.5, previousMastitis: false, riskScore: 12, shed: 'A', trend: 'down' },
+  { id: 'COW-112', breed: 'Gir', age: 6, lactation: 3, milkYield: 7.8, scc: 95, baselineScc: 90, conductivity: 4.7, ph: 6.6, activity: 3, rumination: 2, temperature: 38.5, previousMastitis: false, riskScore: 9, shed: 'A', trend: 'down' },
 ]
 
 const NAMES = ['Ganga', 'Kaveri', 'Lakshmi', 'Radha', 'Nandini', 'Champa', 'Gauri', 'Kamdhenu', 'Basanti', 'Shyama', 'Tara', 'Meera', 'Saraswati', 'Rukmini', 'Parvati', 'Sita']
@@ -58,13 +67,17 @@ function makeGenerated(n) {
     const num = String(120 + i * 7 + between(1, 6)).padStart(3, '0')
     const score = between(2, 66)
     const shed = pick(SHEDS).id
+    const sccVal = between(60, 320)
     out.push({
       id: `${prefix}-${num}`,
       breed,
       age: between(3, 10),
       lactation: between(1, 6),
       milkYield: SPECIES[breed] === 'Buffalo' ? between(4.5, 8, 1) : between(7, 16, 1),
-      scc: between(60, 320),
+      scc: sccVal,
+      baselineScc: Math.round(sccVal * between(0.7, 0.95, 2)),
+      conductivity: between(4.5, 5.8, 1),
+      ph: between(6.5, 7.0, 1),
       activity: between(-14, 6),
       rumination: between(-12, 5),
       temperature: between(38.3, 39.6, 1),
@@ -76,7 +89,7 @@ function makeGenerated(n) {
   return out
 }
 
-const rawAnimals = [...CURATED, ...makeGenerated(12)]
+const rawAnimals = [...CURATED, ...makeGenerated(10)]
 
 function sparkFor(score, dir) {
   const end = score
@@ -105,9 +118,6 @@ export function getAnimal(id) {
 }
 
 // ---- Feeding / housing profile ---------------------------------------------
-// Deterministic per-animal nutrition & housing/bedding hygiene scores (0-100,
-// 100 = best), derived from each animal's shed hygiene profile and computed
-// once at module load so the values stay stable across renders.
 const FEEDING_HOUSING = new Map(
   ANIMALS.map((a) => {
     const shed = SHEDS.find((s) => s.id === a.shed)
@@ -127,7 +137,7 @@ export function feedingProfile(animal) {
 // ---- Time series -----------------------------------------------------------
 
 const DAY_LABELS = (days) => {
-  const base = new Date('2026-09-04T08:00:00')
+  const base = new Date('2026-09-10T08:00:00')
   const arr = []
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(base)
@@ -187,10 +197,10 @@ export const HERD_STATS = {
   highestRiskShed: 'Shed C',
 }
 
-// 7-day dashboard trend: Mon → Sun
+// 7-day dashboard trend: Sep 04 -> Sep 10
 export const DASH_TREND = (() => {
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  const dates = ['21 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '27 Apr']
+  const dates = ['04 Sep', '05 Sep', '06 Sep', '07 Sep', '08 Sep', '09 Sep', '10 Sep']
   return days.map((day, i) => {
     const p = i / 6
     return {
@@ -236,49 +246,56 @@ export const MILK_TRENDS = {
 }
 
 export const TIMELINE = [
-  { date: 'Aug 20', label: 'Normal', tone: 'ok' },
-  { date: 'Aug 24', label: 'SCC trend increased', tone: 'warn' },
-  { date: 'Aug 27', label: 'Milk production decreased', tone: 'warn' },
-  { date: 'Aug 29', label: 'Activity decreased', tone: 'warn' },
-  { date: 'Sep 02', label: 'Early warning generated', tone: 'alert' },
-  { date: 'Sep 04', label: 'High risk — 87%', tone: 'alert' },
+  { date: 'Aug 25', label: 'Normal baseline', tone: 'ok' },
+  { date: 'Aug 29', label: 'SCC trend increased', tone: 'warn' },
+  { date: 'Sep 02', label: 'Milk yield decreased 12%', tone: 'warn' },
+  { date: 'Sep 05', label: 'Conductivity & temperature elevated', tone: 'warn' },
+  { date: 'Sep 08', label: 'Early warning generated', tone: 'alert' },
+  { date: 'Sep 10', label: 'High risk status confirmed', tone: 'alert' },
 ]
 
 export const ALERTS = [
   {
     id: 'AL-1001', animalId: 'BUF-042', risk: 87, level: 'HIGH', status: 'open',
     time: 'Today, 07:12', shed: 'C',
-    factors: ['SCC rising rapidly', 'Milk yield down 12%', 'Activity down 18%'],
+    factors: ['SCC rising rapidly (420k)', 'Conductivity 6.2 mS/cm', 'Milk yield down 12%', 'Udder temp 39.9°C'],
     action: 'Inspect udder and perform an SCC / milk quality test today.',
   },
   {
     id: 'AL-1002', animalId: 'COW-018', risk: 64, level: 'MODERATE', status: 'open',
     time: 'Today, 06:40', shed: 'B',
-    factors: ['SCC increasing', 'Activity decreasing', 'Milk yield down 7%'],
+    factors: ['SCC increasing (260k)', 'Conductivity 5.6 mS/cm', 'Activity decreasing'],
     action: 'Monitor closely for 48 hours and review milking hygiene.',
   },
   {
     id: 'AL-1003', animalId: 'BUF-076', risk: 58, level: 'MODERATE', status: 'open',
     time: 'Yesterday, 18:05', shed: 'C',
-    factors: ['Udder temperature elevated', 'SCC above baseline'],
+    factors: ['Udder temperature 39.6°C', 'SCC above baseline (235k)'],
     action: 'Check udder for heat and swelling; recheck temperature tomorrow.',
   },
   {
-    id: 'AL-1004', animalId: 'COW-053', risk: 52, level: 'MODERATE', status: 'open',
+    id: 'AL-1004', animalId: 'COW-136', risk: 58, level: 'MODERATE', status: 'open',
+    time: 'Yesterday, 14:15', shed: 'B',
+    factors: ['SCC 306k (+135% above baseline)', 'Conductivity 5.7 mS/cm'],
+    action: 'Perform CMT gel test and check teat dip compliance.',
+  },
+  {
+    id: 'AL-1005', animalId: 'COW-053', risk: 52, level: 'MODERATE', status: 'open',
     time: 'Yesterday, 09:20', shed: 'B',
     factors: ['Activity slightly reduced', 'Bedding hygiene poor in shed'],
     action: 'Improve bedding hygiene and recheck tomorrow.',
   },
   {
-    id: 'AL-0990', animalId: 'COW-055', risk: 44, level: 'MODERATE', status: 'resolved',
-    time: '02 Sep, 11:00', shed: 'A',
+    id: 'AL-0990', animalId: 'COW-055', risk: 28, level: 'LOW', status: 'resolved',
+    time: '08 Sep, 11:00', shed: 'A',
     factors: ['SCC spike resolved after hygiene correction'],
     action: 'Resolved — SCC returned to baseline.',
   },
   {
-    id: 'AL-0984', animalId: 'COW-112', risk: 38, level: 'MODERATE', status: 'resolved',
-    time: '31 Aug, 15:30', shed: 'A',
+    id: 'AL-0984', animalId: 'COW-112', risk: 9, level: 'NONE', status: 'resolved',
+    time: '06 Sep, 15:30', shed: 'A',
     factors: ['Transient activity dip'],
     action: 'Resolved — behaviour normalised.',
   },
 ]
+

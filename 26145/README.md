@@ -96,6 +96,20 @@ Single OCI image ·  docker run --network none
 
 Docs and deck complete. **Prototype not started.**
 
+## Working React UI prototype
+
+The dashboard prototype is available in [`prototype/`](prototype/). It is a Vite + React frontend using dummy replay data and includes the reference-style dashboard, responsive layout, live metric updates, search, alert evidence drawer, Diode Mode, and supporting threat/traffic views.
+
+Run it with:
+
+```powershell
+cd prototype
+npm install
+npm run dev
+```
+
+Then open the local URL printed by Vite, usually `http://localhost:5173`.
+
 **Start here → the Week-1 Control Experiment.** Three days, before any other code:
 generate one scenario per threat class → derive the one-way twin → run the standard approach (CICFlowMeter + RandomForest) on both → read the two F1 numbers.
 

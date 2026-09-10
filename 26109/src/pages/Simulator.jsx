@@ -9,10 +9,13 @@ import { useI18n } from '../i18n/i18n.jsx'
 
 const DEFAULTS = {
   scc: 420,
+  baselineScc: 150,
+  conductivity: 6.2,
+  ph: 7.1,
   milkYieldChange: -12,
   activityChange: -18,
   ruminationChange: -15,
-  temperature: 39.6,
+  temperature: 39.9,
   humidity: 78,
   previousMastitis: true,
 }
@@ -64,10 +67,12 @@ export default function Simulator() {
 
       <div className="grid gap-4 md:gap-6 lg:grid-cols-5">
         {/* Controls */}
-        <Card className="p-4 md:p-5 lg:col-span-3">
-          <SectionTitle>Parameters</SectionTitle>
-          <div className="grid gap-4 md:gap-6 sm:grid-cols-2">
+        <Card className="p-5 lg:col-span-3">
+          <SectionTitle>Parameters & Sensor Signals</SectionTitle>
+          <div className="grid gap-6 sm:grid-cols-2">
             <SimSlider label={t('sim.scc')} value={s.scc} min={50} max={900} step={10} onChange={(v) => set('scc', v)} />
+            <SimSlider label="Electrical Conductivity (mS/cm)" value={s.conductivity} min={4.0} max={8.0} step={0.1} unit=" mS/cm" onChange={(v) => set('conductivity', v)} />
+            <SimSlider label="Milk pH Level" value={s.ph} min={6.0} max={7.5} step={0.1} unit=" pH" onChange={(v) => set('ph', v)} />
             <SimSlider label={t('sim.yield')} value={s.milkYieldChange} min={-40} max={10} unit="%" onChange={(v) => set('milkYieldChange', v)} />
             <SimSlider label={t('sim.activity')} value={s.activityChange} min={-40} max={10} unit="%" onChange={(v) => set('activityChange', v)} />
             <SimSlider label={t('sim.rumination')} value={s.ruminationChange} min={-40} max={10} unit="%" onChange={(v) => set('ruminationChange', v)} />

@@ -35,115 +35,12 @@ import { useI18n } from '../i18n/i18n.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
 import heroCow from '../assets/hero-section.png'
 
-/* ========== Feature 1: Live Sensor Feed ========== */
-function LiveSensorFeed() {
-  const [readings, setReadings] = useState([
-    { id: 'scc',      label: 'SCC Sensor BUF-042',    icon: Waves,       value: 420,  unit: 'k cells/mL', baseline: 420,  variance: 15, decimals: 0 },
-    { id: 'temp',     label: 'Temperature Sensor C-3', icon: Thermometer, value: 39.2, unit: '°C',         baseline: 39.2, variance: 0.3, decimals: 1 },
-    { id: 'activity', label: 'Activity Collar BUF-042', icon: Activity,   value: 82,   unit: '%',          baseline: 82,  variance: 4,  decimals: 0 },
-  ])
-  const [flashIds, setFlashIds] = useState(new Set())
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newFlash = new Set()
-      setReadings(prev =>
-        prev.map(r => {
-          const delta = (Math.random() - 0.5) * 2 * r.variance
-          const next = r.baseline + delta
-          if (Math.abs(delta) > r.variance * 0.3) newFlash.add(r.id)
-          return {
-            ...r,
-            value: r.decimals > 0 ? Number(next.toFixed(r.decimals)) : Math.round(next),
-          }
-        })
-      )
-      setFlashIds(newFlash)
-      setTimeout(() => setFlashIds(new Set()), 500)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  return (
-    <div className="space-y-2.5">
-      {readings.map((r) => {
-        const Icon = r.icon
-        const flashing = flashIds.has(r.id)
-        return (
-          <div
-            key={r.id}
-            className={`flex items-center justify-between rounded-lg border border-sand-200 bg-white px-3 py-2 dark:border-barn-800 dark:bg-barn-950/60 ${flashing ? 'sensor-flash' : ''}`}
-          >
-            <div className="flex items-center gap-2">
-              <span className="grid h-6 w-6 place-items-center rounded bg-ai-light text-ai dark:bg-ai-dark/30 dark:text-ai">
-                <Icon size={12} />
-              </span>
-              <span className="text-[11px] font-medium text-sand-700 dark:text-sand-300">{r.label}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-bold tabular-nums ${flashing ? 'text-ai-dark dark:text-ai' : 'text-sand-900 dark:text-sand-100'}`}>
-                {r.value}
-              </span>
-              <span className="text-[10px] text-sand-400">{r.unit}</span>
-              <span className={`h-1.5 w-1.5 rounded-full transition-colors ${flashing ? 'bg-forest-500' : 'bg-sand-300 dark:bg-barn-700'}`} />
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ========== Feature 6: Animated Counter ========== */
-function AnimatedCounter({ target, duration = 1000, decimals = 0, className = '' }) {
-  const [display, setDisplay] = useState('0')
-  const startTime = useRef(null)
-  const rafRef = useRef(null)
-
-  useEffect(() => {
-    startTime.current = null
-    const tick = (ts) => {
-      if (!startTime.current) startTime.current = ts
-      const progress = Math.min((ts - startTime.current) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      const current = eased * target
-      setDisplay(decimals > 0 ? current.toFixed(decimals) : Math.round(current).toString())
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick)
-      } else {
-        setDisplay(decimals > 0 ? target.toFixed(decimals) : String(target))
-      }
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [target, duration, decimals])
-
-  return <span className={`count-up tabular-nums ${className}`}>{display}</span>
-}
-
-/* ========== Feature 7: Loading Shimmer ========== */
-function DashboardShimmer() {
-  return (
-    <div className="space-y-3 md:space-y-6">
-      <div className="shimmer-line w-48 h-8" />
-      <div className="grid grid-cols-2 gap-2 md:gap-4 lg:grid-cols-4">
-        {[0,1,2,3].map(i => <div key={i} className="shimmer-line w-full h-24 rounded-xl" />)}
-      </div>
-      <div className="grid gap-3 md:gap-6 lg:grid-cols-2">
-        {[0,1].map(i => <div key={i} className="shimmer-line w-full h-56 rounded-xl" />)}
-      </div>
-      <div className="grid gap-3 md:gap-6 lg:grid-cols-3">
-        {[0,1,2].map(i => <div key={i} className="shimmer-line w-full h-48 rounded-xl" />)}
-      </div>
-    </div>
-  )
-}
-
-/* ===================================================== */
+import { useAlerts } from '../context/AlertContext.jsx'
 
 export default function Dashboard() {
   const { t } = useI18n()
   const { theme } = useTheme()
+  const { isReviewed } = useAlerts()
   const dark = theme === 'dark'
   const axisStyle = { fontSize: 10, fill: dark ? '#9099a8' : '#9ca3af' }
   const gridColor = dark ? '#3a3028' : '#e8dfd0'
@@ -154,7 +51,7 @@ export default function Dashboard() {
     backgroundColor: dark ? '#2d241b' : '#fffdf5',
     color: dark ? '#f5efe0' : '#2d241b',
   }
-  const urgent = ALERTS.filter((a) => a.status === 'open').slice(0, 3)
+  const urgent = ALERTS.filter((a) => a.status === 'open' && !isReviewed(a.id) && !isReviewed(a.animalId)).slice(0, 3)
   const recent = [...ANIMALS].sort((a, b) => b.riskScore - a.riskScore).slice(0, 5)
   const pct = (n) => Math.round((n / HERD_STATS.totalAnimals) * 100)
 
