@@ -3,15 +3,18 @@ import {
   ChartLineUp,
   ChartScatter,
   CheckCircle,
+  Document,
   Function as FunctionIcon,
   Gauge,
   GridFour,
   Palette,
   PlugsConnected,
   ShieldCheck,
+  Sparkle,
   StackSimple,
   Table,
   TrendDown,
+  TrendUp,
 } from '@phosphor-icons/react'
 
 export interface NavItem {
@@ -48,6 +51,7 @@ export const NAV: NavGroup[] = [
       { to: '/elasticity', label: 'Lead-time curve', icon: TrendDown, blurb: 'Fare against days to departure' },
       { to: '/cross-check', label: 'Aggregator cross-check', icon: CheckCircle, blurb: 'One flight, priced on eight sites' },
       { to: '/decomposition', label: 'Fare decomposition', icon: StackSimple, blurb: 'Base, taxes, UDF, convenience' },
+      { to: '/forecast', label: 'Fare forecast', icon: Sparkle, blurb: 'LSTM + seasonal ARIMA, 14 and 30 days ahead' },
     ],
   },
   {
@@ -65,6 +69,7 @@ export const NAV: NavGroup[] = [
       { to: '/compliance', label: 'Compliance gate', icon: ShieldCheck, blurb: 'Posture, caps, audit log, kill-switch' },
       { to: '/health', label: 'Collection health', icon: Gauge, blurb: 'Yield, coverage, block rate, latency' },
       { to: '/quotes', label: 'Quote explorer', icon: Table, blurb: 'The cleaned panel, row by row' },
+      { to: '/scraper', label: 'Scraper architecture', icon: Robot, blurb: 'Multi-source engine, collectors, pipeline' },
     ],
   },
   {
@@ -72,6 +77,7 @@ export const NAV: NavGroup[] = [
     label: 'Publish',
     items: [
       { to: '/api', label: 'API and SDMX', icon: PlugsConnected, blurb: 'What NSO and RBI actually consume' },
+      { to: '/reports', label: 'Reports', icon: Document, blurb: 'Daily briefs, weekly summaries, monthly releases' },
       { to: '/design-system', label: 'Design system', icon: Palette, blurb: 'Tokens, components, palette gates' },
     ],
   },

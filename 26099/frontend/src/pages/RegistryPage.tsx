@@ -751,192 +751,143 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
         </div>
       </div>
 
-      {/* -------------------------------------------------------------- meta */}
-      <dl className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-rule pt-3">
-        <MetaItem label={technical ? 'Canonical UOM' : 'Unit'}>
-          <Num size="2xs">{cluster.uom}</Num>
-        </MetaItem>
-        <MetaItem label="UNSPSC">
-          <Num size="2xs">{cluster.unspsc}</Num>
-        </MetaItem>
-        <MetaItem label={technical ? 'Standard' : 'Official standard'}>
-          {cluster.standard === 'not stated' ? (
-            <span className="text-2xs text-ink-3">not stated</span>
-          ) : (
-            <Num size="2xs">{cluster.standard}</Num>
-          )}
-        </MetaItem>
-        <MetaItem label={technical ? 'Family' : 'Kind'}>
-          <span className="text-2xs text-ink">{FAMILY_LABEL[cluster.family]}</span>
-        </MetaItem>
-        <MetaItem label={technical ? 'Records' : 'Entries'}>
-          <Num size="2xs">{formatExact(cluster.members.length)}</Num>
-        </MetaItem>
-      </dl>
+      {/* -------------------------------------------------------------- detail: two columns */}
+      <div className="mt-3 grid gap-4 xl:grid-cols-[1fr_240px]">
+        {/* LEFT column */}
+        <div>
+          {/* meta - single inline row */}
+          <dl className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-rule pt-2">
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-ink-3">Unit</span>
+              <Num size="2xs">{cluster.uom}</Num>
+            </span>
+            <span className="text-rule">|</span>
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-ink-3">UNSPSC</span>
+              <Num size="2xs">{cluster.unspsc}</Num>
+            </span>
+            <span className="text-rule">|</span>
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-ink-3">Std</span>
+              {cluster.standard === 'not stated'
+                ? <span className="text-2xs text-ink-3">|</span>
+                : <Num size="2xs">{cluster.standard}</Num>}
+            </span>
+            <span className="text-rule">|</span>
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-ink-3">{technical ? 'Family' : 'Kind'}</span>
+              <span className="text-2xs text-ink">{FAMILY_LABEL[cluster.family]}</span>
+            </span>
+            <span className="text-rule">|</span>
+            <span className="flex items-baseline gap-1.5">
+              <Num size="2xs">{formatExact(cluster.members.length)}</Num>
+              <span className="text-[10px] uppercase tracking-wider text-ink-3">{technical ? 'records' : 'entries'}</span>
+            </span>
+          </dl>
 
-      {cluster.standard === 'not stated' ? (
-        <p className="mt-2 text-2xs text-ink-3">
-          <ByMode
-            simple="None of the companies wrote an official standard number."
-            technical="No IS / ASTM / ISO reference appeared in any member description."
-          />
-        </p>
-      ) : null}
-
-      {/* ----------------------------------------------------- description build */}
-      <section className="mt-4 border-t border-rule pt-3">
-        <div className="flex items-center gap-2">
-          <IconTile icon={<Hash size={13} weight="regular" />} tone="neutral" size="sm" />
-          <h3 className="font-display text-[12.5px] font-semibold tracking-tight text-ink">
-            {technical ? 'How this description was proposed' : 'How this description was built'}
-          </h3>
-        </div>
-        <div className="mt-2 flex gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap gap-1">
+          {/* description build */}
+          <section className="mt-2.5 border-t border-rule pt-2.5">
+            <div className="flex items-center gap-1.5">
+              <IconTile icon={<Hash size={12} weight="regular" />} tone="neutral" size="sm" />
+              <h3 className="text-[11.5px] font-semibold tracking-tight text-ink">
+                {technical ? 'How this description was proposed' : 'How this description was built'}
+              </h3>
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1">
               {buildDescription.tokens.map(token => (
-                <span key={token} className="rounded-md border border-rule bg-surface-2 px-1.5 py-0.5 font-mono text-[10.5px] text-ink-2">{token}</span>
+                <span key={token} className="rounded border border-rule bg-surface-2 px-1 py-0.5 font-mono text-[9.5px] text-ink-2">{token}</span>
               ))}
             </div>
-            <div className="mt-2 border border-rule">
+            <div className="mt-1.5 border border-rule">
               {buildDescription.slots.map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between gap-4 border-b border-rule last:border-b-0 py-1 px-2.5">
-                  <span className="text-[11px] text-ink-2">{label}</span>
-                  {value ? (
-                    <span className="font-mono text-[11px] text-ink">{value}</span>
-                  ) : (
-                    <span className="text-[11px] text-ink-3">not stated</span>
-                  )}
+                <div key={label} className="flex items-center justify-between gap-3 border-b border-rule last:border-b-0 py-0.5 px-2">
+                  <span className="text-[10px] text-ink-2">{label}</span>
+                  {value
+                    ? <span className="font-mono text-[10px] text-ink">{value}</span>
+                    : <span className="text-[10px] text-ink-3">|</span>}
                 </div>
               ))}
             </div>
-          </div>
-          <div className="hidden sm:block w-[140px] shrink-0">
-            <p className="text-[11px] text-ink-2 leading-relaxed">
-              <ByMode
-                simple="Slots filled from the cleaned description. The standard above is these values joined."
-                technical="Attribute slots in canonical order. Code is a hash of the pipe-joined signature."
-              />
-            </p>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* ----------------------------------------------------------- members */}
-      <section className="mt-4 border-t border-rule pt-3">
-        <div className="flex items-center gap-2">
-          <IconTile icon={<Buildings size={13} weight="regular" />} tone="neutral" size="sm" />
-          <div className="flex items-baseline gap-x-2">
-            <h3 className="font-display text-[12.5px] font-semibold tracking-tight text-ink">
-              {technical ? 'Contributing records' : 'What each company calls it'}
-            </h3>
-            <span className="font-mono text-[10.5px] text-ink-3">{formatExact(cluster.members.length)}</span>
-          </div>
-        </div>
-
-        {single && soleOwner ? (
-          <div className="mt-2">
-            <p className="max-w-[74ch] text-[13px] leading-relaxed text-ink-2">
-              <ByMode
-                simple={
-                  <>
-                    Only <span className="text-ink">{soleOwner.cpse}</span> stocks this item.
-                    Nothing in the other three lists matched it. Most codes look like this.
-                  </>
-                }
-                technical={
-                  <>
-                    Single-member cluster. No record from another CPSE cleared the accept threshold
-                    against <span className="text-ink">{soleOwner.cpse}</span>.
-                  </>
-                }
-              />
-            </p>
-            <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-              <MetaItem label={technical ? 'CPSE' : 'Company'}><Num size="2xs">{soleOwner.cpse}</Num></MetaItem>
-              <MetaItem label={technical ? 'Local code' : 'Their code'}><Num size="2xs">{soleOwner.localCode}</Num></MetaItem>
-              <MetaItem label={technical ? 'Raw UOM' : 'Unit'}><Num size="2xs">{soleOwner.rawUom}</Num></MetaItem>
-              <MetaItem label="Qty"><Num size="2xs">{formatExact(soleOwner.annualQty)}</Num></MetaItem>
-              <MetaItem label="Price"><Num size="2xs">{formatRupees(soleOwner.unitPrice)}</Num></MetaItem>
-            </dl>
-          </div>
-        ) : (
-          <>
-            <p className="mt-2 max-w-[76ch] text-[12.5px] leading-relaxed text-ink-2">
-              <ByMode
-                simple="Each line is one company's own entry. Different codes, different spellings, different units, one item."
-                technical="One row per member. Local code, description and UOM all diverge; the canonical row above is what they resolve to."
-              />
-            </p>
-            <div className="mt-2 border border-rule">
+          {/* members */}
+          <section className="mt-2.5 border-t border-rule pt-2.5">
+            <div className="flex items-center gap-1.5">
+              <IconTile icon={<Buildings size={12} weight="regular" />} tone="neutral" size="sm" />
+              <h3 className="text-[11.5px] font-semibold tracking-tight text-ink">
+                {technical ? 'Contributing records' : 'What each company calls it'}
+              </h3>
+              <span className="font-mono text-[10px] text-ink-3">{formatExact(cluster.members.length)}</span>
+            </div>
+            <div className="mt-1 border border-rule">
               <Table>
                 <thead>
                   <tr>
-                    <Th className="!py-1.5 !px-2.5">{technical ? 'CPSE' : 'Co.'}</Th>
-                    <Th className="!py-1.5 !px-2.5">{technical ? 'Local code' : 'Their code'}</Th>
-                    <Th className="!py-1.5 !px-2.5">Description</Th>
-                    <Th className="!py-1.5 !px-2.5">{technical ? 'UOM' : 'Unit'}</Th>
-                    <Th align="right" className="!py-1.5 !px-2.5">Qty</Th>
-                    <Th align="right" className="!py-1.5 !px-2.5">Price</Th>
+                    <Th className="!py-1 !px-2">{technical ? 'CPSE' : 'Co.'}</Th>
+                    <Th className="!py-1 !px-2">{technical ? 'Local code' : 'Their code'}</Th>
+                    <Th className="!py-1 !px-2">Description</Th>
+                    <Th className="!py-1 !px-2">{technical ? 'UOM' : 'Unit'}</Th>
+                    <Th align="right" className="!py-1 !px-2">Qty</Th>
+                    <Th align="right" className="!py-1 !px-2">Price</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {cluster.members.map(member => (
                     <tr key={member.id}>
-                      <Td className="!py-1.5 !px-2.5"><Num size="2xs">{member.cpse}</Num></Td>
-                      <Td className="!py-1.5 !px-2.5"><Num size="2xs" className="text-ink-2">{member.localCode}</Num></Td>
-                      <Td className="!py-1.5 !px-2.5 min-w-[24ch] font-mono text-[11.5px]">{member.rawDescription}</Td>
-                      <Td className="!py-1.5 !px-2.5 whitespace-nowrap"><Num size="2xs" className="text-ink-2">{member.rawUom}</Num></Td>
-                      <Td align="right" className="!py-1.5 !px-2.5 whitespace-nowrap"><Num size="2xs">{formatExact(member.annualQty)}</Num></Td>
-                      <Td align="right" className="!py-1.5 !px-2.5 whitespace-nowrap"><Num size="2xs">{formatRupees(member.unitPrice)}</Num></Td>
+                      <Td className="!py-1 !px-2"><Num size="2xs">{member.cpse}</Num></Td>
+                      <Td className="!py-1 !px-2"><Num size="2xs" className="text-ink-2">{member.localCode}</Num></Td>
+                      <Td className="!py-1 !px-2 min-w-[20ch] font-mono text-[10.5px]">{member.rawDescription}</Td>
+                      <Td className="!py-1 !px-2 whitespace-nowrap"><Num size="2xs" className="text-ink-2">{member.rawUom}</Num></Td>
+                      <Td align="right" className="!py-1 !px-2 whitespace-nowrap"><Num size="2xs">{formatExact(member.annualQty)}</Num></Td>
+                      <Td align="right" className="!py-1 !px-2 whitespace-nowrap"><Num size="2xs">{formatRupees(member.unitPrice)}</Num></Td>
                     </tr>
                   ))}
                 </tbody>
               </Table>
             </div>
-          </>
-        )}
-      </section>
+          </section>
 
-      {/* ------------------------------------------------------------- spend */}
-      <section className="mt-4 border-t border-rule pt-3">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <div className="flex items-center gap-2">
-            <IconTile icon={<Coins size={13} weight="regular" />} tone="accent" size="sm" />
-            <Num size="lg">{formatRupees(cluster.annualSpend)}</Num>
-          </div>
-          <Num size="2xs" className="text-ink-3">
-            {technical ? 'annual spend across members' : 'spent on this every year, in total'}
-          </Num>
-          {!single && cluster.cpses.length > 1 ? (
-            <div className="ml-auto shrink-0">
-              <DonutChart data={cpseSpend} size={96} thickness={16} />
+          {/* spend */}
+          <section className="mt-2.5 border-t border-rule pt-2.5">
+            <div className="flex items-center gap-1.5">
+              <IconTile icon={<Coins size={12} weight="regular" />} tone="accent" size="sm" />
+              <Num size="lg">{formatRupees(cluster.annualSpend)}</Num>
+              <span className="text-[10px] text-ink-3">
+                {technical ? 'annual spend' : 'per year, total'}
+              </span>
             </div>
-          ) : null}
+            <TechnicalOnly>
+              <div className="mt-1 border border-rule bg-surface-2 px-2.5 py-2">
+                <ul className="space-y-0.5">
+                  {cluster.members.map(member => (
+                    <li key={member.id} className="font-mono text-[10px] tabular-nums text-ink-2">
+                      {member.cpse} {formatExact(member.annualQty)} x Rs {formatExact(member.unitPrice)} = Rs {formatExact(member.annualQty * member.unitPrice)}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-0.5 border-t border-rule pt-0.5 font-mono text-[10px] tabular-nums text-ink">
+                  = Rs {formatExact(cluster.annualSpend)}
+                </p>
+              </div>
+            </TechnicalOnly>
+          </section>
         </div>
-        {!single && cluster.cpses.length > 1 ? (
-          <div className="mt-2 ml-7">
-            <ChartLegend data={cpseSpend} />
-          </div>
-        ) : null}
-        <TechnicalOnly>
-          <div className="mt-2 border border-rule bg-surface-2 px-3 py-2">
-            <Label className="text-[10px]">Arithmetic</Label>
-            <ul className="mt-1 space-y-0.5">
-              {cluster.members.map(member => (
-                <li key={member.id} className="font-mono text-[10.5px] tabular-nums text-ink-2">
-                  {member.cpse} {formatExact(member.annualQty)} x Rs {formatExact(member.unitPrice)} = Rs {formatExact(member.annualQty * member.unitPrice)}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-1 border-t border-rule pt-1 font-mono text-[10.5px] tabular-nums text-ink">
-              total = Rs {formatExact(cluster.annualSpend)}
-            </p>
-          </div>
-        </TechnicalOnly>
-      </section>
 
-      {/* -------------------------------------------------------- derivation */}
+        {/* RIGHT column: donut chart */}
+        {!single && cluster.cpses.length > 1 ? (
+          <div className="flex flex-col items-center">
+            <DonutChart data={cpseSpend} size={180} thickness={20} />
+            <div className="mt-1.5 w-full px-1">
+              <ChartLegend data={cpseSpend} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center">
+            <span className="text-[10px] text-ink-3">Single source</span>
+            <span className="font-mono text-lg text-ink-2">{cluster.cpses[0]}</span>
+          </div>
+        )}
+      </div>      {/* -------------------------------------------------------- derivation */}
       <section className="mt-6 border-t border-rule pt-4">
         <div className="mb-3 flex items-center gap-3">
           <IconTile icon={<Hash size={14} weight="regular" />} tone="neutral" size="sm" />

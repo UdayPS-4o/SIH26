@@ -55,13 +55,7 @@ export default function Dashboard() {
   const recent = [...ANIMALS].sort((a, b) => b.riskScore - a.riskScore).slice(0, 5)
   const pct = (n) => Math.round((n / HERD_STATS.totalAnimals) * 100)
 
-  const [loading, setLoading] = useState(true)
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500)
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (loading) return <DashboardShimmer />
+  // Remove loading gate so we can see the actual render error
 
   return (
     <div className="space-y-3 md:space-y-6">

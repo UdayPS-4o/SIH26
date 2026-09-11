@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ShieldCheck, Info } from 'lucide-react'
-import { PageHeader, EmptyState, Card } from '../components/common/ui.jsx'
+import { PageHeader, EmptyState, Card, AiThinkingDots } from '../components/common/ui.jsx'
 import { AlertCard } from '../components/shared.jsx'
 import { ALERTS, ALERT_BUDGET } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
