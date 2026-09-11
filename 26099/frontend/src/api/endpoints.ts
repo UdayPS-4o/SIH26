@@ -536,5 +536,5 @@ function guessFamily(normalized: NormalizedRecord): MaterialRecord['family'] {
 export { applyMapping } from './csv'
 export { parseCsv }
 export type { ParsedRow, ColumnMapping, IngestPreview } from './types'
-export { streamMasterLoad, rowsToRecords, restoreLoaded, forgetLoaded, rememberActivity, restoreActivity } from './loader'
+export { streamMasterLoad, rowsToRecords, restoreLoaded, forgetLoaded } from './loader'
 export type { LoadEvent, LoadSummary, PipelineStage, RegistrySnapshot, StageReport } from './loader'
