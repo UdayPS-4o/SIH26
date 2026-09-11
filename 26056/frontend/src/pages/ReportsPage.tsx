@@ -3,7 +3,7 @@ import {
   CheckCircle,
   Clock,
   DownloadSimple,
-  Document,
+  FileText,
   Envelope,
   Globe,
   Warning,
@@ -284,7 +284,7 @@ export function ReportsPage() {
         <StatTile
           label="Reports generated (90 days)"
           value={270}
-          icon={Document}
+          icon={FileText}
           tone="accent"
           note="3 per day, every night"
         />
@@ -314,7 +314,7 @@ export function ReportsPage() {
       {/* Report Templates */}
       <Panel
         className="mt-3"
-        icon={Document}
+        icon={FileText}
         title="Report templates"
         meta="Six report types, each with a fixed schema for downstream automation"
         bleed
@@ -356,7 +356,7 @@ export function ReportsPage() {
       {/* Daily Brief Preview */}
       <Panel
         className="mt-3"
-        icon={Document}
+        icon={FileText}
         title="Latest daily brief"
         meta="Auto-generated — 11 Sep 2026, 04:02 IST"
         actions={
@@ -553,7 +553,7 @@ export function ReportsPage() {
                 ) : ch.name.includes('data.gov') ? (
                   <Globe size={15} weight="duotone" />
                 ) : (
-                  <Document size={15} weight="duotone" />
+                  <FileText size={15} weight="duotone" />
                 )}
               </span>
               <div className="min-w-0">

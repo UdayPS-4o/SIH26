@@ -3,7 +3,7 @@ import {
   ChartLineUp,
   ChartScatter,
   CheckCircle,
-  Document,
+  FileText,
   Function as FunctionIcon,
   Gauge,
   Gear,
@@ -82,7 +82,7 @@ export const NAV: NavGroup[] = [
     label: 'Publish',
     items: [
       { to: '/api', label: 'API and SDMX', icon: PlugsConnected, blurb: 'What NSO and RBI actually consume' },
-      { to: '/reports', label: 'Reports', icon: Document, blurb: 'Daily briefs, weekly summaries, monthly releases' },
+      { to: '/reports', label: 'Reports', icon: FileText, blurb: 'Daily briefs, weekly summaries, monthly releases' },
       { to: '/design-system', label: 'Design system', icon: Palette, blurb: 'Tokens, components, palette gates' },
     ],
   },
