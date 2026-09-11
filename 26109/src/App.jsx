@@ -9,8 +9,6 @@ import MilkQuality from './pages/MilkQuality.jsx'
 import Environment from './pages/Environment.jsx'
 import WorkerHygiene from './pages/WorkerHygiene.jsx'
 import Simulator from './pages/Simulator.jsx'
-import Analytics from './pages/Analytics.jsx'
-import Detection from './pages/Detection.jsx'
 import Devices from './pages/Devices.jsx'
 import Model from './pages/Model.jsx'
 import Reports from './pages/Reports.jsx'
@@ -32,8 +30,6 @@ export default function App() {
         <Route path="/devices" element={<Devices />} />
         <Route path="/model" element={<Model />} />
         <Route path="/simulator" element={<Simulator />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/detection" element={<Detection />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

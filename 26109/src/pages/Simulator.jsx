@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react'
 import { RotateCcw, Sparkles } from 'lucide-react'
-import { PageHeader, Card, SectionTitle, RiskGauge, Toggle, AiThinkingDots } from '../components/common/ui.jsx'
+import { PageHeader, Card, SectionTitle, RiskGauge, Toggle } from '../components/common/ui.jsx'
 import { RiskFactors } from '../components/shared.jsx'
-import SuggestionCard from '../components/common/SuggestionCard.jsx'
-import VetEscalation from '../components/common/VetEscalation.jsx'
 import { predictMastitisRisk } from '../services/predictionService'
 import { useI18n } from '../i18n/i18n.jsx'
 
@@ -24,8 +22,8 @@ function SimSlider({ label, value, min, max, step = 1, unit = '', onChange }) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-sand-700 dark:text-sand-300">{label}</label>
-        <span className="rounded-md bg-sand-100 px-2 py-0.5 text-xs font-semibold text-sand-700 dark:bg-barn-800 dark:text-sand-300">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
+        <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
           {value}{unit}
         </span>
       </div>
@@ -38,7 +36,7 @@ function SimSlider({ label, value, min, max, step = 1, unit = '', onChange }) {
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
       />
-      <div className="mt-1 flex justify-between text-[10px] text-sand-400">
+      <div className="mt-1 flex justify-between text-[10px] text-gray-400">
         <span>{min}{unit}</span>
         <span>{max}{unit}</span>
       </div>
@@ -65,7 +63,7 @@ export default function Simulator() {
         }
       />
 
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-5">
+      <div className="grid gap-6 lg:grid-cols-5">
         {/* Controls */}
         <Card className="p-5 lg:col-span-3">
           <SectionTitle>Parameters & Sensor Signals</SectionTitle>
@@ -79,62 +77,44 @@ export default function Simulator() {
             <SimSlider label={t('sim.temp')} value={s.temperature} min={37.5} max={41} step={0.1} unit="°C" onChange={(v) => set('temperature', v)} />
             <SimSlider label={t('sim.humidity')} value={s.humidity} min={30} max={100} unit="%" onChange={(v) => set('humidity', v)} />
           </div>
-          <div className="mt-4 md:mt-5 rounded-lg border border-sand-200 px-3 dark:border-barn-700">
+          <div className="mt-5 rounded-lg border border-gray-200 px-3 dark:border-gray-700">
             <Toggle checked={s.previousMastitis} onChange={(v) => set('previousMastitis', v)} label={t('sim.prevMastitis')} />
           </div>
         </Card>
 
         {/* Result */}
-        <div className="space-y-4 md:space-y-6 lg:col-span-2">
-          <Card className="p-4 md:p-6">
-            <SectionTitle>{t('sim.result')} <AiThinkingDots /></SectionTitle>
+        <div className="space-y-6 lg:col-span-2">
+          <Card className="p-6">
+            <SectionTitle>{t('sim.result')}</SectionTitle>
             <div className="flex flex-col items-center">
               <RiskGauge score={result.riskScore} size={180} />
-              <div className="mt-3 md:mt-4 w-full rounded-lg bg-sand-50 p-3 text-center dark:bg-barn-800">
-                <p className="text-xs text-sand-400">{t('common.riskWindow')}</p>
-                <p className="text-sm font-semibold text-sand-900 dark:text-sand-100">{result.predictionWindow}</p>
+              <div className="mt-4 w-full rounded-lg bg-gray-50 p-3 text-center dark:bg-gray-800">
+                <p className="text-xs text-gray-400">{t('common.riskWindow')}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{result.predictionWindow}</p>
               </div>
             </div>
-            <p className="mt-3 md:mt-4 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+            <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-medium text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
               {t('sim.disclaimer')}
             </p>
           </Card>
 
-          <Card className="p-4 md:p-5">
-            <div className="mb-2 md:mb-3 flex items-center gap-2">
-              <Sparkles size={15} className="text-forest-600" />
-              <span className="text-sm font-semibold text-sand-900 dark:text-sand-100">Top contributing factors</span>
+          <Card className="p-5">
+            <div className="mb-3 flex items-center gap-2">
+              <Sparkles size={15} className="text-brand-600" />
+              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top contributing factors</span>
             </div>
             {result.contributingFactors.length ? (
               <RiskFactors factors={result.contributingFactors} />
             ) : (
-              <p className="text-sm text-sand-400">No dominant risk factors at these settings.</p>
+              <p className="text-sm text-gray-400">No dominant risk factors at these settings.</p>
             )}
           </Card>
-
-          {/* Detailed Suggestions */}
-          <Card className="p-4 md:p-5">
-            <SectionTitle>{t('suggest.title')}</SectionTitle>
-            <p className="text-xs text-sand-400 mb-3 md:mb-4">{t('suggest.sub')}</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {result.recommendations.map((r, i) => (
-                <SuggestionCard key={r.title} rec={r} index={i} />
-              ))}
-            </div>
-          </Card>
-
-          {/* Vet Escalation for high simulated risk */}
-          {result.riskScore >= 60 && (
-            <Card className="p-4 md:p-5">
-              <VetEscalation animalId="Simulated" riskScore={result.riskScore} />
-            </Card>
-          )}
         </div>
       </div>
 
-      <Card className="mt-4 md:mt-6 p-4 md:p-5">
+      <Card className="mt-6 p-5">
         <SectionTitle>How this demo formula works</SectionTitle>
-        <ul className="grid gap-2 text-sm text-sand-600 dark:text-sand-400 sm:grid-cols-2">
+        <ul className="grid gap-2 text-sm text-gray-600 dark:text-gray-400 sm:grid-cols-2">
           <li>• Higher SCC → higher risk (largest weight)</li>
           <li>• Larger milk-yield decline → higher risk</li>
           <li>• Lower activity and rumination → higher risk</li>
@@ -142,7 +122,7 @@ export default function Simulator() {
           <li>• Higher humidity → higher environmental risk</li>
           <li>• Previous mastitis history → higher risk</li>
         </ul>
-        <p className="mt-2 md:mt-3 text-xs text-sand-400">
+        <p className="mt-3 text-xs text-gray-400">
           The production system would replace this transparent formula with a validated ML model trained on real
           sensor, laboratory and farm-record data. Result is clamped between 0 and 99.
         </p>

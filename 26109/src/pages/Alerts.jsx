@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ShieldCheck, Info } from 'lucide-react'
-import { PageHeader, EmptyState, Card, AiThinkingDots } from '../components/common/ui.jsx'
+import { PageHeader, EmptyState, Card } from '../components/common/ui.jsx'
 import { AlertCard } from '../components/shared.jsx'
 import { ALERTS, ALERT_BUDGET } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
@@ -34,11 +34,7 @@ export default function Alerts() {
 
   return (
     <div>
-      <PageHeader title={t('alerts.title')} subtitle={
-        <span className="inline-flex items-center gap-1.5">
-          {t('alerts.sub')} <AiThinkingDots />
-        </span>
-      } />
+      <PageHeader title={t('alerts.title')} subtitle={t('alerts.sub')} />
 
       {/* Alert Budget Card — Deck Core Trust Feature */}
       <Card className="mb-6 border-l-4 border-l-brand-600 bg-brand-50/50 p-4 dark:bg-brand-950/20">
@@ -84,7 +80,7 @@ export default function Alerts() {
       {list.length === 0 ? (
         <EmptyState title="No alerts in this view" hint="You're all caught up." />
       ) : (
-        <div className="grid gap-3 md:gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {list.map((a) => (
             <AlertCard key={a.id} alert={a} onReview={(id) => markReviewed(id)} />
           ))}

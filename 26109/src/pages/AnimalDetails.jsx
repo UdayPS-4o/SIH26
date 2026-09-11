@@ -192,13 +192,13 @@ export default function AnimalDetails() {
 
   return (
     <div>
-      <Link to="/animals" className="mb-3 md:mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-sand-500 hover:text-sand-800">
+      <Link to="/animals" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-800">
         <ArrowLeft size={15} /> {t('detail.back')}
       </Link>
 
       {/* Hero */}
-      <Card className="mb-4 md:mb-6 overflow-hidden">
-        <div className="grid gap-4 md:gap-6 p-4 md:p-6 md:grid-cols-3">
+      <Card className="mb-6 overflow-hidden">
+        <div className="grid gap-6 p-6 md:grid-cols-3">
           <div className="md:col-span-2">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{animal.id}</h1>
@@ -208,7 +208,7 @@ export default function AnimalDetails() {
               {animal.name} · {animal.breed} {t(`species.${animal.species.toLowerCase()}`)} · {animal.age} years · Lactation {animal.lactation} · {t(`shed.${animal.shed}`)}
             </p>
 
-            <div className="mt-4 md:mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
               <MiniStat label={t('animals.col.yield')} value={`${animal.milkYield} L`} />
               <MiniStat label="SCC / Baseline" value={`${animal.scc}k / ${animal.baselineScc || 150}k`} />
               <MiniStat label="Conductivity" value={`${(animal.conductivity || 5.4).toFixed(1)} mS/cm`} />
@@ -239,30 +239,30 @@ export default function AnimalDetails() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Why at risk */}
-        <Card className="p-4 md:p-5 lg:col-span-2">
+        <Card className="p-5 lg:col-span-2">
           <SectionTitle>{t('detail.why')}</SectionTitle>
           <RiskFactors factors={factorRows} />
           <p className="mt-4 rounded-lg bg-brand-50 px-3 py-2.5 text-xs leading-relaxed text-brand-900 dark:bg-brand-900/20 dark:text-brand-200">
             The current risk score is primarily driven by per-animal baseline deviation in SCC, electrical conductivity spikes, and
             behavioural changes.
           </p>
-          <AiDisclaimer className="mt-2 md:mt-3" />
+          <AiDisclaimer className="mt-3" />
         </Card>
 
         {/* Timeline */}
-        <Card className="p-4 md:p-5">
+        <Card className="p-5">
           <SectionTitle>{t('detail.timeline')}</SectionTitle>
           <HealthTimeline items={buildTimeline(animal, liveScore)} />
         </Card>
       </div>
 
       {/* Charts */}
-      <div className="mt-4 md:mt-6">
+      <div className="mt-6">
         <SectionTitle>{t('detail.charts')}</SectionTitle>
-        <div className="grid gap-4 md:gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {charts.map((c) => (
-            <Card key={c.key} className="p-4 md:p-5">
-              <p className="mb-2 text-sm font-medium text-sand-700 dark:text-sand-300">{c.title}</p>
+            <Card key={c.key} className="p-5">
+              <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">{c.title}</p>
               <AreaTrend data={c.data} dataKey="value" color={c.color} name={c.title} height={170} />
             </Card>
           ))}
@@ -270,14 +270,14 @@ export default function AnimalDetails() {
       </div>
 
       {/* Recommendations */}
-      <div className="mt-4 md:mt-6">
+      <div className="mt-6">
         <SectionTitle>{t('detail.recs')}</SectionTitle>
         <div className="grid gap-3 md:grid-cols-2">
           {prediction.recommendations.map((r, i) => (
             <RecommendationCard key={r.title} rec={r} index={i} />
           ))}
         </div>
-        <p className="mt-2 md:mt-3 text-xs text-sand-400 dark:text-sand-500">
+        <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
           Recommendations are preventive guidance only. This prototype does not prescribe medicines or dosages.
         </p>
       </div>
@@ -287,9 +287,9 @@ export default function AnimalDetails() {
 
 function MiniStat({ label, value }) {
   return (
-    <div className="rounded-card border border-sand-200 p-3 dark:border-barn-800">
-      <p className="text-xs text-sand-400">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-sand-900 dark:text-sand-100">{value}</p>
+    <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-800">
+      <p className="text-xs text-gray-400">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-gray-900 dark:text-gray-100">{value}</p>
     </div>
   )
 }

@@ -4,7 +4,8 @@ import { Menu, Bell, ChevronDown, Check, Globe, Home, Users, MapPin, CalendarDay
 import { useI18n } from '../../i18n/i18n.jsx'
 import { useTheme } from '../../context/ThemeContext.jsx'
 import { FARMS, ALERTS, HERD_STATS } from '../../data/mockData'
-import { useAlerts } from '../../context/AlertContext.jsx'
+
+const openAlerts = ALERTS.filter((a) => a.status === 'open')
 
 function Dropdown({ button, children, align = 'right', width = 'w-56' }) {
   const [open, setOpen] = useState(false)
@@ -30,6 +31,8 @@ function Dropdown({ button, children, align = 'right', width = 'w-56' }) {
     </div>
   )
 }
+
+import { useAlerts } from '../../context/AlertContext.jsx'
 
 export default function Topbar({ onMenu }) {
   const { t, lang, setLang } = useI18n()
@@ -114,7 +117,7 @@ export default function Topbar({ onMenu }) {
             <button
               key={l.code}
               onClick={() => setLang(l.code)}
-              className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
+              className="flex w-full items-center justify-between px-3 py-2.5 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               {l.label}
               {lang === l.code && <Check size={14} className="text-brand-600" />}
@@ -123,40 +126,30 @@ export default function Topbar({ onMenu }) {
         </Dropdown>
 
         <Dropdown
-          width="w-80"
+          width="w-64"
           button={
-            <button className="relative grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 bell-pulse" aria-label="Notifications">
-              <Bell size={16} />
+            <button className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800" aria-label="Notifications">
+              <Bell size={17} />
               {openAlerts.length > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-gray-900">
+                <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                   {openAlerts.length}
                 </span>
               )}
             </button>
           }
         >
-          <div className="border-b border-gray-100 px-3 py-2.5 dark:border-gray-800">
-            <p className="text-xs font-bold text-gray-900 dark:text-gray-100">Notifications</p>
-            <p className="text-[11px] text-gray-400">{openAlerts.length} unread alerts</p>
+          <div className="border-b border-gray-100 px-3 py-2 text-xs font-semibold uppercase text-gray-400 dark:border-gray-800">
+            {openAlerts.length} {t('alerts.title')}
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {openAlerts.length === 0 ? (
-              <div className="px-3 py-3 text-xs text-gray-400">No unread alerts</div>
-            ) : (
-              openAlerts.slice(0, 3).map((a) => (
-                <div key={a.id} className="px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${a.level === 'HIGH' ? 'bg-red-500' : a.level === 'MODERATE' ? 'bg-honey-500' : 'bg-ai'}`} />
-                    <p className="text-xs font-medium text-gray-900 dark:text-gray-100">{a.title}</p>
-                  </div>
-                  <p className="mt-0.5 ml-3.5 text-[11px] text-gray-400">{a.excerpt}</p>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="border-t border-gray-100 px-3 py-2 dark:border-gray-800">
-            <button className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">View all notifications →</button>
-          </div>
+          {openAlerts.slice(0, 4).map((a) => (
+            <Link key={a.id} to={`/animals/${a.animalId}`} className="block px-3 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-900 dark:text-gray-100">{a.animalId}</span>
+                <span className="text-xs font-semibold text-red-600 dark:text-red-400">{a.risk}%</span>
+              </div>
+              <p className="mt-0.5 text-xs text-gray-400">{a.time}</p>
+            </Link>
+          ))}
         </Dropdown>
 
         <Dropdown
