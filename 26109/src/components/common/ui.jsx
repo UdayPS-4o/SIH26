@@ -5,60 +5,60 @@ import { useTheme } from '../../context/ThemeContext.jsx'
 
 export function PageHeader({ title, subtitle, actions }) {
   return (
-    <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-end sm:justify-between md:gap-3">
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-xl font-bold text-sand-900 dark:text-sand-100 sm:text-2xl">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-xs text-sand-500 dark:text-sand-400 sm:text-sm">{subtitle}</p>}
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{title}</h1>
+        {subtitle && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
   )
 }
 
 export function SectionTitle({ children, right }) {
   return (
-    <div className="mb-2 flex items-center justify-between sm:mb-3">
-      <h2 className="text-xs font-semibold uppercase tracking-wider text-sand-500 dark:text-sand-400">{children}</h2>
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{children}</h2>
       {right}
     </div>
   )
 }
 
 export function Card({ children, className = '' }) {
-  return <div className={`card-hover rounded-card border border-sand-200 bg-white shadow-card dark:border-barn-800 dark:bg-barn-950/60 ${className}`}>{children}</div>
+  return <div className={`card ${className}`}>{children}</div>
 }
 
 const KPI_TONE = {
-  neutral: { chip: 'bg-sand-100 text-sand-600 dark:bg-sand-800 dark:text-sand-300', bar: 'bg-sand-400' },
-  info: { chip: 'bg-ai-light text-ai-dark dark:bg-ai-dark/40 dark:text-ai', bar: 'bg-ai' },
-  good: { chip: 'bg-forest-100 text-forest-700 dark:bg-forest-900/40 dark:text-forest-400', bar: 'bg-forest-500' },
-  warn: { chip: 'bg-honey-100 text-honey-700 dark:bg-honey-900/40 dark:text-honey-400', bar: 'bg-honey-500' },
+  neutral: { chip: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', bar: 'bg-slate-400' },
+  info: { chip: 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400', bar: 'bg-sky-500' },
+  good: { chip: 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400', bar: 'bg-brand-500' },
+  warn: { chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400', bar: 'bg-amber-500' },
   bad: { chip: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400', bar: 'bg-red-500' },
 }
 
 export function KpiCard({ icon: Icon, label, value, caption, progress, tone = 'neutral', trend, trendLabel }) {
   const m = KPI_TONE[tone] || KPI_TONE.neutral
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
-  const trendColor = trend > 0 ? 'text-forest-600 dark:text-forest-400' : trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-sand-400'
+  const trendColor = trend > 0 ? 'text-brand-600 dark:text-brand-400' : trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'
   return (
-    <div className="card-hover rounded-card border border-sand-200 bg-white p-2.5 shadow-card transition-shadow hover:shadow-warm dark:border-barn-800 dark:bg-barn-950/60 sm:p-4 md:p-5">
+    <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-card dark:border-gray-800 dark:bg-gray-900 sm:p-5">
       <div className="flex items-start justify-between">
-        <span className={`grid h-8 w-8 place-items-center rounded-lg sm:h-10 sm:w-10 ${m.chip}`}>
-          {Icon && <Icon size={15} className="sm:hidden" />}
-          {Icon && <Icon size={18} className="hidden sm:block" />}
+        <span className={`grid h-9 w-9 place-items-center rounded-xl sm:h-11 sm:w-11 ${m.chip}`}>
+          {Icon && <Icon size={17} className="sm:hidden" />}
+          {Icon && <Icon size={19} className="hidden sm:block" />}
         </span>
         {trend !== undefined && (
-          <span className={`inline-flex items-center gap-0.5 whitespace-nowrap text-[10px] font-semibold sm:gap-1 sm:text-xs ${trendColor}`}>
-            <TrendIcon size={11} className="shrink-0" />
+          <span className={`inline-flex items-center gap-0.5 whitespace-nowrap text-[11px] font-semibold sm:gap-1 sm:text-xs ${trendColor}`}>
+            <TrendIcon size={12} className="shrink-0" />
             {trendLabel || `${Math.abs(trend)}%`}
           </span>
         )}
       </div>
-      <div className="mt-1 text-[11px] font-medium text-sand-500 dark:text-sand-400 sm:mt-2 sm:text-sm">{label}</div>
-      <div className="mt-0.5 text-lg font-bold leading-tight text-sand-900 dark:text-sand-100 sm:text-xl md:text-[26px]">{value}</div>
-      {caption && <div className="mt-0.5 text-[11px] text-sand-400 sm:text-xs">{caption}</div>}
+      <div className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400 sm:mt-3 sm:text-sm">{label}</div>
+      <div className="mt-0.5 text-xl font-bold leading-tight text-gray-900 dark:text-gray-100 sm:text-[26px]">{value}</div>
+      {caption && <div className="mt-1 text-xs text-gray-400">{caption}</div>}
       {progress !== undefined && (
-        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-sand-100 dark:bg-barn-800 sm:mt-2.5">
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 sm:mt-2.5">
           <div className={`h-full rounded-full ${m.bar}`} style={{ width: `${Math.min(100, progress)}%` }} />
         </div>
       )}
@@ -71,7 +71,7 @@ export function RiskBadge({ level, score }) {
   const lvl = level || levelFromScore(score || 0)
   const m = riskMeta(lvl)
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium sm:px-2.5 sm:py-1 sm:text-xs ${m.bg} ${m.text} ${m.border}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${m.bg} ${m.text} ${m.border}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
       {t(`risk.${lvl}`)}
       {score !== undefined && <span className="opacity-70">· {score}%</span>}
@@ -83,77 +83,44 @@ export function RiskGauge({ score, size = 160, label }) {
   const { theme } = useTheme()
   const lvl = levelFromScore(score)
   const m = riskMeta(lvl)
-  const r = size / 2 - 14
+  const r = size / 2 - 12
   const c = 2 * Math.PI * r
   const dash = (score / 100) * c
-  const trackColor = theme === 'dark' ? '#453018' : '#e8dfd0'
-  const strokeColor = theme === 'dark' ? '#f5efe0' : '#2d241b'
-  const isHighRisk = score > 70
-  const needleAngle = (score / 100) * 180 - 90
-  const needleLen = r - 8
-  const cx = size / 2
-  const cy = size / 2
-  const tipX = cx
-  const tipY = cy - needleLen
+  const trackColor = theme === 'dark' ? '#374151' : '#e5e7eb'
   return (
-    <div className={`flex flex-col items-center ${isHighRisk ? 'gauge-pulse-high' : ''}`}>
+    <div className="flex flex-col items-center">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size}>
-          <g transform={`rotate(-90 ${cx} ${cy})`}>
-            <circle cx={cx} cy={cy} r={r} fill="none" stroke={trackColor} strokeWidth="12" />
-            <circle
-              cx={cx}
-              cy={cy}
-              r={r}
-              fill="none"
-              stroke={m.hex}
-              strokeWidth="12"
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${c}`}
-              style={{ transition: 'stroke-dasharray .5s ease' }}
-            />
-          </g>
-          {/* Needle */}
-          <line
-            x1={cx}
-            y1={cy}
-            x2={tipX}
-            y2={tipY}
-            stroke={strokeColor}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            transform={`rotate(${needleAngle} ${cx} ${cy})`}
-            style={{ transition: 'transform .8s cubic-bezier(.4,0,.2,1)' }}
-          />
-          {/* Needle tip */}
+        <svg width={size} height={size} className="-rotate-90">
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth="12" />
           <circle
-            cx={tipX}
-            cy={tipY}
-            r="4"
-            fill={m.hex}
-            transform={`rotate(${needleAngle} ${cx} ${cy})`}
-            style={{ transition: 'transform .8s cubic-bezier(.4,0,.2,1)' }}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={m.hex}
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${c}`}
+            style={{ transition: 'stroke-dasharray .5s ease' }}
           />
-          {/* Center pivot */}
-          <circle cx={cx} cy={cy} r="5" fill={strokeColor} />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold text-sand-900 dark:text-sand-100 sm:text-3xl">{score}%</span>
-          <span className={`mt-0.5 text-[10px] font-semibold uppercase sm:text-xs ${m.text}`}>{m.label} risk</span>
+          <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{score}%</span>
+          <span className={`mt-0.5 text-xs font-semibold uppercase ${m.text}`}>{m.label} risk</span>
         </div>
       </div>
-      {label && <p className="mt-1.5 text-[11px] text-sand-400 sm:mt-2 sm:text-xs">{label}</p>}
+      {label && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{label}</p>}
     </div>
   )
 }
 
 export function StatRow({ label, value, hint }) {
   return (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-xs text-sand-500 dark:text-sand-400">{label}</span>
-      <span className="text-xs font-medium text-sand-900 dark:text-sand-100">
+    <div className="flex items-center justify-between py-2.5">
+      <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
         {value}
-        {hint && <span className="ml-1.5 text-[11px] font-normal text-sand-400">{hint}</span>}
+        {hint && <span className="ml-2 text-xs font-normal text-gray-400">{hint}</span>}
       </span>
     </div>
   )
@@ -164,14 +131,14 @@ export function Toggle({ checked, onChange, label }) {
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between py-2 text-left"
+      className="flex w-full items-center justify-between py-2.5 text-left"
     >
-      <span className="text-xs text-sand-700 dark:text-sand-300 sm:text-sm">{label}</span>
+      <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
       <span
-        className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${checked ? 'bg-honey-600' : 'bg-sand-300 dark:bg-barn-700'}`}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-brand-600' : 'bg-gray-300 dark:bg-gray-700'}`}
       >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`}
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`}
         />
       </span>
     </button>
@@ -180,10 +147,10 @@ export function Toggle({ checked, onChange, label }) {
 
 export function EmptyState({ title, hint }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-card border border-dashed border-sand-300 bg-sand-50/60 px-4 py-10 text-center dark:border-barn-800 dark:bg-barn-900/60 sm:py-12">
-      <Inbox className="mb-2 text-sand-300 dark:text-barn-700" size={28} />
-      <p className="text-sm font-medium text-sand-700 dark:text-sand-300">{title}</p>
-      {hint && <p className="mt-1 text-xs text-sand-400">{hint}</p>}
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-white/60 px-6 py-12 text-center dark:border-gray-700 dark:bg-gray-900/60">
+      <Inbox className="mb-3 text-gray-300 dark:text-gray-600" size={32} />
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{title}</p>
+      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
     </div>
   )
 }
@@ -191,7 +158,7 @@ export function EmptyState({ title, hint }) {
 export function LoadingState({ label }) {
   const { t } = useI18n()
   return (
-    <div className="flex items-center justify-center gap-2 py-10 text-xs text-sand-400 sm:gap-2.5 sm:py-12 sm:text-sm">
+    <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-400">
       <Loader2 className="animate-spin" size={16} />
       {label || t('common.loading')}
     </div>
@@ -200,23 +167,15 @@ export function LoadingState({ label }) {
 
 export function Pill({ tone = 'gray', children }) {
   const map = {
-    gray: 'bg-sand-100 text-sand-600 dark:bg-barn-800 dark:text-sand-300',
-    green: 'bg-forest-50 text-forest-700 dark:bg-forest-900/40 dark:text-forest-400',
-    amber: 'bg-honey-100 text-honey-700 dark:bg-honey-900/40 dark:text-honey-400',
+    gray: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
+    green: 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400',
+    amber: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
     red: 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-400',
   }
-  return <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium sm:px-2 sm:py-0.5 sm:text-xs ${map[tone]}`}>{children}</span>
+  return <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${map[tone]}`}>{children}</span>
 }
 
 export function AiDisclaimer({ className = '' }) {
   const { t } = useI18n()
-  return <p className={`text-[11px] italic text-sand-400 dark:text-barn-500 ${className}`}>{t('disclaimer.ai')}</p>
-}
-
-export function AiThinkingDots() {
-  return (
-    <span className="ai-thinking" aria-label="AI processing">
-      <span /><span /><span />
-    </span>
-  )
+  return <p className={`text-xs italic text-gray-400 dark:text-gray-500 ${className}`}>{t('disclaimer.ai')}</p>
 }

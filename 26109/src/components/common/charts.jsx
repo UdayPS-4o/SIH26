@@ -112,8 +112,8 @@ export function RiskDistribution({ data, centerLabel, centerSub }) {
         </ResponsiveContainer>
         {centerLabel && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-2xl font-bold text-sand-900 dark:text-sand-100">{centerLabel}</span>
-            {centerSub && <span className="text-[11px] text-sand-400">{centerSub}</span>}
+            <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{centerLabel}</span>
+            {centerSub && <span className="text-[11px] text-gray-400">{centerSub}</span>}
           </div>
         )}
       </div>
@@ -122,10 +122,10 @@ export function RiskDistribution({ data, centerLabel, centerSub }) {
           <li key={d.name} className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: riskMeta(d.name).hex }} />
-              <span className="text-sand-600 dark:text-sand-400">{t(`risk.${d.name}`)}</span>
+              <span className="text-gray-600 dark:text-gray-400">{t(`risk.${d.name}`)}</span>
             </span>
-            <span className="whitespace-nowrap font-medium text-sand-900 dark:text-sand-100">
-              {d.value} <span className="text-xs text-sand-400">({Math.round((d.value / total) * 100)}%)</span>
+            <span className="whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">
+              {d.value} <span className="text-xs text-gray-400">({Math.round((d.value / total) * 100)}%)</span>
             </span>
           </li>
         ))}
