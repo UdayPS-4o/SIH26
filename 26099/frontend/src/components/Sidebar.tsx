@@ -25,11 +25,15 @@ import {
   TextAa,
   UploadSimple,
 } from '@phosphor-icons/react'
-import { useCopy } from '@/copy'
+import { useCopy, type CopyKey } from '@/copy'
+import type { Icon } from '@phosphor-icons/react'
 import { ByMode } from '@/components/Gate'
 import { useViewMode } from '@/store/viewmode'
 import { useService } from '@/store/service'
 import { serviceState } from '@/api/state'
+import { formatCount } from '@/engine/savings'
+import { CPSES } from '@/engine/corpus'
+import { type Cpse } from '@/engine/types'
 import { cx } from './ui/tokens'
 import { IconTile, Num } from './ui'
 import { useState, useRef, useEffect } from 'react'

@@ -23,7 +23,6 @@ import {
   Td,
   Th,
 } from '@/components/ui'
-import { useCopy } from '@/copy'
 import { ByMode } from '@/components/Gate'
 
 type Action = 'MAP' | 'MERGE' | 'HOLD'
@@ -60,7 +59,6 @@ const ACTION_TONE: Record<Action, 'positive' | 'attention' | 'negative'> = {
 }
 
 export default function MigrationPage() {
-  const c = useCopy()
   const [filter, setFilter] = useState<Filter>('all')
 
   const counts = useMemo(() => {
@@ -88,7 +86,7 @@ export default function MigrationPage() {
 
   return (
     <>
-      <PageHead title={c('migrationTitle')} lead={c('migrationLead')} />
+      <PageHead title="Legacy code migration" lead="Per-CPSE mapping from local material codes to the national standard" />
 
       <StatRow className="mt-6">
         <StatCell>

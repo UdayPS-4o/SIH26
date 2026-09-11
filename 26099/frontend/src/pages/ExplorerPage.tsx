@@ -249,7 +249,7 @@ export default function ExplorerPage() {
     <>
       <PageHead title={c('explorerTitle')} lead={c('explorerLead')} />
 
-      <SampleNote sliceSize={records.length} records={records} />
+      <SampleNote sliceSize={records.length} />
 
       <Panel flush className="mt-6">
         <PanelHead
