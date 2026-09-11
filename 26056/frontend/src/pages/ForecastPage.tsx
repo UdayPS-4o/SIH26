@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
-  Calendar,
-  Function,
+  CalendarBlank as CalendarBlankIcon,
+  Function as FnIcon,
   Lightning,
   Sparkle,
   Target,
@@ -280,7 +280,7 @@ export function ForecastPage() {
         <StatTile
           label="Model type"
           value="LSTM + Seasonal ARIMA"
-          icon={Function}
+          icon={FnIcon}
           tone="neutral"
           note="Ensemble with feature engineering"
         />
@@ -414,7 +414,7 @@ export function ForecastPage() {
       {/* Festival and event impact */}
       <div className="mt-3">
         <Panel
-          icon={Calendar}
+          icon={CalendarBlankIcon}
           title="Festival and event impact"
           meta="Upcoming events that materially affect fare levels"
           footnote="The model encodes each event as a binary proximity feature and learns the typical magnitude from historical windows. Confidence is higher for events with a three-year observed history."
@@ -476,7 +476,7 @@ export function ForecastPage() {
 
       {/* Model architecture */}
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
-        <Panel className="xl:col-span-5" icon={Function} title="Model architecture">
+        <Panel className="xl:col-span-5" icon={FnIcon} title="Model architecture">
           <div className="flex flex-col gap-2.5">
             <div className="rounded-control bg-surface-inset p-3 ring-1 ring-line">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
@@ -545,7 +545,7 @@ export function ForecastPage() {
           />
         </Panel>
 
-        <Panel className="xl:col-span-3" icon={Calendar} title="Model information">
+        <Panel className="xl:col-span-3" icon={CalendarBlankIcon} title="Model information">
           <div className="flex flex-col gap-3">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-3">
