@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberThreat Detect - AI Threat Detection System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+        .dark {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f3a;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border: #1e293b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .bg-primary { background-color: var(--bg-primary); }
+        .bg-secondary { background-color: var(--bg-secondary); }
+        .bg-card { background-color: var(--bg-card); }
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .border-custom { border-color: var(--border); }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            z-index: 100;
+            overflow-y: auto;
+        }
+        .main-content {
+            margin-left: 260px;
+            padding: 24px;
+            min-height: 100vh;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.1);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            opacity: 0.5;
+        }
+        .severity-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .severity-critical { background: #dc2626; color: white; }
+        .severity-high { background: #ef4444; color: white; }
+        .severity-medium { background: #f59e0b; color: white; }
+        .severity-low { background: #10b981; color: white; }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        .alert-enter {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .confidence-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            margin: 4px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+        }
+        .nav-item:hover, .nav-item.active {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        .flow-indicator {
+            display: inline-block;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            border-radius: 2px;
+            animation: flow 2s linear infinite;
+        }
+        @keyframes flow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .network-node {
+            transition: all 0.3s ease;
+        }
+        .network-node:hover {
+            transform: scale(1.2);
+            filter: brightness(1.3);
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div style="padding: 24px 20px; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="font-weight: 700; font-size: 16px; color: var(--text-primary);">CyberThreat</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Detection System</div>
+                </div>
+            </div>
+        </div>
+        <nav style="padding: 12px 0;">
+            <div class="nav-item active">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <span>Live Threats</span>
+            </div>
+            <div class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                </svg>
+                <span>Network Map</span>
+            </div>
+            <div class="nav-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+                </svg>
+                <span>Analytics</span>
+            </div>
+        </nav>
+        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; border-top: 1px solid var(--border);">
+            <button onclick="toggleTheme()" style="width: 100%; padding: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+                <span>Toggle Theme</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h1 style="font-size: 28px; font-weight: 700; margin-bottom: 4px;">Threat Detection Dashboard</h1>
+                <p style="color: var(--text-secondary); font-size: 14px;">Real-time monitoring and AI-based threat detection</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div class="pulse-dot"></div>
+                    <span style="font-size: 14px; font-weight: 500;">System Online</span>
+                </div>
+                <div style="padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <span style="font-size: 14px; color: var(--text-secondary);">Throughput: </span>
+                    <span id="throughput" style="font-size: 14px; font-weight: 600; color: #3b82f6;">0</span>
+                    <span style="font-size: 14px; color: var(--text-secondary);"> flows/s</span>
+                </div>
+                <div style="padding: 8px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <span style="font-size: 14px; color: var(--text-secondary);">Alerts: </span>
+                    <span id="alertCount" style="font-size: 14px; font-weight: 600; color: #ef4444;">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+            <div class="stat-card">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Total Flows</div>
+                <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px;" id="totalFlows">0</div>
+                <div style="font-size: 13px; color: #10b981;">+<span id="flowRate">0</span>/sec</div>
+            </div>
+            <div class="stat-card">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Active Threats</div>
+                <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px; color: #ef4444;" id="activeThreats">0</div>
+                <div style="font-size: 13px; color: var(--text-secondary);"><span id="threatRate">0</span> threats/min</div>
+            </div>
+            <div class="stat-card">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Avg Confidence</div>
+                <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px; color: #f59e0b;" id="avgConfidence">0%</div>
+                <div class="confidence-bar" style="margin-top: 8px;">
+                    <div class="confidence-fill" id="confidenceBar" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #ef4444);"></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Network Load</div>
+                <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px; color: #3b82f6;" id="networkLoad">0 Mb/s</div>
+                <div style="font-size: 13px; color: var(--text-secondary);"><span id="activeConns">0</span> active connections</div>
+            </div>
+        </div>
+
+        <!-- Middle Row -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <!-- Threat Timeline -->
+            <div class="card">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Threat Timeline</h3>
+                <canvas id="threatTimeline" height="200"></canvas>
+            </div>
+            <!-- Threat Distribution -->
+            <div class="card">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Threat Distribution</h3>
+                <canvas id="threatDistribution" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <!-- Live Threat Feed -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 16px; font-weight: 600;">Live Threat Feed</h3>
+                    <span style="font-size: 12px; color: var(--text-secondary);">Real-time alerts</span>
+                </div>
+                <div id="threatFeed" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Alerts will be inserted here -->
+                </div>
+            </div>
+            <!-- Network Graph -->
+            <div class="card">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Network Topology</h3>
+                <canvas id="networkGraph" height="350"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Mock data generators
+        const threatTypes = [
+            { name: 'DDoS SYN Flood', severity: 'critical', color: '#dc2626' },
+            { name: 'DDoS UDP Flood', severity: 'high', color: '#ef4444' },
+            { name: 'Botnet Beaconing', severity: 'medium', color: '#f59e0b' },
+            { name: 'DGA Domains', severity: 'medium', color: '#f59e0b' },
+            { name: 'DNS Tunneling', severity: 'high', color: '#ef4444' },
+            { name: 'Port Scanning', severity: 'high', color: '#ef4444' },
+            { name: 'Data Exfiltration', severity: 'critical', color: '#dc2626' },
+            { name: 'TLS Anomaly', severity: 'low', color: '#10b981' }
+        ];
+
+        const ips = ['192.168.1.10', '192.168.1.25', '192.168.1.50', '10.0.0.15', '10.0.0.22', '172.16.0.5', '172.16.0.8', '203.0.113.42', '198.51.100.7', '185.220.101.34'];
+
+        function randomIP() { return ips[Math.floor(Math.random() * ips.length)]; }
+        function randomPort() { return Math.floor(Math.random() * 65535); }
+
+        // State
+        let stats = { totalFlows: 0, totalAlerts: 0, threatsPerType: {}, avgConfidence: 0, flowsPerSec: 0, activeConnections: 0 };
+        let timelineData = [];
+        let distributionData = {};
+        let alertId = 0;
+
+        // Initialize distribution
+        threatTypes.forEach(t => distributionData[t.name] = 0);
+
+        // Chart setup
+        const timelineCtx = document.getElementById('threatTimeline').getContext('2d');
+        const timelineChart = new Chart(timelineCtx, {
+            type: 'line',
+            data: {
+                labels: Array(20).fill(''),
+                datasets: [{
+                    label: 'Threats Detected',
+                    data: Array(20).fill(0),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#94a3b8' } },
+                    x: { grid: { display: false }, ticks: { display: false } }
+                }
+            }
+        });
+
+        const distCtx = document.getElementById('threatDistribution').getContext('2d');
+        const distChart = new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(distributionData),
+                datasets: [{
+                    data: Object.values(distributionData),
+                    backgroundColor: threatTypes.map(t => t.color),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                cutout: '60%'
+            }
+        });
+
+        // Network graph
+        const networkCtx = document.getElementById('networkGraph').getContext('2d');
+        let networkNodes = [];
+        let networkEdges = [];
+
+        function initNetwork() {
+            for (let i = 0; i < 8; i++) {
+                networkNodes.push({
+                    id: i,
+                    x: 50 + Math.random() * 300,
+                    y: 50 + Math.random() * 250,
+                    type: Math.random() > 0.5 ? 'source' : 'destination',
+                    threat: Math.random() > 0.7
+                });
+            }
+            for (let i = 0; i < 12; i++) {
+                networkEdges.push({
+                    from: Math.floor(Math.random() * 8),
+                    to: Math.floor(Math.random() * 8),
+                    threat: Math.random() > 0.8
+                });
+            }
+        }
+
+        function drawNetwork() {
+            networkCtx.clearRect(0, 0, 400, 350);
+            networkCtx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim();
+            networkCtx.fillRect(0, 0, 400, 350);
+
+            networkEdges.forEach(edge => {
+                const from = networkNodes[edge.from];
+                const to = networkNodes[edge.to];
+                networkCtx.beginPath();
+                networkCtx.moveTo(from.x, from.y);
+                networkCtx.lineTo(to.x, to.y);
+                networkCtx.strokeStyle = edge.threat ? 'rgba(239, 68, 68, 0.6)' : 'rgba(59, 130, 246, 0.3)';
+                networkCtx.lineWidth = edge.threat ? 2 : 1;
+                networkCtx.stroke();
+            });
+
+            networkNodes.forEach(node => {
+                networkCtx.beginPath();
+                networkCtx.arc(node.x, node.y, node.threat ? 8 : 6, 0, Math.PI * 2);
+                networkCtx.fillStyle = node.threat ? '#ef4444' : '#3b82f6';
+                networkCtx.fill();
+                networkCtx.strokeStyle = node.type === 'source' ? '#10b981' : '#f59e0b';
+                networkCtx.lineWidth = 2;
+                networkCtx.stroke();
+            });
+        }
+
+        // Generate alert
+        function generateAlert() {
+            const threat = threatTypes[Math.floor(Math.random() * threatTypes.length)];
+            const confidence = (0.5 + Math.random() * 0.45).toFixed(2);
+            const src = randomIP();
+            const dst = randomIP();
+            const evidence = {
+                'Flow Count': Math.floor(Math.random() * 100) + 10,
+                'Packets/sec': Math.floor(Math.random() * 10000),
+                'Byte Ratio': (Math.random() * 20).toFixed(2),
+                'Source Ports': Math.floor(Math.random() * 50) + 1,
+                'Confidence Score': confidence
+            };
+
+            alertId++;
+            return {
+                id: alertId,
+                timestamp: new Date().toLocaleTimeString(),
+                threat_type: threat.name,
+                severity: threat.severity,
+                confidence: confidence,
+                src_ip: src,
+                dst_ip: dst,
+                evidence: evidence
+            };
+        }
+
+        // Add alert to feed
+        function addAlert(alert) {
+            const feed = document.getElementById('threatFeed');
+            const div = document.createElement('div');
+            div.className = 'alert-enter';
+            div.style.cssText = 'padding: 12px; margin-bottom: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; border-left: 3px solid ' + alert.color + ';';
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <div>
+                        <span class="severity-badge severity-${alert.severity}">${alert.severity}</span>
+                        <span style="font-weight: 600; margin-left: 8px; font-size: 14px;">${alert.threat_type}</span>
+                    </div>
+                    <span style="font-size: 12px; color: var(--text-secondary);">${alert.timestamp}</span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                    ${alert.src_ip} → ${alert.dst_ip}
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" style="width: ${alert.confidence * 100}%; background: ${alert.color};"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                    Confidence: ${(alert.confidence * 100).toFixed(0)}%
+                </div>
+            `;
+            feed.insertBefore(div, feed.firstChild);
+            if (feed.children.length > 20) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const flows = Math.floor(Math.random() * 5000) + 3000;
+            stats.totalFlows += flows;
+            stats.flowsPerSec = flows;
+            stats.activeConnections = Math.floor(Math.random() * 5000) + 8000;
+
+            if (Math.random() > 0.3) {
+                const alert = generateAlert();
+                stats.totalAlerts++;
+                distributionData[alert.threat_type]++;
+                alert.color = threatTypes.find(t => t.name === alert.threat_type).color;
+                addAlert(alert);
+            }
+
+            document.getElementById('totalFlows').textContent = stats.totalFlows.toLocaleString();
+            document.getElementById('flowRate').textContent = stats.flowsPerSec.toLocaleString();
+            document.getElementById('activeThreats').textContent = stats.totalAlerts;
+            document.getElementById('threatRate').textContent = Math.floor(stats.totalAlerts / 10);
+            document.getElementById('alertCount').textContent = stats.totalAlerts;
+            document.getElementById('throughput').textContent = stats.flowsPerSec.toLocaleString();
+            document.getElementById('networkLoad').textContent = (Math.random() * 100 + 50).toFixed(1) + ' Mb/s';
+            document.getElementById('activeConns').textContent = stats.activeConnections.toLocaleString();
+
+            stats.avgConfidence = stats.totalAlerts > 0 ? (stats.avgConfidence * (stats.totalAlerts - 1) + 0.85) / stats.totalAlerts : 0.85;
+            document.getElementById('avgConfidence').textContent = (stats.avgConfidence * 100).toFixed(0) + '%';
+            document.getElementById('confidenceBar').style.width = (stats.avgConfidence * 100) + '%';
+
+            timelineChart.data.datasets[0].data.shift();
+            timelineChart.data.datasets[0].data.push(Math.floor(Math.random() * 5) + 1);
+            timelineChart.update('none');
+
+            distChart.data.datasets[0].data = Object.values(distributionData);
+            distChart.update('none');
+
+            if (Math.random() > 0.5) {
+                const node = networkNodes[Math.floor(Math.random() * networkNodes.length)];
+                node.threat = !node.threat;
+                node.x = 50 + Math.random() * 300;
+                node.y = 50 + Math.random() * 250;
+                drawNetwork();
+            }
+        }
+
+        // Initialize
+        initNetwork();
+        drawNetwork();
+        for (let i = 0; i < 5; i++) {
+            const alert = generateAlert();
+            alert.color = threatTypes.find(t => t.name === alert.threat_type).color;
+            addAlert(alert);
+        }
+
+        // Start simulation
+        setInterval(updateStats, 1000);
+    </script>
+</body>
+</html>

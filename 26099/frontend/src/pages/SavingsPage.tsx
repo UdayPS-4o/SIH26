@@ -284,11 +284,11 @@ export default function SavingsPage() {
               <ByMode
                 simple={`In the slice of data you can inspect on this site, ${formatExact(
                   health.duplicateRecords,
-                )} of ${formatExact(
+                )} redundant records sit in shared groups, out of ${formatExact(
                   dashboard.sampleSize,
-                )} items sit in a group with at least one other company's version of the same thing. Applying that same rate across all ${formatExact(
+                )} total. The duplicate rate measured here is applied across all ${formatExact(
                   dashboard.totalRecords,
-                )} records gives the first line below.`}
+                )} records to estimate the first line below.`}
                 technical={`sampleDuplicateRate = ${formatExact(health.duplicateRecords)} / ${formatExact(
                   dashboard.sampleSize,
                 )} = ${sliceRate.toFixed(4)}. duplicateLineItems = round(${formatExact(
