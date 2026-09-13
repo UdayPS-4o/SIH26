@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberThreat Detect - Presentation Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #f8fafc; --bg-card: #ffffff; --text-primary: #0f172a; --text-secondary: #64748b; --border: #e2e8f0;
+        }
+        .dark {
+            --bg-primary: #0a0e27; --bg-card: #1a1f3a; --text-primary: #e2e8f0; --text-secondary: #94a3b8; --border: #1e293b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+        .stat-value { font-size: 26px; font-weight: 800; line-height: 1; }
+        .stat-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+        .severity-badge { padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .sev-critical { background: #dc2626; color: white; }
+        .sev-high { background: #ef4444; color: white; }
+        .sev-medium { background: #f59e0b; color: white; }
+        .sev-low { background: #10b981; color: white; }
+        .pulse-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .alert-row { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .conf-bar { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+        .conf-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-card); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .grid-main { display: grid; grid-template-columns: 280px 1fr 320px; grid-template-rows: auto 1fr; gap: 12px; height: calc(100vh - 40px); }
+        .header { grid-column: 1 / -1; }
+        .threat-feed { overflow-y: auto; }
+        .threat-item { padding: 8px 10px; margin-bottom: 6px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; border-left: 3px solid; font-size: 12px; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+        .mini-stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+    </style>
+</head>
+<body>
+    <div class="grid-main">
+        <!-- Header -->
+        <div class="header card" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div>
+                        <div style="font-weight: 800; font-size: 18px; letter-spacing: -0.5px;">CyberThreat Detect</div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">AI-Powered Threat Detection System</div>
+                    </div>
+                </div>
+                <div style="width: 1px; height: 32px; background: var(--border);"></div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div class="pulse-dot"></div>
+                    <span style="font-size: 12px; font-weight: 600; color: #10b981;">LIVE</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div style="text-align: center; padding: 6px 14px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Throughput</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #3b82f6;"><span id="throughput">0</span> <span style="font-size: 11px; color: var(--text-secondary);">f/s</span></div>
+                </div>
+                <div style="text-align: center; padding: 6px 14px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Alerts</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #ef4444;"><span id="alertCount">0</span></div>
+                </div>
+                <div style="text-align: center; padding: 6px 14px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">CPU</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #f59e0b;"><span id="cpu">32</span>%</div>
+                </div>
+                <div style="text-align: center; padding: 6px 14px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+                    <div style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Memory</div>
+                    <div style="font-size: 16px; font-weight: 700; color: #10b981;"><span id="memory">1.2</span> GB</div>
+                </div>
+                <div style="font-size: 11px; color: var(--text-secondary); padding: 6px 10px; background: var(--bg-secondary); border-radius: 6px; border: 1px solid var(--border);">
+                    <span id="clock">00:00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Left: Threat Feed -->
+        <div class="card threat-feed">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-size: 13px; font-weight: 700;">LIVE THREAT FEED</div>
+                <div style="font-size: 10px; color: var(--text-secondary);">Real-time</div>
+            </div>
+            <div id="threatFeed"></div>
+        </div>
+
+        <!-- Center: Charts -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Stats Row -->
+            <div class="metrics-grid">
+                <div class="mini-stat">
+                    <div class="stat-label">Total Flows</div>
+                    <div class="stat-value" style="color: #3b82f6;" id="totalFlows">0</div>
+                    <div style="font-size: 10px; color: #10b981; margin-top: 4px;">+<span id="flowRate">0</span>/sec</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="stat-label">Active Threats</div>
+                    <div class="stat-value" style="color: #ef4444;" id="activeThreats">0</div>
+                    <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;"><span id="threatRate">0</span>/min</div>
+                </div>
+                <div class="mini-stat">
+                    <div class="stat-label">Avg Confidence</div>
+                    <div class="stat-value" style="color: #f59e0b;" id="avgConfidence">0%</div>
+                    <div class="conf-bar" style="margin-top: 6px;"><div class="conf-fill" id="confBar" style="width: 0%; background: linear-gradient(90deg, #f59e0b, #ef4444);"></div></div>
+                </div>
+                <div class="mini-stat">
+                    <div class="stat-label">Network Load</div>
+                    <div class="stat-value" style="color: #10b981;" id="netLoad">0 Mb/s</div>
+                    <div style="font-size: 10px; color: var(--text-secondary); margin-top: 4px;"><span id="conns">0</span> connections</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 13px; font-weight: 700;">THREAT TIMELINE</div>
+                    <div style="display: flex; gap: 12px; font-size: 10px; color: var(--text-secondary);">
+                        <span>DDoS</span><span>Beaconing</span><span>DGA</span><span>Scanning</span>
+                    </div>
+                </div>
+                <div style="flex: 1; min-height: 0;">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card" style="height: 160px;">
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px;">THREAT TYPE DISTRIBUTION</div>
+                <canvas id="distChart" height="110"></canvas>
+            </div>
+        </div>
+
+        <!-- Right: Details -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Detection Stats -->
+            <div class="card">
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">DETECTION BREAKDOWN</div>
+                <div id="detectionStats" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <!-- Top Sources -->
+            <div class="card">
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">TOP THREAT SOURCES</div>
+                <div id="topSources"></div>
+            </div>
+
+            <!-- Network Graph -->
+            <div class="card" style="flex: 1;">
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">NETWORK TOPOLOGY</div>
+                <canvas id="networkGraph" style="width: 100%; height: calc(100% - 30px);"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const threatTypes = [
+            { name: 'DDoS SYN Flood', severity: 'critical', color: '#dc2626', icon: 'SYN' },
+            { name: 'DDoS UDP Flood', severity: 'critical', color: '#dc2626', icon: 'UDP' },
+            { name: 'Botnet Beaconing', severity: 'high', color: '#ef4444', icon: 'BCN' },
+            { name: 'DGA Domains', severity: 'medium', color: '#f59e0b', icon: 'DGA' },
+            { name: 'DNS Tunneling', severity: 'high', color: '#ef4444', icon: 'DNS' },
+            { name: 'Port Scanning', severity: 'high', color: '#ef4444', icon: 'SCN' },
+            { name: 'Data Exfil', severity: 'critical', color: '#dc2626', icon: 'EXF' },
+            { name: 'TLS Anomaly', severity: 'low', color: '#10b981', icon: 'TLS' }
+        ];
+
+        const ips = ['192.168.1.10', '192.168.1.25', '192.168.1.50', '10.0.0.15', '10.0.0.22', '172.16.0.5', '185.220.101.34', '198.51.100.7', '203.0.113.42', '45.33.32.156'];
+        const ports = [80, 443, 53, 22, 25, 3389, 8080, 8443];
+
+        function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function randIP() { return rand(ips); }
+
+        let stats = { totalFlows: 0, totalAlerts: 0, threatsPerType: {}, avgConfidence: 0, flowsPerSec: 0, activeConnections: 0 };
+        threatTypes.forEach(t => stats.threatsPerType[t.name] = Math.floor(Math.random() * 15));
+        let alertId = 0;
+
+        // Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString();
+        }, 1000);
+
+        // Timeline Chart
+        const tlCtx = document.getElementById('timelineChart').getContext('2d');
+        const tlChart = new Chart(tlCtx, {
+            type: 'line',
+            data: {
+                labels: Array(30).fill(''),
+                datasets: [
+                    { label: 'DDoS', data: Array(30).fill(0), borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.1)', tension: 0.3, fill: true, pointRadius: 0 },
+                    { label: 'Beaconing', data: Array(30).fill(0), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.1)', tension: 0.3, fill: true, pointRadius: 0 },
+                    { label: 'DGA', data: Array(30).fill(0), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.3, fill: true, pointRadius: 0 },
+                    { label: 'Scanning', data: Array(30).fill(0), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.3, fill: true, pointRadius: 0 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#64748b', font: { size: 10 } }, stacked: true },
+                    x: { grid: { display: false }, ticks: { display: false } }
+                },
+                interaction: { mode: 'index', intersect: false }
+            }
+        });
+
+        // Distribution Chart
+        const distCtx = document.getElementById('distChart').getContext('2d');
+        const distChart = new Chart(distCtx, {
+            type: 'bar',
+            data: {
+                labels: threatTypes.map(t => t.name.split(' ')[0]),
+                datasets: [{
+                    data: threatTypes.map(t => stats.threatsPerType[t.name]),
+                    backgroundColor: threatTypes.map(t => t.color + '88'),
+                    borderColor: threatTypes.map(t => t.color),
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                    y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '600' } } }
+                }
+            }
+        });
+
+        // Network Graph
+        const netCtx = document.getElementById('networkGraph').getContext('2d');
+        let nodes = [], edges = [];
+        function initNet() {
+            nodes = Array.from({length: 10}, (_, i) => ({
+                id: i, x: 20 + Math.random() * (netCtx.canvas.width - 40), y: 20 + Math.random() * (netCtx.canvas.height - 40),
+                type: i < 4 ? 'internal' : i < 7 ? 'external' : 'threat', size: 4 + Math.random() * 4
+            }));
+            edges = Array.from({length: 15}, () => ({
+                from: Math.floor(Math.random() * 10), to: Math.floor(Math.random() * 10), threat: Math.random() > 0.7
+            }));
+        }
+        function drawNet() {
+            const w = netCtx.canvas.width = netCtx.canvas.offsetWidth;
+            const h = netCtx.canvas.height = netCtx.canvas.offsetHeight;
+            netCtx.clearRect(0, 0, w, h);
+            edges.forEach(e => {
+                const a = nodes[e.from], b = nodes[e.to];
+                netCtx.beginPath(); netCtx.moveTo(a.x, a.y); netCtx.lineTo(b.x, b.y);
+                netCtx.strokeStyle = e.threat ? 'rgba(239,68,68,0.5)' : 'rgba(59,130,246,0.2)';
+                netCtx.lineWidth = e.threat ? 1.5 : 0.5; netCtx.stroke();
+            });
+            nodes.forEach(n => {
+                netCtx.beginPath(); netCtx.arc(n.x, n.y, n.size, 0, Math.PI * 2);
+                netCtx.fillStyle = n.type === 'threat' ? '#ef4444' : n.type === 'external' ? '#f59e0b' : '#3b82f6';
+                netCtx.fill(); netCtx.strokeStyle = '#fff3'; netCtx.lineWidth = 1; netCtx.stroke();
+            });
+        }
+        initNet(); drawNet();
+        window.addEventListener('resize', drawNet);
+
+        // Detection breakdown
+        function updateDetectionStats() {
+            const container = document.getElementById('detectionStats');
+            const data = Object.entries(stats.threatsPerType).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            container.innerHTML = data.map(([name, count]) => {
+                const t = threatTypes.find(x => x.name === name);
+                const pct = stats.totalAlerts > 0 ? (count / stats.totalAlerts * 100) : 0;
+                return `<div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 2px; background: ${t.color}; flex-shrink: 0;"></div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px;">
+                            <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</span>
+                            <span style="color: var(--text-secondary); font-weight: 600;">${count}</span>
+                        </div>
+                        <div class="conf-bar"><div class="conf-fill" style="width: ${pct}%; background: ${t.color};"></div></div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Top sources
+        const sourceCounts = {};
+        function updateTopSources() {
+            const container = document.getElementById('topSources');
+            const sorted = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            container.innerHTML = sorted.map(([ip, count]) => {
+                const isThreat = count > 5;
+                return `<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 11px;">
+                    <span style="font-family: monospace; color: ${isThreat ? '#ef4444' : 'var(--text-primary)'};">${ip}</span>
+                    <span class="severity-badge ${isThreat ? 'sev-high' : 'sev-low'}">${count} alerts</span>
+                </div>`;
+            }).join('') || '<div style="font-size: 11px; color: var(--text-secondary);">No data yet</div>';
+        }
+
+        // Threat Feed
+        function addAlert(alert) {
+            const feed = document.getElementById('threatFeed');
+            const div = document.createElement('div');
+            div.className = 'threat-item';
+            div.style.borderLeftColor = alert.color;
+            div.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="severity-badge sev-${alert.severity}">${alert.icon}</span>
+                        <span style="font-weight: 700; font-size: 11px;">${alert.threat_type}</span>
+                    </div>
+                    <span style="font-size: 10px; color: var(--text-secondary); white-space: nowrap;">${alert.timestamp}</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-family: monospace;">
+                    ${alert.src_ip}:${alert.src_port} → ${alert.dst_ip}:${alert.dst_port}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="conf-bar" style="flex: 1; margin-right: 8px;">
+                        <div class="conf-fill" style="width: ${alert.confidence * 100}%; background: ${alert.color};"></div>
+                    </div>
+                    <span style="font-size: 10px; font-weight: 700; color: ${alert.color};">${(alert.confidence * 100).toFixed(0)}%</span>
+                </div>
+                <div style="font-size: 10px; color: var(--text-secondary); margin-top: 3px;">Protocol: ${alert.protocol} | Packets: ${alert.packets} | Bytes: ${(alert.bytes/1024).toFixed(1)}KB</div>
+            `;
+            feed.insertBefore(div, feed.firstChild);
+            while (feed.children.length > 25) feed.removeChild(feed.lastChild);
+        }
+
+        function genAlert() {
+            const t = rand(threatTypes);
+            const src = randIP(), dst = randIP();
+            const srcPort = rand(ports), dstPort = rand(ports);
+            const alert = {
+                id: ++alertId, timestamp: new Date().toLocaleTimeString(), threat_type: t.name, severity: t.severity,
+                confidence: 0.5 + Math.random() * 0.45, color: t.color, icon: t.icon,
+                src_ip: src, dst_ip: dst, src_port: srcPort, dst_port: dstPort,
+                protocol: Math.random() > 0.5 ? 'TCP' : 'UDP',
+                packets: Math.floor(Math.random() * 10000) + 100,
+                bytes: Math.floor(Math.random() * 5000000) + 50000
+            };
+            stats.totalAlerts++;
+            stats.threatsPerType[t.name]++;
+            sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+            return alert;
+        }
+
+        // Main update
+        function update() {
+            const flows = Math.floor(Math.random() * 3000) + 4000;
+            stats.totalFlows += flows;
+            stats.flowsPerSec = flows;
+            stats.activeConnections = Math.floor(Math.random() * 3000) + 7000;
+
+            document.getElementById('totalFlows').textContent = stats.totalFlows.toLocaleString();
+            document.getElementById('flowRate').textContent = stats.flowsPerSec.toLocaleString();
+            document.getElementById('activeThreats').textContent = stats.totalAlerts;
+            document.getElementById('threatRate').textContent = Math.floor(stats.totalAlerts / 8);
+            document.getElementById('alertCount').textContent = stats.totalAlerts;
+            document.getElementById('throughput').textContent = stats.flowsPerSec.toLocaleString();
+            document.getElementById('netLoad').textContent = (Math.random() * 80 + 40).toFixed(1) + ' Mb/s';
+            document.getElementById('conns').textContent = stats.activeConnections.toLocaleString();
+            document.getElementById('cpu').textContent = Math.floor(Math.random() * 25 + 25);
+            document.getElementById('memory').textContent = (Math.random() * 0.8 + 0.8).toFixed(1);
+
+            stats.avgConfidence = stats.totalAlerts > 0 ? (stats.avgConfidence * (stats.totalAlerts - 1) + 0.82 + Math.random() * 0.1) / stats.totalAlerts : 0.85;
+            document.getElementById('avgConfidence').textContent = (stats.avgConfidence * 100).toFixed(0) + '%';
+            document.getElementById('confBar').style.width = (stats.avgConfidence * 100) + '%';
+
+            // Update charts
+            tlChart.data.datasets.forEach((ds, i) => {
+                ds.data.shift();
+                ds.data.push(Math.random() > 0.6 ? Math.floor(Math.random() * 3) + 1 : 0);
+            });
+            tlChart.update('none');
+
+            distChart.data.datasets[0].data = threatTypes.map(t => stats.threatsPerType[t.name]);
+            distChart.update('none');
+
+            // Alerts
+            const numAlerts = Math.floor(Math.random() * 3) + 1;
+            for (let i = 0; i < numAlerts; i++) addAlert(genAlert());
+
+            updateDetectionStats();
+            updateTopSources();
+
+            if (Math.random() > 0.6) { initNet(); drawNet(); }
+        }
+
+        updateDetectionStats();
+        updateTopSources();
+        for (let i = 0; i < 8; i++) {
+            const a = genAlert();
+            a.timestamp = new Date(Date.now() - i * 3000).toLocaleTimeString();
+            addAlert(a);
+        }
+        setInterval(update, 1200);
+    </script>
+</body>
+</html>

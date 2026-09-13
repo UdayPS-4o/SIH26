@@ -134,7 +134,7 @@ export const COPY = {
   /* ------------------------------------------------------------- verdicts */
   verdictSame: { simple: 'Same item', technical: 'Above accept threshold' },
   verdictReview: { simple: 'Probably the same, needs a check', technical: 'Between thresholds' },
-  verdictDifferent: { simple: 'Different items', technical: 'Below review threshold' },
+  verdictDifferent: { simple: 'Below threshold', technical: 'Below review threshold' },
 
   /* --------------------------------------------------------------- actions */
   approve: { simple: 'Yes, same item', technical: 'Approve' },

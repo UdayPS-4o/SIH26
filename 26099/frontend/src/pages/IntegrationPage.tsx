@@ -6,7 +6,6 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { useCopy } from '@/copy'
 import { ByMode, TechnicalOnly, SimpleOnly } from '@/components/Gate'
 import {
   Building,
@@ -489,7 +488,6 @@ function SyncLog() {
 /* ====================================================================== page */
 
 export default function IntegrationPage() {
-  const c = useCopy()
   const [showEndpoints, setShowEndpoints] = useState(true)
   const [showFlow, setShowFlow] = useState(true)
 
@@ -503,7 +501,6 @@ export default function IntegrationPage() {
         title="SAP / ERP Integration"
         lead="Live connector status for all four participating organisations"
         icon={<Plugs size={24} weight="fill" />}
-        eyebrow={c('erp')}
       />
 
       {/* Stats row */}

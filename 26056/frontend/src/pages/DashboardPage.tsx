@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { TrendDown, TrendUp, WifiHigh } from '@phosphor-icons/react'
 import { PageHeader, Panel, StatTile, Callout } from '@/ds'
+import { LiveFeed } from '@/components/LiveFeed'
 import { DEMO_DATE } from '@/data/generate'
 
 const TODAY = new Date(DEMO_DATE)
@@ -29,9 +30,9 @@ const KPI_CARDS = [
   },
   {
     label: 'Data Freshness',
-    value: '2h ago',
+    value: 'Live',
     delta: { value: '12/12 sources', direction: 'flat' as const },
-    note: 'Latest scrape 06:15 IST',
+    note: 'Collection active',
     tone: 'good' as const,
   },
 ]
@@ -49,7 +50,9 @@ export default function DashboardPage() {
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000)
+    const t = setInterval(() => {
+      setNow(new Date())
+    }, 1000)
     return () => clearInterval(t)
   }, [])
 
@@ -71,8 +74,8 @@ export default function DashboardPage() {
       />
 
       <Callout tone="accent" title="System health: all clear">
-        12 of 12 sources active. Latest scrape completed at 06:15 IST. 2,847 fresh quotes ingested
-        from 8 airlines and 4 OTAs. No anomalies detected in the quality gate.
+        12 of 12 sources active. 2,847 fresh quotes ingested from 8 airlines and 4 OTAs.
+        No anomalies detected in the quality gate.
       </Callout>
 
       {/* KPI strip */}
@@ -89,72 +92,80 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Sector overview table */}
-      <Panel
-        className="mt-4"
-        title="Sector overview"
-        meta="Top routes by passenger traffic — live pricing"
-        icon={TrendDown}
-      >
-        <div className="overflow-auto">
-          <table className="w-full border-collapse text-[12.5px]">
-            <thead className="sticky top-0 bg-surface-2">
-              <tr>
-                <th scope="col" className="border-b border-line px-3 py-2 text-left font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
-                  Sector
-                </th>
-                <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
-                  Index value
-                </th>
-                <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
-                  30d change
-                </th>
-                <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
-                  Trend
-                </th>
-                <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
-                  Confidence
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {SECTOR_OVERVIEW.map((row) => (
-                <tr key={row.sector} className="border-b border-line/60 transition-colors hover:bg-surface-2">
-                  <td className="px-3 py-2.5 align-middle font-medium text-ink">{row.sector}</td>
-                  <td className="px-3 py-2.5 align-middle text-right font-mono text-ink-2">
-                    ₹{row.current.toLocaleString('en-IN')}
-                  </td>
-                  <td
-                    className={[
-                      'px-3 py-2.5 align-middle text-right font-mono',
-                      row.trend === 'rising' ? 'text-warn' : row.trend === 'falling' ? 'text-good' : 'text-ink-3',
-                    ].join(' ')}
-                  >
-                    {row.change}
-                  </td>
-                  <td className="px-3 py-2.5 align-middle text-right">
-                    {row.trend === 'rising' && <TrendUp size={14} weight="bold" className="text-warn" />}
-                    {row.trend === 'falling' && <TrendDown size={14} weight="bold" className="text-good" />}
-                    {row.trend === 'stable' && <span className="text-ink-3">—</span>}
-                  </td>
-                  <td className="px-3 py-2.5 align-middle text-right">
-                    <span
+      {/* Two-column: live feed + sector overview */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr,1fr]">
+        <div>
+          <h3 className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-3">
+            Live collection feed
+          </h3>
+          <LiveFeed />
+        </div>
+
+        <Panel
+          title="Sector overview"
+          meta="Top routes by passenger traffic"
+          icon={TrendDown}
+        >
+          <div className="overflow-auto">
+            <table className="w-full border-collapse text-[12.5px]">
+              <thead className="sticky top-0 bg-surface-2">
+                <tr>
+                  <th scope="col" className="border-b border-line px-3 py-2 text-left font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
+                    Sector
+                  </th>
+                  <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
+                    Index value
+                  </th>
+                  <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
+                    30d change
+                  </th>
+                  <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
+                    Trend
+                  </th>
+                  <th scope="col" className="border-b border-line px-3 py-2 text-right font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-ink-3">
+                    Confidence
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {SECTOR_OVERVIEW.map((row) => (
+                  <tr key={row.sector} className="border-b border-line/60 transition-colors hover:bg-surface-2">
+                    <td className="px-3 py-2.5 align-middle font-medium text-ink">{row.sector}</td>
+                    <td className="px-3 py-2.5 align-middle text-right font-mono text-ink-2">
+                      ₹{row.current.toLocaleString('en-IN')}
+                    </td>
+                    <td
                       className={[
-                        'rounded-chip px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ring-1',
-                        row.confidence === 'high'
-                          ? 'bg-good-soft text-good ring-good/40'
-                          : 'bg-accent-soft text-accent ring-accent/40',
+                        'px-3 py-2.5 align-middle text-right font-mono',
+                        row.trend === 'rising' ? 'text-warn' : row.trend === 'falling' ? 'text-good' : 'text-ink-3',
                       ].join(' ')}
                     >
-                      {row.confidence}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+                      {row.change}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle text-right">
+                      {row.trend === 'rising' && <TrendUp size={14} weight="bold" className="text-warn" />}
+                      {row.trend === 'falling' && <TrendDown size={14} weight="bold" className="text-good" />}
+                      {row.trend === 'stable' && <span className="text-ink-3">—</span>}
+                    </td>
+                    <td className="px-3 py-2.5 align-middle text-right">
+                      <span
+                        className={[
+                          'rounded-chip px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider ring-1',
+                          row.confidence === 'high'
+                            ? 'bg-good-soft text-good ring-good/40'
+                            : 'bg-accent-soft text-accent ring-accent/40',
+                        ].join(' ')}
+                      >
+                        {row.confidence}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
     </div>
   )
 }

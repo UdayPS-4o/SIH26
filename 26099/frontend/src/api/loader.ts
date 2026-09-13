@@ -170,16 +170,6 @@ const REMEMBERED = 'codeone.loaded'
  */
 export const SEEDED_SOURCES: Cpse['code'][] = ['IOCL', 'NTPC', 'SAIL']
 
-/** Note which masters are in, so a stray reload does not empty the room's screen. */
-function remember() {
-  try {
-    sessionStorage.setItem(REMEMBERED, JSON.stringify(serviceState.loaded))
-  } catch {
-    // A browser with storage disabled loses the session on reload. Nothing else
-    // depends on this, so it is not worth interrupting a load over.
-  }
-}
-
 /**
  * Put the console back to the state a demonstration starts in.
  *
@@ -191,7 +181,7 @@ export function forgetLoaded() {
   try {
     sessionStorage.setItem(REMEMBERED, JSON.stringify(SEEDED_SOURCES))
   } catch {
-    /* see remember() */
+    /* storage disabled: silently loses session on reload */
   }
 }
 
@@ -601,7 +591,7 @@ export function streamMasterLoad(
     finished = true
     commitTo(incoming.length)
     if (!serviceState.loaded.includes(cpse)) serviceState.loaded.push(cpse)
-    const matched = pairsAfter.filter(
+    const matchedCount = pairsAfter.filter(
       pair => incomingIds.has(pair.left.id) || incomingIds.has(pair.right.id),
     ).filter(p => p.verdict === 'same').length
     const heldForReview = pairsAfter.filter(
@@ -617,7 +607,7 @@ export function streamMasterLoad(
       actor: 'Harmonization service',
       cpse,
       detail: before.length
-        ? `Read ${inr(incoming.length)} items from ${source.name}. ${inr(matched)} of them are things another organisation already buys, and now share its national code.`
+        ? `Read ${inr(incoming.length)} items from ${source.name}. ${inr(matchedCount)} of them are things another organisation already buys, and now share its national code.`
         : `Read ${inr(incoming.length)} items from ${source.name}. This is the first list, so there is nothing to compare it against yet.`,
       endpoint: `POST /sources/${cpse}/load`,
     })

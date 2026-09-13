@@ -664,7 +664,6 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
   const [copied, setCopied] = useState(false)
 
   const single = cluster.members.length === 1
-  const soleOwner = cluster.members[0]
 
   /* Build the slot-by-slot description from the longest raw description. */
   const buildDescription = useMemo(() => {
@@ -931,16 +930,5 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
         ) : null}
       </section>
     </motion.div>
-  )
-}
-
-function MetaItem({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <dt>
-        <Label>{label}</Label>
-      </dt>
-      <dd className="mt-1.5">{children}</dd>
-    </div>
   )
 }

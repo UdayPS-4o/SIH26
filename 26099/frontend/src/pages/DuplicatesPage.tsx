@@ -811,7 +811,7 @@ function PairRow({
                     <span className="text-[12.5px] text-ink-2">
                       {decision === 'approved'
                         ? 'You recorded these as the same item.'
-                        : 'You recorded these as different items.'}
+                        : 'You recorded these as below the threshold.'}
                     </span>
                     <Button
                       size="sm"
