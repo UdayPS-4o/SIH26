@@ -1146,40 +1146,651 @@ Deploy agents in this order. Bold = must do first.
 
 ---
 
-# 7. PPT GAPS — What the PPT Promises But the Code Doesn't Deliver Yet
+# 7. FEATURE EXPANSION PLAN — What to Add to BOTH PPT and Prototype
 
-Your PPT (which I just read in full) makes specific claims. Here's what's missing from the code:
+Your existing PPT is strong. Your existing prototype has 12 working pages. This section lists every feature that should appear in BOTH the final PPT and the final dashboard. For each feature: what the PPT slide should show, and what the prototype should build.
 
-| PPT Claim | Current Code Status | What's Needed |
-|-----------|---------------------|---------------|
-| "Sense · Collar and milk-line sensors" | No collar/milk-line sensor pages exist | Add Devices page with collar sensor cards + milk-line module card |
-| "Send · Shed gateway relays over LoRa/GSM" | No gateway/connectivity section | Add connectivity status to Devices page (LoRa IN865, GSM fallback) |
-| "Predict · AI model scores risk 7-14 days early" | Prediction formula exists but no visual showing the 7-14 day prediction window | Add prediction window badge on AnimalDetails: "Prediction window: 7-14 days" |
-| "Alert · Farmer and vet get instant SMS/app alert" | Alert cards exist but no SMS/IVR preview shown to user | Add alert channel preview in Settings (SMS text + IVR voice script) |
-| "Per-animal baseline — her own trailing 10-milking history" | Uses static mock data, no trailing history visualization | Add mini sparkline showing last 10 SCC readings + baseline band on AnimalDetails |
-| "Quarter asymmetry — four-quarter EC asymmetry" | Single `conductivity` value per animal | Add `quarterEc: {lf, rf, lr, rr}` to mock data + asymmetry calculator |
-| "Alert budget 5%/day with hysteresis" | Simple counter exists (4 of 6 slots) | Expand to interactive slider + watchlist + hysteresis visualization |
-| "SHAP-driven intervention templates" | Static recommendation cards | Add SHAP-style bar chart showing factor contributions (top-3 drivers highlighted) |
-| "One-tap feedback retrains nightly" | Outcome buttons planned but not built | Build outcomeService + OutcomeButtons + learning loop display on Model page |
-| "Delivers customized nutrition, mineral supplements, Ayurvedic care" | Recommendations exist but no nutrition/mineral/Ayurvedic sections | Add nutrition plan card + mineral supplement card + Ayurvedic care card to AnimalDetails |
-| "IMD weather integration" | No weather data anywhere | Add weather widget to Dashboard (mocked from IMD API structure) |
-| "ICAR ADE schema export" | No export functionality | Add export button on AnimalDetails that generates ADE-compliant JSON download |
-| "Pashu Aadhaar 12-digit ear tag" | Generic IDs (BUF-042) | Add `pashuAadhaar` field to mock data + display on all animal views |
-| "228,374 village DCS AMCUs" | Mentioned in text but not visible in UI | Add DCS count to Dashboard hero + Devices page |
-| "Tier 0/1 requires zero new hardware" | No tier visualization | Add tier ladder component to Dashboard (already in plan) |
-| "Fusion: EC + AMCU fat/SNF + yield + quarter asymmetry + behaviour + management" | Only EC, SCC, yield, activity shown | Add fat%, SNF%, behaviour score, management risk factor to risk calculation display |
-| "No LLM in the prediction path" | Dashboard has "AI Insight" card with generic text | Replace with deterministic recommendation from template catalogue |
-| "Rejected-with-reasons discipline" | Not visible anywhere | Add "Technology Choices" section to Model page listing rejected tech + reasons |
-| "₹24/animal at village level" | Not in UI | Add to Dashboard KPIs + Devices page |
-| "₹1,390 lost per lactation" | Not in UI | Add to Dashboard KPIs as economic context |
-| "One prevented case pays for ~58 animals' hardware" | Not in UI | Add to tier ladder / cost calculator |
-| "Works at India's actual scale — 228,374 DCS" | Not visible | Show DCS deployment count on Dashboard |
-| "IN865 licence-exempt LoRa band" | Not mentioned in UI | Add to Devices page hardware specs |
-| "Custom PCB, WPC ETA certification, LiFePO4" | Not mentioned | Add to Roadmap section or Devices page |
-| "Field validation at one district union" | Roadmap item only | Add to Roadmap page if it exists |
-| "NAEVis / Zillion Minds" — watermark on PPT | Not relevant to code | N/A — watermark for PPT only |
+**Legend:** MUST = judges will notice if missing. SHOULD = strengthens the story. NICE = polish.
 
-> **Note:** The PPT is already strong. Most of these gaps are "nice to have" for the dashboard, not blockers. The 3 things that actually matter for the submission are: (1) hardware visible in video, (2) dashboard looks Indian (warm colours + Hindi), (3) honest cited numbers. Everything else is polish.
+---
+
+## 7.1 Devices / Hardware Page (MUST)
+
+**Why:** The PPT already has a Hardware slide with the breadboard photo, BOM, and ₹24/animal arithmetic. The prototype needs a page that matches. Without it, the video shows a dashboard with no visible hardware — judges in a Hardware category will mark you down.
+
+### PPT Changes
+
+- **Slide 6 (Hardware):** Already exists. Add one callout box: "Prototype dashboard includes a live Devices page showing collar sensors, milk-line module, and shed gateway status."
+- If you don't have a dedicated Hardware slide, add one: breadboard photo (full bleed), BOM table (component, purpose, cost), deployment math (₹2,722/module, ₹24/animal, 228,374 DCS).
+
+### Prototype Changes
+
+**New page: `src/pages/Devices.jsx`**
+
+Three cards in a grid:
+
+| Card | Content |
+|------|---------|
+| **Collar Sensor** (CR-01) | Status: Active · Battery 78% · Last sync: 2 min ago · Activity: 342 steps/hr · Temperature: 38.7°C · LoRa signal: -67 dBm |
+| **Milk-Line Module** (ML-01) | Status: Active · EC: 5.3 mS/cm · Temp: 38.9°C · Fat: 4.2% · SNF: 8.7% · Connected to AMCU · IN865 band |
+| **Shed Gateway** (GW-C) | Status: Online · Uplink: LoRaWAN IN865 · Downlink: GSM fallback · 12 devices connected · Last reboot: 3 days ago |
+
+Each card shows: device ID, status indicator (green dot = online), key readings, connectivity info.
+
+**Bottom nav item:** Replace "Herd Intelligence" with "Devices" (or add as 6th item).
+
+**Mock data additions:**
+```js
+// src/data/mockData.js — add to each animal:
+devices: {
+  collar: { id: 'CR-042', battery: 78, signal: -67, lastSync: '2 min ago' },
+  milkLine: { id: 'ML-042', ec: 5.3, temp: 38.9, fat: 4.2, snf: 8.7 },
+}
+```
+
+**Files to create/modify:**
+- New: `src/pages/Devices.jsx`
+- Modify: `src/components/layout/BottomNav.jsx` (add Devices nav item)
+- Modify: `src/data/mockData.js` (add device data to each animal)
+- Modify: `src/i18n/i18n.jsx` (add device labels in 5 languages)
+
+---
+
+## 7.2 Quarter Asymmetry (MUST)
+
+**Why:** The PPT calls this one of the two core innovations ("four-quarter EC asymmetry cancels shared confounders, buying real lead time"). The current prototype uses a single `conductivity` value. This needs to change.
+
+### PPT Changes
+
+- **Slide 5 (How It Works):** Add a visual showing 4 quarters of a udder, each with an EC reading. Highlight the quarter with the highest value. Annotation: "Asymmetry ratio = max(EC) / median(EC). Ratio > 1.3 → single-quarter mastitis likely."
+- Add the formula: `asymmetry = max_q(EC) / median_q(EC)`
+
+### Prototype Changes
+
+**Data model change:**
+```js
+// Replace single conductivity with per-quarter values:
+quarterEc: { lf: 5.1, rf: 5.3, lr: 5.2, rr: 7.9 }  // lf=left-front, rf=right-front, lr=left-rear, rr=right-rear
+quarterTemp: { lf: 38.5, rf: 38.7, lr: 38.6, rr: 39.2 }
+```
+
+**New utility: `src/utils/asymmetry.js`**
+```js
+export function quarterAsymmetry(quarterEc) {
+  const values = [quarterEc.lf, quarterEc.rf, quarterEc.lr, quarterEc.rr]
+  const max = Math.max(...values)
+  const sorted = [...values].sort((a, b) => a - b)
+  const median = (sorted[1] + sorted[2]) / 2
+  const ratio = max / median
+  const maxQuarter = values.indexOf(max)
+  const quarterNames = ['Left Front', 'Right Front', 'Left Rear', 'Right Rear']
+  return {
+    max, median, ratio, maxQuarter,
+    interpretation: ratio > 1.3 ? 'HIGH asymmetry — likely single-quarter mastitis' :
+                     ratio > 1.15 ? 'Moderate asymmetry — monitor closely' :
+                     'Normal — all quarters consistent',
+    quarterNames: quarterNames[maxQuarter],
+  }
+}
+```
+
+**Display in AnimalDetails:**
+```
+Quarter Conductivity:
+  Left Front:   5.1 mS/cm  (baseline 5.0)  ██████████
+  Right Front:  5.3 mS/cm  (baseline 5.1)  ██████████
+  Left Rear:    5.2 mS/cm  (baseline 5.0)  ██████████
+  Right Rear:   7.9 mS/cm  (baseline 5.2)  ████████████████████  ← ELEVATED
+
+Asymmetry: 1.52 (max/median)
+⚠ Right-rear quarter shows significant asymmetry. Inspect this quarter first.
+```
+
+**Files to create/modify:**
+- New: `src/utils/asymmetry.js`
+- Modify: `src/data/mockData.js` (add `quarterEc`, `quarterTemp` to all animals)
+- Modify: `src/pages/AnimalDetails.jsx` (add quarter EC display section)
+
+---
+
+## 7.3 Per-Animal Baseline Sparkline (MUST)
+
+**Why:** "The cow is her own control" is your core technical argument. The PPT says "scored against her own trailing 10-milking history, never a herd threshold." The prototype needs to show this visually.
+
+### PPT Changes
+
+- **Slide 5 (How It Works):** Add a sparkline graphic showing 10 data points (SCC over 10 milkings) with a baseline band. Annotation: "Global threshold misses 70% of subclinical cases. Her own baseline catches them."
+- Add the formula: `z-score = (current_value - trailing_10_median) / MAD`
+
+### Prototype Changes
+
+**New component: `src/components/shared/Sparkline.jsx`**
+
+Renders a mini line chart (last 10 readings) with a shaded baseline band.
+
+```jsx
+export default function Sparkline({ readings, baseline, label, unit }) {
+  // readings: array of 10 numbers (most recent last)
+  // baseline: { median, mad } — the trailing 10-milking stats
+  // Renders SVG sparkline with baseline band
+}
+```
+
+**Display in AnimalDetails, above the risk factors:**
+
+```
+SCC History (last 10 milkings):
+  120 ┤
+  130 ┤●
+  140 ┤ ●
+  150 ┤  ● ← baseline median (150k)
+  160 ┤
+  170 ┤
+  180 ┤      ● ← z-score +9.8 (current: 420k)
+  190 ┤
+  200 ┤
+      └─────────────────────────────
+        Milking #1    Milking #10
+
+Current: 420k · Baseline: 150k · z-score: +9.8 · 180% above baseline
+```
+
+**Mock data additions:**
+```js
+// Add to each animal:
+sccHistory: [118, 125, 132, 140, 145, 148, 152, 155, 160, 420], // last 10 milkings
+sccBaseline: { median: 150, mad: 12 }, // computed from first 9 readings
+ecHistory: [5.0, 5.1, 5.0, 5.2, 5.1, 5.0, 5.1, 5.2, 5.1, 6.2],
+ecBaseline: { median: 5.1, mad: 0.08 },
+```
+
+**Files to create/modify:**
+- New: `src/components/shared/Sparkline.jsx`
+- New: `src/utils/baseline.js` (compute median + MAD from array)
+- Modify: `src/data/mockData.js` (add `sccHistory`, `sccBaseline`, `ecHistory`, `ecBaseline`)
+- Modify: `src/pages/AnimalDetails.jsx` (add sparkline section)
+
+---
+
+## 7.4 Alert Budget Slider + Watchlist (MUST)
+
+**Why:** The PPT says "alert budget 5%/day with hysteresis." The current prototype has a simple counter (4 of 6 slots). This needs to be interactive and include the watchlist concept.
+
+### PPT Changes
+
+- **Slide 9 (Alert Budget + Restraint):** Already exists. Add one annotation: "Interactive slider in prototype lets you adjust budget from 1% to 15% and see precision/recall trade-off in real time."
+- Add a small table:
+  | Budget | Alerts/day | Catch rate | Farmer retention |
+  |--------|-----------|------------|-----------------|
+  | 1% | 1–2 | ~50% | High (no fatigue) |
+  | 5% | 6–7 | ~70% | Optimal |
+  | 15% | 18–19 | ~90% | Low (fatigue sets in) |
+
+### Prototype Changes
+
+**Expand the alert budget card in `src/pages/Alerts.jsx`:**
+
+1. **Interactive slider:** Range input from 1% to 15%. Default at 5%.
+2. **Precision/recall display:** As slider moves, show "Estimated catch rate: X%" and "False alarm rate: Y%."
+3. **Watchlist section:** Below the budget card, show animals that are elevated but below the alert threshold:
+   ```
+   👁️ Silent Watchlist (3 animals monitored, not alerted)
+   BUF-038 — risk 32% (budget full, will re-score at next milking)
+   BUF-051 — risk 28% (trending up, 3 consecutive readings above baseline)
+   BUF-073 — risk 25% (new animal, 5-milking observation window)
+   ```
+4. **Hysteresis indicator:** Show "Alerts suppressed for: 2h 14m (hysteresis window)" if an animal was recently alerted.
+
+**Files to modify:**
+- Modify: `src/pages/Alerts.jsx` (expand budget card)
+
+---
+
+## 7.5 Action-First Alert Cards with Outcome Buttons (MUST)
+
+**Why:** The PPT says "one named action" and "one-tap feedback retrains nightly." The current alert cards show risk percentage and explanation. They need to lead with the action.
+
+### PPT Changes
+
+- **Slide 9 (Alert Budget + Restraint):** Add a phone mockup showing the alert card. The action line is the biggest text: "Strip and CMT before next milking." The risk percentage is a small badge in the corner.
+
+### Prototype Changes
+
+**Rewrite alert card structure in `src/components/shared.jsx`:**
+
+```
+┌─────────────────────────────────────────────────┐
+│ 🔴 HIGH RISK              🕐 Today 07:12    [5%] │
+│ गाय BUF-042 · शेड C · Right Rear Quarter          │
+│                                                   │
+│ आज सुबह स्ट्रिप करके CMT करें                     │ ← LARGEST TEXT
+│ Strip and CMT before next milking                 │
+│                                                   │
+│ क्यों? / Why:                                     │
+│ • Conductivity 6.2 mS/cm — 17% above baseline    │
+│ • SCC 420k (baseline 150k · 180% elevated)        │
+│ • Milk yield -12% vs 7-day average                │
+│                                                   │
+│ [📱 App] [📱 SMS] [📞 IVR]                        │
+│                                                   │
+│ [✓ सही है] [❌ नहीं] [📞 Vet Called]             │ ← OUTCOME BUTTONS
+└─────────────────────────────────────────────────┘
+```
+
+**Changes:**
+1. Action line = largest text, Hindi first
+2. Risk % → small badge (not the headline)
+3. "Why?" section → actual numbers with baselines
+4. Channel badges → small icon row (App/SMS/IVR)
+5. Outcome buttons → 3 buttons at bottom (Confirmed / Not Confirmed / Vet Called)
+
+**New service: `src/services/outcomeService.js`**
+- `getOutcomes()` — read from localStorage
+- `recordOutcome(alertId, outcome)` — write to localStorage
+- `getOutcomeCounts()` — return { total, confirmed, notConfirmed, vetCalled }
+
+**New component: `src/components/common/OutcomeButtons.jsx`**
+- 3 buttons: सही है ✓ / नहीं / वेट कॉल
+- After click: shows "Recorded [date]" with the selected option
+- Calls `recordOutcome()` on click
+
+**Files to create/modify:**
+- New: `src/components/common/OutcomeButtons.jsx`
+- New: `src/services/outcomeService.js`
+- Modify: `src/components/shared.jsx` (rewrite AlertCard)
+
+---
+
+## 7.6 Continuous Learning Loop on Model Page (MUST)
+
+**Why:** The PPT says "one-tap feedback retrains nightly." The Model page needs a section showing this mechanism.
+
+### PPT Changes
+
+- **Slide 8 (The AI):** Add a small diagram: "Outcome → Label → Nightly retrain → Champion vs Challenger → Promote if AUC-PR improves."
+- Add one data point: "After 47 farmer-verified outcomes: AUC-PR 0.71 → 0.73."
+
+### Prototype Changes
+
+**Add section to `src/pages/Model.jsx`:**
+
+```
+┌─────────────────────────────────────────────────┐
+│ Continuous Learning Loop                          │
+├─────────────────────────────────────────────────┤
+│ Outcomes Collected:    12                         │
+│ Confirmed Cases:       8  (green)                 │
+│ False Alarms:          3  (amber)                 │
+│ Vet Called:            1  (blue)                  │
+│ Last Retrain:          Today, 02:00 AM            │
+├─────────────────────────────────────────────────┤
+│ Nightly retrain: Champion vs Challenger           │
+│ AUC-PR improvement: 0.71 → 0.73 after 12 labels  │
+└─────────────────────────────────────────────────┘
+```
+
+**Wire to outcomeService:**
+```js
+import { getOutcomeCounts } from '../../services/outcomeService'
+const counts = getOutcomeCounts()
+```
+
+**Files to modify:**
+- Modify: `src/pages/Model.jsx` (add learning loop section)
+- New: `src/services/outcomeService.js` (already listed in 7.5)
+
+---
+
+## 7.7 SHAP Factor Chart (SHOULD)
+
+**Why:** The PPT says "SHAP-driven intervention templates." The current recommendation cards are static text. A SHAP-style bar chart adds technical credibility.
+
+### PPT Changes
+
+- **Slide 5 (How It Works):** Add a horizontal bar chart: 3 bars showing "SCC: 42% contribution," "Conductivity asymmetry: 31%," "Yield drop: 18%," "Other: 9%." Caption: "SHAP values explain every alert."
+
+### Prototype Changes
+
+**New component: `src/components/shared/ShapChart.jsx`**
+
+```jsx
+export default function ShapChart({ factors }) {
+  // factors: [{ name: 'SCC elevation', value: 42, direction: 'positive' }, ...]
+  // Renders horizontal bars, sorted by absolute value, top-3 highlighted
+}
+```
+
+**Display in AnimalDetails, next to risk factors:**
+
+```
+Top Risk Drivers (SHAP):
+  SCC elevation          ████████████████████  42%  ↑
+  Conductivity asymmetry ████████████████      31%  ↑
+  Yield drop             ██████████            18%  ↓
+  Temperature            █████                9%   ↑
+```
+
+**Files to create/modify:**
+- New: `src/components/shared/ShapChart.jsx`
+- Modify: `src/pages/AnimalDetails.jsx` (add SHAP section)
+- Modify: `src/data/mockData.js` (add `shapFactors` to each animal)
+
+---
+
+## 7.8 Nutrition + Mineral + Ayurvedic Cards (SHOULD)
+
+**Why:** The PPT explicitly lists "customized nutrition, mineral supplements, and traditional Ayurvedic care" as part of the solution. The prototype recommendations are generic.
+
+### PPT Changes
+
+- **Slide 4 (What Gaurogya Setu Does):** Add three sub-bullets under "Explain & Recommend": "Customized nutrition plan," "Mineral supplement protocol," "Ayurvedic care recommendation."
+- Or add a small 3-column grid: Nutrition | Minerals | Ayurvedic.
+
+### Prototype Changes
+
+**Add three cards to AnimalDetails, below the recommendation card:**
+
+```jsx
+{/* Nutrition Plan */}
+<Card>
+  <p className="font-semibold">🥗 Nutrition Plan</p>
+  <p>Increase green fodder by 15%. Add 200g/d cottonseed cake. Reduce wheat straw.</p>
+  <p className="text-xs text-gray-400">Based on: milk yield 12% below target, BCS 2.75</p>
+</Card>
+
+{/* Mineral Supplement */}
+<Card>
+  <p className="font-semibold">🧪 Mineral Supplement</p>
+  <p>Zn-Mn-Se chelate: 5g/d orally for 14 days. Topical iodine spray on affected quarter.</p>
+  <p className="text-xs text-gray-400">Based on: subclinical mastitis risk, winter season</p>
+</Card>
+
+{/* Ayurvedic Care */}
+<Card>
+  <p className="font-semibold">🌿 Ayurvedic Care</p>
+  <p>Turmeric (Curcuma longa) 50g/d + Neem (Azadirachta indica) leaf paste — local application.</p>
+  <p className="text-xs text-gray-400">Based on: traditional udder health protocol, vet-reviewed template #7</p>
+</Card>
+```
+
+**Files to modify:**
+- Modify: `src/pages/AnimalDetails.jsx` (add 3 recommendation cards)
+- Modify: `src/data/mockData.js` (add `nutritionPlan`, `mineralPlan`, `ayurvedicPlan` to each animal)
+
+---
+
+## 7.9 IMD Weather Widget (NICE)
+
+**Why:** The PPT lists "IMD weather integration" under Interoperability. A weather widget on the Dashboard adds context (THI = Temperature-Humidity Index affects mastitis risk).
+
+### PPT Changes
+
+- **Slide 11 (Interoperability):** Mention IMD weather API integration. Add a small weather icon + THI value: "THI 72 — moderate mastitis risk elevation."
+
+### Prototype Changes
+
+**Add to Dashboard hero (right side, below tier ladder):**
+
+```jsx
+<Card className="mt-3">
+  <p className="text-xs font-medium">🌤️ Weather — मथुरा, UP</p>
+  <div className="mt-1 flex items-center gap-3">
+    <span className="text-2xl">☀️</span>
+    <div>
+      <p className="text-sm font-semibold">34°C · Humidity 62%</p>
+      <p className="text-xs text-amber-600">THI: 72 — Moderate heat stress</p>
+    </div>
+  </div>
+  <p className="mt-1 text-[10px] text-gray-400">Source: IMD API (mocked for prototype)</p>
+</Card>
+```
+
+**Mock data:**
+```js
+// src/data/mockData.js — add farm-level:
+farm: {
+  location: 'Mathura, UP',
+  weather: { temp: 34, humidity: 62, thi: 72, condition: 'sunny' },
+  dcsCount: 228374,
+}
+```
+
+**Files to modify:**
+- Modify: `src/pages/Dashboard.jsx` (add weather widget)
+- Modify: `src/data/mockData.js` (add farm weather data)
+
+---
+
+## 7.10 ICAR ADE Export Button (NICE)
+
+**Why:** The PPT says "Health events export to ICAR Animal Data Exchange (ADE) schema." The prototype should demonstrate this.
+
+### PPT Changes
+
+- **Slide 11 (Interoperability):** Show a screenshot of the export button + a code snippet of the ADE-compliant JSON output.
+
+### Prototype Changes
+
+**Add to AnimalDetails:**
+
+```jsx
+<Button onClick={downloadADE}>
+  📥 Export to ICAR ADE Schema
+</Button>
+```
+
+**Generates a JSON file:**
+```json
+{
+  "schema": "ICAR-ADE/v1",
+  "animalId": "120034567890",
+  "event": "mastitis_risk_alert",
+  "timestamp": "2026-09-14T05:40:00+05:30",
+  "riskScore": 0.87,
+  "quarter": "right-rear",
+  "conductivity": 6.2,
+  "scc": 420000,
+  "recommendation": "Strip and CMT before next milking"
+}
+```
+
+**Files to modify:**
+- Modify: `src/pages/AnimalDetails.jsx` (add export button)
+- New: `src/utils/adeExport.js` (generate ADE-compliant JSON)
+
+---
+
+## 7.11 SOTA Benchmark Bars on Model Page (SHOULD)
+
+**Why:** The PPT benchmarks against Zhou et al. 2026. The prototype should show this visually.
+
+### PPT Changes
+
+- Already on Slide 8. No change needed.
+
+### Prototype Changes
+
+**Add to `src/pages/Model.jsx`, below confusion matrix:**
+
+```
+SOTA Benchmark — Zhou et al. 2026 (255,772 cow-day records, SCR HR-Tag, 14-day horizon)
+
+Metric              Gaurogya Setu   Zhou et al. 2026
+AUC-ROC             0.789 ████████████████░░  0.789 ████████████████░░
+AUC-PR              0.710 ██████████████░░░   0.680 █████████████░░░░
+Sensitivity         78.4% █████████████████░  50.0% ███████████░░░░░░
+Specificity         84.2% ███████████████░░░  94.7% █████████████████░
+Lead Time (median)  10 days ████████████████   7 days  ████████████░░░░░
+```
+
+**Files to modify:**
+- Modify: `src/pages/Model.jsx` (add benchmark section)
+
+---
+
+## 7.12 "No LLM in Prediction Path" Badge (SHOULD)
+
+**Why:** The PPT explicitly states "NO LLM IN THE PREDICTION PATH." This is a credibility signal for technical judges. The prototype should show it.
+
+### PPT Changes
+
+- **Slide 8 (The AI):** Add a red-bordered box: "NO LLM IN THE PREDICTION PATH. Recommendation text comes from a fixed, vet-reviewed template catalogue. The system never names an antibiotic. Treatment decisions stay with the registered veterinarian."
+
+### Prototype Changes
+
+**Add to Model page, top section:**
+
+```jsx
+<div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+  <p className="text-sm font-semibold text-red-800">
+    ⚠ No LLM in the prediction path
+  </p>
+  <p className="text-xs text-red-600 mt-1">
+    Risk scores are computed by LightGBM discrete-time hazard model.
+    Recommendation text comes from a fixed, vet-reviewed template catalogue.
+    The system never names an antibiotic. Treatment decisions stay with the registered veterinarian.
+  </p>
+</div>
+```
+
+**Files to modify:**
+- Modify: `src/pages/Model.jsx` (add no-LLM badge at top)
+
+---
+
+## 7.13 Technology Rejection Log (NICE)
+
+**Why:** The PPT has a "Rejected-with-reasons discipline" section. The prototype should show this on the Model page.
+
+### PPT Changes
+
+- **Already in PPT Feasibility slide.** No change needed.
+
+### Prototype Changes
+
+**Add to Model page, below benchmark section:**
+
+```jsx
+<Card>
+  <p className="font-semibold text-sm">Technology Choices — Rejected</p>
+  <div className="mt-2 space-y-2 text-xs">
+    <div>
+      <p className="font-medium text-red-600">Apache Kafka — REJECTED</p>
+      <p className="text-gray-500">Overkill for 128-animal herd. Adds operational complexity without benefit. Alternative: direct API ingestion.</p>
+    </div>
+    <div>
+      <p className="font-medium text-red-600">EMQX (BSL licence) — REJECTED</p>
+      <p className="text-gray-500">Business Source License prevents embedding in government-deployed systems. Alternative: Mosquitto (EPL-2.0).</p>
+    </div>
+    <div>
+      <p className="font-medium text-red-600">Moirai (CC BY-NC) — REJECTED</p>
+      <p className="text-gray-500">Non-commercial licence incompatible with DAHD deployment. Alternative: TimesFM alternatives with permissive licence.</p>
+    </div>
+    <div>
+      <p className="font-medium text-red-600">GADM boundaries — REJECTED</p>
+      <p className="text-gray-500">Non-redistributable. Alternative: OpenStreetMap administrative boundaries (ODbL).</p>
+    </div>
+  </div>
+</Card>
+```
+
+**Files to modify:**
+- Modify: `src/pages/Model.jsx` (add rejection log section)
+
+---
+
+## 7.14 DCS Deployment Count + Tier Economics (MUST)
+
+**Why:** The PPT says "228,374 village DCS AMCUs" and "₹24/animal." These numbers should be visible in the prototype.
+
+### PPT Changes
+
+- **Slide 6 (Hardware):** Already has the DCS count and ₹24/animal. No change.
+- **Slide 7 (Tier Ladder):** Already has the economics. No change.
+
+### Prototype Changes
+
+**Add to Dashboard hero (right side, below tier ladder):**
+
+```jsx
+<div className="rounded-lg bg-white p-3 text-center">
+  <p className="text-3xl font-bold text-amber-700">2,28,374</p>
+  <p className="text-xs text-gray-500">Village DCS AMCUs already deployed</p>
+  <p className="text-xs text-gray-400 mt-1">Gaurogya Setu works with existing infrastructure</p>
+</div>
+```
+
+**Add to KPI cards:**
+```
+₹1,390 — Lost per lactation to subclinical mastitis (reference)
+₹24 — Per-animal hardware cost at village level
+58:1 — Break-even ratio (1 prevented case = 58 animals' hardware)
+```
+
+**Files to modify:**
+- Modify: `src/pages/Dashboard.jsx` (add DCS count + tier economics)
+- Modify: `src/data/mockData.js` (add `dcsCount: 228374` to farm data)
+
+---
+
+## 7.15 Language Switcher in Bottom Nav (SHOULD)
+
+**Why:** The PPT says "multilingual." The prototype should let judges switch languages during the video demo.
+
+### PPT Changes
+
+- **Slide 10 (AMR + Impact):** Add a small note: "Full UI available in 5 languages: English, Hindi, Gujarati, Marathi, Punjabi."
+
+### Prototype Changes
+
+**Add to Settings page:**
+
+```jsx
+<div>
+  <p className="font-semibold">Language / भाषा</p>
+  <div className="mt-2 flex flex-wrap gap-2">
+    {['en', 'hi', 'gu', 'mr', 'pa'].map(lang => (
+      <button
+        key={lang}
+        onClick={() => setLang(lang)}
+        className={`px-3 py-1.5 rounded-lg border text-sm ${
+          currentLang === lang ? 'bg-amber-100 border-amber-400' : 'bg-white'
+        }`}
+      >
+        {lang === 'en' ? 'English' : lang === 'hi' ? 'हिंदी' : lang === 'gu' ? 'ગુજરાતી' : lang === 'mr' ? 'मराठी' : 'ਪੰਜਾਬੀ'}
+      </button>
+    ))}
+  </div>
+</div>
+```
+
+**Files to modify:**
+- Modify: `src/pages/Settings.jsx` (add language buttons)
+- Modify: `src/i18n/i18n.jsx` (ensure all 5 language dictionaries are complete)
+
+---
+
+## FEATURE PRIORITY SUMMARY
+
+| # | Feature | PPT | Prototype | Priority |
+|---|---------|-----|-----------|----------|
+| 7.1 | Devices page | Add slide content | New page + nav item | MUST |
+| 7.2 | Quarter asymmetry | Add to Slide 5 | New data + utility + display | MUST |
+| 7.3 | Per-animal baseline sparkline | Add to Slide 5 | New component + data | MUST |
+| 7.4 | Alert budget slider + watchlist | Add to Slide 9 | Expand existing card | MUST |
+| 7.5 | Action-first alerts + outcome buttons | Add phone mockup | Rewrite AlertCard + new service | MUST |
+| 7.6 | Continuous learning on Model page | Add to Slide 8 | New section | MUST |
+| 7.14 | DCS count + tier economics | Already in PPT | Add to Dashboard | MUST |
+| 7.7 | SHAP factor chart | Add to Slide 5 | New component | SHOULD |
+| 7.8 | Nutrition + mineral + Ayurvedic cards | Add to Slide 4 | Add 3 cards to AnimalDetails | SHOULD |
+| 7.11 | SOTA benchmark bars | Already in PPT | Add to Model page | SHOULD |
+| 7.12 | No LLM badge | Already in PPT | Add to Model page | SHOULD |
+| 7.15 | Language switcher | Add note to Slide 10 | Add buttons to Settings | SHOULD |
+| 7.9 | IMD weather widget | Add to Slide 11 | Add widget to Dashboard | NICE |
+| 7.10 | ICAR ADE export | Add to Slide 11 | Add export button | NICE |
+| 7.13 | Technology rejection log | Already in PPT | Add to Model page | NICE |
+
+> **Note:** MUST items = the video and PPT will feel incomplete without them. SHOULD items = significantly strengthen the story. NICE items = polish that shows depth. Focus on MUST items first.
 
 ---
 
