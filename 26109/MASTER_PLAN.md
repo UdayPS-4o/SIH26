@@ -1953,4 +1953,43 @@ You have a strong PPT. You have solid domain knowledge. You have 12 working page
 
 This plan gives you all three. Execute it in 6 days. The video is the submission. The PPT is the backup. The one-pager is what judges take home.
 
-**Now stop reading. Start deploying agents. Batch 1 first.**
+# 13. EXECUTION STATUS
+
+What's been built, what's in progress, what remains. Updated after each agent batch.
+
+| # | Feature | Status | Files Changed |
+|---|---------|--------|---------------|
+| 13.1 | Devanagari font (Noto Sans Devanagari) | ✅ DONE | index.html, tailwind.config.js, index.css |
+| 13.2 | DataFooter component + all 13 pages | ✅ DONE | DataFooter.jsx + 13 page files |
+| 13.3 | OutcomeButtons + outcomeService | ✅ DONE | OutcomeButtons.jsx, outcomeService.js, shared.jsx |
+| 13.4 | AMRBanner on Dashboard | ✅ DONE | AMRBanner.jsx, Dashboard.jsx |
+| 13.5 | No-LLM badge on Model page | ✅ DONE | Model.jsx |
+| 13.6 | Continuous learning loop on Model page | ✅ DONE | Model.jsx |
+| 13.7 | SOTA benchmark bars on Model page | ✅ DONE | Model.jsx |
+| 13.8 | Technology rejection log on Model page | ✅ DONE | Model.jsx |
+| 13.9 | SHAP factor chart component | ✅ DONE | ShapChart.jsx |
+| 13.10 | Quarter asymmetry utility + data | ✅ DONE | asymmetry.js, mockData.js, AnimalDetails.jsx |
+| 13.11 | Baseline utility (median + MAD + z-score) | ✅ DONE | baseline.js, mockData.js, shared.jsx (Sparkline) |
+| 13.12 | SCC/EC history arrays + baselines in mockData | ✅ DONE | mockData.js |
+| 13.13 | BottomNav restructure (Devices, Settings) | ✅ DONE | BottomNav.jsx |
+| 13.14 | i18n: new nav keys + 5th language (pa) | ✅ DONE | i18n.jsx |
+| 13.15 | Alert budget card with slider + watchlist | ✅ DONE | Alerts.jsx |
+| 13.16 | Color palette swap (brand → amber) | 🔄 IN PROGRESS | tailwind.config.js, all JSX |
+| 13.17 | Dashboard hero + KPI redesign + FeatureStrip | 🔄 IN PROGRESS | Dashboard.jsx |
+| 13.18 | Nutrition/Mineral/Ayurvedic care cards | 🔄 NEEDS RESTART | AnimalDetails.jsx, mockData.js |
+| 13.19 | Weather widget on Dashboard | ⏳ PENDING | Dashboard.jsx, mockData.js |
+| 13.20 | ICAR ADE export button on AnimalDetails | ⏳ PENDING | AnimalDetails.jsx, adeExport.js |
+| 13.21 | Pashu Aadhaar display on all views | ⏳ PENDING | mockData.js, AnimalDetails.jsx, AnimalTable |
+| 13.22 | DCS count display on Dashboard | ⏳ PENDING | Dashboard.jsx |
+| 13.23 | AlertCard action-first rewrite + outcome buttons | ⏳ PENDING | shared.jsx (if not done by color agent) |
+
+### How to finish the remaining items
+
+1. **Verify what the agents actually changed** — check git status and read the modified files
+2. **Fix anything broken** — color swap may have partial replacements; Dashboard rewrite may need manual tweaks
+3. **Restart the 3 killed agents** with simpler prompts (nutrition cards, color cleanup, alert rewrite)
+4. **Add the PENDING items** — weather widget, ADE export, Pashu Aadhaar, DCS count
+
+---
+
+**Now stop reading. Verify what agents built, fix what's broken, add what's missing.**
