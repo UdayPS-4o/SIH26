@@ -1,5 +1,6 @@
-# PRAHARI — Master Execution Plan
+# Gaurogya Setu — Master Execution Plan
 ## PS 26109 | Smart India Hackathon 2026 | DAHD Category
+## Team: Zillion Minds | "Predicting Mastitis, Protecting Livelihoods"
 
 > This is the ONE document. Everything below is what you need to execute.
 > Deploy agents in the order listed. Work in parallel where possible.
@@ -14,7 +15,7 @@
 4. [New Components to Build](#4-new-components-to-build)
 5. [Video Script — 2 Minutes](#5-video-script--2-minutes)
 6. [Agent Task Breakdown](#6-agent-task-breakdown)
-7. [PPT Slide Spec](#7-ppt-slide-spec)
+7. [PPT Gaps — What the PPT Promises But Code Doesn't Deliver Yet](#7-ppt-gaps--what-the-ppt-promises-but-code-doesnt-deliver-yet)
 8. [PS Requirement Coverage Map](#8-ps-requirement-coverage-map)
 9. [What 500 Teams Will Miss](#9-what-500-teams-will-miss)
 
@@ -111,7 +112,7 @@ void setup() {
   Serial.begin;
   sensors.begin();
   ads.begin();
-  Serial.println("PRAHARI Sensor Module v0.1");
+  Serial.println("Gaurogya Setu Sensor Module v0.1");
   Serial.println("ID: MS-01 | Shed: C | Animal: BUF-042");
 }
 
@@ -142,7 +143,7 @@ void loop() {
 ### Serial Monitor Output (What You Show on Camera)
 
 ```
-PRAHARI Sensor Module v0.1
+Gaurogya Setu Sensor Module v0.1
 ID: MS-01 | Shed: C | Animal: BUF-042
 {"id":"BUF-042","ec":5.3,"temp":38.7,"ts":"2026-09-14T05:40:01"}
 {"id":"BUF-042","ec":5.8,"temp":38.9,"ts":"2026-09-14T05:40:03"}
@@ -412,7 +413,7 @@ Replace lines 95–128 in Dashboard.jsx:
 
 ---
 
-## 3.5 Feature Strip — "What PRAHARI Does"
+## 3.5 Feature Strip — "What Gaurogya Setu Does"
 
 ### Location
 
@@ -1145,34 +1146,40 @@ Deploy agents in this order. Bold = must do first.
 
 ---
 
-# 7. PPT SLIDE SPEC
+# 7. PPT GAPS — What the PPT Promises But the Code Doesn't Deliver Yet
 
-## Slide Structure (12 slides exactly)
+Your PPT (which I just read in full) makes specific claims. Here's what's missing from the code:
 
-| # | Slide Title | Content | Notes |
-|---|-------------|---------|-------|
-| 1 | **PRAHARI** | Full title in Devanagari + English. Team name, institute, PS 26109, DAHD, SIH 2026. | Deep indigo bg, white text, Devanagari script |
-| 2 | **The Problem** | ₹7,165 cr/year loss. 45% subclinical prevalence. 2% teat-dip adoption. AMR: 71-77% beta-lactam resistance. | All numbers sourced (NDRI 2024, Antibiotics 2026) |
-| 3 | **The Problem Behind the Problem** | Information has failed. Alert fatigue. No per-animal baseline. Global thresholds miss 70% of subclinical cases. | This is the insight slide |
-| 4 | **What PRAHARI Does** | 6 capabilities: Predict 7-14d, Per-animal z-score, Quarter asymmetry, Alert budget (≤5%), Continuous learning, AMR stewardship | Clean icon grid |
-| 5 | **How It Works** | Two innovations: (1) Per-animal baseline = cow is her own control, (2) Quarter asymmetry = max_q(EC)/median_q(EC). Diagram showing data flow. | Technical credibility slide |
-| 6 | **HARDWARE** ← THE SLIDE | Breadboard photo. BOM table. ₹2,722/module. ₹24/animal. 228,374 DCS. LoRaWAN IN865. Solar + 72h buffer. | This wins Hardware category |
-| 7 | **Tier Ladder** | ₹0 → ₹5-27 → ₹419 → ₹1,641/animal. Break-even: 1 case = 58 animals' hardware. Tier 0 works day one. | Strategic insight — no other team has this |
-| 8 | **The AI — Honest Numbers** | AUC 0.789, AUC-PR 0.71, Sensitivity 78.4%. Benchmark: Zhou et al. 2026. Confusion matrix. Lead-time distribution. | Shows you know the literature |
-| 9 | **Alert Budget + Restraint** | Two phone screens side by side. Left: 8 alerts out of 40 cows → "Day 4: uninstalled." Right: 2 quality alerts → "Day 400: still in use." | Visceral, memorable |
-| 10 | **AMR + Impact** | "Early detection = antimicrobial stewardship." Resistance stats. No antibiotic prescribed. NAP-AMR 2.0 alignment. | Policy alignment — DAHD judges love this |
-| 11 | **Interoperability** | Pashu Aadhaar 12-digit IDs. ICAR ADE schema export. 228,374 DCS already deployed. IMD weather integration (planned). | Shows scale thinking |
-| 12 | **Roadmap + Ask** | Phase 1: Data partnership ICAR-NIVEDI. Phase 2: Field validation. Phase 3: Production deployment. "We need 3 months and ₹5L to build the real thing." | Shows you have a plan beyond the hackathon |
+| PPT Claim | Current Code Status | What's Needed |
+|-----------|---------------------|---------------|
+| "Sense · Collar and milk-line sensors" | No collar/milk-line sensor pages exist | Add Devices page with collar sensor cards + milk-line module card |
+| "Send · Shed gateway relays over LoRa/GSM" | No gateway/connectivity section | Add connectivity status to Devices page (LoRa IN865, GSM fallback) |
+| "Predict · AI model scores risk 7-14 days early" | Prediction formula exists but no visual showing the 7-14 day prediction window | Add prediction window badge on AnimalDetails: "Prediction window: 7-14 days" |
+| "Alert · Farmer and vet get instant SMS/app alert" | Alert cards exist but no SMS/IVR preview shown to user | Add alert channel preview in Settings (SMS text + IVR voice script) |
+| "Per-animal baseline — her own trailing 10-milking history" | Uses static mock data, no trailing history visualization | Add mini sparkline showing last 10 SCC readings + baseline band on AnimalDetails |
+| "Quarter asymmetry — four-quarter EC asymmetry" | Single `conductivity` value per animal | Add `quarterEc: {lf, rf, lr, rr}` to mock data + asymmetry calculator |
+| "Alert budget 5%/day with hysteresis" | Simple counter exists (4 of 6 slots) | Expand to interactive slider + watchlist + hysteresis visualization |
+| "SHAP-driven intervention templates" | Static recommendation cards | Add SHAP-style bar chart showing factor contributions (top-3 drivers highlighted) |
+| "One-tap feedback retrains nightly" | Outcome buttons planned but not built | Build outcomeService + OutcomeButtons + learning loop display on Model page |
+| "Delivers customized nutrition, mineral supplements, Ayurvedic care" | Recommendations exist but no nutrition/mineral/Ayurvedic sections | Add nutrition plan card + mineral supplement card + Ayurvedic care card to AnimalDetails |
+| "IMD weather integration" | No weather data anywhere | Add weather widget to Dashboard (mocked from IMD API structure) |
+| "ICAR ADE schema export" | No export functionality | Add export button on AnimalDetails that generates ADE-compliant JSON download |
+| "Pashu Aadhaar 12-digit ear tag" | Generic IDs (BUF-042) | Add `pashuAadhaar` field to mock data + display on all animal views |
+| "228,374 village DCS AMCUs" | Mentioned in text but not visible in UI | Add DCS count to Dashboard hero + Devices page |
+| "Tier 0/1 requires zero new hardware" | No tier visualization | Add tier ladder component to Dashboard (already in plan) |
+| "Fusion: EC + AMCU fat/SNF + yield + quarter asymmetry + behaviour + management" | Only EC, SCC, yield, activity shown | Add fat%, SNF%, behaviour score, management risk factor to risk calculation display |
+| "No LLM in the prediction path" | Dashboard has "AI Insight" card with generic text | Replace with deterministic recommendation from template catalogue |
+| "Rejected-with-reasons discipline" | Not visible anywhere | Add "Technology Choices" section to Model page listing rejected tech + reasons |
+| "₹24/animal at village level" | Not in UI | Add to Dashboard KPIs + Devices page |
+| "₹1,390 lost per lactation" | Not in UI | Add to Dashboard KPIs as economic context |
+| "One prevented case pays for ~58 animals' hardware" | Not in UI | Add to tier ladder / cost calculator |
+| "Works at India's actual scale — 228,374 DCS" | Not visible | Show DCS deployment count on Dashboard |
+| "IN865 licence-exempt LoRa band" | Not mentioned in UI | Add to Devices page hardware specs |
+| "Custom PCB, WPC ETA certification, LiFePO4" | Not mentioned | Add to Roadmap section or Devices page |
+| "Field validation at one district union" | Roadmap item only | Add to Roadmap page if it exists |
+| "NAEVis / Zillion Minds" — watermark on PPT | Not relevant to code | N/A — watermark for PPT only |
 
-### Design Rules for PPT
-
-- **Font:** Inter for English, Noto Sans Devanagari for Hindi
-- **Colours:** Warm amber/brown (`#92400e`, `#78350f`, `#fef3c7`). NO blue/green as primary.
-- **Every chart:** Has a source citation below it
-- **Every number:** Has a superscript citation
-- **No "AI" in titles.** Ever.
-- **Slide 6 (Hardware):** Must have the breadboard photo. Full bleed, no text overlay on the photo itself.
-- **Slide 9 (Alert Budget):** This is your signature slide. Spend extra time on it.
+> **Note:** The PPT is already strong. Most of these gaps are "nice to have" for the dashboard, not blockers. The 3 things that actually matter for the submission are: (1) hardware visible in video, (2) dashboard looks Indian (warm colours + Hindi), (3) honest cited numbers. Everything else is polish.
 
 ---
 
