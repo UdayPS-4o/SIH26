@@ -15,7 +15,7 @@
 4. [New Components to Build](#4-new-components-to-build)
 5. [Video Script — 2 Minutes](#5-video-script--2-minutes)
 6. [Agent Task Breakdown](#6-agent-task-breakdown)
-7. [PPT Gaps — What the PPT Promises But Code Doesn't Deliver Yet](#7-ppt-gaps--what-the-ppt-promises-but-code-doesnt-deliver-yet)
+7. [Feature Expansion Plan — What to Add to BOTH PPT and Prototype](#7-feature-expansion-plan--what-to-add-to-both-ppt-and-prototype)
 8. [PS Requirement Coverage Map](#8-ps-requirement-coverage-map)
 9. [What 500 Teams Will Miss](#9-what-500-teams-will-miss)
 
@@ -581,7 +581,7 @@ export default function OutcomeButtons({ alertId, onRecord }) {
 
 ```js
 // src/services/outcomeService.js
-const KEY = 'prahari_outcomes'
+const KEY = 'gaurogya_setu_outcomes'
 
 export function getOutcomes() {
   try {
