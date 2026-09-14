@@ -1,141 +1,86 @@
 /**
  * Navigation.
  *
- * Simple shows seven destinations, flat, no section headings. Technical adds the
- * two operator surfaces and groups them. The previous build put nineteen rows here
- * before anyone had done anything.
+ * The rows are grouped by what they are for rather than listed flat, because the
+ * list now names each stated capability rather than describing surfaces. Eight of
+ * these rows are a capability somebody will arrive looking for by name, so the name
+ * has to be the one on their list and it has to be findable without reading all
+ * thirteen rows: hence the headings.
+ *
+ * The order inside Pipeline is the order the work happens in - data arrives, gets
+ * standardized, gets matched, gets deduplicated, gets a code, goes back out. A
+ * visitor reading top to bottom is reading the architecture.
  */
 
 import { NavLink } from 'react-router-dom'
 import {
+  ArrowsLeftRight,
   ArrowsMerge,
+  Barcode,
   ChartBar,
   CheckCircle,
   ClockCounterClockwise,
-  Compass,
   Drop,
   Factory,
-  Gauge,
   Lightning,
   MagnifyingGlass,
   Mountains,
+  Plugs,
   Sliders,
+  Sparkle,
   SquaresFour,
   Stack,
   TextAa,
   UploadSimple,
 } from '@phosphor-icons/react'
+import { ByMode } from '@/components/Gate'
 import { useCopy, type CopyKey } from '@/copy'
 import type { Icon } from '@phosphor-icons/react'
-import { ByMode } from '@/components/Gate'
 import { useViewMode } from '@/store/viewmode'
 import { useService } from '@/store/service'
-import { serviceState } from '@/api/state'
 import { formatCount } from '@/engine/savings'
 import { CPSES } from '@/engine/corpus'
 import { type Cpse } from '@/engine/types'
 import { cx } from './ui/tokens'
 import { IconTile, Num } from './ui'
-import { useState, useRef, useEffect } from 'react'
+
+/** Where a row sits. `top` prints without a heading above it. */
+type NavGroup = 'top' | 'pipeline' | 'report' | 'operator'
 
 interface NavItem {
   to: string
   key: CopyKey
   icon: Icon
+  group: NavGroup
   /** Present in Simple view. Items marked false appear only in Technical. */
   simple: boolean
   badge?: 'pending'
 }
 
-const STEWARD_NAMES = ['Rahul Sharma', 'Priya Menon', 'Amit Verma', 'Sneha Iyer', 'Karthik Rao']
-
-function StewardInput() {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(serviceState.operator)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [confirmed, setConfirmed] = useState(false)
-
-  useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus()
-      inputRef.current.select()
-    }
-  }, [editing])
-
-  const save = () => {
-    const trimmed = draft.trim()
-    if (trimmed && trimmed !== serviceState.operator) {
-      serviceState.operator = trimmed
-      try { sessionStorage.setItem('codeone.operator', trimmed) } catch {}
-    }
-    setEditing(false)
-    setConfirmed(true)
-    setTimeout(() => setConfirmed(false), 2000)
-  }
-
-  const selectName = (name: string) => {
-    setDraft(name)
-    serviceState.operator = name
-    try { sessionStorage.setItem('codeone.operator', name) } catch {}
-    setConfirmed(true)
-    setTimeout(() => setConfirmed(false), 2000)
-  }
-
-  if (!editing) {
-    return (
-      <div className="px-5 pt-3 pb-2">
-        <div className="text-[11px] uppercase tracking-widest text-ink-3 mb-1.5">Steward</div>
-        <button
-          onClick={() => setEditing(true)}
-          className="flex items-center gap-2 w-full rounded-lg border border-rule bg-surface-hover px-3 py-2 text-left text-[13px] text-ink hover:border-accent transition-colors group"
-        >
-          <span className="flex-1 truncate">{serviceState.operator}</span>
-          <span className="text-[10px] text-ink-3 group-hover:text-accent">edit</span>
-        </button>
-        {confirmed && (
-          <div className="mt-1 text-[11px] text-positive">Saved</div>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <div className="px-5 pt-3 pb-2">
-      <div className="text-[11px] uppercase tracking-widest text-ink-3 mb-1.5">Steward</div>
-      <input
-        ref={inputRef}
-        value={draft}
-        onChange={e => setDraft(e.target.value)}
-        onBlur={save}
-        onKeyDown={e => e.key === 'Enter' && save()}
-        className="w-full rounded-lg border border-accent bg-surface px-3 py-2 text-[13px] text-ink outline-none"
-        placeholder="Your name"
-      />
-      <div className="mt-1.5 flex flex-wrap gap-1">
-        {STEWARD_NAMES.map(name => (
-          <button
-            key={name}
-            onClick={() => selectName(name)}
-            className="rounded-md border border-rule px-2 py-[3px] text-[11px] text-ink-2 hover:border-accent hover:text-accent transition-colors"
-          >
-            {name}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
 const ITEMS: NavItem[] = [
-  { to: '/', key: 'navDashboard', icon: SquaresFour, simple: true },
-  { to: '/overview', key: 'navOverview', icon: Compass, simple: true },
-  { to: '/explorer', key: 'navExplorer', icon: MagnifyingGlass, simple: true },
-  { to: '/duplicates', key: 'navDuplicates', icon: ArrowsMerge, simple: true, badge: 'pending' },
-  { to: '/savings', key: 'navSavings', icon: ChartBar, simple: true },
-  { to: '/registry', key: 'navRegistry', icon: Gauge, simple: true },
-  { to: '/import', key: 'navImport', icon: UploadSimple, simple: true },
-  { to: '/activity', key: 'navActivity', icon: ClockCounterClockwise, simple: true },
-  { to: '/normalize', key: 'navNormalize', icon: TextAa, simple: false },
-  { to: '/engine', key: 'navEngine', icon: Sliders, simple: false },
+  { to: '/', key: 'navDashboard', icon: SquaresFour, group: 'top', simple: true },
+
+  // The pipeline, in the order it runs.
+  { to: '/integration', key: 'navIntegration', icon: Plugs, group: 'pipeline', simple: true },
+  { to: '/import', key: 'navImport', icon: UploadSimple, group: 'pipeline', simple: true },
+  { to: '/normalize', key: 'navNormalize', icon: TextAa, group: 'pipeline', simple: true },
+  { to: '/matching', key: 'navMatching', icon: Sparkle, group: 'pipeline', simple: true },
+  {
+    to: '/duplicates',
+    key: 'navDuplicates',
+    icon: ArrowsMerge,
+    group: 'pipeline',
+    simple: true,
+    badge: 'pending',
+  },
+  { to: '/registry', key: 'navRegistry', icon: Barcode, group: 'pipeline', simple: true },
+  { to: '/migration', key: 'navMigration', icon: ArrowsLeftRight, group: 'pipeline', simple: true },
+
+  { to: '/explorer', key: 'navExplorer', icon: MagnifyingGlass, group: 'report', simple: true },
+  { to: '/savings', key: 'navSavings', icon: ChartBar, group: 'report', simple: true },
+  { to: '/activity', key: 'navActivity', icon: ClockCounterClockwise, group: 'report', simple: true },
+
+  { to: '/engine', key: 'navEngine', icon: Sliders, group: 'operator', simple: false },
 ]
 
 /**
@@ -169,10 +114,6 @@ export default function Sidebar() {
   const pending = useService(s => s.dashboard?.pendingPairs ?? 0)
   const loaded = useService(s => s.dashboard?.loaded ?? [])
 
-  const visible = ITEMS.filter(item => mode === 'technical' || item.simple)
-  const primary = visible.filter(item => item.simple)
-  const operator = visible.filter(item => !item.simple)
-
   return (
     <aside className="flex w-[272px] shrink-0 flex-col border-r border-rule bg-surface">
       <div className="flex items-center gap-3 border-b border-rule px-5 py-4">
@@ -193,24 +134,10 @@ export default function Sidebar() {
           off the bottom of a short window. */}
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         <ul className="flex flex-col gap-0.5">
-          {primary.map(item => (
+          {ITEMS.filter(item => mode === 'technical' || item.simple).map(item => (
             <Row key={item.to} item={item} pending={pending} />
           ))}
         </ul>
-
-        {operator.length > 0 ? (
-          <>
-            <div className="mt-6 px-3 pb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-3">
-              Operator
-            </div>
-            <ul className="flex flex-col gap-0.5">
-              {operator.map(item => (
-                <Row key={item.to} item={item} pending={pending} />
-              ))}
-            </ul>
-          </>
-        ) : null}
-        <StewardInput />
       </nav>
 
       <SourceStrip loaded={loaded} />
@@ -220,9 +147,9 @@ export default function Sidebar() {
 
 function Row({ item, pending }: { item: NavItem; pending: number }) {
   const c = useCopy()
-  const mode = useViewMode(s => s.mode)
   const Icon = item.icon
   const showBadge = item.badge === 'pending' && pending > 0
+  const label = c(item.key)
 
   return (
     <li>
@@ -249,12 +176,17 @@ function Row({ item, pending }: { item: NavItem; pending: number }) {
               )}
             />
             <Icon size={18} weight={isActive ? 'fill' : 'regular'} className="shrink-0" />
-            <span className="truncate">{c(item.key)}</span>
+            {/* The title carries the full name: the capability names are longer
+                than the old surface names and the longest two truncate here. */}
+            <span className="truncate" title={label}>
+              {label}
+            </span>
             {showBadge ? (
               <span className="ml-auto shrink-0 rounded-full border border-attention-edge bg-attention-bg px-1.5 py-px">
                 <Num size="2xs" className="text-attention">
-                  {mode === 'simple' ? `${pending} to check` : pending}
+                  {pending}
                 </Num>
+                <span className="sr-only"> pairs waiting for a decision</span>
               </span>
             ) : null}
           </>
@@ -274,10 +206,10 @@ function Row({ item, pending }: { item: NavItem; pending: number }) {
  */
 function SourceStrip({ loaded }: { loaded: string[] }) {
   return (
-    <div className="border-t border-rule px-3 py-3">
-      <div className="flex items-baseline justify-between gap-2 px-2 pb-2">
-        <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-3">
-          <ByMode simple="Item lists" technical="Material masters" />
+    <div className="border-t border-rule px-2.5 py-2">
+      <div className="flex items-baseline justify-between gap-2 px-2 pb-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-ink-3">
+          <ByMode simple="Item lists" technical="Masters" />
         </span>
         <Num size="2xs" className="text-ink-3">
           {loaded.length}/{CPSES.length}
@@ -293,28 +225,28 @@ function SourceStrip({ loaded }: { loaded: string[] }) {
             <li
               key={cpse.code}
               className={cx(
-                'flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors',
-                isLoaded ? 'hover:bg-surface-hover' : 'opacity-60',
+                'flex items-center gap-2 px-2 py-1 transition-colors',
+                isLoaded ? 'hover:bg-surface-hover' : 'opacity-50',
               )}
             >
               <Glyph
-                size={17}
+                size={14}
                 weight={isLoaded ? 'fill' : 'regular'}
                 className={cx('shrink-0', isLoaded ? mark.text : 'text-ink-3')}
               />
               <div className="min-w-0 flex-1">
-                <div className="font-mono text-[12.5px] font-medium tracking-[0.04em] text-ink">
+                <span className="font-mono text-[11px] font-medium text-ink">
                   {cpse.code}
-                </div>
-                <div className="truncate font-mono text-[10.5px] text-ink-3">
-                  {shortErp(cpse.erp)} · {formatCount(cpse.totalRecords)}
-                </div>
+                </span>
+                <span className="text-[9.5px] text-ink-3">
+                  {' '}{shortErp(cpse.erp)} · {formatCount(cpse.totalRecords)}
+                </span>
               </div>
               {isLoaded ? (
-                <CheckCircle size={15} weight="fill" className="shrink-0 text-positive" />
+                <CheckCircle size={13} weight="fill" className="shrink-0 text-positive" />
               ) : (
                 <span
-                  className="h-[9px] w-[9px] shrink-0 rounded-full border border-rule-strong"
+                  className="h-[7px] w-[7px] shrink-0 rounded-full border border-rule-strong"
                   aria-hidden
                 />
               )}

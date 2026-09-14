@@ -16,7 +16,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ArrowUUpLeft, CaretDown, Check, CheckCircle, Checks, Question, X, XCircle } from '@phosphor-icons/react'
+import { ArrowUUpLeft, CaretDown, Check, CheckCircle, Checks, Lightbulb, Question, X, XCircle } from '@phosphor-icons/react'
 import {
   Button,
   Chip,
@@ -47,6 +47,7 @@ import type { AttributeSlot, MatchPair, NormalizedRecord, ScoringWeights } from 
 import { call } from '@/api/client'
 import { pushActivity } from '@/api/endpoints'
 import { bumpVersion, serviceState } from '@/api/state'
+import { toastSuccess } from '@/components/ui/Toasts'
 
 /* ------------------------------------------------------------------ endpoint */
 
@@ -98,8 +99,8 @@ function bucketOf(pair: MatchPair, decision: Decision): Exclude<Bucket, 'all'> {
 }
 
 const SHORT_VERDICT: Record<MatchPair['verdict'], string> = {
-  same: 'Same',
-  review: 'Needs a check',
+  same: 'Exact match',
+  review: 'Near match',
   different: 'Below threshold',
 }
 
@@ -135,8 +136,16 @@ export default function DuplicatesPage() {
   const [busy, setBusy] = useState(false)
 
   const ordered = useMemo(
-    () => [...pairs].sort((a, b) => b.score.combined - a.score.combined),
-    [pairs],
+    () => [...pairs].sort((a, b) => {
+      const da = decisions[a.id]
+      const db = decisions[b.id]
+      const aLearned = da === 'approved' && a.unexplained.length > 0
+      const bLearned = db === 'approved' && b.unexplained.length > 0
+      if (aLearned && !bLearned) return -1
+      if (!aLearned && bLearned) return 1
+      return b.score.combined - a.score.combined
+    }),
+    [pairs, decisions],
   )
 
   const bucketCounts = useMemo(() => {
@@ -161,6 +170,27 @@ export default function DuplicatesPage() {
   }, [bucket])
 
   const visible = filtered.slice(0, limit)
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return
+      const first = visible[0]
+      if (!first) return
+      const existing = decisions[first.id]
+      if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault()
+        if (!existing) void decide(first, 'approved').then(() => { refresh(); void toastSuccess(first.left.cpse + ' + ' + first.right.cpse, 'Approved — ' + first.proposedCode) })
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault()
+        if (!existing) void decide(first, 'rejected').then(() => { refresh(); void toastSuccess(first.left.cpse + ' + ' + first.right.cpse, 'Rejected') })
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        setOpenId(openId === first.id ? null : first.id)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [visible, openId, decisions, refresh, decide, toastSuccess])
 
   async function runBulk() {
     setBusy(true)
@@ -207,6 +237,11 @@ export default function DuplicatesPage() {
                 { value: 'rejected', label: 'Rejected', count: bucketCounts.rejected },
               ]}
             />
+            <span className="hidden sm:flex items-center gap-1 text-[11px] text-ink-3">
+              <kbd className="rounded border border-rule bg-surface-2 px-1.5 py-0.5 font-mono">A</kbd> approve
+              <kbd className="rounded border border-rule bg-surface-2 px-1.5 py-0.5 font-mono">R</kbd> reject
+              <kbd className="rounded border border-rule bg-surface-2 px-1.5 py-0.5 font-mono">S</kbd> show
+            </span>
 
             <div className="ml-auto">
               {confirming ? (
@@ -290,7 +325,16 @@ export default function DuplicatesPage() {
                       decision={decisions[pair.id]}
                       open={openId === pair.id}
                       onToggle={() => setOpenId(openId === pair.id ? null : pair.id)}
-                      onDecide={(target, action) => void decide(target, action)}
+                      onDecide={(target, action) => {
+                        void decide(target, action)
+                        const code = target.proposedCode
+                        if (action === 'approved') {
+                          toastSuccess(
+                            `Approved — ${target.left.cpse} + ${target.right.cpse}`,
+                            `Minted code ${code}`,
+                          )
+                        }
+                      }}
                       onUndo={target => void handleUndo(target)}
                     />
                   ))}
@@ -813,6 +857,12 @@ function PairRow({
                         ? 'You recorded these as the same item.'
                         : 'You recorded these as below the threshold.'}
                     </span>
+                    {decision === 'approved' && pair.unexplained.length > 0 ? (
+                      <Chip tone="accent">
+                        <Lightbulb size={11} weight="fill" className="mr-1 inline" />
+                        Learned {pair.unexplained.length} token{pair.unexplained.length > 1 ? 's' : ''}
+                      </Chip>
+                    ) : null}
                     <Button
                       size="sm"
                       variant="ghost"

@@ -1,8 +1,17 @@
 /**
- * SAP / ERP Integration status page.
+ * SAP / ERP integration.
  *
- * Mock data only. Live-looking status, endpoint table, data-flow diagram and
- * sync log. No backend calls.
+ * What this page is, precisely: the connector design for the four source systems,
+ * plus an illustration of the traffic that design would produce. It is not a live
+ * link and it does not pretend to be one. Nothing in this prototype polls an ERP.
+ *
+ * That distinction is stated on the page itself, in a banner nobody can scroll
+ * past, for the same reason the sidebar refuses to show a green connection dot per
+ * source: a console that invents one connection is a console whose other numbers
+ * have to be re-checked. The parts that are real are labelled real - the ERP name,
+ * the connector string and the master size come from the same corpus definition the
+ * loader reads, and whether an extract is actually in hand is this session's own
+ * state. The latencies and the sync log are marked as illustration.
  */
 
 import { useEffect, useMemo, useState } from 'react'
@@ -19,6 +28,7 @@ import {
   CaretDown,
   CaretRight,
   CheckCircle,
+  Info,
   Plugs,
 } from '@phosphor-icons/react'
 import {
@@ -36,6 +46,8 @@ import {
   Th,
 } from '@/components/ui'
 import { cx } from '@/components/ui/tokens'
+import { useCopy } from '@/copy'
+import { useService } from '@/store/service'
 import type { Cpse } from '@/engine/types'
 import { CPSES } from '@/engine/corpus'
 
@@ -44,10 +56,8 @@ import { CPSES } from '@/engine/corpus'
 interface ConnectorStatus {
   erp: string
   connector: string
-  status: 'connected' | 'pending'
-  lastSync: string
   totalRecords: number
-  protocol: 'RFC' | 'OData' | 'REST' | 'JDBC'
+  protocol: 'RFC' | 'OData' | 'REST' | 'JDBC' | 'SFTP'
 }
 
 interface EndpointEntry {
@@ -67,50 +77,52 @@ interface SyncEntry {
   status: 'success'
 }
 
-/* ====================================================================== mock data */
+/* ============================================================ connector design */
 
-const CONNECTORS: Record<Cpse['code'], ConnectorStatus> = {
-  IOCL: {
-    erp: 'SAP ECC 6.0',
-    connector: 'RFC BAPI_MATERIAL_GETLIST',
-    status: 'connected',
-    lastSync: '2 min ago',
-    totalRecords: 742_000,
-    protocol: 'RFC',
-  },
-  NTPC: {
-    erp: 'SAP S/4HANA',
-    connector: 'OData API_PRODUCT_SRV',
-    status: 'connected',
-    lastSync: '5 min ago',
-    totalRecords: 688_000,
-    protocol: 'OData',
-  },
-  SAIL: {
-    erp: 'Oracle EBS',
-    connector: 'REST API_MATERIAL_GETLIST',
-    status: 'connected',
-    lastSync: '1 min ago',
-    totalRecords: 604_000,
-    protocol: 'REST',
-  },
-  CIL: {
-    erp: 'In-house',
-    connector: 'Direct DB connection',
-    status: 'pending',
-    lastSync: 'Never',
-    totalRecords: 376_000,
-    protocol: 'JDBC',
-  },
+/** The protocol a connector string implies, rather than a second place to state it. */
+function protocolOf(connector: string): ConnectorStatus['protocol'] {
+  if (connector.startsWith('RFC')) return 'RFC'
+  if (connector.startsWith('OData')) return 'OData'
+  if (connector.startsWith('JDBC')) return 'JDBC'
+  if (connector.startsWith('SFTP')) return 'SFTP'
+  return 'REST'
 }
 
+/**
+ * Read from the corpus definition rather than restated here.
+ *
+ * This page used to carry its own copy of the four ERPs and disagreed with the
+ * rest of the console about two of them: it had SAIL on a REST material API and
+ * CIL on a direct database connection, where every other surface says Oracle EBS
+ * over JDBC and a nightly SFTP drop. One source of truth removes the argument.
+ */
+const CONNECTORS: Record<Cpse['code'], ConnectorStatus> = Object.fromEntries(
+  CPSES.map(cpse => [
+    cpse.code,
+    {
+      erp: cpse.erp,
+      connector: cpse.connector,
+      totalRecords: cpse.totalRecords,
+      protocol: protocolOf(cpse.connector),
+    },
+  ]),
+) as Record<Cpse['code'], ConnectorStatus>
+
+/**
+ * The objects each connector reads, and a latency budget for each.
+ *
+ * Illustration, and labelled as such on the page. The paths are the real object
+ * names in each system, which is the part worth showing: an integration team
+ * reading this knows exactly which material objects the adapter has to cover.
+ */
 const ENDPOINTS: EndpointEntry[] = [
-  { cpse: 'IOCL', method: 'GET', path: '/sap/opu/odata/sap/API_MATERIAL_SRV/A_Material', latency: 142, records: 283 },
-  { cpse: 'IOCL', method: 'GET', path: '/sap/opu/odata/sap/API_MATERIAL_SRV/A_MaterialText', latency: 89, records: 1847 },
-  { cpse: 'NTPC', method: 'GET', path: '/sap/opu/odata/sap/API_PRODUCT_SRV/Products', latency: 122, records: 283 },
-  { cpse: 'NTPC', method: 'GET', path: '/sap/opu/odata/sap/API_PRODUCT_SRV/ProductText', latency: 98, records: 1642 },
-  { cpse: 'SAIL', method: 'GET', path: '/fnd/rest/11.1.28.0.0/icx/ilmo/details/', latency: 156, records: 283 },
-  { cpse: 'SAIL', method: 'GET', path: '/fnd/rest/11.1.28.0.0/mtl/sysItemsV2/', latency: 134, records: 1523 },
+  { cpse: 'IOCL', method: 'RFC', path: 'BAPI_MATERIAL_GETLIST', latency: 142, records: 742_000 },
+  { cpse: 'IOCL', method: 'RFC', path: 'BAPI_MATERIAL_GET_DETAIL', latency: 89, records: 742_000 },
+  { cpse: 'NTPC', method: 'GET', path: '/sap/opu/odata/sap/API_PRODUCT_SRV/A_Product', latency: 122, records: 688_000 },
+  { cpse: 'NTPC', method: 'GET', path: '/sap/opu/odata/sap/API_PRODUCT_SRV/A_ProductDescription', latency: 98, records: 688_000 },
+  { cpse: 'SAIL', method: 'SQL', path: 'apps.mtl_system_items_b', latency: 156, records: 604_000 },
+  { cpse: 'SAIL', method: 'SQL', path: 'apps.mtl_descriptive_elements', latency: 134, records: 604_000 },
+  { cpse: 'CIL', method: 'FILE', path: '/outbound/material_master_nightly.csv', latency: 0, records: 376_000 },
 ]
 
 const SYNC_ENTRIES: SyncEntry[] = [
@@ -154,6 +166,7 @@ const PROTOCOL_COLOR: Record<string, string> = {
   OData: 'border-positive-edge text-positive bg-positive-bg',
   REST: 'border-accent-edge text-accent bg-accent-bg',
   JDBC: 'border-attention-edge text-attention bg-attention-bg',
+  SFTP: 'border-rule-strong text-ink-2',
 }
 
 /* ====================================================================== formatting */
@@ -230,7 +243,23 @@ if (typeof document !== 'undefined' && !document.getElementById(styleId)) {
 
 /* ====================================================================== connection card */
 
-function ConnectorCard({ cpse, data }: { cpse: Cpse; data: ConnectorStatus }) {
+/**
+ * One source.
+ *
+ * The only state this card asserts is whether this session has actually read that
+ * organisation's extract, which is something the browser knows for certain because
+ * it did the reading. Everything else on the card is design: the ERP it would pull
+ * from, the call it would make, and how big that master is.
+ */
+function ConnectorCard({
+  cpse,
+  data,
+  loaded,
+}: {
+  cpse: Cpse
+  data: ConnectorStatus
+  loaded: boolean
+}) {
   const Icon = CPSE_ICONS[cpse.code]
   const color = CPSE_COLOR[cpse.code]
   const bg = CPSE_BG[cpse.code]
@@ -244,7 +273,7 @@ function ConnectorCard({ cpse, data }: { cpse: Cpse; data: ConnectorStatus }) {
         <div className="flex items-center gap-3">
           <IconTile
             icon={<Icon size={22} weight="fill" />}
-            tone={data.status === 'connected' ? 'positive' : 'attention'}
+            tone={loaded ? 'positive' : 'neutral'}
             size="md"
           />
           <div>
@@ -252,10 +281,22 @@ function ConnectorCard({ cpse, data }: { cpse: Cpse; data: ConnectorStatus }) {
             <p className="text-[11.5px] text-ink-3 mt-0.5">{cpse.name}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 rounded-full border border-positive-edge bg-positive-bg px-2 py-0.5">
-          <PulseDot connected={data.status === 'connected'} />
-          <span className={cx('font-mono text-[10.5px] font-semibold uppercase tracking-wider', data.status === 'connected' ? 'text-positive' : 'text-attention')}>
-            {data.status === 'connected' ? 'Connected' : 'Pending'}
+        {/* Not a connection light. It says whether this browser has read that
+            organisation's extract, which is the only thing here that is checkable. */}
+        <div
+          className={cx(
+            'flex items-center gap-1.5 rounded-full border px-2 py-0.5',
+            loaded ? 'border-positive-edge bg-positive-bg' : 'border-rule-strong',
+          )}
+        >
+          {loaded ? <PulseDot connected /> : null}
+          <span
+            className={cx(
+              'font-mono text-[10.5px] font-semibold uppercase tracking-wider',
+              loaded ? 'text-positive' : 'text-ink-3',
+            )}
+          >
+            {loaded ? 'Extract in hand' : 'Not loaded'}
           </span>
         </div>
       </div>
@@ -281,11 +322,13 @@ function ConnectorCard({ cpse, data }: { cpse: Cpse; data: ConnectorStatus }) {
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11.5px] text-ink-3">Last sync</span>
-          <span className="font-mono text-[12.5px] tabular-nums text-ink">{data.lastSync}</span>
+          <span className="text-[11.5px] text-ink-3">Extract</span>
+          <span className="font-mono text-[12.5px] tabular-nums text-ink">
+            {loaded ? 'Read this session' : 'Not read yet'}
+          </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-[11.5px] text-ink-3">Records synced</span>
+          <span className="text-[11.5px] text-ink-3">Master size</span>
           <span className="font-mono text-[12.5px] font-semibold text-ink">{formatLakh(data.totalRecords)}</span>
         </div>
       </div>
@@ -295,7 +338,7 @@ function ConnectorCard({ cpse, data }: { cpse: Cpse; data: ConnectorStatus }) {
 
 /* ====================================================================== data flow diagram */
 
-function DataFlowDiagram() {
+function DataFlowDiagram({ records, codes }: { records: number; codes: number }) {
   const erpNodes = CPSES.map(cpse => {
     const Icon = CPSE_ICONS[cpse.code]
     const color = CPSE_COLOR[cpse.code]
@@ -336,9 +379,10 @@ function DataFlowDiagram() {
           </div>
 
           {/* Arrow: ERP → Middleware */}
-          <div className="flex flex-col items-center px-2">
-            <div className="h-0.5 w-8 flow-line rounded-full" />
-            <ArrowSquareOut size={14} className="text-ink-3 -mt-1" />
+          <div className="flex flex-col items-center justify-self-stretch px-1">
+            <div className="flex-1 w-px bg-gradient-to-b from-chart-1 via-chart-2 to-chart-3 opacity-40" />
+            <CaretRight size={14} className="text-ink-3 shrink-0 my-1" weight="regular" />
+            <div className="flex-1 w-px bg-gradient-to-b from-chart-1 via-chart-2 to-chart-3 opacity-40" />
           </div>
 
           {/* CENTER: Middleware */}
@@ -358,9 +402,10 @@ function DataFlowDiagram() {
           </div>
 
           {/* Arrow: Middleware → Registry */}
-          <div className="flex flex-col items-center px-2">
-            <div className="h-0.5 w-8 flow-line rounded-full" />
-            <ArrowSquareOut size={14} className="text-ink-3 -mt-1" />
+          <div className="flex flex-col items-center justify-self-stretch px-1">
+            <div className="flex-1 w-px bg-gradient-to-b from-accent to-primary opacity-40" />
+            <CaretRight size={14} className="text-ink-3 shrink-0 my-1" weight="regular" />
+            <div className="flex-1 w-px bg-gradient-to-b from-accent to-primary opacity-40" />
           </div>
 
           {/* RIGHT: CNMC Registry */}
@@ -375,7 +420,7 @@ function DataFlowDiagram() {
               </div>
             </div>
             <div className="text-[9px] text-ink-3 text-center leading-tight">
-              24.10 lakh records &bull; 22,419 codes
+              {records.toLocaleString('en-IN')} records read &bull; {codes.toLocaleString('en-IN')} codes so far
             </div>
           </div>
         </div>
@@ -488,20 +533,50 @@ function SyncLog() {
 /* ====================================================================== page */
 
 export default function IntegrationPage() {
+  const c = useCopy()
   const [showEndpoints, setShowEndpoints] = useState(true)
   const [showFlow, setShowFlow] = useState(true)
 
-  const totalConnected = CPSES.filter(cpse => CONNECTORS[cpse.code].status === 'connected').length
+  const loaded = useService(s => s.dashboard?.loaded ?? [])
+  // The inspectable slice, not the full-scale figure above: pairing a projected
+  // lakh-scale record count with a slice-scale code count would put two numbers on
+  // different bases side by side, which is exactly what the rest of this console
+  // is careful never to do.
+  const sliceRecords = useService(s => s.dashboard?.sampleSize ?? 0)
+  const codeCount = useService(s => s.clusters.length)
+
   const totalRecords = CPSES.reduce((sum, cpse) => sum + CONNECTORS[cpse.code].totalRecords, 0)
-  const avgLatency = Math.round(ENDPOINTS.reduce((s, e) => s + e.latency, 0) / ENDPOINTS.length)
+  const inHand = CPSES.filter(cpse => loaded.includes(cpse.code)).reduce(
+    (sum, cpse) => sum + cpse.totalRecords,
+    0,
+  )
+  const protocols = new Set(CPSES.map(cpse => CONNECTORS[cpse.code].protocol)).size
 
   return (
     <>
       <PageHead
-        title="SAP / ERP Integration"
-        lead="Live connector status for all four participating organisations"
+        title={c('integrationTitle')}
+        lead={c('integrationLead')}
         icon={<Plugs size={24} weight="fill" />}
       />
+
+      {/* The one thing a visitor has to read before anything else on this page. */}
+      <section className="mb-6 rounded-2xl border border-info-edge bg-info-bg px-5 py-4">
+        <div className="flex items-start gap-3">
+          <Info size={18} weight="fill" className="mt-0.5 shrink-0 text-info" />
+          <div>
+            <p className="font-display text-[13.5px] font-bold text-ink">
+              This is the connector design, not a live link
+            </p>
+            <p className="mt-1.5 max-w-[80ch] text-[13px] leading-relaxed text-ink-2">
+              <ByMode
+                simple="Nothing here is talking to a company's computer system right now. This page shows how each of the four would hand its item list over once the link is built, and which lists have actually been read into this session. The response times and the sync log below are an illustration of what that traffic would look like."
+                technical="No ERP is polled by this prototype. The ERP, connector string and master size are read from the corpus definition; extract state is this session's own. Latency figures and the sync log are illustrative of the target integration, not measurements."
+              />
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* Stats row */}
       <section className="mb-6">
@@ -510,12 +585,12 @@ export default function IntegrationPage() {
             <Stat
               icon={<Plugs size={16} weight="regular" />}
               tone="info"
-              value={`${totalConnected}/${CPSES.length}`}
-              label="Connectors live"
+              value={`${loaded.length}/${CPSES.length}`}
+              label="Extracts in hand"
               note={
                 <ByMode
-                  simple="Of the four company systems, three are live and one is being set up."
-                  technical="Active RFC, OData and REST connectors. JDBC adapter for CIL in provisioning."
+                  simple="Item lists this session has actually read."
+                  technical="Masters loaded into the working registry. Not a connection count."
                 />
               }
             />
@@ -524,27 +599,27 @@ export default function IntegrationPage() {
             <Stat
               icon={<Building size={16} weight="regular" />}
               tone="accent"
-              value={formatLakh(totalRecords)}
-              label="Total records"
-              note="Across all four material masters"
+              value={formatLakh(inHand)}
+              label="Records covered"
+              note={`Of ${formatLakh(totalRecords)} held across all four masters.`}
             />
           </StatCell>
           <StatCell>
             <Stat
               icon={<ArrowSquareOut size={16} weight="regular" />}
               tone="info"
-              value={`${avgLatency} ms`}
-              label="Avg response"
-              note="Mean across 6 active endpoints"
+              value={`${protocols}`}
+              label="Protocols to support"
+              note="RFC, OData, JDBC and a nightly file drop. One adapter each."
             />
           </StatCell>
           <StatCell>
             <Stat
               icon={<CheckCircle size={16} weight="regular" />}
               tone="positive"
-              value="99.7%"
-              label="Uptime"
-              note="Last 30 days"
+              value={`${ENDPOINTS.length}`}
+              label="Objects to read"
+              note="Material objects an adapter has to cover across the four systems."
             />
           </StatCell>
         </StatRow>
@@ -554,15 +629,17 @@ export default function IntegrationPage() {
       <section className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.08em] text-ink-2">
-            Connection status
+            <ByMode simple="The four company systems" technical="Source systems" />
           </h2>
-          <span className="font-mono text-[10.5px] text-ink-3">
-            Auto-refresh every 30s
-          </span>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {CPSES.map(cpse => (
-            <ConnectorCard key={cpse.code} cpse={cpse} data={CONNECTORS[cpse.code]} />
+            <ConnectorCard
+              key={cpse.code}
+              cpse={cpse}
+              data={CONNECTORS[cpse.code]}
+              loaded={loaded.includes(cpse.code)}
+            />
           ))}
         </div>
       </section>
@@ -582,7 +659,7 @@ export default function IntegrationPage() {
           </div>
           {showFlow && (
             <div className="px-5 py-5">
-              <DataFlowDiagram />
+              <DataFlowDiagram records={sliceRecords} codes={codeCount} />
             </div>
           )}
         </Panel>
@@ -598,12 +675,12 @@ export default function IntegrationPage() {
             <div className="flex items-center gap-2">
               <FileCode size={16} className="text-accent" weight="regular" />
               <h2 className="font-display text-[13px] font-bold tracking-tight text-ink">
-                <ByMode simple="Active endpoints" technical="OData / REST endpoints" />
+                <ByMode simple="What each system would be asked for" technical="Objects and latency budget" />
               </h2>
             </div>
             <div className="flex items-center gap-3">
               <span className="font-mono text-[10.5px] text-ink-3">
-                {ENDPOINTS.length} endpoints
+                {ENDPOINTS.length} objects &middot; illustrative
               </span>
               {showEndpoints ? <CaretDown size={14} className="text-ink-3" /> : <CaretRight size={14} className="text-ink-3" />}
             </div>
@@ -614,10 +691,10 @@ export default function IntegrationPage() {
                 <thead>
                   <tr>
                     <Th>CPSE</Th>
-                    <Th>Method</Th>
-                    <Th>Endpoint</Th>
-                    <Th align="right">Latency</Th>
-                    <Th align="right">Records</Th>
+                    <Th>Call</Th>
+                    <Th>Object</Th>
+                    <Th align="right">Budget</Th>
+                    <Th align="right">Rows</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -645,14 +722,19 @@ export default function IntegrationPage() {
                           <div className="mt-0.5 text-[10px] text-ink-3">{cpseData?.connector}</div>
                         </Td>
                         <Td align="right">
-                          <Num size="sm" className={cx(latencyTone === 'positive' ? 'text-positive' : latencyTone === 'accent' ? 'text-accent' : 'text-attention')}>
-                            {ep.latency}
-                          </Num>
-                          <span className="text-[10.5px] text-ink-3">ms</span>
+                          {ep.latency === 0 ? (
+                            <span className="text-[11.5px] text-ink-3">nightly drop</span>
+                          ) : (
+                            <>
+                              <Num size="sm" className={cx(latencyTone === 'positive' ? 'text-positive' : latencyTone === 'accent' ? 'text-accent' : 'text-attention')}>
+                                {ep.latency}
+                              </Num>
+                              <span className="text-[10.5px] text-ink-3">ms</span>
+                            </>
+                          )}
                         </Td>
                         <Td align="right">
                           <Num size="sm" className="text-ink">{ep.records.toLocaleString('en-IN')}</Num>
-                          <span className="text-[10.5px] text-ink-3"> read</span>
                         </Td>
                       </tr>
                     )
@@ -670,14 +752,10 @@ export default function IntegrationPage() {
           <div className="border-b border-rule px-5 py-3.5 flex items-center gap-2">
             <Funnel size={16} className="text-accent" weight="regular" />
             <h2 className="font-display text-[13px] font-bold tracking-tight text-ink">
-              Sync log
+              <ByMode simple="What a day of syncing would look like" technical="Sync log, illustrative" />
             </h2>
-            <span className="ml-auto flex items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inset-0 rounded-full bg-positive" style={{ animation: 'pulse-ring 2s ease-out infinite' }} />
-                <span className="relative rounded-full bg-positive h-2 w-2" />
-              </span>
-              <span className="font-mono text-[10.5px] text-ink-3">Live</span>
+            <span className="ml-auto font-mono text-[10.5px] text-ink-3">
+              Illustration, not a feed
             </span>
           </div>
           <SyncLog />

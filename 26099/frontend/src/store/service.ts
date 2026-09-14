@@ -58,6 +58,7 @@ interface ServiceStore {
   decideMany: (pairs: MatchPair[], action: 'approved' | 'rejected') => Promise<void>
   setSavings: (inputs: SavingsInputs) => Promise<void>
   addRule: (rule: DictionaryRule) => Promise<void>
+  learn: (pairId: string, tokens: string[]) => Promise<void>
   importRows: (rows: api.ParsedRow[], org: string) => Promise<api.IngestRunResponse>
   reset: () => Promise<void>
 }
@@ -171,6 +172,9 @@ export const useService = create<ServiceStore>((set, get) => ({
 
     set(state => ({ decisions: { ...state.decisions, [pair.id]: action } }))
     await api.reviewPair(pair.id, action, summary, pair.proposedCode)
+    if (action === 'approved' && pair.unexplained.length > 0) {
+      await api.learnTokens(pair.id, pair.unexplained)
+    }
     await get().refresh()
   },
 
@@ -187,6 +191,9 @@ export const useService = create<ServiceStore>((set, get) => ({
           ? `Confirmed ${pair.left.cpse} and ${pair.right.cpse} are buying the same item.`
           : `Marked ${pair.left.cpse} and ${pair.right.cpse} entries as different items.`
       await api.reviewPair(pair.id, action, summary, pair.proposedCode)
+      if (action === 'approved' && pair.unexplained.length > 0) {
+        await api.learnTokens(pair.id, pair.unexplained)
+      }
     }
     await get().refresh()
   },
@@ -200,6 +207,11 @@ export const useService = create<ServiceStore>((set, get) => ({
 
   addRule: async rule => {
     await api.addDictionaryRule(rule)
+    await get().refresh()
+  },
+
+  learn: async (pairId, tokens) => {
+    await api.learnTokens(pairId, tokens)
     await get().refresh()
   },
 

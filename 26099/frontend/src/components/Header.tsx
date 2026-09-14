@@ -8,11 +8,12 @@
  * which is the honest version of a status light.
  */
 
-import { ArrowCounterClockwise, Moon, Sun } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, Moon, Sun, User } from '@phosphor-icons/react'
 import { useCopy } from '@/copy'
 import { useViewMode } from '@/store/viewmode'
 import { useTheme } from '@/store/theme'
 import { useService } from '@/store/service'
+import { useRole } from '@/store/role'
 import { TechnicalOnly } from './Gate'
 import { EndpointTag, Num, Segmented } from './ui'
 import { formatCount } from '@/engine/savings'
@@ -28,6 +29,7 @@ export default function Header() {
   const lastCall = useService(s => s.lastCall)
   const reset = useService(s => s.reset)
   const dashboard = useService(s => s.dashboard)
+  const role = useRole()
 
   const mostRecent = Object.values(lastCall).sort((a, b) => b.at - a.at)[0]
   const loaded = dashboard?.loaded.length ?? 0
@@ -101,6 +103,21 @@ export default function Header() {
           { value: 'technical', label: 'Technical' },
         ]}
       />
+
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 rounded-full border border-rule-strong bg-surface px-2.5 py-1">
+          <User size={12} weight="regular" className="text-ink-3" />
+          <span className="text-[11px] font-medium text-ink-2">{role.name}</span>
+        </div>
+        <select
+          value={role.role}
+          onChange={e => role.setRole(e.target.value as 'admin' | 'reviewer')}
+          className="h-7 rounded-full border border-rule-strong bg-surface px-2 text-[11.5px] font-semibold text-ink-2 transition-colors hover:bg-surface-hover hover:text-ink"
+        >
+          <option value="reviewer">Reviewer</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
 
       <button
         onClick={toggleTheme}

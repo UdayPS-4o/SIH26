@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
-import { ArrowRight, CheckCircle, Clock, DownloadSimple, Hash, XCircle } from '@phosphor-icons/react'
+import { ArrowRight, CheckCircle, Clock, DownloadSimple, Hash, UsersThree, XCircle } from '@phosphor-icons/react'
 import {
   Button,
   Chip,
@@ -22,6 +22,7 @@ import {
   EndpointTag,
   ErrorState,
   Field,
+  Meter,
   Mono,
   Num,
   Panel,
@@ -32,13 +33,17 @@ import {
   Stat,
   StatCell,
   StatRow,
+  Table,
+  Td,
   TextInput,
+  Th,
 } from '@/components/ui'
 import { ByMode, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
 import { useService } from '@/store/service'
 import { useViewMode } from '@/store/viewmode'
+import { cx } from '@/components/ui/tokens'
 import type { ActivityAction, ActivityEntry } from '@/engine/types'
 
 /* ------------------------------------------------------------------ labels */
@@ -52,6 +57,7 @@ const ACTIONS: ActivityAction[] = [
   'mint',
   'import',
   'config',
+  'export',
 ]
 
 /** Kept as a lookup rather than eight <ByMode> calls, because the <option> text
@@ -66,6 +72,7 @@ const ACTION_LABEL: Record<'simple' | 'technical', Record<ActivityAction, string
     mint: 'New code',
     import: 'Added list',
     config: 'Setting changed',
+    export: 'Package taken',
   },
   technical: {
     ingest: 'Ingest',
@@ -76,6 +83,7 @@ const ACTION_LABEL: Record<'simple' | 'technical', Record<ActivityAction, string
     mint: 'Mint',
     import: 'Import',
     config: 'Config',
+    export: 'Export',
   },
 }
 
@@ -165,6 +173,7 @@ export default function ActivityPage() {
 
   const [action, setAction] = useState<ActionFilter>('all')
   const [cpse, setCpse] = useState<string>('all')
+  const [actor, setActor] = useState<string>('all')
   const [query, setQuery] = useState('')
 
   /* ---- counts, every one of them derived from a shared store field ---- */
@@ -194,11 +203,43 @@ export default function ActivityPage() {
 
   const decidedHere = summary.approved + summary.rejected
 
+  /**
+   * One row per name that has ever appeared as an actor, counted across the whole
+   * session regardless of the log filters below. This is the answer to "who did
+   * what" that governance actually asks for, and it did not exist anywhere in the
+   * console before: the name on an entry was printed but never tallied, so there
+   * was no way to see it without reading every row by eye.
+   */
+  const byActor = useMemo(() => {
+    const map = new Map<
+      string,
+      { approved: number; rejected: number; other: number; total: number; last: number }
+    >()
+    for (const entry of activity) {
+      const bucket = map.get(entry.actor) ?? { approved: 0, rejected: 0, other: 0, total: 0, last: 0 }
+      if (entry.action === 'approve') bucket.approved += 1
+      else if (entry.action === 'reject') bucket.rejected += 1
+      else bucket.other += 1
+      bucket.total += 1
+      bucket.last = Math.max(bucket.last, entry.ts)
+      map.set(entry.actor, bucket)
+    }
+    return [...map.entries()]
+      .map(([actorName, stats]) => ({ actor: actorName, ...stats }))
+      .sort((a, b) => b.total - a.total || b.last - a.last)
+  }, [activity])
+
   /* ------------------------------- filtering ------------------------------ */
 
   const cpseOptions = useMemo(() => {
     const found = new Set<string>()
     for (const entry of activity) if (entry.cpse) found.add(entry.cpse)
+    return [...found].sort()
+  }, [activity])
+
+  const actorOptions = useMemo(() => {
+    const found = new Set<string>()
+    for (const entry of activity) found.add(entry.actor)
     return [...found].sort()
   }, [activity])
 
@@ -209,16 +250,19 @@ export default function ActivityPage() {
     return sorted.filter(entry => {
       if (action !== 'all' && entry.action !== action) return false
       if (cpse !== 'all' && entry.cpse !== cpse) return false
+      if (actor !== 'all' && entry.actor !== actor) return false
       if (needle && !entry.detail.toLowerCase().includes(needle)) return false
       return true
     })
-  }, [sorted, action, cpse, query])
+  }, [sorted, action, cpse, actor, query])
 
-  const filtersActive = action !== 'all' || cpse !== 'all' || query.trim().length > 0
+  const filtersActive =
+    action !== 'all' || cpse !== 'all' || actor !== 'all' || query.trim().length > 0
 
   const clearFilters = useCallback(() => {
     setAction('all')
     setCpse('all')
+    setActor('all')
     setQuery('')
   }, [])
 
@@ -348,6 +392,88 @@ export default function ActivityPage() {
         </p>
       </section>
 
+      <Panel flush className="mb-6">
+        <PanelHead
+          icon={<UsersThree size={16} weight="regular" />}
+          title={<ByMode simple="Who has done what" technical="By reviewer" />}
+          meta={`${byActor.length.toLocaleString('en-IN')} ${byActor.length === 1 ? 'name' : 'names'}`}
+        />
+        <Table>
+          <thead>
+            <tr>
+              <Th>{mode === 'simple' ? 'Name' : 'Reviewer'}</Th>
+              <Th align="right">{mode === 'simple' ? 'Agreed' : 'Approved'}</Th>
+              <Th align="right">Rejected</Th>
+              <Th align="right">{mode === 'simple' ? 'Other actions' : 'Other'}</Th>
+              <Th align="right">Total</Th>
+              <Th align="right">{mode === 'simple' ? 'How often they agree' : 'Agreement rate'}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {byActor.map(row => {
+              const decided = row.approved + row.rejected
+              const share = decided === 0 ? null : row.approved / decided
+              const isFiltered = actor === row.actor
+              return (
+                <tr key={row.actor} className={isFiltered ? 'bg-accent-bg' : undefined}>
+                  <Td>
+                    <button
+                      onClick={() => setActor(isFiltered ? 'all' : row.actor)}
+                      className={cx(
+                        'font-medium hover:underline',
+                        isFiltered ? 'text-accent' : 'text-ink',
+                      )}
+                    >
+                      {row.actor}
+                    </button>
+                  </Td>
+                  <Td align="right">
+                    <Num size="sm" className={row.approved > 0 ? 'text-positive' : 'text-ink-3'}>
+                      {row.approved}
+                    </Num>
+                  </Td>
+                  <Td align="right">
+                    <Num size="sm" className={row.rejected > 0 ? 'text-negative' : 'text-ink-3'}>
+                      {row.rejected}
+                    </Num>
+                  </Td>
+                  <Td align="right">
+                    <Num size="sm" className="text-ink-3">
+                      {row.other}
+                    </Num>
+                  </Td>
+                  <Td align="right">
+                    <Num size="sm" className="text-ink">
+                      {row.total}
+                    </Num>
+                  </Td>
+                  <Td align="right">
+                    {share === null ? (
+                      <span className="text-[11.5px] text-ink-3">no decisions</span>
+                    ) : (
+                      <div className="ml-auto flex items-center gap-2">
+                        <span className="w-14">
+                          <Meter value={share} tone="positive" />
+                        </span>
+                        <Num size="sm" className="w-9 text-right text-ink-2">
+                          {(share * 100).toFixed(0)}%
+                        </Num>
+                      </div>
+                    )}
+                  </Td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </Table>
+        <p className="border-t border-rule px-5 py-2.5 text-[11.5px] leading-snug text-ink-3">
+          <ByMode
+            simple="Click a name to see only what they did in the list below."
+            technical="Counted from the same entries the log below reads, independent of its filters. Click a name to filter the log to it."
+          />
+        </p>
+      </Panel>
+
       {decidedHere === 0 ? (
         <div className="mb-6">
           <EmptyState
@@ -387,13 +513,24 @@ export default function ActivityPage() {
           }
         />
 
-        <div className="grid gap-3 border-b border-rule px-5 py-4 sm:grid-cols-2 lg:grid-cols-[190px_190px_minmax(0,1fr)]">
+        <div className="grid gap-3 border-b border-rule px-5 py-4 sm:grid-cols-2 lg:grid-cols-[170px_170px_170px_minmax(0,1fr)]">
           <Field label={mode === 'simple' ? 'Kind of event' : 'Action'}>
             <Select value={action} onChange={event => setAction(event.target.value as ActionFilter)}>
               <option value="all">All kinds</option>
               {ACTIONS.map(value => (
                 <option key={value} value={value}>
                   {ACTION_LABEL[mode][value]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+
+          <Field label={mode === 'simple' ? 'Who did it' : 'Reviewer'}>
+            <Select value={actor} onChange={event => setActor(event.target.value)}>
+              <option value="all">Everyone</option>
+              {actorOptions.map(value => (
+                <option key={value} value={value}>
+                  {value}
                 </option>
               ))}
             </Select>
@@ -455,7 +592,13 @@ export default function ActivityPage() {
         ) : (
           <ul>
             {filtered.map(entry => (
-              <Row key={entry.id} entry={entry} isNew={!known.has(entry.id) && !reduceMotion} mode={mode} />
+              <Row
+                key={entry.id}
+                entry={entry}
+                isNew={!known.has(entry.id) && !reduceMotion}
+                mode={mode}
+                onActorClick={setActor}
+              />
             ))}
           </ul>
         )}
@@ -483,10 +626,12 @@ function Row({
   entry,
   isNew,
   mode,
+  onActorClick,
 }: {
   entry: ActivityEntry
   isNew: boolean
   mode: 'simple' | 'technical'
+  onActorClick: (actor: string) => void
 }) {
   return (
     <motion.li
@@ -520,7 +665,12 @@ function Row({
         <p className="mt-2 max-w-[78ch] text-[13.5px] leading-relaxed text-ink">{entry.detail}</p>
 
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-2">
-          <span>{entry.actor}</span>
+          <button
+            onClick={() => onActorClick(entry.actor)}
+            className="hover:text-accent hover:underline"
+          >
+            {entry.actor}
+          </button>
           {entry.cpse ? (
             <>
               <span aria-hidden className="text-ink-3">

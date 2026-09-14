@@ -57,8 +57,7 @@ import { useCopy } from '@/copy'
 import { useService } from '@/store/service'
 import { CPSES } from '@/engine/corpus'
 import { formatCount, formatExact, formatRupees } from '@/engine/savings'
-import { FAMILY_LABEL } from '@/engine/types'
-import type { MaterialFamily } from '@/engine/types'
+import { FAMILY_LABEL, type Cluster, type MaterialFamily } from '@/engine/types'
 
 /* AnimatedNumber wants a stable module-level formatter, not an inline closure. */
 const asCount = (value: number) => formatCount(value)
@@ -429,6 +428,22 @@ export default function DashboardPage() {
           </div>
         </Panel>
       </div>
+
+      {/* -------------------------------------------- cross-cpse overlap */}
+      {health && health.crossCpseClusters > 0 && (
+        <div className="mt-5">
+          <Panel flush>
+            <PanelHead
+              icon={<Buildings size={16} weight="duotone" />}
+              title={<ByMode simple="Cross-company overlap" technical="Multi-CPSE clusters" />}
+              meta={`${health.crossCpseClusters} shared across companies`}
+            />
+            <div className="px-5 py-4">
+              <CrossCpseHeatmap clusters={clusters} cpses={CPSES} />
+            </div>
+          </Panel>
+        </div>
+      )}
     </>
   )
 }
@@ -622,6 +637,93 @@ function Cell({
       >
         {value}
       </dd>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ heatmap */
+
+const HEAT_COLORS = [
+  'text-ink-3',                                   // 0: no overlap
+  'bg-chart-2/15 text-chart-2 font-semibold',    // 1: low
+  'bg-chart-2/40 text-chart-2 font-semibold',    // 2: medium
+  'bg-chart-2 text-white font-semibold',         // 3: high
+]
+
+function CrossCpseHeatmap({
+  clusters,
+  cpses,
+}: {
+  clusters: Cluster[]
+  cpses: typeof CPSES
+}) {
+  const matrix = useMemo(() => {
+    const m: Record<string, Record<string, number>> = {}
+    for (const cpse of cpses) {
+      m[cpse.code] = {}
+      for (const other of cpses) m[cpse.code][other.code] = 0
+    }
+    for (const cluster of clusters) {
+      const members = [...new Set(cluster.members.map(m => m.cpse))]
+      for (let i = 0; i < members.length; i++) {
+        for (let j = i + 1; j < members.length; j++) {
+          const a = members[i], b = members[j]
+          m[a][b] = (m[a][b] ?? 0) + 1
+          m[b][a] = (m[b][a] ?? 0) + 1
+        }
+      }
+    }
+    return m
+  }, [clusters, cpses])
+
+  const maxVal = useMemo(() => {
+    let max = 0
+    for (const row of Object.values(matrix)) {
+      for (const v of Object.values(row)) if (v > max) max = v
+    }
+    return max || 1
+  }, [matrix])
+
+  return (
+    <div className="overflow-x-auto">
+      <p className="mb-4 max-w-[70ch] text-[12.5px] leading-relaxed text-ink-2">
+        How many shared groups each pair of companies contributes to. Darker cells mean more overlap.
+      </p>
+      <table className="w-full border-collapse text-center text-[12px]">
+        <thead>
+          <tr>
+            <th className="px-2 py-1.5 text-left text-[10px] uppercase tracking-[0.08em] text-ink-3" />
+            {cpses.map(cpse => (
+              <th key={cpse.code} className="px-2 py-1.5 text-[11px] font-semibold text-ink-2">
+                {cpse.code}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {cpses.map(cpse => (
+            <tr key={cpse.code}>
+              <td className="px-2 py-1.5 text-left font-mono text-[11px] text-ink-2">
+                {cpse.code}
+              </td>
+              {cpses.map(other => {
+                const val = matrix[cpse.code]?.[other.code] ?? 0
+                const intensity = val / maxVal
+                const level = val === 0 ? 0 : intensity < 0.3 ? 1 : intensity < 0.7 ? 2 : 3
+                return (
+                  <td
+                    key={other.code}
+                    className={`px-2 py-2 font-mono tabular-nums ${HEAT_COLORS[level]}`}
+                    title={`${cpse.code} + ${other.code}: ${val} shared groups`}
+                  >
+                    {val > 0 ? val : '—'}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

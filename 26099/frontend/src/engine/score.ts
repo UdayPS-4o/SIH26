@@ -22,7 +22,7 @@ import {
 export const DEFAULT_WEIGHTS: ScoringWeights = { lexical: 0.3, attribute: 0.45, numeric: 0.25 }
 
 /** Above this a pair is treated as the same item. Between the two it needs a human. */
-export const DEFAULT_ACCEPT = 0.85
+export const DEFAULT_ACCEPT = 0.90
 export const DEFAULT_REVIEW = 0.78
 export const DEFAULT_EQUIVALENT = 0.65
 
@@ -49,12 +49,12 @@ function significant(tokens: string[]): Set<string> {
  * Stop words and maker names are already gone by this point, so anything left is
  * a word somebody typed on purpose.
  */
-export function unexplainedTokens(a: NormalizedRecord, b: NormalizedRecord): string[] {
+export function unexplainedTokens(a: NormalizedRecord, b: NormalizedRecord, ignored?: Set<string>): string[] {
   const setA = significant(a.normalizedTokens)
   const setB = significant(b.normalizedTokens)
   const out: string[] = []
-  for (const token of setA) if (!setB.has(token)) out.push(token)
-  for (const token of setB) if (!setA.has(token)) out.push(token)
+  for (const token of setA) if (!setB.has(token) && !ignored?.has(token)) out.push(token)
+  for (const token of setB) if (!setA.has(token) && !ignored?.has(token)) out.push(token)
   return out
 }
 
@@ -181,6 +181,7 @@ export function score(
   a: NormalizedRecord,
   b: NormalizedRecord,
   weights: ScoringWeights,
+  ignoredTokens?: Set<string>,
 ): { breakdown: ScoreBreakdown; conflicts: AttributeConflict[]; unexplained: string[] } {
   const lexical = round2(lexicalScore(a, b))
   const attribute = attributeScore(a, b)
@@ -193,7 +194,7 @@ export function score(
   return {
     breakdown: { lexical, attribute: attr, numeric, combined },
     conflicts: attribute.conflicts,
-    unexplained: unexplainedTokens(a, b),
+    unexplained: unexplainedTokens(a, b, ignoredTokens),
   }
 }
 
@@ -300,11 +301,11 @@ export function rebalance(
 
 /** Tokens present in one description and absent from the other. The UI marks these
  *  so the eye can see immediately what the two organisations wrote differently. */
-export function tokenDiff(a: NormalizedRecord, b: NormalizedRecord) {
+export function tokenDiff(a: NormalizedRecord, b: NormalizedRecord, ignored?: Set<string>) {
   const setA = significant(a.normalizedTokens)
   const setB = significant(b.normalizedTokens)
   return {
-    leftOnly: [...setA].filter(t => !setB.has(t)),
-    rightOnly: [...setB].filter(t => !setA.has(t)),
+    leftOnly: [...setA].filter(t => !setB.has(t) && !ignored?.has(t)),
+    rightOnly: [...setB].filter(t => !setA.has(t) && !ignored?.has(t)),
   }
 }
