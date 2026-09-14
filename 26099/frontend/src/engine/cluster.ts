@@ -86,6 +86,10 @@ export interface PairOptions {
   /** Only compare records from different CPSEs. Cross-organisation duplication is
    *  the problem being solved; within-organisation duplication is a separate one. */
   crossCpseOnly?: boolean
+  /** Tokens the reviewer has marked as harmless differences. They are excluded
+   *  from the unexplained check, so a pair whose only remaining clashing tokens
+   *  are learned auto-resolves to same when the score clears accept. */
+  learnedTokens?: Set<string>
 }
 
 export function buildPairs(
@@ -131,10 +135,10 @@ export function buildPairs(
         const rightNorm = normalized.get(right.id)
         if (!leftNorm || !rightNorm) continue
 
-        const result = score(leftNorm, rightNorm, weights)
+        const result = score(leftNorm, rightNorm, weights, options.learnedTokens)
         if (result.breakdown.combined < floor) continue
 
-        const diff = tokenDiff(leftNorm, rightNorm)
+        const diff = tokenDiff(leftNorm, rightNorm, options.learnedTokens)
         const family = left.family
         pairs.push({
           id: key.replace(':', '-'),

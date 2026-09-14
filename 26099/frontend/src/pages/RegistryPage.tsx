@@ -13,7 +13,7 @@
  * is on the page instead of in a claim.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import {
   Books,
@@ -90,6 +90,35 @@ const SLOT_LABELS: Record<string, string> = {
  * Deduplicate clusters by code, merging members where a code appears more than once.
  * The representative with the richest signature wins the merged cluster.
  */
+function StandardBadge(description: string): ReactNode | null {
+  const standards = [
+    { pattern: /\bIS\s*\d{3,4}[A-Z0-9]*\b/i, label: 'IS', tone: 'accent' as const },
+    { pattern: /\bASTM\s*[A-Z]\d+[A-Z0-9]*\b/i, label: 'ASTM', tone: 'info' as const },
+    { pattern: /\bISO\s*\d+[A-Z0-9]*\b/i, label: 'ISO', tone: 'positive' as const },
+    { pattern: /\bDIN\s*\d+[A-Z0-9]*\b/i, label: 'DIN', tone: 'attention' as const },
+    { pattern: /\bBS\s*\d+[A-Z0-9]*\b/i, label: 'BS', tone: 'neutral' as const },
+  ]
+
+  const found = standards.filter(s => s.pattern.test(description))
+  if (found.length === 0) return null
+
+  return (
+    <span className="flex items-center gap-1">
+      {found.map(s => (
+        <span key={s.label} className={`inline-flex rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+          s.tone === 'accent' ? 'border-accent-edge bg-accent-bg text-accent' :
+          s.tone === 'info' ? 'border-info-edge bg-info-bg text-info' :
+          s.tone === 'positive' ? 'border-positive-edge bg-positive-bg text-positive' :
+          s.tone === 'attention' ? 'border-attention-edge bg-attention-bg text-attention' :
+          'border-rule-strong bg-surface-2 text-ink-2'
+        }`}>
+          {s.label}
+        </span>
+      ))}
+    </span>
+  )
+}
+
 function deduplicateClusters(clusters: Cluster[]): Cluster[] {
   const byCode = new Map<string, Cluster[]>()
   for (const cluster of clusters) {
@@ -621,7 +650,12 @@ function RegistryRow({
             </Num>
           </span>
         </Td>
-        <Td className="min-w-[22ch] text-ink">{cluster.standardDescription}</Td>
+        <Td className="min-w-[22ch] text-ink">
+          <span className="flex items-center gap-2 flex-wrap">
+            {cluster.standardDescription}
+            {StandardBadge(cluster.standardDescription)}
+          </span>
+        </Td>
         <Td className="whitespace-nowrap text-ink-2">{FAMILY_LABEL[cluster.family]}</Td>
         <Td className="whitespace-nowrap">
           <Num size="sm" className="text-ink-2">
@@ -846,46 +880,31 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
             </div>
           </section>
 
-          {/* spend */}
-          <section className="mt-2.5 border-t border-rule pt-2.5">
-            <div className="flex items-center gap-1.5">
-              <IconTile icon={<Coins size={12} weight="regular" />} tone="accent" size="sm" />
-              <Num size="lg">{formatRupees(cluster.annualSpend)}</Num>
-              <span className="text-[10px] text-ink-3">
-                {technical ? 'annual spend' : 'per year, total'}
-              </span>
-            </div>
-            <TechnicalOnly>
-              <div className="mt-1 border border-rule bg-surface-2 px-2.5 py-2">
-                <ul className="space-y-0.5">
-                  {cluster.members.map(member => (
-                    <li key={member.id} className="font-mono text-[10px] tabular-nums text-ink-2">
-                      {member.cpse} {formatExact(member.annualQty)} x Rs {formatExact(member.unitPrice)} = Rs {formatExact(member.annualQty * member.unitPrice)}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-0.5 border-t border-rule pt-0.5 font-mono text-[10px] tabular-nums text-ink">
-                  = Rs {formatExact(cluster.annualSpend)}
-                </p>
-              </div>
-            </TechnicalOnly>
-          </section>
         </div>
 
-        {/* RIGHT column: donut chart */}
-        {!single && cluster.cpses.length > 1 ? (
-          <div className="flex flex-col items-center">
-            <DonutChart data={cpseSpend} size={180} thickness={20} />
-            <div className="mt-1.5 w-full px-1">
-              <ChartLegend data={cpseSpend} />
+        {/* RIGHT column: spend + chart */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-full border border-rule bg-surface-2 px-3 py-2.5 text-center">
+            <IconTile icon={<Coins size={14} weight="regular" />} tone="accent" size="sm" className="mx-auto mb-1" />
+            <Num size="lg">{formatRupees(cluster.annualSpend)}</Num>
+            <p className="mt-0.5 text-[10px] text-ink-3">
+              {technical ? 'annual spend' : 'per year, total'}
+            </p>
+          </div>
+          {!single && cluster.cpses.length > 1 ? (
+            <>
+              <DonutChart data={cpseSpend} size={180} thickness={20} />
+              <div className="w-full px-1">
+                <ChartLegend data={cpseSpend} />
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-ink-3">Single source</span>
+              <span className="font-mono text-lg text-ink-2">{cluster.cpses[0]}</span>
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center">
-            <span className="text-[10px] text-ink-3">Single source</span>
-            <span className="font-mono text-lg text-ink-2">{cluster.cpses[0]}</span>
-          </div>
-        )}
+          )}
+        </div>
       </div>      {/* -------------------------------------------------------- derivation */}
       <section className="mt-6 border-t border-rule pt-4">
         <div className="mb-3 flex items-center gap-3">

@@ -83,6 +83,11 @@ const SAMPLES: { path: string; label: string; detail: string }[] = [
     detail: 'Clean headers. Most rows should already carry a national code.',
   },
   {
+    path: '/samples/cil-materials.csv',
+    label: 'A CIL extract with realistic mixed results',
+    detail: 'Some items already exist in the registry, some need a person to look, and some are genuinely new.',
+  },
+  {
     path: '/samples/gail-materials.csv',
     label: 'A pipeline list with genuinely new items',
     detail: 'A mix: some repeats of what four organisations already buy, some not.',
@@ -800,11 +805,11 @@ export default function ImportPage() {
               kind="matched"
               note={
                 <>
-                  These scored between the two thresholds. They join the{' '}
+                  These scored between the two thresholds. Each one is added to the{' '}
                   <Link to="/duplicates" className="text-accent underline underline-offset-2">
                     duplicates queue
-                  </Link>{' '}
-                  for a person to confirm or reject.
+                  </Link>
+                  {' '}for a person to confirm or reject.
                 </>
               }
             />

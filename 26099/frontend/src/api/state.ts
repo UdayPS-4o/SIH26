@@ -22,6 +22,13 @@ export interface ServiceState {
   /** Rules added at runtime from the Engine page. */
   extraRules: DictionaryRule[]
   /**
+   * Tokens the reviewer has marked as harmless differences. After an approval where
+   * these are the only clashing words, they are added here and the matcher re-scores
+   * with them excluded from the unexplained check, so the same pattern auto-resolves
+   * from then on.
+   */
+  learnedTokens: Set<string>
+  /**
    * Every record the registry holds.
    *
    * Empty until somebody loads a material master. The application ships with no
@@ -36,15 +43,37 @@ export interface ServiceState {
   operator: string
 }
 
-/** Read persisted operator from sessionStorage, falling back to a sensible default. */
+/** Read persisted operator from sessionStorage.
+ *
+ * The login page stores the chosen name under `codeone.name`. Older code used
+ * `codeone.operator`. We check both so a name entered on the login page is the
+ * name that appears in the audit trail. */
 function readStoredOperator(): string {
   try {
-    const stored = sessionStorage.getItem('codeone.operator')
+    const stored = sessionStorage.getItem('codeone.name')
     if (stored && stored.trim()) return stored.trim()
+    const legacy = sessionStorage.getItem('codeone.operator')
+    if (legacy && legacy.trim()) return legacy.trim()
   } catch {
     /* storage unavailable */
   }
   return 'Steward'
+}
+
+const LEARNED_KEY = 'codeone.learned'
+
+function readLearned(): Set<string> {
+  try {
+    const stored = sessionStorage.getItem(LEARNED_KEY)
+    if (stored) return new Set(JSON.parse(stored))
+  } catch { /* storage unavailable */ }
+  return new Set()
+}
+
+export function writeLearned(tokens: Set<string>): void {
+  try {
+    sessionStorage.setItem(LEARNED_KEY, JSON.stringify([...tokens]))
+  } catch { /* */ }
 }
 
 export const serviceState: ServiceState = {
@@ -54,6 +83,7 @@ export const serviceState: ServiceState = {
   savings: { ...DEFAULT_SAVINGS },
   approvals: new Map(),
   extraRules: [],
+  learnedTokens: readLearned(),
   records: [],
   loaded: [],
   activity: [],
@@ -88,6 +118,8 @@ export function resetService() {
   serviceState.savings = { ...DEFAULT_SAVINGS }
   serviceState.approvals = new Map()
   serviceState.extraRules = []
+  serviceState.learnedTokens = new Set()
+  writeLearned(serviceState.learnedTokens)
   serviceState.records = []
   serviceState.loaded = []
   serviceState.activity = []

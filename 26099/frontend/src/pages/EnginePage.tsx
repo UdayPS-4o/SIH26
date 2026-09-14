@@ -44,6 +44,9 @@ import {
   Select,
   Skeleton,
   Slider,
+  Stat,
+  StatCell,
+  StatRow,
   Table,
   Td,
   Th,
@@ -651,6 +654,73 @@ export default function EnginePage() {
           </ol>
         </Panel>
 
+        {/* --------------------------------------------------------- health */}
+        {health ? (
+          <Panel>
+            <PanelHead
+              title="Health"
+              meta="GET /registry/health"
+              action={
+                lastCall.registry ? (
+                  <EndpointTag
+                    method={lastCall.registry.method}
+                    endpoint={lastCall.registry.endpoint}
+                    ms={lastCall.registry.ms}
+                    scanned={lastCall.registry.scanned}
+                  />
+                ) : undefined
+              }
+            />
+            <StatRow className="mb-0">
+              <StatCell>
+                <Stat
+                  icon={<Stack size={18} weight="regular" />}
+                  tone="accent"
+                  value={inr(health.records)}
+                  label="Records indexed"
+                  note="Unique records across all loaded masters."
+                />
+              </StatCell>
+              <StatCell>
+                <Stat
+                  icon={<Hash size={18} weight="regular" />}
+                  tone="info"
+                  value={inr(health.distinctCodes)}
+                  label="Distinct national codes"
+                  note="Codes in the code book right now."
+                />
+              </StatCell>
+              <StatCell>
+                <Stat
+                  icon={<BookOpen size={18} weight="regular" />}
+                  tone="positive"
+                  value={inr(health.clustersWithDuplicates)}
+                  label="Codes with duplicates"
+                  note="Clusters with more than one member."
+                />
+              </StatCell>
+              <StatCell>
+                <Stat
+                  icon={<BookOpen size={18} weight="regular" />}
+                  tone="positive"
+                  value={inr(health.clustersWithDuplicates)}
+                  label="Codes with duplicates"
+                  note="Clusters with more than one member."
+                />
+              </StatCell>
+              <StatCell>
+                <Stat
+                  icon={<ChartBar size={18} weight="regular" />}
+                  tone="attention"
+                  value={inr(health.duplicateRecords)}
+                  label="Duplicate records"
+                  note="Records sharing a code with another."
+                />
+              </StatCell>
+            </StatRow>
+          </Panel>
+        ) : null}
+
         {/* ----------------------------------------------------------- dials */}
         <Panel flush>
           <PanelHead
@@ -712,7 +782,7 @@ export default function EnginePage() {
 
               <div className="mt-4 space-y-4">
                 <Slider
-                  label="Accept (EXACT &ge; 0.85)"
+                  label={`Accept (EXACT ≥ ${draftAccept.toFixed(2)})`}
                   value={draftAccept}
                   onChange={onAccept}
                   min={0.5}
@@ -720,7 +790,7 @@ export default function EnginePage() {
                   hint="At or above this a pair is treated as the same item without a human."
                 />
                 <Slider
-                  label="Review (NEAR &ge; 0.78)"
+                  label={`Review (NEAR ≥ ${draftReview.toFixed(2)})`}
                   value={draftReview}
                   onChange={onReview}
                   min={HIST_FLOOR}

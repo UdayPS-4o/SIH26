@@ -1,26 +1,30 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
-import { Skeleton } from '@/components/ui'
+import { Skeleton, Toasts } from '@/components/ui'
 import { useService } from '@/store/service'
+import { useRole } from '@/store/role'
 
+const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const OverviewPage = lazy(() => import('@/pages/OverviewPage'))
 const ExplorerPage = lazy(() => import('@/pages/ExplorerPage'))
+const MatchPage = lazy(() => import('@/pages/MatchPage'))
 const DuplicatesPage = lazy(() => import('@/pages/DuplicatesPage'))
 const SavingsPage = lazy(() => import('@/pages/SavingsPage'))
 const RegistryPage = lazy(() => import('@/pages/RegistryPage'))
+const MigrationPage = lazy(() => import('@/pages/MigrationPage'))
+const IntegrationPage = lazy(() => import('@/pages/IntegrationPage'))
 const ImportPage = lazy(() => import('@/pages/ImportPage'))
 const NormalizePage = lazy(() => import('@/pages/NormalizePage'))
 const ActivityPage = lazy(() => import('@/pages/ActivityPage'))
 const EnginePage = lazy(() => import('@/pages/EnginePage'))
 
-function RedirectIfEmpty({ children }: { children: JSX.Element }) {
+function RedirectIfEmpty({ children }: { children: ReactNode }) {
   const loaded = useService(s => s.ready)
   const loadedCount = useService(s => s.records?.length ?? 0)
 
-  // While the service is still loading, show the skeleton (original behaviour).
   if (!loaded) {
     return (
       <div className="flex h-[100dvh] w-full overflow-hidden bg-paper text-ink antialiased">
@@ -37,8 +41,6 @@ function RedirectIfEmpty({ children }: { children: JSX.Element }) {
     )
   }
 
-  // Once loaded, if no data has been imported, redirect to Overview so the user
-  // can load item lists rather than staring at an empty queue.
   if (loadedCount === 0) {
     return <Navigate to="/overview" replace />
   }
@@ -48,10 +50,24 @@ function RedirectIfEmpty({ children }: { children: JSX.Element }) {
 
 export default function App() {
   const bootstrap = useService(s => s.bootstrap)
+  const role = useRole()
 
   useEffect(() => {
     void bootstrap()
   }, [bootstrap])
+
+  const isLoggedIn = role.name !== 'Guest'
+
+  if (!isLoggedIn) {
+    return (
+      <Suspense fallback={<Skeleton rows={4} />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
+    )
+  }
 
   return (
     <div className="flex h-[100dvh] w-full overflow-hidden bg-paper text-ink antialiased">
@@ -65,6 +81,7 @@ export default function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/overview" element={<OverviewPage />} />
                 <Route path="/explorer" element={<ExplorerPage />} />
+                <Route path="/matching" element={<MatchPage />} />
                 <Route path="/duplicates" element={
                   <RedirectIfEmpty><DuplicatesPage /></RedirectIfEmpty>
                 } />
@@ -74,6 +91,8 @@ export default function App() {
                 <Route path="/registry" element={
                   <RedirectIfEmpty><RegistryPage /></RedirectIfEmpty>
                 } />
+                <Route path="/migration" element={<MigrationPage />} />
+                <Route path="/integration" element={<IntegrationPage />} />
                 <Route path="/import" element={<ImportPage />} />
                 <Route path="/normalize" element={
                   <RedirectIfEmpty><NormalizePage /></RedirectIfEmpty>
@@ -82,12 +101,14 @@ export default function App() {
                   <RedirectIfEmpty><ActivityPage /></RedirectIfEmpty>
                 } />
                 <Route path="/engine" element={<EnginePage />} />
+                <Route path="/login" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
           </div>
         </main>
       </div>
+      <Toasts />
     </div>
   )
 }

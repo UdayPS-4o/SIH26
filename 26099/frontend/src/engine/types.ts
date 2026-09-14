@@ -251,6 +251,8 @@ export type ActivityAction =
   | 'mint'
   | 'import'
   | 'config'
+  /** A migration package left the system, carrying codes into somebody's ERP. */
+  | 'export'
 
 export interface ActivityEntry {
   id: string

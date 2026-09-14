@@ -47,25 +47,39 @@ export const COPY = {
   mint: { simple: 'create a new code', technical: 'mint' },
 
   /* -------------------------------------------------------------- nav items */
-  navDashboard: { simple: 'Dashboard', technical: 'Dashboard' },
+  /**
+   * The eight rows that carry a stated capability are named after that capability
+   * in both registers, rather than being translated into plain language in Simple
+   * view. Somebody arriving with the requirement list in their hand has to be able
+   * to find each item without first working out that "Name cleaner" is
+   * standardization. The plain language moved into the lead under each title,
+   * which is where it explains rather than hides.
+   *
+   * Rows that are not one of the eight keep whatever name fits them best.
+   */
+  navDashboard: { simple: 'Dashboard and analytics', technical: 'Dashboard and analytics' },
   // Overview is the guided run, not the numbers page: the two used to share the
   // word "dashboard" and the nav read as two of the same thing.
   navOverview: { simple: 'How this works', technical: 'Guided walkthrough' },
   navExplorer: { simple: 'Search items', technical: 'Material explorer' },
-  // Kept short on purpose: this row carries a pending-count badge, and the longer
-  // wording truncated against it at the sidebar's fixed width.
-  navDuplicates: { simple: 'Duplicates', technical: 'Matching and review' },
+  navMatching: { simple: 'AI material matching', technical: 'AI material matching' },
+  navDuplicates: { simple: 'Duplicate detection', technical: 'Duplicate detection' },
   navSavings: { simple: 'Savings', technical: 'Savings' },
-  navRegistry: { simple: 'National code book', technical: 'CNMC registry' },
+  navRegistry: { simple: 'National code generation', technical: 'National code generation' },
+  // "Code mapping and migration" is two characters too wide for the sidebar at
+  // this weight and truncates; the slash buys the room and matches the SAP / ERP
+  // row above it.
+  navMigration: { simple: 'Code mapping / migration', technical: 'Code mapping / migration' },
+  navIntegration: { simple: 'SAP / ERP integration', technical: 'SAP / ERP integration' },
   navImport: { simple: 'Add new data', technical: 'Ingestion' },
-  navNormalize: { simple: 'Name cleaner', technical: 'Normalization' },
-  navActivity: { simple: 'Activity history', technical: 'Audit trail' },
+  navNormalize: { simple: 'Material standardization', technical: 'Material standardization' },
+  navActivity: { simple: 'Audit trail and governance', technical: 'Audit trail and governance' },
   navEngine: { simple: 'Settings', technical: 'Engine configuration' },
 
   /* ----------------------------------------------------------- page titles */
   dashboardTitle: {
     simple: 'Where things stand',
-    technical: 'Harmonization dashboard',
+    technical: 'Material master dashboard and analytics',
   },
   dashboardLead: {
     simple:
@@ -89,10 +103,46 @@ export const COPY = {
     technical: 'Indexed catalogue with cluster grouping, blocking keys and per-record normalization.',
   },
 
-  duplicatesTitle: { simple: 'Duplicates found', technical: 'Matching and review' },
+  duplicatesTitle: {
+    simple: 'Duplicates found',
+    technical: 'Duplicate and near-duplicate detection',
+  },
   duplicatesLead: {
     simple: 'Pairs the system thinks are the same item. Some need a person to decide.',
     technical: 'Candidate pairs with score breakdown, weight tuning and reviewer decisions.',
+  },
+
+  matchTitle: {
+    simple: 'Find an item',
+    technical: 'AI material matching and recommendation',
+  },
+  matchLead: {
+    simple:
+      'Type an item the way your own storekeeper would write it. The answer says whether any company already buys it, and under which national code.',
+    technical:
+      'One description scored against every loaded master, using the same normalizer, weights and thresholds the batch queue runs on. Ranked candidates with the code each already sits under.',
+  },
+
+  migrationTitle: {
+    simple: 'Code mapping and migration',
+    technical: 'CPSE code mapping and migration support',
+  },
+  migrationLead: {
+    simple:
+      'Every code a company uses today, next to the national code it becomes. Take the list away and load it into your own system.',
+    technical:
+      'Legacy to national crosswalk per organisation, the action each row needs, and a package the receiving ERP can load.',
+  },
+
+  integrationTitle: {
+    simple: 'SAP / ERP integration',
+    technical: 'SAP / ERP integration',
+  },
+  integrationLead: {
+    simple:
+      'How each company would hand its item list over from the system it already runs, without anybody retyping anything.',
+    technical:
+      'Connector design per source system: protocol, endpoint and extract shape for SAP ECC, S/4HANA, Oracle EBS and an in-house master.',
   },
 
   savingsTitle: { simple: 'Savings', technical: 'Analytics and savings' },
@@ -101,7 +151,10 @@ export const COPY = {
     technical: 'Consolidation model with editable assumptions and a per-step waterfall.',
   },
 
-  registryTitle: { simple: 'The national code book', technical: 'CNMC registry' },
+  registryTitle: {
+    simple: 'The national code book',
+    technical: 'Common national material code generation',
+  },
   registryLead: {
     simple: 'One agreed entry for every item, and what each company calls it.',
     technical: 'Golden records with derivation, legacy mappings and classification references.',
@@ -113,13 +166,16 @@ export const COPY = {
     technical: 'Upload, map columns, score against the corpus, mint codes for unmatched rows.',
   },
 
-  normalizeTitle: { simple: 'Name cleaner', technical: 'Normalization' },
+  normalizeTitle: {
+    simple: 'Name cleaner',
+    technical: 'Material standardization and classification',
+  },
   normalizeLead: {
     simple: 'Engineers write in short forms. Every company uses different ones. Type anything and watch it get sorted out.',
     technical: 'Dictionary expansion, attribute slot extraction and canonical signature generation.',
   },
 
-  activityTitle: { simple: 'Activity history', technical: 'Audit trail' },
+  activityTitle: { simple: 'Activity history', technical: 'Audit trail and governance' },
   activityLead: {
     simple: 'Every decision, who made it and when. Nothing here can be edited after the fact.',
     technical: 'Append-only action log with actor, endpoint and affected code.',
@@ -132,9 +188,9 @@ export const COPY = {
   },
 
   /* ------------------------------------------------------------- verdicts */
-  verdictSame: { simple: 'Same item', technical: 'Above accept threshold' },
-  verdictReview: { simple: 'Probably the same, needs a check', technical: 'Between thresholds' },
-  verdictDifferent: { simple: 'Below threshold', technical: 'Below review threshold' },
+  verdictSame: { simple: 'Exact match', technical: 'Above accept threshold (≥0.85)' },
+  verdictReview: { simple: 'Near match', technical: 'Between review and accept (0.65–0.85)' },
+  verdictDifferent: { simple: 'Below threshold', technical: 'Below review threshold (<0.65)' },
 
   /* --------------------------------------------------------------- actions */
   approve: { simple: 'Yes, same item', technical: 'Approve' },
