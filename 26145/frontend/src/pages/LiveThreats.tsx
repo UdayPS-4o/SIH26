@@ -570,7 +570,7 @@ const LiveThreats: React.FC = () => {
                           </span>
                           <span className="flex items-center gap-1 text-slate-400">
                             <Server size={11} className="text-slate-500" />
-                            {anomalyScore.toFixed(2)}
+                            {Number(anomalyScore).toFixed(2)}
                           </span>
                         </div>
                       </td>
@@ -600,6 +600,14 @@ const LiveThreats: React.FC = () => {
                               <span className="text-[10px] text-slate-500 font-mono">Alert ID: {alert.id}</span>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                              {/* JA3 fingerprint for TLS alerts */}
+                              {(alert.threat_type === 'TLS Anomaly' || alert.threat_type === 'tls_anomaly') && alert.evidence?.tls_fingerprint && (
+                                <div className="bg-navy-800/40 border border-cyan-500/30 rounded-lg px-3 py-2.5 col-span-2">
+                                  <span className="text-[10px] text-cyan-400 uppercase tracking-wider font-medium block">JA3 Fingerprint</span>
+                                  <p className="text-sm text-cyan-300 font-mono mt-0.5 break-all">{String(alert.evidence.tls_fingerprint)}</p>
+                                  <span className="text-[9px] text-cyan-600 mt-1 block">Metadata only — no decryption</span>
+                                </div>
+                              )}
                               {Object.entries(alert.evidence).map(([key, value]) => {
                                 const displayValue = typeof value === 'number' ? value.toLocaleString() : String(value ?? '--');
                                 const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());

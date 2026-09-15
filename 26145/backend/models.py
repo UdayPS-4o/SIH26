@@ -21,6 +21,8 @@ from sklearn.ensemble import IsolationForest
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
+from features import extract_flow_features, features_to_vector
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -178,7 +180,6 @@ class AttackClassifier:
         self.model: LogisticRegression = LogisticRegression(
             max_iter=1000,
             random_state=random_state,
-            multi_class="multinomial",
             solver="lbfgs",
             C=1.0,
         )
@@ -311,7 +312,7 @@ def _generate_synthetic_training_data(n_samples: int = 5000, seed: int = 42) -> 
                 rng.randint(0, 2, n_per_class),              # is_ephemeral
                 rng.uniform(0, 0.05, n_per_class),           # dns_query_len
                 rng.uniform(0, 0.5, n_per_class),            # dns_entropy
-                rng.zeros(n_per_class),                      # has_tls (SYN floods not TLS)
+                np.zeros(n_per_class),                      # has_tls (SYN floods not TLS)
             ])
         elif label == "port_scan":
             # Port scan: many unique dst ports, low bytes, sequential
@@ -328,8 +329,8 @@ def _generate_synthetic_training_data(n_samples: int = 5000, seed: int = 42) -> 
                 rng.uniform(0, 1, n_per_class),              # dst_port (any port)
                 rng.randint(0, 2, n_per_class),              # is_well_known
                 rng.randint(0, 2, n_per_class),              # is_ephemeral
-                rng.zeros(n_per_class),                      # dns_query_len
-                rng.zeros(n_per_class),                      # dns_entropy
+                np.zeros(n_per_class),                      # dns_query_len
+                np.zeros(n_per_class),                      # dns_entropy
                 rng.choice([0, 1], n_per_class, p=[0.8, 0.2]),  # has_tls
             ])
         elif label == "data_exfiltration":
@@ -345,10 +346,10 @@ def _generate_synthetic_training_data(n_samples: int = 5000, seed: int = 42) -> 
                 rng.uniform(100, 10000, n_per_class),        # packets_per_sec
                 rng.uniform(0, 0.3, n_per_class),            # src_port
                 rng.uniform(0.5, 1.0, n_per_class),          # dst_port (high ports)
-                rng.zeros(n_per_class),                      # is_well_known
-                rng.ones(n_per_class),                       # is_ephemeral
-                rng.zeros(n_per_class),                      # dns_query_len
-                rng.zeros(n_per_class),                      # dns_entropy
+                np.zeros(n_per_class),                      # is_well_known
+                np.ones(n_per_class),                       # is_ephemeral
+                np.zeros(n_per_class),                      # dns_query_len
+                np.zeros(n_per_class),                      # dns_entropy
                 rng.choice([0, 1], n_per_class, p=[0.3, 0.7]),  # has_tls
             ])
         elif label == "dns_tunneling":
@@ -364,11 +365,11 @@ def _generate_synthetic_training_data(n_samples: int = 5000, seed: int = 42) -> 
                 rng.uniform(10, 2000, n_per_class),          # packets_per_sec
                 rng.uniform(0, 0.5, n_per_class),            # src_port
                 rng.uniform(0.0, 0.01, n_per_class),         # dst_port (DNS = 53)
-                rng.ones(n_per_class),                       # is_well_known
+                np.ones(n_per_class),                       # is_well_known
                 rng.randint(0, 2, n_per_class),              # is_ephemeral
                 rng.uniform(100, 255, n_per_class),          # dns_query_len (long)
                 rng.uniform(3, 7, n_per_class),              # dns_entropy (high)
-                rng.zeros(n_per_class),                      # has_tls
+                np.zeros(n_per_class),                      # has_tls
             ])
         elif label == "dga":
             # DGA: DNS queries with high entropy, random-looking domains
@@ -383,11 +384,11 @@ def _generate_synthetic_training_data(n_samples: int = 5000, seed: int = 42) -> 
                 rng.uniform(10, 2000, n_per_class),          # packets_per_sec
                 rng.uniform(0, 0.5, n_per_class),            # src_port
                 rng.uniform(0.0, 0.01, n_per_class),         # dst_port (DNS)
-                rng.ones(n_per_class),                       # is_well_known
+                np.ones(n_per_class),                       # is_well_known
                 rng.randint(0, 2, n_per_class),              # is_ephemeral
                 rng.uniform(10, 63, n_per_class),            # dns_query_len
                 rng.uniform(4, 7.5, n_per_class),            # dns_entropy (very high)
-                rng.zeros(n_per_class),                      # has_tls
+                np.zeros(n_per_class),                      # has_tls
             ])
         elif label == "botnet":
             # Botnet beaconing: periodic, consistent sizes, known C2 ports
@@ -423,9 +424,9 @@ def _generate_synthetic_training_data(n_samples: int = 5000, seed: int = 42) -> 
                 rng.uniform(0.3, 0.8, n_per_class),          # dst_port
                 rng.randint(0, 2, n_per_class),              # is_well_known
                 rng.randint(0, 2, n_per_class),              # is_ephemeral
-                rng.zeros(n_per_class),                      # dns_query_len
-                rng.zeros(n_per_class),                      # dns_entropy
-                rng.ones(n_per_class),                       # has_tls
+                np.zeros(n_per_class),                      # dns_query_len
+                np.zeros(n_per_class),                      # dns_entropy
+                np.ones(n_per_class),                       # has_tls
             ])
         else:
             continue  # should not happen
@@ -462,3 +463,63 @@ def build_models() -> tuple[AnomalyDetector, AttackClassifier]:
 
     logger.info("Models built and trained successfully.")
     return anomaly_detector, attack_classifier
+
+
+# ---------------------------------------------------------------------------
+# Combined ensemble used by the server
+# ---------------------------------------------------------------------------
+
+class DetectionEnsemble:
+    """Combines the anomaly detector and attack classifier behind one API."""
+
+    MODELS_DIR = Path(__file__).resolve().parent / "models"
+
+    def __init__(self) -> None:
+        self.anomaly_detector: Optional[AnomalyDetector] = None
+        self.attack_classifier: Optional[AttackClassifier] = None
+        self._models_loaded: bool = False
+
+    def load_models(self) -> None:
+        """Load persisted models from disk, falling back to freshly-trained
+        synthetic models when no compatible artifacts are found.
+        """
+        anomaly_detector = AnomalyDetector()
+        attack_classifier = AttackClassifier()
+
+        try:
+            anomaly_detector.load(str(self.MODELS_DIR / "anomaly_detector_v2.pkl"))
+            attack_classifier.load(str(self.MODELS_DIR / "attack_classifier.pkl"))
+        except Exception as e:
+            logger.info("No compatible persisted models found (%s); training on synthetic data", e)
+            anomaly_detector, attack_classifier = build_models()
+
+        self.anomaly_detector = anomaly_detector
+        self.attack_classifier = attack_classifier
+        self._models_loaded = True
+
+    def detect(self, flow: dict, context: dict | None = None) -> dict:
+        """Run the ensemble on a single flow.
+
+        Args:
+            flow: Flow dictionary from the simulator.
+            context: Optional detection context (unused by the ML models,
+                kept for interface parity with the rule-based detector).
+
+        Returns:
+            Dictionary describing the combined ML verdict for the flow.
+        """
+        if not self._models_loaded or self.anomaly_detector is None or self.attack_classifier is None:
+            return {"is_threat": False}
+
+        vector = features_to_vector(extract_flow_features(flow))
+        anomaly_result = self.anomaly_detector.predict(vector)
+        attack_type, attack_confidence = self.attack_classifier.predict(vector)
+
+        is_threat = anomaly_result.is_anomaly or (attack_type != "benign" and attack_confidence > 0.5)
+
+        return {
+            "is_threat": is_threat,
+            "anomaly_score": anomaly_result.anomaly_score,
+            "attack_type": attack_type,
+            "attack_confidence": attack_confidence,
+        }

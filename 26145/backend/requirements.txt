@@ -1,11 +1,9 @@
-"""
-requirements.txt
-Dependencies for the AI-based cyber threat detection backend.
-"""
-fastapi==0.111.0
-uvicorn[standard]==0.30.0
-websockets==12.0
-numpy==1.26.4
-scikit-learn==1.5.0
-scipy==1.13.1
-python-multipart==0.0.9
+# requirements.txt
+# Dependencies for the AI-based cyber threat detection backend.
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+websockets>=12.0
+numpy>=1.26.4
+scikit-learn>=1.5.0
+scipy>=1.13.1
+python-multipart>=0.0.9

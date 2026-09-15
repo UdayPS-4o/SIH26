@@ -19,7 +19,7 @@ from features import (
     compute_entropy,
     compute_ngram_score,
     extract_flow_features,
-    sliding_window_features,
+    sliding_window_stats,
 )
 
 logger = logging.getLogger(__name__)

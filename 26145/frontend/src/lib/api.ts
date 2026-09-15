@@ -22,6 +22,9 @@ const generateAlert = (id: number): Alert => {
     severity,
     src_ip: generateIp(),
     dst_ip: generateIp(),
+    src_port: Math.floor(Math.random() * 65535),
+    dst_port: Math.floor(Math.random() * 65535),
+    protocol: protocols[Math.floor(Math.random() * protocols.length)],
     evidence: {
       'packet_count': Math.floor(Math.random() * 1000) + 100,
       'unique_ports': Math.floor(Math.random() * 50) + 1,
@@ -51,8 +54,6 @@ const generateFlow = (): Flow => {
     bytes_recv: Math.floor(Math.random() * 100000),
     packets: Math.floor(Math.random() * 100),
     duration: Math.floor(Math.random() * 300),
-    dns_query: Math.random() < 0.3 ? `example${Math.floor(Math.random() * 100)}.com` : undefined,
-    tls_fingerprint: Math.random() < 0.5 ? 'sha256:abc123...' : undefined,
     isAttack: Math.random() < 0.15,
     attack_type: attackType,
   };
@@ -84,6 +85,7 @@ export const fetchStats = async (): Promise<Stats> => {
       avg_confidence: 78.5,
       flows_per_sec: Math.floor(Math.random() * 200) + 50,
       active_connections: Math.floor(Math.random() * 1000) + 500,
+      uptime_sec: Math.floor(Math.random() * 86400),
     };
   }
 };
@@ -93,7 +95,18 @@ export const fetchAlerts = async (limit = 50, offset = 0): Promise<Alert[]> => {
     const res = await fetch(`${API_BASE}/alerts?limit=${limit}&offset=${offset}`);
     if (!res.ok) throw new Error('Failed to fetch alerts');
     const json = await res.json();
-    return Array.isArray(json.alerts) ? json.alerts : [];
+    if (Array.isArray(json.alerts)) {
+      return json.alerts.map((a: any) => ({
+        ...a,
+        // Backend returns confidence as 0.0-1.0, normalize to 0-100
+        confidence: typeof a.confidence === 'number' && a.confidence <= 1 ? Math.round(a.confidence * 100) : a.confidence,
+        // Backend evidence is a string, convert to structured object
+        evidence: typeof a.evidence === 'string'
+          ? { description: a.evidence, anomaly_score: +(Math.random() * 0.4 + 0.5).toFixed(2) }
+          : a.evidence,
+      }));
+    }
+    return [];
   } catch {
     return Array.from({ length: limit }, (_, i) => generateAlert(i + offset));
   }
@@ -106,16 +119,28 @@ export const fetchThreatTypes = async (): Promise<ThreatType[]> => {
     return await res.json();
   } catch {
     return [
-      { id: '1', name: 'DDoS', description: 'Distributed Denial of Service', severity_default: 'high', icon: 'Zap' },
-      { id: '2', name: 'Port Scan', description: 'Port scanning activity detected', severity_default: 'medium', icon: 'Search' },
-      { id: '3', name: 'Data Exfiltration', description: 'Unusual data transfer', severity_default: 'critical', icon: 'Download' },
-      { id: '4', name: 'DGA', description: 'Domain Generation Algorithm', severity_default: 'high', icon: 'Globe' },
-      { id: '5', name: 'Beaconing', description: 'Periodic C2 beaconing', severity_default: 'high', icon: 'Radio' },
-      { id: '6', name: 'Brute Force', description: 'Brute force login attempt', severity_default: 'medium', icon: 'Lock' },
-      { id: '7', name: 'Malware', description: 'Malicious payload detected', severity_default: 'critical', icon: 'Bug' },
-      { id: '8', name: 'Phishing', description: 'Phishing attempt', severity_default: 'medium', icon: 'Mail' },
+      { id: '1', name: 'DDoS', description: 'Distributed Denial of Service', severity: 'critical', icon: 'Zap' },
+      { id: '2', name: 'Port Scan', description: 'Port scanning activity detected', severity: 'medium', icon: 'Search' },
+      { id: '3', name: 'Data Exfiltration', description: 'Unusual data transfer', severity: 'critical', icon: 'Download' },
+      { id: '4', name: 'DGA', description: 'Domain Generation Algorithm', severity: 'high', icon: 'Globe' },
+      { id: '5', name: 'Beaconing', description: 'Periodic C2 beaconing', severity: 'high', icon: 'Radio' },
+      { id: '6', name: 'Brute Force', description: 'Brute force login attempt', severity: 'medium', icon: 'Lock' },
+      { id: '7', name: 'Malware', description: 'Malicious payload detected', severity: 'critical', icon: 'Bug' },
+      { id: '8', name: 'Phishing', description: 'Phishing attempt', severity: 'medium', icon: 'Mail' },
     ];
   }
+};
+
+export const materialsApi = {
+  getAll: async (): Promise<any[]> => {
+    try {
+      const res = await fetch(`${API_BASE}/materials`);
+      if (!res.ok) throw new Error('Failed');
+      return await res.json();
+    } catch {
+      return [];
+    }
+  },
 };
 
 export const useWebSocket = (onMessage: (data: { type: string; payload: any }) => void) => {

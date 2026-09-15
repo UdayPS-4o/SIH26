@@ -120,8 +120,10 @@ async def _process_flows() -> None:
         """Callback for each generated flow."""
         global _flows_processed, _alerts_generated
 
-        # Schedule async work from sync callback
-        asyncio.get_event_loop().call_soon_threadsafe(
+        # Schedule async work from sync callback (runs on the simulator's
+        # background thread, so it must use the captured loop, not
+        # asyncio.get_event_loop() which has no running loop on this thread)
+        loop.call_soon_threadsafe(
             lambda: asyncio.create_task(_handle_flow(flow))
         )
 
