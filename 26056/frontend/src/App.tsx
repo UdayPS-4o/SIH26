@@ -15,12 +15,12 @@ import { QuotesPage } from '@/pages/QuotesPage'
 import { AnomalyPage } from '@/pages/AnomalyPage'
 import ApiPage from '@/pages/ApiPage'
 import { ReportsPage } from '@/pages/ReportsPage'
-import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { SectorsPage } from '@/pages/SectorsPage'
 import { ScraperConfigPage } from '@/pages/ScraperConfigPage'
 import { ScraperArchPage } from '@/pages/ScraperArchPage'
 import { ForecastPage } from '@/pages/ForecastPage'
 import { ModelManagementPage } from '@/pages/ModelManagementPage'
+import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import ProxyPoolPage from '@/pages/ProxyPoolPage'
 
 export function App() {
