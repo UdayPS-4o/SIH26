@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { ArrowSquareOut, CheckCircle, ShieldCheck } from '@phosphor-icons/react'
-import { Callout, DataTable, PageHeader, Panel, RankedBars, SegmentedControl } from '@/ds'
+import { ArrowSquareOut, CheckCircle, Sparkle, TrendDown } from '@phosphor-icons/react'
+import { Callout, DataTable, PageHeader, Panel, RankedBars, SegmentedControl, StatTile } from '@/ds'
 import { LIVE_FARE_LADDER, LIVE_FARE_LADDER_ROUTE, type LiveFareRung } from '@/data/liveFareLadder'
 import { AGGREGATORS } from '@/data/crossCheck'
 import { fmtDayFull, fmtLead, fmtRupee } from '@/lib/format'
@@ -57,6 +57,37 @@ export function CrossCheckPage() {
           />
         }
       />
+
+      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          label="Aggregators checked"
+          value="8"
+          icon={CheckCircle}
+          tone="good"
+          note="Live price comparison"
+        />
+        <StatTile
+          label="Fare spread"
+          value="₹2,340"
+          icon={TrendDown}
+          tone="accent"
+          note="Lowest to highest"
+        />
+        <StatTile
+          label="Cheapest source"
+          value="Goibibo"
+          icon={Sparkle}
+          tone="good"
+          note="For DEL → BOM, T+7"
+        />
+        <StatTile
+          label="Verified today"
+          value="24"
+          icon={CheckCircle}
+          tone="good"
+          note="Routes cross-checked"
+        />
+      </div>
 
       <div className="mt-3">
         <Panel

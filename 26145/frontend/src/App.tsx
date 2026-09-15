@@ -36,13 +36,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       className="terminal-wrapper"
       style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}
     >
-      {/* ── CLASSIFIED BANNER ── */}
-      <div className="classified-banner">
-        <span className="classified-text">
-          ◆ CLASSIFIED // RESTRICTED ACCESS // AUTHORIZED PERSONNEL ONLY ◆
-        </span>
-      </div>
-
       {/* ── MAIN APP SHELL ── */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <Sidebar isOpen={false} onClose={() => {}} />
@@ -55,7 +48,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <span className="hud-title-icon">
                 <ShieldAlert size={14} />
               </span>
-              ◈ EKADHARA
+              ◈ WATCHTOWER
             </div>
 
             <div className="hud-divider" />

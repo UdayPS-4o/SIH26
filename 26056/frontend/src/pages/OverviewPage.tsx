@@ -150,6 +150,9 @@ export function OverviewPage() {
           </>
         }
       />
+      <div className="flex justify-end -mt-2 mb-2">
+        <Badge tone="neutral" size="sm">Demo data</Badge>
+      </div>
 
       {/* Hero: the headline number, then the panel that produced it */}
       <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">

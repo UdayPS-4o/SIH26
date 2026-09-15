@@ -107,6 +107,9 @@ export function ElasticityPage() {
           <SegmentedControl options={SCALE_OPTIONS} value={scale} onChange={setScale} label="Y scale" />
         }
       />
+      <div className="flex justify-end -mt-2 mb-2">
+        <Badge tone="neutral" size="sm">Demo data</Badge>
+      </div>
 
       <div className="mt-3">
         <Panel

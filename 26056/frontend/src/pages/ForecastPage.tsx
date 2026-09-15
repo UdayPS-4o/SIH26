@@ -257,6 +257,9 @@ export function ForecastPage() {
         title="Where fares are headed, and by how much"
         lede="The forecasting engine combines temporal patterns — seasonality, the festival calendar, advance-booking curves — with an LSTM neural network trained on a rolling 90-day panel, to project the APIx and individual sector fares 14 and 30 days ahead. Confidence intervals widen with horizon."
       />
+      <div className="flex justify-end -mt-2 mb-2">
+        <Badge tone="neutral" size="sm">Demo data</Badge>
+      </div>
 
       {/* Stats row */}
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">

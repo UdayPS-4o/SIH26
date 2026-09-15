@@ -67,7 +67,7 @@ function AdminPage() {
   useEffect(() => {
     if (activeTab === 'terminal') {
       const initLines = [
-        'EKADHARA Admin Console v1.0.0',
+        'WATCHTOWER Admin Console v1.0.0',
         '> Connected to localhost:8000',
         '> Authenticated as: admin',
         '> Session: ' + Math.random().toString(36).substr(2, 12),

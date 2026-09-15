@@ -308,6 +308,9 @@ export function ScraperConfigPage() {
           </Badge>
         }
       />
+      <div className="flex justify-end -mt-2 mb-2">
+        <Badge tone="neutral" size="sm">Demo data</Badge>
+      </div>
 
       <Callout tone="accent" title="Demo mode is active">
         The controls below are wired to local state for the live demo. In production, every change

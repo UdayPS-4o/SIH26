@@ -529,6 +529,37 @@ const MOCK_RESPONSES: Record<string, unknown> = {
     nextStage: 'daily_collection',
     estimatedDuration: '~15 minutes',
   },
+  'POST /api/v1/admin/basket': {
+    message: 'Basket updated',
+    sectorsUpdated: 4,
+    sectors: [
+      { id: 'DEL-BOM', weight: 0.18 },
+      { id: 'DEL-BLR', weight: 0.12 },
+      { id: 'BOM-BLR', weight: 0.10 },
+      { id: 'DEL-CCU', weight: 0.08 },
+    ],
+    updatedAt: new Date().toISOString(),
+  },
+  'POST /api/v1/admin/weights': {
+    message: 'Weights loaded',
+    source: 'DGCA extract',
+    rowsProcessed: 156,
+    stratumCount: 24,
+    loadedAt: new Date().toISOString(),
+  },
+  'POST /api/v1/admin/rerun': {
+    message: 'Index re-run started',
+    dateRange: { from: '2026-09-01', to: '2026-09-14' },
+    jobId: 'job-' + Math.random().toString(36).slice(2, 10),
+    status: 'queued',
+  },
+  'POST /api/v1/admin/seed-demo': {
+    message: 'Demo data regenerated',
+    recordsCreated: 2847,
+    sectors: 4,
+    sources: 3,
+    seededAt: new Date().toISOString(),
+  },
   'GET /api/v1/health/scrapers': {
     scrapers: [
       { source: 'cleartrip', yield: 94.2, blockRate: 0.3, p95Latency: 1.2, status: 'healthy' },
@@ -722,6 +753,7 @@ export default function ApiPage() {
   const [response, setResponse] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [paramValues, setParamValues] = useState<Record<string, string>>({})
+  const [requestBody, setRequestBody] = useState('')
 
   const selected = useMemo(() => ENDPOINTS.find((e) => e.path === selectedPath) ?? null, [selectedPath])
 
@@ -748,12 +780,19 @@ export default function ApiPage() {
     }
 
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      const headers: Record<string, string> = {}
       if (user?.token && !user.token.startsWith('mock-')) {
         headers['Authorization'] = `Bearer ${user.token}`
       }
+      if (['POST', 'PUT', 'PATCH'].includes(selected.method) && requestBody.trim()) {
+        headers['Content-Type'] = 'application/json'
+      }
 
-      const res = await fetch(url, { method: selected.method, headers })
+      const body = ['POST', 'PUT', 'PATCH'].includes(selected.method) && requestBody.trim()
+        ? requestBody
+        : undefined
+
+      const res = await fetch(url, { method: selected.method, headers, body })
       const timing = Math.round(performance.now() - start)
 
       if (!res.ok) {
@@ -778,11 +817,12 @@ export default function ApiPage() {
     } finally {
       setLoading(false)
     }
-  }, [selected, paramValues, user])
+  }, [selected, paramValues, requestBody, user])
 
   const handleSelectEndpoint = useCallback((ep: Endpoint) => {
     setSelectedPath(ep.path)
     setParamValues({})
+    setRequestBody('')
     setResponse(null)
   }, [])
 
@@ -910,18 +950,54 @@ export default function ApiPage() {
                       </div>
                     </div>
                   )}
+
+                  {['POST', 'PUT', 'PATCH'].includes(selected.method) && (
+                    <div className="mt-3">
+                      <p className="mb-1.5 text-[10.5px] uppercase tracking-wider text-ink-3">Request body (JSON)</p>
+                      <textarea
+                        value={requestBody}
+                        onChange={(e) => setRequestBody(e.target.value)}
+                        placeholder={
+                          selected.path === '/api/v1/admin/basket'
+                            ? '{\n  "sectors": [\n    { "id": "DEL-BOM", "weight": 0.20 },\n    { "id": "DEL-BLR", "weight": 0.15 }\n  ]\n}'
+                            : selected.path === '/api/v1/admin/weights'
+                            ? '{\n  "source": "DGCA extract",\n  "file": "weights_2026.csv"\n}'
+                            : selected.path === '/api/v1/admin/rerun'
+                            ? '{\n  "from": "2026-09-01",\n  "to": "2026-09-14"\n}'
+                            : selected.path === '/api/v1/admin/seed-demo'
+                            ? '{\n  "sectors": 4,\n  "sources": 3,\n  "records": 5000\n}'
+                            : selected.path === '/api/v1/auth/login'
+                            ? '{\n  "username": "admin",\n  "password": "your-password"\n}'
+                            : selected.path === '/api/v1/pipeline/run-now'
+                            ? '{\n  "stage": "daily_collection"\n}'
+                            : '{\n  "key": "value"\n}'
+                        }
+                        rows={6}
+                        spellCheck={false}
+                        className="w-full rounded-control bg-[#0d1117] px-2.5 py-2 font-mono text-[10.5px] leading-relaxed text-ink-2 ring-1 ring-line focus:outline-none focus:ring-accent-line"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="mb-1.5 text-[10.5px] uppercase tracking-wider text-ink-3">Curl example</p>
                   <div className="rounded-control bg-surface-inset p-2.5 ring-1 ring-line">
-                    <code className="block font-mono text-[10px] leading-relaxed text-ink-2 break-all">
-                      curl -s -H "Authorization: Bearer &lt;token&gt;"{' '}
-                      {`"${selected.path}" \\`}
-                      {selected.queryParams?.map((p) => (
-                        <span key={p.name}>
-                          {'\n  '}-d "{p.name}={p.example || '...'}" \\{' '}
-                        </span>
-                      ))}
+                    <code className="block font-mono text-[10px] leading-relaxed text-ink-2 whitespace-pre-wrap">
+                      {['POST', 'PUT', 'PATCH'].includes(selected.method)
+                        ? `curl -X POST${' '}
+  -H "Authorization: Bearer <token>"${' '}
+  -H "Content-Type: application/json"${' '}
+  -d '${requestBody || '{ ... }'}'${' '}
+  "http://localhost:8000${selected.path}"`
+                        : selected.queryParams?.length
+                        ? `curl -G${' '}
+  -H "Authorization: Bearer <token>"${' '}
+  -d "origin=${selected.queryParams.find((p) => p.name === 'origin')?.example || '...'}"${' '}
+  -d "date=${selected.queryParams.find((p) => p.name === 'date')?.example || '...'}"${' '}
+  "http://localhost:8000${selected.path}"`
+                        : `curl -s${' '}
+  -H "Authorization: Bearer <token>"${' '}
+  "http://localhost:8000${selected.path}"`}
                     </code>
                   </div>
                 </div>
