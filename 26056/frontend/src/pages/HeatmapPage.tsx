@@ -94,6 +94,9 @@ export function HeatmapPage() {
         lede="Each cell is one elementary aggregate: a sector at a fixed lead time. Colour is the change against the same cell seven days ago, so the comparison holds product quality constant."
         actions={<SegmentedControl options={SORT_OPTIONS} value={sort} onChange={setSort} label="Order" />}
       />
+      <div className="flex justify-end -mt-2 mb-2">
+        <Badge tone="neutral" size="sm">Demo data</Badge>
+      </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile
