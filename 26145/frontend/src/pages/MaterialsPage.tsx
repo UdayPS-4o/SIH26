@@ -215,9 +215,9 @@ function MaterialsPage() {
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return { bg: 'rgba(255,0,51,0.1)', border: 'rgba(255,0,51,0.3)', text: '#ff3370' };
-      case 'high': return { bg: 'rgba(255,120,0,0.1)', border: 'rgba(255,120,0,0.3)', text: '#ff8800' };
-      case 'medium': return { bg: 'rgba(255,176,0,0.1)', border: 'rgba(255,176,0,0.3)', text: '#ffb000' };
+      case 'critical': return { bg: 'rgba(255,51,85,0.1)', border: 'rgba(255,51,85,0.3)', text: '#ff3355' };
+      case 'high': return { bg: 'rgba(255,136,51,0.1)', border: 'rgba(255,136,51,0.3)', text: '#ff8833' };
+      case 'medium': return { bg: 'rgba(255,136,51,0.1)', border: 'rgba(255,136,51,0.3)', text: '#ff8833' };
       default: return { bg: 'rgba(0,212,255,0.1)', border: 'rgba(0,212,255,0.3)', text: '#00d4ff' };
     }
   };
@@ -226,62 +226,73 @@ function MaterialsPage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h1 className="page-title">
-            <span className="icon-glow">📁</span> Evidence Registry
+          <div className="flex items-center gap-3 mb-1">
+            <span style={{ color: '#00ff41', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+          </div>
+          <h1 className="page-title" style={{ color: '#00d4ff', letterSpacing: '3px' }}>
+            {''} Evidence Registry
           </h1>
-          <p className="page-subtitle">STIX TLP:WHITE materials — normalized, hashed, and machine-verifiable</p>
+          <p className="page-subtitle" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>STIX TLP:WHITE materials — normalized, hashed, and machine-verifiable</p>
         </div>
         <div className="header-actions">
-          <button className="btn btn-primary" onClick={handleUploadClick}>
-            <span>+</span> Import Material
+          <button className="btn btn-primary cursor-pointer" onClick={handleUploadClick} style={{ fontFamily: 'var(--font-mono)' }}>
+            + Import Material
           </button>
-          <button className="btn btn-secondary" onClick={handleRefresh}>
-            <span>↻</span> Refresh
+          <button className="btn btn-secondary cursor-pointer" onClick={handleRefresh} style={{ fontFamily: 'var(--font-mono)' }}>
+            Refresh
           </button>
         </div>
       </header>
 
       {/* Stats bar */}
-      <div className="materials-stats">
-        <div className="stat-card">
-          <div className="stat-value">{stats.total}</div>
-          <div className="stat-label">Total</div>
+      <div className="materials-stats grid grid-cols-5 gap-4 mb-6">
+        <div className="stat-card rounded-lg p-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <div className="stat-value" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '24px', fontWeight: 700 }}>{stats.total}</div>
+          <div className="stat-label" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px' }}>Total</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value">{stats.imported}</div>
-          <div className="stat-label">Imported</div>
+        <div className="stat-card rounded-lg p-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <div className="stat-value" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '24px', fontWeight: 700 }}>{stats.imported}</div>
+          <div className="stat-label" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px' }}>Imported</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value">{stats.normalized}</div>
-          <div className="stat-label">Normalized</div>
+        <div className="stat-card rounded-lg p-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <div className="stat-value" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '24px', fontWeight: 700 }}>{stats.normalized}</div>
+          <div className="stat-label" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px' }}>Normalized</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-value">{stats.approved}</div>
-          <div className="stat-label">Accepted</div>
+        <div className="stat-card rounded-lg p-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <div className="stat-value" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '24px', fontWeight: 700 }}>{stats.approved}</div>
+          <div className="stat-label" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '4px' }}>Accepted</div>
         </div>
-        <div className="stat-card ws-status">
-          <div className={`ws-dot ${wsConnected ? 'connected' : ''}`} />
-          <div className="stat-label">WS {wsConnected ? 'Live' : 'Offline'}</div>
+        <div className="stat-card rounded-lg p-4 ws-status" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={`ws-dot w-2 h-2 rounded-full inline-block`} style={{ backgroundColor: wsConnected ? '#00ff41' : '#ff3355', boxShadow: wsConnected ? '0 0 8px rgba(0,255,65,0.5)' : '0 0 8px rgba(255,51,85,0.5)', animation: 'pulse-dot 2s ease-in-out infinite' }} />
+          </div>
+          <div className="stat-label" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px' }}>WS {wsConnected ? 'Live' : 'Offline'}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="materials-filters">
-        <div className="search-box">
-          <span className="search-icon">⌕</span>
+      <div className="materials-filters flex items-center gap-4 mb-4">
+        <div className="search-box flex items-center gap-2 flex-1 rounded-lg px-4 py-2" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <span style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>⌕</span>
           <input
             type="text"
-            className="search-input"
+            className="search-input flex-1 bg-transparent outline-none"
+            style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}
             placeholder="Search by name, type, threat class..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="category-pills">
+        <div className="category-pills flex items-center gap-2">
           {CATEGORIES.map(cat => (
             <button
               key={cat}
-              className={`pill ${selectedCategory === cat ? 'active' : ''}`}
+              style={{
+                background: selectedCategory === cat ? 'rgba(0,212,255,0.1)' : 'transparent',
+                color: selectedCategory === cat ? '#00d4ff' : '#5a7a9a',
+                border: `1px solid ${selectedCategory === cat ? 'rgba(0,212,255,0.3)' : 'rgba(0,212,255,0.12)'}`,
+              }}
+              className="pill px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer"
               onClick={() => setSelectedCategory(cat)}
             >
               {cat}
@@ -291,81 +302,92 @@ function MaterialsPage() {
       </div>
 
       {/* Material table */}
-      <div className="materials-table-wrap">
-        <table className="materials-table">
+      <div className="materials-table-wrap rounded-lg overflow-hidden" style={{ border: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,18,28,0.85)' }}>
+        <table className="materials-table w-full">
           <thead>
-            <tr>
-              <th>Status</th>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Threat Class</th>
-              <th>Severity</th>
-              <th>Source</th>
-              <th>Hash</th>
-              <th>Actions</th>
+            <tr style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Status</th>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Name</th>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Type</th>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Threat Class</th>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Severity</th>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Source</th>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Hash</th>
+              <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="table-loading">
-                <div className="spinner" />
-                <span>Loading materials...</span>
-              </td></tr>
+              <tr><td colSpan={8} className="table-loading text-center py-8" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Loading materials...</td></tr>
             ) : error ? (
-              <tr><td colSpan={8} className="table-error">{error}</td></tr>
+              <tr><td colSpan={8} className="table-error text-center py-8" style={{ fontFamily: 'var(--font-mono)', color: '#ff3355' }}>{error}</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={8} className="table-empty">No materials found</td></tr>
+              <tr><td colSpan={8} className="table-empty text-center py-8" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>No materials found</td></tr>
             ) : filtered.map(m => {
               const sevColor = getSeverityColor(m.severity);
               return (
-                <tr key={m.id} className="material-row">
-                  <td>
-                    <span className={`status-badge status-${m.status}`}>
-                      {m.status === 'imported' && '⤓'}
+                <tr key={m.id} className="material-row" style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
+                  <td style={{ padding: '11px 16px' }}>
+                    <span className={`status-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider`} style={{
+                      background: m.status === 'imported' ? 'rgba(0,212,255,0.08)' : m.status === 'normalized' ? 'rgba(0,255,65,0.08)' : m.status === 'approved' ? 'rgba(0,255,65,0.08)' : 'rgba(0,212,255,0.05)',
+                      color: m.status === 'imported' ? '#00d4ff' : m.status === 'normalized' ? '#00ff41' : m.status === 'approved' ? '#00ff41' : '#5a7a9a',
+                      border: `1px solid ${m.status === 'imported' ? 'rgba(0,212,255,0.25)' : m.status === 'normalized' ? 'rgba(0,255,65,0.25)' : m.status === 'approved' ? 'rgba(0,255,65,0.25)' : 'rgba(0,212,255,0.12)'}`,
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 600,
+                      letterSpacing: '1px',
+                    }}>
+                      {m.status === 'imported' && '[D]'}
                       {m.status === 'normalized' && '◈'}
                       {m.status === 'approved' && '✓'}
                       {!m.status && '○'}
                       {m.status}
                     </span>
                   </td>
-                  <td>
-                    <div className="material-name" onClick={() => setSelectedMaterial(m)}>
+                  <td style={{ padding: '11px 16px' }}>
+                    <div className="material-name cursor-pointer" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }} onClick={() => setSelectedMaterial(m)}>
                       {m.name}
                     </div>
                   </td>
-                  <td><span className="type-badge">{m.type}</span></td>
-                  <td><span className="threat-badge">{m.threat_class}</span></td>
-                  <td>
-                    <span className="severity-badge" style={{
+                  <td style={{ padding: '11px 16px' }}>
+                    <span className="type-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ background: 'rgba(179,71,255,0.08)', color: '#b347ff', border: '1px solid rgba(179,71,255,0.25)', fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{m.type}</span>
+                  </td>
+                  <td style={{ padding: '11px 16px' }}>
+                    <span className="threat-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ background: 'rgba(255,51,85,0.08)', color: '#ff3355', border: '1px solid rgba(255,51,85,0.25)', fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{m.threat_class}</span>
+                  </td>
+                  <td style={{ padding: '11px 16px' }}>
+                    <span className="severity-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{
                       backgroundColor: sevColor.bg,
-                      borderColor: sevColor.border,
+                      border: `1px solid ${sevColor.border}`,
                       color: sevColor.text,
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 600,
+                      letterSpacing: '1px',
                     }}>
                       {m.severity}
                     </span>
                   </td>
-                  <td><span className="source-text">{m.source}</span></td>
-                  <td>
-                    <code className="hash-text">{m.content_hash?.slice(0, 16)}...</code>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px', padding: '11px 16px' }}>{m.source}</td>
+                  <td style={{ padding: '11px 16px' }}>
+                    <code className="hash-text" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '10px' }}>{m.content_hash?.slice(0, 16)}...</code>
                   </td>
-                  <td>
-                    <div className="action-btns">
+                  <td style={{ padding: '11px 16px' }}>
+                    <div className="action-btns flex items-center gap-2">
                       {m.status === 'new' && (
-                        <button className="btn-xs btn-import" onClick={() => handleImport(m.id)} disabled={!!processingItems[m.id]}>
+                        <button className="btn-xs btn-import cursor-pointer" style={{ fontFamily: 'var(--font-mono)' }} onClick={() => handleImport(m.id)} disabled={!!processingItems[m.id]}>
                           {processingItems[m.id] || 'Import'}
                         </button>
                       )}
                       {(m.status === 'imported' || m.status === 'normalized') && (
-                        <button className="btn-xs btn-normalize" onClick={() => handleNormalize(m.id)} disabled={!!processingItems[m.id]}>
+                        <button className="btn-xs btn-normalize cursor-pointer" style={{ fontFamily: 'var(--font-mono)' }} onClick={() => handleNormalize(m.id)} disabled={!!processingItems[m.id]}>
                           {processingItems[m.id] || 'Normalize'}
                         </button>
                       )}
                       {m.status === 'normalized' && (
-                        <button className="btn-xs btn-approve" onClick={() => handleApprove(m.id)} disabled={!!processingItems[m.id]}>
+                        <button className="btn-xs btn-approve cursor-pointer" style={{ fontFamily: 'var(--font-mono)' }} onClick={() => handleApprove(m.id)} disabled={!!processingItems[m.id]}>
                           {processingItems[m.id] || 'Approve'}
                         </button>
                       )}
-                      <button className="btn-xs btn-match" onClick={() => handleMatch(m.id)}>
+                      <button className="btn-xs btn-match cursor-pointer" style={{ fontFamily: 'var(--font-mono)' }} onClick={() => handleMatch(m.id)}>
                         Match
                       </button>
                     </div>
@@ -379,20 +401,20 @@ function MaterialsPage() {
 
       {/* Normalize modal */}
       {showNormalize && (
-        <div className="modal-overlay" onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3 className="modal-title">Normalizing Material</h3>
-            <div className="normalize-terminal">
-              <div className="terminal-line">{'>'} Loading material: {normalizeId}</div>
+        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)' }} onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); }}>
+          <div className="modal-content rounded-lg p-6 max-w-lg w-full" style={{ background: 'rgba(10,18,28,0.95)', border: '1px solid rgba(0,212,255,0.2)' }} onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title mb-4" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '16px', fontWeight: 700 }}>Normalizing Material</h3>
+            <div className="normalize-terminal rounded-lg p-4" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)' }}>
+              <div className="terminal-line" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px' }}>{'>'} Loading material: {normalizeId}</div>
               {normalizedResult?.currentStep && (
-                <div className="terminal-line terminal-active">{'>'} {normalizedResult.currentStep}</div>
+                <div className="terminal-line terminal-active" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }}>{'>'} {normalizedResult.currentStep}</div>
               )}
-              {normalizing && <div className="terminal-cursor">█</div>}
-              {!normalizing && <div className="terminal-line terminal-success">{'>'} ✓ Normalization complete. Material ready for approval.</div>}
+              {normalizing && <div className="terminal-cursor" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }}>█</div>}
+              {!normalizing && <div className="terminal-line terminal-success" style={{ fontFamily: 'var(--font-mono)', color: '#00ff41', fontSize: '12px' }}>{'>'} ✓ Normalization complete. Material ready for approval.</div>}
             </div>
             {!normalizing && (
-              <div className="modal-actions">
-                <button className="btn btn-primary" onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); }}>
+              <div className="modal-actions mt-4">
+                <button className="btn btn-primary cursor-pointer" onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); }} style={{ fontFamily: 'var(--font-mono)' }}>
                   Close
                 </button>
               </div>
@@ -403,19 +425,19 @@ function MaterialsPage() {
 
       {/* Match modal */}
       {showMatch && (
-        <div className="modal-overlay" onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3 className="modal-title">Finding Matches</h3>
-            <div className="normalize-terminal">
-              <div className="terminal-line">{'>'} Material: {normalizeId}</div>
-              <div className="terminal-line">{'>'} Running LSH-based similarity search...</div>
+        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)' }} onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }}>
+          <div className="modal-content rounded-lg p-6 max-w-lg w-full" style={{ background: 'rgba(10,18,28,0.95)', border: '1px solid rgba(0,212,255,0.2)' }} onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title mb-4" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '16px', fontWeight: 700 }}>Finding Matches</h3>
+            <div className="normalize-terminal rounded-lg p-4" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)' }}>
+              <div className="terminal-line" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px' }}>{'>'} Material: {normalizeId}</div>
+              <div className="terminal-line" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px' }}>{'>'} Running LSH-based similarity search...</div>
               {Object.entries(matchingItems).map(([id, text]) => (
-                <div key={id} className="terminal-line terminal-active">{'>'} {text}</div>
+                <div key={id} className="terminal-line terminal-active" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }}>{'>'} {text}</div>
               ))}
             </div>
             {(matchingItems && Object.values(matchingItems).length > 0 && String(Object.values(matchingItems)[Object.values(matchingItems).length - 1]).includes('Done')) && (
-              <div className="modal-actions">
-                <button className="btn btn-primary" onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }}>
+              <div className="modal-actions mt-4">
+                <button className="btn btn-primary cursor-pointer" onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }} style={{ fontFamily: 'var(--font-mono)' }}>
                   Close
                 </button>
               </div>
@@ -426,13 +448,13 @@ function MaterialsPage() {
 
       {/* Upload modal */}
       {showUpload && (
-        <div className="modal-overlay" onClick={() => setShowUpload(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3 className="modal-title">Import Materials</h3>
-            <div className="upload-zone" onClick={() => document.getElementById('file-input')?.click()}>
-              <div className="upload-icon">☁</div>
-              <p className="upload-text">Drop files here or click to browse</p>
-              <p className="upload-sub">Accepts: STIX JSON, PCAP, PCAPNG, ZIP, CSV</p>
+        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)' }} onClick={() => setShowUpload(false)}>
+          <div className="modal-content rounded-lg p-6 max-w-lg w-full" style={{ background: 'rgba(10,18,28,0.95)', border: '1px solid rgba(0,212,255,0.2)' }} onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title mb-4" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '16px', fontWeight: 700 }}>Import Materials</h3>
+            <div className="upload-zone rounded-lg p-8 text-center cursor-pointer" style={{ background: 'rgba(6,10,16,0.9)', border: '1px dashed rgba(0,212,255,0.2)' }} onClick={() => document.getElementById('file-input')?.click()}>
+              <div className="upload-icon mb-3" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', fontSize: '32px' }}>+</div>
+              <p className="upload-text" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px' }}>Drop files here or click to browse</p>
+              <p className="upload-sub" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', marginTop: '4px' }}>Accepts: STIX JSON, PCAP, PCAPNG, ZIP, CSV</p>
               <input
                 id="file-input"
                 type="file"
@@ -443,22 +465,22 @@ function MaterialsPage() {
               />
             </div>
             {Object.entries(uploadProgress).length > 0 && (
-              <div className="upload-progress-list">
+              <div className="upload-progress-list mt-4 space-y-2">
                 {Object.entries(uploadProgress).map(([id, pct]) => (
                   <div key={id} className="upload-progress-item">
-                    <div className="upload-progress-label">
-                      <span>Uploading...</span>
-                      <span>{pct}%</span>
+                    <div className="upload-progress-label flex justify-between mb-1" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                      <span style={{ color: '#5a7a9a' }}>Uploading...</span>
+                      <span style={{ color: '#00d4ff' }}>{pct}%</span>
                     </div>
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${pct}%` }} />
+                    <div className="progress-bar h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.08)' }}>
+                      <div className="progress-fill h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: '#00d4ff', boxShadow: '0 0 8px rgba(0,212,255,0.5)' }} />
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowUpload(false)}>Cancel</button>
+            <div className="modal-actions mt-4">
+              <button className="btn btn-secondary cursor-pointer" onClick={() => setShowUpload(false)} style={{ fontFamily: 'var(--font-mono)' }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -466,58 +488,58 @@ function MaterialsPage() {
 
       {/* Material detail modal */}
       {selectedMaterial && !showNormalize && !showMatch && (
-        <div className="modal-overlay" onClick={() => setSelectedMaterial(null)}>
-          <div className="modal-content material-detail" onClick={e => e.stopPropagation()}>
-            <div className="material-detail-header">
-              <h3 className="modal-title">{selectedMaterial.name}</h3>
-              <button className="modal-close" onClick={() => setSelectedMaterial(null)}>✕</button>
+        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)' }} onClick={() => setSelectedMaterial(null)}>
+          <div className="modal-content material-detail rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto" style={{ background: 'rgba(10,18,28,0.95)', border: '1px solid rgba(0,212,255,0.2)' }} onClick={e => e.stopPropagation()}>
+            <div className="material-detail-header flex items-center justify-between mb-4">
+              <h3 className="modal-title" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '16px', fontWeight: 700 }}>{selectedMaterial.name}</h3>
+              <button className="modal-close cursor-pointer" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)' }} onClick={() => setSelectedMaterial(null)}>✕</button>
             </div>
-            <div className="material-detail-grid">
+            <div className="material-detail-grid grid grid-cols-2 gap-4">
               <div className="detail-field">
-                <label>Type</label>
-                <span className="detail-value">{selectedMaterial.type}</span>
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Type</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedMaterial.type}</span>
               </div>
               <div className="detail-field">
-                <label>Threat Class</label>
-                <span className="detail-value">{selectedMaterial.threat_class}</span>
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Threat Class</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedMaterial.threat_class}</span>
               </div>
               <div className="detail-field">
-                <label>Severity</label>
-                <span className="detail-value">{selectedMaterial.severity}</span>
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Severity</label>
+                <span className="detail-value block" style={{ color: getSeverityColor(selectedMaterial.severity).text, fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{selectedMaterial.severity}</span>
               </div>
               <div className="detail-field">
-                <label>Status</label>
-                <span className="detail-value">{selectedMaterial.status}</span>
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Status</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedMaterial.status}</span>
               </div>
               <div className="detail-field">
-                <label>Source</label>
-                <span className="detail-value">{selectedMaterial.source}</span>
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Source</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedMaterial.source}</span>
               </div>
               <div className="detail-field">
-                <label>SHA-256 Hash</label>
-                <span className="detail-value"><code>{selectedMaterial.content_hash}</code></span>
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>SHA-256 Hash</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '11px' }}><code>{selectedMaterial.content_hash}</code></span>
               </div>
-              <div className="detail-field">
-                <label>Description</label>
-                <span className="detail-value">{selectedMaterial.description}</span>
+              <div className="detail-field col-span-2">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Description</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedMaterial.description}</span>
               </div>
-              <div className="detail-field">
-                <label>Activity Signature</label>
-                <span className="detail-value"><code>{selectedMaterial.activity_signature}</code></span>
+              <div className="detail-field col-span-2">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Activity Signature</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '11px' }}><code>{selectedMaterial.activity_signature}</code></span>
               </div>
             </div>
-            <div className="modal-actions">
+            <div className="modal-actions flex gap-2 mt-4">
               {selectedMaterial.status === 'imported' && (
-                <button className="btn btn-primary" onClick={() => handleNormalize(selectedMaterial.id)}>
+                <button className="btn btn-primary cursor-pointer" onClick={() => handleNormalize(selectedMaterial.id)} style={{ fontFamily: 'var(--font-mono)' }}>
                   Normalize
                 </button>
               )}
               {selectedMaterial.status === 'normalized' && (
-                <button className="btn btn-success" onClick={() => handleApprove(selectedMaterial.id)}>
+                <button className="btn btn-success cursor-pointer" onClick={() => handleApprove(selectedMaterial.id)} style={{ fontFamily: 'var(--font-mono)', background: 'rgba(0,255,65,0.08)', color: '#00ff41', border: '1px solid rgba(0,255,65,0.3)' }}>
                   Approve
                 </button>
               )}
-              <button className="btn btn-secondary" onClick={() => setSelectedMaterial(null)}>Close</button>
+              <button className="btn btn-secondary cursor-pointer" onClick={() => setSelectedMaterial(null)} style={{ fontFamily: 'var(--font-mono)' }}>Close</button>
             </div>
           </div>
         </div>

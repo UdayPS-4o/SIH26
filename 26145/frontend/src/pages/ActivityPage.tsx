@@ -9,9 +9,9 @@ interface LogEntry extends AuditLog {
 const FILTERS = ['all', 'alert', 'system', 'detection', 'performance'] as const;
 const LEVELS: Record<string, { color: string; bg: string }> = {
   info: { color: '#00d4ff', bg: 'rgba(0,212,255,0.1)' },
-  warn: { color: '#ffb000', bg: 'rgba(255,176,0,0.1)' },
-  error: { color: '#ff3370', bg: 'rgba(255,0,51,0.1)' },
-  debug: { color: '#888', bg: 'rgba(136,136,136,0.1)' },
+  warn: { color: '#ff8833', bg: 'rgba(255,136,51,0.1)' },
+  error: { color: '#ff3355', bg: 'rgba(255,51,85,0.1)' },
+  debug: { color: '#2d4a6a', bg: 'rgba(45,74,106,0.1)' },
 };
 
 function ActivityPage() {
@@ -140,22 +140,38 @@ function ActivityPage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h1 className="page-title">
-            <span className="icon-glow">◈</span> Activity Log
+          <div className="flex items-center gap-3 mb-1">
+            <span style={{ color: '#00ff41', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+          </div>
+          <h1 className="page-title" style={{ color: '#00d4ff', letterSpacing: '3px' }}>
+            {''} Activity Log
           </h1>
-          <p className="page-subtitle">Real-time audit trail — OCSF-structured events with full decision paths</p>
+          <p className="page-subtitle" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Real-time audit trail — OCSF-structured events with full decision paths</p>
         </div>
         <div className="header-actions">
-          <div className="activity-stats">
-            <div className="mini-stat"><span className="mini-val">{stats.total}</span><span className="mini-lbl">events</span></div>
-            <div className="mini-stat mini-alert"><span className="mini-val">{stats.alerts}</span><span className="mini-lbl">alerts</span></div>
-            <div className="mini-stat mini-error"><span className="mini-val">{stats.errors}</span><span className="mini-lbl">errors</span></div>
+          <div className="activity-stats flex items-center gap-4">
+            <div className="mini-stat text-center">
+              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '16px', fontWeight: 700 }}>{stats.total}</span>
+              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>events</span>
+            </div>
+            <div className="mini-stat text-center">
+              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#ff8833', fontSize: '16px', fontWeight: 700 }}>{stats.alerts}</span>
+              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>alerts</span>
+            </div>
+            <div className="mini-stat text-center">
+              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#ff3355', fontSize: '16px', fontWeight: 700 }}>{stats.errors}</span>
+              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>errors</span>
+            </div>
           </div>
-          <button className={`btn btn-xs ${paused ? 'btn-warning' : 'btn-secondary'}`} onClick={() => setPaused(!paused)}>
+          <button
+            className="btn btn-xs cursor-pointer"
+            onClick={() => setPaused(!paused)}
+            style={{ fontFamily: 'var(--font-mono)', background: paused ? 'rgba(255,136,51,0.15)' : 'transparent', color: paused ? '#ff8833' : '#5a7a9a', border: `1px solid ${paused ? 'rgba(255,136,51,0.3)' : 'rgba(0,212,255,0.12)'}` }}
+          >
             {paused ? '▶ Resume' : '❚❚ Pause'}
           </button>
-          <label className="toggle-label">
-            <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} />
+          <label className="toggle-label flex items-center gap-2 cursor-pointer" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px' }}>
+            <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} className="cursor-pointer" />
             <span className="toggle-switch" />
             Auto-scroll
           </label>
@@ -166,35 +182,43 @@ function ActivityPage() {
         {/* Filters */}
         <div className="activity-sidebar">
           <div className="sidebar-section">
-            <label className="control-label">Category</label>
-            <div className="filter-pills">
+            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Category</label>
+            <div className="filter-pills flex flex-wrap gap-2">
               {FILTERS.map(f => (
                 <button
                   key={f}
-                  className={`filter-pill ${filter === f ? 'active' : ''}`}
+                  style={{
+                    background: filter === f ? 'rgba(0,212,255,0.1)' : 'transparent',
+                    color: filter === f ? '#00d4ff' : '#5a7a9a',
+                    border: `1px solid ${filter === f ? 'rgba(0,212,255,0.3)' : 'rgba(0,212,255,0.12)'}`,
+                  }}
+                  className="filter-pill px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer"
                   onClick={() => setFilter(f)}
                 >
                   {f}
-                  {f !== 'all' && <span className="pill-count">{logs.filter(l => l.type === f).length}</span>}
+                  {f !== 'all' && <span className="pill-count ml-1" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>{logs.filter(l => l.type === f).length}</span>}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="sidebar-section">
-            <label className="control-label">Search</label>
+            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Search</label>
             <input
               type="text"
-              className="cyber-input"
+              className="cyber-input w-full rounded-lg px-3 py-2 outline-none transition-all"
+              style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }}
               placeholder="Filter logs..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
+              onFocus={(e) => { e.target.style.borderColor = 'rgba(0,212,255,0.4)'; e.target.style.boxShadow = '0 0 10px rgba(0,212,255,0.08)'; }}
+              onBlur={(e) => { e.target.style.borderColor = 'rgba(0,212,255,0.12)'; e.target.style.boxShadow = 'none'; }}
             />
           </div>
 
           <div className="sidebar-section">
-            <label className="control-label">Export</label>
-            <button className="btn btn-secondary btn-full" onClick={() => {
+            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Export</label>
+            <button className="btn btn-secondary btn-full cursor-pointer" onClick={() => {
               const data = JSON.stringify(logs, null, 2);
               const blob = new Blob([data], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
@@ -203,30 +227,30 @@ function ActivityPage() {
               a.download = `ekadhara-logs-${Date.now()}.json`;
               a.click();
               URL.revokeObjectURL(url);
-            }}>
+            }} style={{ fontFamily: 'var(--font-mono)' }}>
               Export JSON (OCSF)
             </button>
           </div>
 
           {selectedLog && (
             <div className="sidebar-section">
-              <label className="control-label">Selected Event</label>
-              <div className="selected-event-info">
-                <div><strong>ID:</strong> {selectedLog.id}</div>
-                <div><strong>Type:</strong> {selectedLog.type}</div>
-                <div><strong>Severity:</strong> <span style={{ color: levelStyle(selectedLog.severity).color }}>{selectedLog.severity}</span></div>
-                <div><strong>Time:</strong> {new Date(selectedLog.timestamp).toLocaleTimeString()}</div>
+              <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Selected Event</label>
+              <div className="selected-event-info space-y-1" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: '#c8d6e5' }}>
+                <div><strong style={{ color: '#5a7a9a' }}>ID:</strong> {selectedLog.id}</div>
+                <div><strong style={{ color: '#5a7a9a' }}>Type:</strong> {selectedLog.type}</div>
+                <div><strong style={{ color: '#5a7a9a' }}>Severity:</strong> <span style={{ color: levelStyle(selectedLog.severity).color }}>{selectedLog.severity}</span></div>
+                <div><strong style={{ color: '#5a7a9a' }}>Time:</strong> {new Date(selectedLog.timestamp).toLocaleTimeString()}</div>
               </div>
             </div>
           )}
         </div>
 
         {/* Log feed */}
-        <div className="activity-feed" ref={logsContainerRef}>
+        <div className="activity-feed overflow-y-auto scrollbar-thin" ref={logsContainerRef} style={{ background: 'rgba(6,10,16,0.6)' }}>
           {filtered.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">◈</div>
-              <p>No events matching filter</p>
+              <div className="empty-icon" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)', fontSize: '32px' }}>◈</div>
+              <p style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>No events matching filter</p>
             </div>
           ) : (
             filtered.map(log => {
@@ -234,12 +258,16 @@ function ActivityPage() {
               return (
                 <div
                   key={log.id}
-                  className={`log-entry ${selectedLog?.id === log.id ? 'log-selected' : ''}`}
+                  style={{
+                    background: selectedLog?.id === log.id ? 'rgba(0,212,255,0.06)' : 'transparent',
+                    borderBottom: '1px solid rgba(0,212,255,0.04)',
+                  }}
+                  className="log-entry flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors"
                   onClick={() => setSelectedLog(log)}
                 >
-                  <div className="log-time">{new Date(log.timestamp).toLocaleTimeString()}</div>
-                  <div className="log-level" style={{ color: ls.color, backgroundColor: ls.bg }}>{log.type}</div>
-                  <div className="log-category">{log.message.substring(0, 60)}...</div>
+                  <div className="log-time shrink-0" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '11px', width: '70px' }}>{new Date(log.timestamp).toLocaleTimeString()}</div>
+                  <div className="log-level px-2 py-0.5 rounded text-[10px] uppercase tracking-wider shrink-0" style={{ color: ls.color, backgroundColor: ls.bg, fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{log.type}</div>
+                  <div className="log-category truncate flex-1" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{log.message.substring(0, 60)}...</div>
                 </div>
               );
             })
@@ -249,19 +277,19 @@ function ActivityPage() {
 
       {/* Detail panel */}
       {selectedLog && (
-        <div className="detail-panel">
-          <div className="detail-panel-header">
-            <h4>Event Detail: {selectedLog.id}</h4>
-            <button className="modal-close" onClick={() => setSelectedLog(null)}>✕</button>
+        <div className="detail-panel rounded-lg overflow-hidden" style={{ border: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,18,28,0.95)' }}>
+          <div className="detail-panel-header flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
+            <h4 style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>Event Detail: {selectedLog.id}</h4>
+            <button className="modal-close cursor-pointer" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)' }} onClick={() => setSelectedLog(null)}>✕</button>
           </div>
-          <div className="detail-panel-body">
-            <pre className="detail-json">
+          <div className="detail-panel-body p-4">
+            <pre className="detail-json whitespace-pre-wrap" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '11px' }}>
               {selectedLog.full_payload || JSON.stringify(selectedLog, null, 2)}
             </pre>
             {selectedLog.decision_path && (
               <>
-                <h5>Decision Path</h5>
-                <pre className="detail-json">{selectedLog.decision_path}</pre>
+                <h5 className="mt-4 mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Decision Path</h5>
+                <pre className="detail-json whitespace-pre-wrap" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '11px' }}>{selectedLog.decision_path}</pre>
               </>
             )}
           </div>

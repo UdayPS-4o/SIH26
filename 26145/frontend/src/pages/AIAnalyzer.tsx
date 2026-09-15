@@ -1,9 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Alert, Flow } from '../types';
 import { fetchStats, fetchAlerts } from '../lib/api';
-import {
-  Send, Bot, User, AlertTriangle, Shield, Zap, X, Loader2,
-} from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -30,8 +27,8 @@ const TYPING_DOTS = (
     {[0, 1, 2].map((i) => (
       <div
         key={i}
-        className="w-2 h-2 rounded-full bg-brand-blue animate-bounce"
-        style={{ animationDelay: `${i * 150}ms`, animationDuration: '600ms' }}
+        className="w-2 h-2 rounded-full"
+        style={{ backgroundColor: '#00d4ff', animation: `pulse-dot 600ms ease-in-out ${i * 150}ms infinite` }}
       />
     ))}
   </div>
@@ -39,21 +36,21 @@ const TYPING_DOTS = (
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const severityIcon = (s: string) => {
+const severitySymbol = (s: string) => {
   switch (s) {
-    case 'critical': return '🔴';
-    case 'high': return '🟠';
-    case 'medium': return '🟡';
-    default: return '🟢';
+    case 'critical': return '[!]';
+    case 'high': return '[+]';
+    case 'medium': return '[~]';
+    default: return '[i]';
   }
 };
 
 const severityColor = (s: string) => {
   switch (s) {
-    case 'critical': return 'text-red-400 border-red-500/30 bg-red-500/10';
-    case 'high': return 'text-orange-400 border-orange-500/30 bg-orange-500/10';
-    case 'medium': return 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10';
-    default: return 'text-green-400 border-green-500/30 bg-green-500/10';
+    case 'critical': return { text: '#ff3355', border: 'rgba(255,51,85,0.3)', bg: 'rgba(255,51,85,0.08)' };
+    case 'high': return { text: '#ff8833', border: 'rgba(255,136,51,0.3)', bg: 'rgba(255,136,51,0.08)' };
+    case 'medium': return { text: '#ffcc00', border: 'rgba(255,204,0,0.3)', bg: 'rgba(255,204,0,0.08)' };
+    default: return { text: '#00d4ff', border: 'rgba(0,212,255,0.3)', bg: 'rgba(0,212,255,0.08)' };
   }
 };
 
@@ -69,7 +66,7 @@ const formatMarkdown = (text: string): React.ReactNode[] => {
       const title = trimmed.replace(/^#{1,3}\s+/, '');
       const sizeClass = level === 1 ? 'text-base' : level === 2 ? 'text-sm' : 'text-xs';
       parts.push(
-        <p key={idx} className={`font-bold text-white mt-3 mb-1 ${sizeClass}`}>{title}</p>
+        <p key={idx} className={`font-bold mt-3 mb-1 ${sizeClass}`} style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>{title}</p>
       );
       return;
     }
@@ -77,9 +74,9 @@ const formatMarkdown = (text: string): React.ReactNode[] => {
     if (trimmed.startsWith('- ')) {
       const content = trimmed.replace(/^- /, '');
       parts.push(
-        <li key={idx} className="text-slate-300 ml-3 list-disc">
+        <li key={idx} className="ml-3 list-disc" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
           {content.split(/\*\*/).map((part, i, arr) =>
-            i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
+            i % 2 === 1 ? <strong key={i} style={{ color: '#c8d6e5' }}>{part}</strong> : part
           )}
         </li>
       );
@@ -89,9 +86,9 @@ const formatMarkdown = (text: string): React.ReactNode[] => {
     if (/^\d+\.\s/.test(trimmed)) {
       const content = trimmed.replace(/^\d+\.\s/, '');
       parts.push(
-        <li key={idx} className="text-slate-300 ml-3 list-decimal">
+        <li key={idx} className="ml-3 list-decimal" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
           {content.split(/\*\*/).map((part, i, arr) =>
-            i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
+            i % 2 === 1 ? <strong key={i} style={{ color: '#c8d6e5' }}>{part}</strong> : part
           )}
         </li>
       );
@@ -100,7 +97,7 @@ const formatMarkdown = (text: string): React.ReactNode[] => {
 
     if (trimmed.startsWith('```')) {
       parts.push(
-        <div key={idx} className="bg-navy-900/80 border border-slate-700 rounded-lg px-4 py-2 my-2 font-mono text-xs text-brand-green">
+        <div key={idx} className="rounded-lg px-4 py-2 my-2 font-mono text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#00ff41', background: 'rgba(6,10,16,0.95)', border: '1px solid rgba(0,212,255,0.2)' }}>
           {trimmed.replace(/```/g, '')}
         </div>
       );
@@ -108,7 +105,7 @@ const formatMarkdown = (text: string): React.ReactNode[] => {
     }
 
     if (trimmed.startsWith('---')) {
-      parts.push(<hr key={idx} className="border-slate-700 my-2" />);
+      parts.push(<hr key={idx} style={{ borderColor: 'rgba(0,212,255,0.12)' }} className="my-2" />);
       return;
     }
 
@@ -122,11 +119,12 @@ const formatMarkdown = (text: string): React.ReactNode[] => {
       const isDivider = cells.every((c) => /^[-:]+$/.test(c));
       if (isDivider) return;
       parts.push(
-        <div key={idx} className="flex gap-2 text-xs my-0.5">
+        <div key={idx} className="flex gap-2 text-xs my-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
           {cells.map((cell, ci) => (
             <span
               key={ci}
-              className={`flex-1 ${ci === 0 ? 'text-slate-400' : 'text-slate-300'}`}
+              className="flex-1"
+              style={{ color: ci === 0 ? '#5a7a9a' : '#c8d6e5' }}
             >
               {cell}
             </span>
@@ -137,20 +135,20 @@ const formatMarkdown = (text: string): React.ReactNode[] => {
     }
 
     const formatted = trimmed.split(/\*\*/).map((part, i, arr) =>
-      i % 2 === 1 ? <strong key={i} className="text-white font-semibold">{part}</strong> : part
+      i % 2 === 1 ? <strong key={i} style={{ color: '#c8d6e5', fontWeight: 600 }}>{part}</strong> : part
     );
 
-    if (trimmed.match(/^(🔴|🟠|🟡|🟢)/)) {
+    if (trimmed.match(/^(\[!\]|\[\+\]|\[~\]|\[i\])/)) {
       parts.push(
-        <p key={idx} className="text-sm flex items-start gap-2 mt-1">
-          <span className="shrink-0">{trimmed.match(/^(🔴|🟠|🟡|🟢)/)?.[0]}</span>
+        <p key={idx} className="text-sm flex items-start gap-2 mt-1" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>
+          <span className="shrink-0">{trimmed.match(/^(\[!\]|\[\+\]|\[~\]|\[i\])/)?.[0]}</span>
           <span>{formatted.slice(1)}</span>
         </p>
       );
       return;
     }
 
-    parts.push(<p key={idx} className="text-sm text-slate-300 leading-relaxed">{formatted}</p>);
+    parts.push(<p key={idx} className="text-sm leading-relaxed" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{formatted}</p>);
   });
 
   return parts;
@@ -170,7 +168,7 @@ const generateIPAnalysis = async (ip: string): Promise<string> => {
 
   return `## IP Threat Analysis: \`${ip}\`
 
-🔴 **CRITICAL** — Malicious Activity Detected
+[!] **CRITICAL** — Malicious Activity Detected
 
 **Scanning Activity Identified:**
 The IP \`${ip}\` has been detected performing aggressive port scanning against our network infrastructure. The scan targeted **${connections} internal hosts** across ports ${[22, 80, 445, 3389, 8080].sort(() => Math.random() - 0.5).slice(0, 3).join(', ')}.
@@ -226,10 +224,10 @@ Our AI-powered detection system has identified **${stats.total_alerts} threat ev
 
 ### Threat Severity Distribution
 
-🔴 **CRITICAL:** ${criticalCount} events — Immediate action required
-🟠 **HIGH:** ${highCount} events — Escalate to security team
-🟡 **MEDIUM:** ${alerts.filter((a) => a.severity === 'medium').length} events — Monitor closely
-🟢 **LOW:** ${alerts.filter((a) => a.severity === 'low').length} events — Log and review
+[!] **CRITICAL:** ${criticalCount} events — Immediate action required
+[+] **HIGH:** ${highCount} events — Escalate to security team
+[~] **MEDIUM:** ${alerts.filter((a) => a.severity === 'medium').length} events — Monitor closely
+[i] **LOW:** ${alerts.filter((a) => a.severity === 'low').length} events — Log and review
 
 ### Attack Vector Breakdown
 
@@ -257,7 +255,7 @@ ${alerts
   .slice(0, 5)
   .map(
     (a) =>
-      `- ${severityIcon(a.severity)} \`${a.src_ip}\` → **${a.threat_type}** (${a.confidence}% confidence, ${new Date(a.timestamp).toLocaleTimeString()})`
+      `- ${severitySymbol(a.severity)} \`${a.src_ip}\` → **${a.threat_type}** (${a.confidence}% confidence, ${new Date(a.timestamp).toLocaleTimeString()})`
   )
   .join('\n')}
 
@@ -299,14 +297,14 @@ const generateThreatPrediction = async (alerts: Alert[]): Promise<string> => {
 **Model:** Pattern Recognition + Temporal Analysis
 
 ---
-### 🔮 Predicted Threat Trajectory
+### [crystal] Predicted Threat Trajectory
 
 Based on analysis of **${alerts.length} recent alerts**, our AI models predict the following likely threat scenarios in the next **6-24 hours**:
 
 ### Primary Prediction: ${topType} Campaign Escalation
 
 ${recentCritical.length > 0 ? `**Supporting Evidence:**
-${recentCritical.map((a) => `- ${severityIcon(a.severity)} \`${a.src_ip}\` — ${a.threat_type} (${new Date(a.timestamp).toLocaleTimeString()})`).join('\n')}` : '**Supporting Evidence:** Elevated attack frequency detected across multiple vectors.'}
+${recentCritical.map((a) => `- ${severitySymbol(a.severity)} \`${a.src_ip}\` — ${a.threat_type} (${new Date(a.timestamp).toLocaleTimeString()})`).join('\n')}` : '**Supporting Evidence:** Elevated attack frequency detected across multiple vectors.'}
 
 **Predicted Scenario:**
 The attack patterns suggest the threat actor is conducting **reconnaissance** and will likely escalate to:
@@ -318,10 +316,10 @@ The attack patterns suggest the threat actor is conducting **reconnaissance** an
 
 | Scenario | Probability | Severity |
 |----------|------------|----------|
-| ${topType} Volume Increase | ${(Math.random() * 20 + 70).toFixed(0)}% | 🟠 HIGH |
-| Lateral Movement | ${(Math.random() * 20 + 40).toFixed(0)}% | 🔴 CRITICAL |
-| Data Exfiltration | ${(Math.random() * 15 + 25).toFixed(0)}% | 🔴 CRITICAL |
-| Ransomware Deployment | ${(Math.random() * 15 + 15).toFixed(0)}% | 🔴 CRITICAL |
+| ${topType} Volume Increase | ${(Math.random() * 20 + 70).toFixed(0)}% | [+] HIGH |
+| Lateral Movement | ${(Math.random() * 20 + 40).toFixed(0)}% | [!] CRITICAL |
+| Data Exfiltration | ${(Math.random() * 15 + 25).toFixed(0)}% | [!] CRITICAL |
+| Ransomware Deployment | ${(Math.random() * 15 + 15).toFixed(0)}% | [!] CRITICAL |
 
 ### MITRE ATT&CK Mapping
 
@@ -351,7 +349,7 @@ The attack patterns suggest the threat actor is conducting **reconnaissance** an
 - Abnormal DNS query volumes (potential DNS tunneling)
 
 ---
-*⚠️ Prediction confidence: ${(Math.random() * 15 + 78).toFixed(1)}% | Model: Temporal Pattern v3.2*`;
+*Prediction confidence: ${(Math.random() * 15 + 78).toFixed(1)}% | Model: Temporal Pattern v3.2*`;
 };
 
 const generateAlertSummary = async (alerts: Alert[]): Promise<string> => {
@@ -368,26 +366,26 @@ const generateAlertSummary = async (alerts: Alert[]): Promise<string> => {
 **AI Model Confidence:** ${(Math.random() * 10 + 88).toFixed(1)}%
 
 ---
-### 🔴 Priority Alerts (CRITICAL Severity)
+### [!] Priority Alerts (CRITICAL Severity)
 
 ${criticals.length > 0 ? criticals.slice(0, 5).map((a) => `- **${a.threat_type}** from \`${a.src_ip}\`
   - Confidence: ${a.confidence}% | Port: ${a.src_port} | Time: ${new Date(a.timestamp).toLocaleTimeString()}`).join('\n\n') : 'No critical alerts in current window.'}
 
 ---
-### 📊 Threat Distribution by Type
+### [chart] Threat Distribution by Type
 
 ${Object.entries(typeCounts)
   .sort(([, a], [, b]) => b - a)
-  .map(([type, count]) => `- ${severityIcon(typeCounts[type] === alerts.filter((a) => a.severity === 'critical' && a.threat_type === type).length ? 'critical' : 'medium')} **${type}:** ${count} events`)
+  .map(([type, count]) => `- ${severitySymbol('critical')} **${type}:** ${count} events`)
   .join('\n')}
 
 ---
-### 📋 Recent Alert Timeline
+### [list] Recent Alert Timeline
 
-${top.map((a) => `${severityIcon(a.severity)} [${new Date(a.timestamp).toLocaleTimeString()}] **${a.threat_type}** — \`${a.src_ip}:${a.src_port}\` → \`${a.dst_ip}\` | ${a.confidence}% confidence | ${a.flow_count} flows`).join('\n')}
+${top.map((a) => `${severitySymbol(a.severity)} [${new Date(a.timestamp).toLocaleTimeString()}] **${a.threat_type}** — \`${a.src_ip}:${a.src_port}\` → \`${a.dst_ip}\` | ${a.confidence}% confidence | ${a.flow_count} flows`).join('\n')}
 
 ---
-### ⚡ Key Findings
+### [zap] Key Findings
 
 - **Attack Vector:** Multi-vector campaign detected with coordinated timing
 - **Primary Targets:** Internal servers on ports 443, 3389, and 22
@@ -523,7 +521,7 @@ const AIAnalyzer: React.FC = () => {
           addAnalysisRecord('Custom Analysis', prompt);
         }
       } catch (e) {
-        responseText = '## Analysis Error\n\n⚠️ An error occurred during analysis. The AI model encountered an unexpected condition.\n\n**Recommended action:**\n- Retry the analysis\n- Check system connectivity\n- Contact the SOC team if the issue persists\n\n*Error details have been logged for review.*';
+        responseText = '## Analysis Error\n\n[!] An error occurred during analysis. The AI model encountered an unexpected condition.\n\n**Recommended action:**\n- Retry the analysis\n- Check system connectivity\n- Contact the SOC team if the issue persists\n\n*Error details have been logged for review.*';
       }
 
       await typeResponse(responseText, aiMessageId);
@@ -557,10 +555,10 @@ I'm your **AI-powered cybersecurity analyst**. I have real-time access to your n
 
 **I can help you with:**
 
-🔍 **Threat Analysis** — "Analyze recent threats" or paste any IP to investigate
-📊 **Security Reports** — "Generate report" for comprehensive assessments
-🔮 **Threat Prediction** — "Predict next threats" for proactive defense
-🛡️ **IP Reputation** — "Check IP reputation" for external threat intelligence
+[search] **Threat Analysis** — "Analyze recent threats" or paste any IP to investigate
+[chart] **Security Reports** — "Generate report" for comprehensive assessments
+[crystal] **Threat Prediction** — "Predict next threats" for proactive defense
+[shield] **IP Reputation** — "Check IP reputation" for external threat intelligence
 
 **Your current security posture:**
 - Monitoring **${stats?.total_flows?.toLocaleString() || '---'}** network flows
@@ -579,32 +577,35 @@ How can I assist you today?`,
   return (
     <div className="flex h-[calc(100vh-4rem)]">
       {/* ─── Sidebar ───────────────────────────────────────────────────────── */}
-      <div className="w-[30%] min-w-[280px] max-w-[360px] border-r border-slate-800 bg-navy-800/50 flex flex-col">
+      <div className="w-[30%] min-w-[280px] max-w-[360px] flex flex-col" style={{ borderRight: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,16,24,0.95)' }}>
         {/* Logo */}
-        <div className="p-5 border-b border-slate-800">
+        <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="p-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-blue/10 border border-brand-blue/20 flex items-center justify-center">
-              <Bot className="text-brand-blue" size={22} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff', fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 'bold' }}>
+              [AI]
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">AI Threat Analyzer</h2>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider">Cybersecurity Intelligence</p>
+              <h2 className="text-sm font-bold" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', letterSpacing: '1px' }}>AI Threat Analyzer</h2>
+              <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', letterSpacing: '2px' }}>Cybersecurity Intelligence</p>
             </div>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="p-4 border-b border-slate-800">
-          <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
+        <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="p-4">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', letterSpacing: '2px' }}>
             Quick Actions
           </h3>
           <div className="space-y-2">
             <button
               onClick={() => handleSend('Analyze recent threats in detail')}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-brand-blue/5 border border-brand-blue/20 text-brand-blue text-xs font-medium hover:bg-brand-blue/10 hover:border-brand-blue/30 transition-all group"
+              style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff' }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(0,212,255,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(0,212,255,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
-              <Shield size={14} className="shrink-0" />
-              <span>Analyze Recent Threats</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>[S]</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>Analyze Recent Threats</span>
             </button>
             <button
               onClick={() => {
@@ -615,47 +616,59 @@ How can I assist you today?`,
                   `${Math.floor(Math.random() * 223) + 1}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
                 handleSend(`Check IP reputation for ${randomIP}`);
               }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-brand-amber/5 border border-brand-amber/20 text-brand-amber text-xs font-medium hover:bg-brand-amber/10 hover:border-brand-amber/30 transition-all group"
+              style={{ background: 'rgba(255,136,51,0.05)', border: '1px solid rgba(255,136,51,0.2)', color: '#ff8833' }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,136,51,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,136,51,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(255,136,51,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,136,51,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,136,51,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
-              <AlertTriangle size={14} className="shrink-0" />
-              <span>Check IP Reputation</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>[!]</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>Check IP Reputation</span>
             </button>
             <button
               onClick={() => handleSend('Generate comprehensive security report')}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-brand-green/5 border border-brand-green/20 text-brand-green text-xs font-medium hover:bg-brand-green/10 hover:border-brand-green/30 transition-all group"
+              style={{ background: 'rgba(0,255,65,0.05)', border: '1px solid rgba(0,255,65,0.2)', color: '#00ff41' }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,255,65,0.1)'; e.currentTarget.style.borderColor = 'rgba(0,255,65,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(0,255,65,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,255,65,0.05)'; e.currentTarget.style.borderColor = 'rgba(0,255,65,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
-              <Shield size={14} className="shrink-0" />
-              <span>Generate Report</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>[S]</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>Generate Report</span>
             </button>
             <button
               onClick={() => handleSend('Predict likely next threats and attack vectors')}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-red-500/5 border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/10 hover:border-red-500/30 transition-all group"
+              style={{ background: 'rgba(255,51,85,0.05)', border: '1px solid rgba(255,51,85,0.2)', color: '#ff3355' }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,51,85,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,51,85,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(255,51,85,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,51,85,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,51,85,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
-              <Zap size={14} className="shrink-0" />
-              <span>Threat Prediction</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>[crystal]</span>
+              <span style={{ fontFamily: 'var(--font-mono)' }}>Threat Prediction</span>
             </button>
           </div>
         </div>
 
         {/* Recent Analyses */}
         <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
-          <h3 className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">
+          <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', letterSpacing: '2px' }}>
             Recent Analyses
           </h3>
           {recentAnalyses.length === 0 ? (
-            <p className="text-xs text-slate-600 italic px-1">No analyses yet. Start a conversation above.</p>
+            <p className="text-xs italic px-1" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>No analyses yet. Start a conversation above.</p>
           ) : (
             <div className="space-y-1">
               {recentAnalyses.map((record) => (
                 <button
                   key={record.id}
                   onClick={() => handleSend(record.prompt)}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-navy-700/50 transition-colors group"
+                  className="w-full text-left px-3 py-2 rounded-lg transition-colors group cursor-pointer"
+                  style={{ background: 'transparent' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.04)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
-                  <p className="text-xs text-slate-300 group-hover:text-white truncate">
+                  <p className="text-xs truncate" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>
                     {record.label}
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
+                  <p className="text-[10px] mt-0.5" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>
                     {new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </button>
@@ -666,7 +679,7 @@ How can I assist you today?`,
       </div>
 
       {/* ─── Chat Area ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col bg-navy-900">
+      <div className="flex-1 flex flex-col" style={{ background: '#060a10' }}>
         {/* Messages */}
         <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-5">
           {messages.map((msg) => (
@@ -675,16 +688,16 @@ How can I assist you today?`,
               className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'ai' && (
-                <div className="w-8 h-8 rounded-lg bg-brand-blue/10 border border-brand-blue/20 flex items-center justify-center shrink-0 mt-1">
-                  <Bot size={16} className="text-brand-blue" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
+                  [AI]
                 </div>
               )}
               <div
-                className={`max-w-[75%] rounded-xl px-4 py-3 ${
-                  msg.role === 'user'
-                    ? 'bg-brand-blue text-white rounded-br-sm'
-                    : 'bg-navy-800 border border-slate-700 rounded-bl-sm'
-                }`}
+                className="max-w-[75%] rounded-xl px-4 py-3"
+                style={{
+                  background: msg.role === 'user' ? 'rgba(0,212,255,0.15)' : 'rgba(10,18,28,0.85)',
+                  border: msg.role === 'user' ? '1px solid rgba(0,212,255,0.3)' : '1px solid rgba(0,212,255,0.12)',
+                }}
               >
                 {msg.role === 'ai' ? (
                   msg.content ? (
@@ -693,19 +706,18 @@ How can I assist you today?`,
                     TYPING_DOTS
                   )
                 ) : (
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{msg.content}</p>
                 )}
                 <p
-                  className={`text-[10px] mt-2 ${
-                    msg.role === 'user' ? 'text-blue-200' : 'text-slate-500'
-                  }`}
+                  className="text-[10px] mt-2"
+                  style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}
                 >
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
               {msg.role === 'user' && (
-                <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center shrink-0 mt-1">
-                  <User size={16} className="text-slate-300" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1" style={{ background: 'rgba(90,122,154,0.1)', border: '1px solid rgba(90,122,154,0.2)', color: '#5a7a9a', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
+                  [U]
                 </div>
               )}
             </div>
@@ -713,10 +725,10 @@ How can I assist you today?`,
 
           {isTyping && messages[messages.length - 1]?.role !== 'ai' && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-lg bg-brand-blue/10 border border-brand-blue/20 flex items-center justify-center shrink-0 mt-1">
-                <Bot size={16} className="text-brand-blue" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
+                [AI]
               </div>
-              <div className="bg-navy-800 border border-slate-700 rounded-xl rounded-bl-sm px-5 py-3">
+              <div className="rounded-xl px-5 py-3" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
                 {TYPING_DOTS}
               </div>
             </div>
@@ -726,8 +738,8 @@ How can I assist you today?`,
         </div>
 
         {/* Input Bar */}
-        <div className="p-4 border-t border-slate-800 bg-navy-800/30">
-          <div className="flex items-center gap-3 bg-navy-800 border border-slate-700 rounded-xl px-4 py-2 focus-within:border-brand-blue/50 transition-colors">
+        <div style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }} className="p-4" style={{ background: 'rgba(10,16,24,0.9)' }}>
+          <div className="flex items-center gap-3 rounded-xl px-4 py-2" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
             <input
               ref={inputRef}
               type="text"
@@ -736,29 +748,38 @@ How can I assist you today?`,
               onKeyDown={handleKeyDown}
               placeholder="Ask about threats, analyze an IP, or request a report..."
               disabled={isTyping}
-              className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 outline-none disabled:opacity-50"
+              className="flex-1 bg-transparent text-sm outline-none disabled:opacity-50"
+              style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}
             />
             {input && (
               <button
                 onClick={() => setInput('')}
-                className="p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-navy-700 transition-colors"
+                className="p-1 rounded-lg transition-colors cursor-pointer"
+                style={{ color: '#2d4a6a' }}
               >
-                <X size={14} />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
               </button>
             )}
             <button
               onClick={() => handleSend(input)}
               disabled={!input.trim() || isTyping}
-              className="p-2 rounded-lg bg-brand-blue text-white hover:bg-brand-blue/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              style={{ background: 'rgba(0,212,255,0.15)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff' }}
             >
               {isTyping ? (
-                <Loader2 size={16} className="animate-spin" />
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: 'pulse-dot 600ms ease-in-out infinite' }}>
+                  <circle cx="8" cy="8" r="3" fill="currentColor" />
+                </svg>
               ) : (
-                <Send size={16} />
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 8H14M9 4L14 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               )}
             </button>
           </div>
-          <p className="text-[10px] text-slate-600 mt-2 text-center">
+          <p className="text-[10px] mt-2 text-center" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>
             AI Threat Analyzer — Powered by Ekadhara Detection Engine
           </p>
         </div>

@@ -16,7 +16,6 @@ import AttackPanel from './components/AttackPanel';
 import { ShieldAlert } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isConnected, flowsPerSec, alertCount } = useWebSocketContext();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -26,81 +25,115 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, []);
 
   const timeStr = currentTime.toLocaleTimeString('en-US', { hour12: false });
-  const dateStr = currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const dateStr = currentTime.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: 'var(--bg-subtle)', overflow: 'hidden' }}>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div
+      className="terminal-wrapper"
+      style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}
+    >
+      {/* ── CLASSIFIED BANNER ── */}
+      <div className="classified-banner">
+        <span className="classified-text">
+          ◆ CLASSIFIED // RESTRICTED ACCESS // AUTHORIZED PERSONNEL ONLY ◆
+        </span>
+      </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-        {/* Top Bar */}
-        <div className="hud-bar">
-          <div className="hud-title">
-            <div className="hud-title-icon">
-              <ShieldAlert size={14} />
-            </div>
-            EKADHARA
-          </div>
+      {/* ── MAIN APP SHELL ── */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+        <Sidebar isOpen={false} onClose={() => {}} />
 
-          <div className="hud-divider" />
-
-          <div style={{
-            fontSize: 13,
-            color: 'var(--text-secondary)',
-            fontWeight: 500,
-          }}>
-            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>PS-26145</span>
-            <span style={{ color: 'var(--text-muted)', margin: '0 8px' }}>·</span>
-            <span>NTRO — AI-Based Cyber Threat Detection</span>
-          </div>
-
-          <div className="hud-spacer" />
-
-          {/* Status + Stats */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="hud-stat">
-              <span className="hud-stat-label">Status</span>
-              <span style={{
-                color: isConnected ? 'var(--green-600)' : 'var(--amber-500)',
-                fontSize: 12,
-                fontWeight: 600,
-              }}>
-                {isConnected ? 'Live' : 'Demo'}
+        <div className="terminal-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* ── HUD HEADER BAR ── */}
+          <div className="hud-bar">
+            {/* App title */}
+            <div className="hud-title">
+              <span className="hud-title-icon">
+                <ShieldAlert size={14} />
               </span>
-              <span className="hud-status-dot" style={{
-                background: isConnected ? 'var(--green-500)' : 'var(--amber-500)',
-                boxShadow: isConnected ? '0 0 6px rgba(16,185,129,0.4)' : '0 0 6px rgba(245,158,11,0.4)',
-              }} />
+              ◈ EKADHARA
             </div>
 
-            <div className="hud-stat">
-              <span className="hud-stat-label">Alerts</span>
-              <span className="hud-stat-value">{alertCount}</span>
+            <div className="hud-divider" />
+
+            {/* Project info */}
+            <div
+              className="hud-subtitle"
+              style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}
+            >
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>PS-26145</span>
+              <span className="hud-subtitle-sep" />
+              <span>NTRO // SIH26</span>
             </div>
 
-            <div className="hud-stat">
-              <span className="hud-stat-label">Throughput</span>
-              <span className="hud-stat-value">{flowsPerSec.toFixed(0)}/s</span>
+            <div className="hud-spacer" />
+
+            {/* Status indicators */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Live / Demo indicator */}
+              <div className="hud-stat">
+                <span className="hud-stat-label">STATUS</span>
+                <span
+                  className="hud-live-text"
+                  style={{
+                    color: isConnected ? 'var(--accent-green)' : '#f59e0b',
+                    fontSize: 12,
+                    fontWeight: 600,
+                  }}
+                >
+                  {isConnected ? 'LIVE' : 'DEMO'}
+                </span>
+                <span
+                  className="hud-status-dot"
+                  style={{
+                    background: isConnected ? 'var(--accent-green)' : '#f59e0b',
+                    boxShadow: isConnected
+                      ? '0 0 8px rgba(0,255,65,0.5)'
+                      : '0 0 8px rgba(245,158,11,0.5)',
+                  }}
+                />
+              </div>
+
+              <div className="hud-divider" />
+
+              {/* Alert count */}
+              <div className="hud-stat">
+                <span className="hud-stat-label">ALERTS</span>
+                <span className="hud-stat-value">{alertCount}</span>
+              </div>
+
+              {/* Throughput */}
+              <div className="hud-stat">
+                <span className="hud-stat-label">THROUGHPUT</span>
+                <span className="hud-stat-value">{flowsPerSec.toFixed(0)}/s</span>
+              </div>
+
+              <div className="hud-divider" />
+
+              {/* Diode badge */}
+              <div className="diode-badge">
+                <span className="diode-dot" />
+                DIODE READ-ONLY
+              </div>
+
+              <div className="hud-divider" />
+
+              {/* Clock */}
+              <div className="hud-clock">
+                <span className="hud-clock-date">{dateStr}</span>
+                <span className="hud-clock-sep">|</span>
+                <span className="hud-clock-time">{timeStr}</span>
+              </div>
             </div>
           </div>
 
-          <div className="hud-divider" />
-
-          {/* Diode badge */}
-          <div className="diode-badge">
-            <span className="diode-dot" />
-            Diode Read-Only
-          </div>
-
-          <div className="hud-divider" />
-
-          <span className="hud-time">{dateStr} {timeStr}</span>
+          {/* ── CONTENT AREA ── */}
+          <main className="terminal-content">{children}</main>
         </div>
-
-        {/* Content */}
-        <main className="content-area">
-          {children}
-        </main>
       </div>
     </div>
   );

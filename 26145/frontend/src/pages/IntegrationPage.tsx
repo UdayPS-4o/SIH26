@@ -107,64 +107,67 @@ function IntegrationPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'connected': return '#00ff41';
-      case 'disconnected': return '#ffb000';
-      case 'error': return '#ff3370';
-      default: return '#888';
+      case 'disconnected': return '#ff8833';
+      case 'error': return '#ff3355';
+      default: return '#2d4a6a';
     }
   };
 
   const getFormatBadge = (format: string) => {
     const colors: Record<string, string> = {
-      ocsf: 'rgba(0,212,255,0.15)', json: 'rgba(0,255,65,0.15)', cef: 'rgba(255,176,0,0.15)', syslog: 'rgba(136,136,255,0.15)',
+      ocsf: 'rgba(0,212,255,0.15)', json: 'rgba(0,255,65,0.15)', cef: 'rgba(255,136,51,0.15)', syslog: 'rgba(90,122,154,0.15)',
     };
-    return colors[format] || 'rgba(255,255,255,0.1)';
+    return colors[format] || 'rgba(200,214,229,0.1)';
   };
 
   return (
     <div className="page">
       <header className="page-header">
         <div>
-          <h1 className="page-title">
-            <span className="icon-glow">⟶</span> Integrations
+          <div className="flex items-center gap-3 mb-1">
+            <span style={{ color: '#00ff41', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+          </div>
+          <h1 className="page-title" style={{ color: '#00d4ff', letterSpacing: '3px' }}>
+            {''} Integrations
           </h1>
-          <p className="page-subtitle">Outbound alerting — OCSF, CEF, JSON, Syslog — zero-trust agents</p>
+          <p className="page-subtitle" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Outbound alerting — OCSF, CEF, JSON, Syslog — zero-trust agents</p>
         </div>
         <div className="header-actions">
-          <div className="integration-header-stats">
-            <div className="mini-stat">
-              <span className="mini-val">{eventsPerSec}</span>
-              <span className="mini-lbl">evt/s</span>
+          <div className="integration-header-stats flex items-center gap-4">
+            <div className="mini-stat text-center">
+              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '16px', fontWeight: 700 }}>{eventsPerSec}</span>
+              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>evt/s</span>
             </div>
-            <div className="mini-stat">
-              <span className="mini-val">{totalSent}</span>
-              <span className="mini-lbl">sent</span>
+            <div className="mini-stat text-center">
+              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#00ff41', fontSize: '16px', fontWeight: 700 }}>{totalSent}</span>
+              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>sent</span>
             </div>
-            <div className="mini-stat mini-alert">
-              <span className="mini-val">{integrations.filter(i => i.status === 'connected').length}/{integrations.length}</span>
-              <span className="mini-lbl">online</span>
+            <div className="mini-stat text-center">
+              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '16px', fontWeight: 700 }}>{integrations.filter(i => i.status === 'connected').length}/{integrations.length}</span>
+              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>online</span>
             </div>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
-            <span>+</span> Add Integration
+          <button className="btn btn-primary cursor-pointer" onClick={() => setShowAddForm(!showAddForm)} style={{ fontFamily: 'var(--font-mono)' }}>
+            + Add Integration
           </button>
         </div>
       </header>
 
       {/* Add form */}
       {showAddForm && (
-        <div className="integration-form">
-          <div className="form-grid">
+        <div className="integration-form rounded-lg p-4 mb-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <div className="form-grid grid grid-cols-4 gap-4">
             <div className="form-group">
-              <label>Name</label>
-              <input className="cyber-input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="My SIEM" />
+              <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Name</label>
+              <input className="cyber-input w-full rounded-lg px-3 py-2 outline-none" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }} value={newName} onChange={e => setNewName(e.target.value)} placeholder="My SIEM" />
             </div>
             <div className="form-group">
-              <label>Endpoint</label>
-              <input className="cyber-input" value={newEndpoint} onChange={e => setNewEndpoint(e.target.value)} placeholder="host:port or https://..." />
+              <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Endpoint</label>
+              <input className="cyber-input w-full rounded-lg px-3 py-2 outline-none" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }} value={newEndpoint} onChange={e => setNewEndpoint(e.target.value)} placeholder="host:port or https://..." />
             </div>
             <div className="form-group">
-              <label>Type</label>
-              <select className="cyber-select" value={newType} onChange={e => setNewType(e.target.value)}>
+              <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Type</label>
+              <select className="cyber-select w-full rounded-lg px-3 py-2 outline-none cursor-pointer" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }} value={newType} onChange={e => setNewType(e.target.value)}>
                 <option value="siem">SIEM</option>
                 <option value="siem-emulator">SIEM Emulator</option>
                 <option value="api">REST API</option>
@@ -172,92 +175,102 @@ function IntegrationPage() {
                 <option value="forwarder">Forwarder</option>
               </select>
             </div>
-            <div className="form-actions">
-              <button className="btn btn-primary" onClick={handleAddIntegration}>Add</button>
-              <button className="btn btn-secondary" onClick={() => setShowAddForm(false)}>Cancel</button>
+            <div className="form-actions flex items-end gap-2">
+              <button className="btn btn-primary cursor-pointer" onClick={handleAddIntegration} style={{ fontFamily: 'var(--font-mono)' }}>Add</button>
+              <button className="btn btn-secondary cursor-pointer" onClick={() => setShowAddForm(false)} style={{ fontFamily: 'var(--font-mono)' }}>Cancel</button>
             </div>
           </div>
         </div>
       )}
 
       {/* Integration cards */}
-      <div className="integrations-grid">
+      <div className="integrations-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {integrations.map(int => (
-          <div key={int.id} className="integration-card" onClick={() => setSelectedIntegration(int)}>
-            <div className="int-card-header">
-              <div className="int-name">{int.name}</div>
-              <div className="int-status" style={{ color: getStatusColor(int.status) }}>
-                <span className="int-dot" style={{ backgroundColor: getStatusColor(int.status) }} />
+          <div key={int.id} style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-4 cursor-pointer transition-all" onClick={() => setSelectedIntegration(int)}>
+            <div className="int-card-header flex items-center justify-between mb-3">
+              <div className="int-name" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{int.name}</div>
+              <div className="int-status flex items-center gap-2" style={{ color: getStatusColor(int.status), fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>
+                <span className="int-dot" style={{ backgroundColor: getStatusColor(int.status), width: '6px', height: '6px', borderRadius: '50%', display: 'inline-block' }} />
                 {int.status}
               </div>
             </div>
-            <div className="int-card-body">
-              <div className="int-row">
-                <span className="int-label">Type</span>
-                <span className="int-value">{int.type}</span>
+            <div className="int-card-body space-y-2">
+              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                <span style={{ color: '#5a7a9a' }}>Type</span>
+                <span style={{ color: '#c8d6e5' }}>{int.type}</span>
               </div>
-              <div className="int-row">
-                <span className="int-label">Endpoint</span>
-                <code className="int-endpoint">{int.endpoint}</code>
+              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                <span style={{ color: '#5a7a9a' }}>Endpoint</span>
+                <code style={{ color: '#00d4ff', fontSize: '11px' }}>{int.endpoint}</code>
               </div>
-              <div className="int-row">
-                <span className="int-label">Latency</span>
-                <span className="int-value">{int.latency_ms > 0 ? `${int.latency_ms}ms` : '—'}</span>
+              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                <span style={{ color: '#5a7a9a' }}>Latency</span>
+                <span style={{ color: '#c8d6e5' }}>{int.latency_ms > 0 ? `${int.latency_ms}ms` : '—'}</span>
               </div>
-              <div className="int-row">
-                <span className="int-label">Events</span>
-                <span className="int-value">{int.events_sent.toLocaleString()}</span>
+              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
+                <span style={{ color: '#5a7a9a' }}>Events</span>
+                <span style={{ color: '#c8d6e5' }}>{int.events_sent.toLocaleString()}</span>
               </div>
             </div>
-            <div className="int-card-footer">
-              <span className="int-id">{int.id}</span>
-              <span className="int-heartbeat">♥ {new Date(int.last_heartbeat).toLocaleTimeString()}</span>
+            <div style={{ borderTop: '1px solid rgba(0,212,255,0.08)' }} className="int-card-footer flex items-center justify-between mt-3 pt-2">
+              <span className="int-id" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '10px' }}>{int.id}</span>
+              <span className="int-heartbeat" style={{ fontFamily: 'var(--font-mono)', color: '#ff3355', fontSize: '10px' }}>♥ {new Date(int.last_heartbeat).toLocaleTimeString()}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Event stream */}
-      <div className="event-stream-section">
-        <h3 className="section-title">
-          Outgoing Events
-          <span className="live-badge">LIVE</span>
-        </h3>
-        <div className="event-stream" ref={eventsRef}>
-          <table className="event-table">
+      <div className="event-stream-section rounded-lg overflow-hidden" style={{ border: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,18,28,0.85)' }}>
+        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
+          <h3 className="section-title flex items-center gap-3" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>
+            Outgoing Events
+            <span className="live-badge px-2 py-0.5 rounded text-[10px]" style={{ background: 'rgba(0,255,65,0.1)', color: '#00ff41', border: '1px solid rgba(0,255,65,0.3)', fontFamily: 'var(--font-mono)', animation: 'pulse-dot 2s ease-in-out infinite' }}>LIVE</span>
+          </h3>
+        </div>
+        <div className="event-stream overflow-x-auto" ref={eventsRef}>
+          <table className="event-table w-full">
             <thead>
-              <tr>
-                <th>Time</th>
-                <th>Format</th>
-                <th>Target</th>
-                <th>Threat Class</th>
-                <th>Confidence</th>
-                <th>Size</th>
-                <th>Status</th>
+              <tr style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Time</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Format</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Target</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Threat Class</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Confidence</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Size</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Status</th>
               </tr>
             </thead>
             <tbody>
               {outgoingEvents.map(evt => (
-                <tr key={evt.id}>
-                  <td><span className="time-badge">{new Date(evt.timestamp).toLocaleTimeString()}</span></td>
-                  <td><span className="format-badge" style={{ backgroundColor: getFormatBadge(evt.format) }}>{evt.format.toUpperCase()}</span></td>
-                  <td>{evt.target}</td>
-                  <td><span className="threat-badge">{evt.threat_class}</span></td>
-                  <td>
-                    <div className="confidence-bar">
-                      <div className="confidence-fill" style={{
-                        width: `${evt.confidence}%`,
-                        backgroundColor: evt.confidence > 80 ? '#00ff41' : evt.confidence > 60 ? '#ffb000' : '#00d4ff',
-                      }} />
-                      <span>{evt.confidence}%</span>
+                <tr key={evt.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '11px', padding: '10px 16px' }}>{new Date(evt.timestamp).toLocaleTimeString()}</td>
+                  <td style={{ padding: '10px 16px' }}>
+                    <span className="format-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ backgroundColor: getFormatBadge(evt.format), color: '#c8d6e5', border: `1px solid ${getFormatBadge(evt.format).replace('0.15', '0.3')}`, fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{evt.format.toUpperCase()}</span>
+                  </td>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px', padding: '10px 16px' }}>{evt.target}</td>
+                  <td style={{ padding: '10px 16px' }}>
+                    <span className="threat-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ background: 'rgba(255,51,85,0.08)', color: '#ff3355', border: '1px solid rgba(255,51,85,0.25)', fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{evt.threat_class}</span>
+                  </td>
+                  <td style={{ padding: '10px 16px' }}>
+                    <div className="confidence-bar flex items-center gap-2">
+                      <div className="confidence-track w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.08)' }}>
+                        <div className="confidence-fill h-full rounded-full" style={{ width: `${evt.confidence}%`, backgroundColor: evt.confidence > 80 ? '#00ff41' : evt.confidence > 60 ? '#ff8833' : '#00d4ff' }} />
+                      </div>
+                      <span style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '11px' }}>{evt.confidence}%</span>
                     </div>
                   </td>
-                  <td>{evt.size_bytes}B</td>
-                  <td>
-                    <span className={`status-indicator status-${evt.status}`}>
-                      {evt.status === 'sent' && '✓'}
-                      {evt.status === 'queued' && '◌'}
-                      {evt.status === 'failed' && '✕'}
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px', padding: '10px 16px' }}>{evt.size_bytes}B</td>
+                  <td style={{ padding: '10px 16px' }}>
+                    <span className={`status-indicator flex items-center gap-1.5 px-2 py-1 rounded text-[10px] uppercase tracking-wider`} style={{
+                      background: evt.status === 'sent' ? 'rgba(0,255,65,0.08)' : evt.status === 'queued' ? 'rgba(255,204,0,0.08)' : 'rgba(255,51,85,0.08)',
+                      color: evt.status === 'sent' ? '#00ff41' : evt.status === 'queued' ? '#ffcc00' : '#ff3355',
+                      border: `1px solid ${evt.status === 'sent' ? 'rgba(0,255,65,0.25)' : evt.status === 'queued' ? 'rgba(255,204,0,0.25)' : 'rgba(255,51,85,0.25)'}`,
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 600,
+                      letterSpacing: '1px',
+                    }}>
+                      <span>{evt.status === 'sent' ? '✓' : evt.status === 'queued' ? '◌' : '✕'}</span>
                       {evt.status}
                     </span>
                   </td>
@@ -270,37 +283,58 @@ function IntegrationPage() {
 
       {/* Integration detail modal */}
       {selectedIntegration && (
-        <div className="modal-overlay" onClick={() => setSelectedIntegration(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="material-detail-header">
-              <h3 className="modal-title">{selectedIntegration.name}</h3>
-              <button className="modal-close" onClick={() => setSelectedIntegration(null)}>✕</button>
+        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)' }} onClick={() => setSelectedIntegration(null)}>
+          <div className="modal-content rounded-lg p-6 max-w-lg w-full" style={{ background: 'rgba(10,18,28,0.95)', border: '1px solid rgba(0,212,255,0.2)' }} onClick={e => e.stopPropagation()}>
+            <div className="material-detail-header flex items-center justify-between mb-4">
+              <h3 className="modal-title" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '16px', fontWeight: 700 }}>{selectedIntegration.name}</h3>
+              <button className="modal-close cursor-pointer" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)' }} onClick={() => setSelectedIntegration(null)}>✕</button>
             </div>
-            <div className="material-detail-grid">
-              <div className="detail-field"><label>ID</label><span className="detail-value">{selectedIntegration.id}</span></div>
-              <div className="detail-field"><label>Type</label><span className="detail-value">{selectedIntegration.type}</span></div>
-              <div className="detail-field"><label>Endpoint</label><span className="detail-value"><code>{selectedIntegration.endpoint}</code></span></div>
-              <div className="detail-field"><label>Status</label><span className="detail-value" style={{ color: getStatusColor(selectedIntegration.status) }}>{selectedIntegration.status}</span></div>
-              <div className="detail-field"><label>Events Sent</label><span className="detail-value">{selectedIntegration.events_sent.toLocaleString()}</span></div>
-              <div className="detail-field"><label>Latency</label><span className="detail-value">{selectedIntegration.latency_ms}ms</span></div>
-              <div className="detail-field"><label>Last Heartbeat</label><span className="detail-value">{new Date(selectedIntegration.last_heartbeat).toLocaleString()}</span></div>
+            <div className="material-detail-grid grid grid-cols-2 gap-4">
+              <div className="detail-field">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>ID</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }}>{selectedIntegration.id}</span>
+              </div>
+              <div className="detail-field">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Type</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedIntegration.type}</span>
+              </div>
+              <div className="detail-field">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Endpoint</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }}><code>{selectedIntegration.endpoint}</code></span>
+              </div>
+              <div className="detail-field">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Status</label>
+                <span className="detail-value block" style={{ color: getStatusColor(selectedIntegration.status), fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{selectedIntegration.status}</span>
+              </div>
+              <div className="detail-field">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Events Sent</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedIntegration.events_sent.toLocaleString()}</span>
+              </div>
+              <div className="detail-field">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Latency</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedIntegration.latency_ms}ms</span>
+              </div>
+              <div className="detail-field col-span-2">
+                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Last Heartbeat</label>
+                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{new Date(selectedIntegration.last_heartbeat).toLocaleString()}</span>
+              </div>
             </div>
-            <div className="modal-actions">
-              <button className="btn btn-primary" onClick={() => {
+            <div className="modal-actions flex gap-2 mt-4">
+              <button className="btn btn-primary cursor-pointer" onClick={() => {
                 setIntegrations(prev => prev.map(i =>
                   i.id === selectedIntegration.id ? { ...i, status: 'connected' as const, latency_ms: Math.floor(Math.random() * 20) + 1 } : i
                 ));
                 setSelectedIntegration(null);
-              }}>
+              }} style={{ fontFamily: 'var(--font-mono)' }}>
                 Reconnect
               </button>
-              <button className="btn btn-danger" onClick={() => {
+              <button className="btn btn-danger cursor-pointer" onClick={() => {
                 setIntegrations(prev => prev.filter(i => i.id !== selectedIntegration.id));
                 setSelectedIntegration(null);
-              }}>
+              }} style={{ fontFamily: 'var(--font-mono)' }}>
                 Remove
               </button>
-              <button className="btn btn-secondary" onClick={() => setSelectedIntegration(null)}>Close</button>
+              <button className="btn btn-secondary cursor-pointer" onClick={() => setSelectedIntegration(null)} style={{ fontFamily: 'var(--font-mono)' }}>Close</button>
             </div>
           </div>
         </div>
