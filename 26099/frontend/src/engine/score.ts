@@ -264,7 +264,7 @@ export function verdictFor(
   conflicts: AttributeConflict[] = [],
 ): Verdict {
   if (decisiveConflicts(conflicts).length > 0) return 'different'
-  if (combined >= accept) return unexplained > 0 ? 'review' : 'same'
+  if (combined >= accept) return 'same'
   if (combined >= review) return 'review'
   return 'different'
 }
