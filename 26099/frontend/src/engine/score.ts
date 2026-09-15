@@ -260,7 +260,7 @@ export function verdictFor(
   combined: number,
   accept: number,
   review: number,
-  unexplained = 0,
+  _unexplained = 0,
   conflicts: AttributeConflict[] = [],
 ): Verdict {
   if (decisiveConflicts(conflicts).length > 0) return 'different'
