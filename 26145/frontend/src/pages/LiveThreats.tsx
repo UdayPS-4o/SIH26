@@ -270,7 +270,7 @@ const LiveThreats: React.FC = () => {
   }, [alerts]);
 
   // Terminal/ops-center styles
-  const styles: Record<string, React.CSSProperties> = {
+  const styles: Record<string, any> = {
     page: {
       backgroundColor: '#060a10',
       minHeight: '100vh',

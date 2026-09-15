@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import { Skeleton, Toasts } from '@/components/ui'
@@ -51,6 +51,14 @@ function RedirectIfEmpty({ children }: { children: ReactNode }) {
 export default function App() {
   const bootstrap = useService(s => s.bootstrap)
   const role = useRole()
+  const location = useLocation()
+  const mainRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const el = mainRef.current
+    if (el) el.scrollTop = 0
+    window.scrollTo(0, 0)
+  }, [location.pathname])
 
   useEffect(() => {
     void bootstrap()
@@ -74,7 +82,7 @@ export default function App() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header />
-        <main className="flex-1 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1600px] px-6 py-8 pb-20">
             <Suspense fallback={<Skeleton rows={6} />}>
               <Routes>
