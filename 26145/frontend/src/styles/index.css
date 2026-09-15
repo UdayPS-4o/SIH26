@@ -64,37 +64,6 @@
   --text-secondary: #5a7a9a;
 }
 
-/* ── classified banner ── */
-.classified-banner {
-  width: 100%;
-  background: linear-gradient(90deg, #2d0000 0%, #5c0000 25%, #8b0000 50%, #5c0000 75%, #2d0000 100%);
-  border-bottom: 1px solid rgba(255, 0, 0, 0.3);
-  padding: 5px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 100;
-  flex-shrink: 0;
-}
-
-.classified-text {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  color: #ff3b3b;
-  text-transform: uppercase;
-  animation: classified-pulse 2s ease-in-out infinite;
-  text-shadow: 0 0 8px rgba(255, 0, 0, 0.6), 0 0 20px rgba(255, 0, 0, 0.3);
-  white-space: nowrap;
-}
-
-@keyframes classified-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
-}
-
 /* ── terminal wrapper ── */
 .terminal-wrapper {
   background: var(--bg-primary) !important;

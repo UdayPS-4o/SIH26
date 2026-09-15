@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { TrendDown, TrendUp, WifiHigh } from '@phosphor-icons/react'
-import { PageHeader, Panel, StatTile, Callout } from '@/ds'
+import { PageHeader, Panel, StatTile, Callout, Badge } from '@/ds'
 import { LiveFeed } from '@/components/LiveFeed'
 import { DEMO_DATE } from '@/data/generate'
 
@@ -72,6 +72,9 @@ export default function DashboardPage() {
           </span>
         }
       />
+      <div className="flex justify-end -mt-2 mb-2">
+        <Badge tone="neutral" size="sm">Demo data</Badge>
+      </div>
 
       <Callout tone="accent" title="System health: all clear">
         12 of 12 sources active. 2,847 fresh quotes ingested from 8 airlines and 4 OTAs.

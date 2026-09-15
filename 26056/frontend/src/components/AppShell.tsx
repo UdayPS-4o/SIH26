@@ -7,6 +7,7 @@ import {
   Database,
   DownloadSimple,
   Moon,
+  Sparkle,
   Sun,
   X,
   List as ListIcon,
@@ -91,12 +92,11 @@ function SidebarFooter() {
     <div className="border-t border-line px-3 py-3">
       <div className="rounded-control bg-surface-inset p-2.5 ring-1 ring-line">
         <div className="flex items-center gap-1.5">
-          <Database size={13} weight="duotone" className="text-good" />
-          <p className="text-[11px] font-semibold text-ink">Live collection</p>
+          <Database size={13} weight="duotone" className="text-accent" />
+          <p className="text-[11px] font-semibold text-ink">Prototype build</p>
         </div>
         <p className="mt-1 text-[10.5px] leading-snug text-ink-3">
-          Collection is on. Figures are compiled nightly from the 90-day rolling panel of
-          live portal quotes.
+          All screens render from local datasets. Backend integration available on deploy.
         </p>
       </div>
     </div>
@@ -225,8 +225,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <HeadlineTicker />
 
-          <Badge tone="good" icon={Circle} className="hidden shrink-0 sm:inline-flex">
-            Live data
+          <Badge tone="accent" icon={Sparkle} className="hidden shrink-0 sm:inline-flex">
+            Demo environment
           </Badge>
 
           <ThemeToggle />

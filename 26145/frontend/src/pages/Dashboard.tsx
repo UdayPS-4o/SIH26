@@ -223,7 +223,7 @@ const Dashboard: React.FC = () => {
               lineHeight: 1.2,
               textShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
             }}>
-              EKADHARA<span style={{ color: '#64748b', fontSize: 14, fontWeight: 400, letterSpacing: '1px', marginLeft: 12 }}>v2.4.1</span>
+              WATCHTOWER<span style={{ color: '#64748b', fontSize: 14, fontWeight: 400, letterSpacing: '1px', marginLeft: 12 }}>v2.4.1</span>
             </h1>
             <p style={{
               fontSize: 12,
