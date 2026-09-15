@@ -1037,22 +1037,6 @@ const ITEMS: Item[] = [
     at: [{ cpse: 'CIL', qty: 95 }],
   },
   {
-    family: 'instruments',
-    short: 'GAUGE PRESSURE DIAL 100MM 0-10BAR SS316 GLYCERINE FILLED',
-    long: 'PRESSURE GAUGE DIAL 100MM 0-10BAR SS316 GLYCERINE FILLED',
-    uom: 'EACH',
-    price: 2760,
-    at: [{ cpse: 'SAIL', qty: 620 }],
-  },
-  {
-    family: 'valves_fittings',
-    short: 'VLV GATE WCB 100NB CL150 FLGD RISING STEM IS 14846',
-    long: 'VALVE GATE WCB 100NB CL150 FLANGED RISING STEM IS 14846',
-    uom: 'EACH',
-    price: 19_100,
-    at: [{ cpse: 'NTPC', qty: 310 }],
-  },
-  {
     family: 'fasteners',
     short: 'BLT HEX SS304 M20X100 IS 1367',
     long: 'BOLT HEXAGONAL SS304 M20X100 IS 1367',
