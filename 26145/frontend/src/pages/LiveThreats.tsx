@@ -35,40 +35,44 @@ const THREAT_ICONS: Record<string, typeof ShieldAlert> = {
 
 const severityConfig = {
   critical: {
-    bg: 'bg-red-500/10',
-    text: 'text-red-400',
-    border: 'border-red-500/30',
-    dot: 'bg-red-500',
+    bg: 'rgba(255,51,85,0.08)',
+    text: '#ff3355',
+    border: 'rgba(255,51,85,0.45)',
+    dot: '#ff3355',
     label: 'CRITICAL',
+    glow: '0 0 8px rgba(255,51,85,0.5)',
   },
   high: {
-    bg: 'bg-orange-500/10',
-    text: 'text-orange-400',
-    border: 'border-orange-500/30',
-    dot: 'bg-orange-500',
+    bg: 'rgba(255,140,50,0.08)',
+    text: '#ff8c32',
+    border: 'rgba(255,140,50,0.4)',
+    dot: '#ff8c32',
     label: 'HIGH',
+    glow: '0 0 8px rgba(255,140,50,0.45)',
   },
   medium: {
-    bg: 'bg-amber-500/10',
-    text: 'text-amber-400',
-    border: 'border-amber-500/30',
-    dot: 'bg-amber-500',
+    bg: 'rgba(255,200,50,0.08)',
+    text: '#ffc832',
+    border: 'rgba(255,200,50,0.35)',
+    dot: '#ffc832',
     label: 'MEDIUM',
+    glow: '0 0 6px rgba(255,200,50,0.4)',
   },
   low: {
-    bg: 'bg-blue-500/10',
-    text: 'text-blue-400',
-    border: 'border-blue-500/30',
-    dot: 'bg-blue-500',
+    bg: 'rgba(0,212,255,0.08)',
+    text: '#00d4ff',
+    border: 'rgba(0,212,255,0.35)',
+    dot: '#00d4ff',
     label: 'LOW',
+    glow: '0 0 6px rgba(0,212,255,0.4)',
   },
 };
 
 const confidenceColor = (c: number) => {
-  if (c >= 85) return { bar: 'bg-red-500', text: 'text-red-400' };
-  if (c >= 70) return { bar: 'bg-orange-500', text: 'text-orange-400' };
-  if (c >= 50) return { bar: 'bg-amber-500', text: 'text-amber-400' };
-  return { bar: 'bg-brand-blue', text: 'text-brand-blue' };
+  if (c >= 85) return { bar: '#00ff41', text: '#00ff41', label: 'HIGH' };
+  if (c >= 70) return { bar: '#ffc832', text: '#ffc832', label: 'MEDIUM' };
+  if (c >= 50) return { bar: '#ff8c32', text: '#ff8c32', label: 'LOW' };
+  return { bar: '#5a7a9a', text: '#5a7a9a', label: 'UNKNOWN' };
 };
 
 const formatTimestamp = (ts: number) => {
@@ -211,11 +215,11 @@ const LiveThreats: React.FC = () => {
 
   const SortIcon = ({ field }: { field: 'timestamp' | 'confidence' | 'severity' }) => {
     if (sortField !== field) {
-      return <span className="text-slate-600"><ChevronUp size={10} /></span>;
+      return <span style={{ color: '#5a7a9a' }}><ChevronUp size={10} /></span>;
     }
     return sortDir === 'asc'
-      ? <ChevronUp size={14} className="text-brand-blue" />
-      : <ChevronDown size={14} className="text-brand-blue" />;
+      ? <ChevronUp size={14} style={{ color: '#00d4ff' }} />
+      : <ChevronDown size={14} style={{ color: '#00d4ff' }} />;
   };
 
   const exportCSV = () => {
@@ -265,21 +269,572 @@ const LiveThreats: React.FC = () => {
     return Array.from(types).sort();
   }, [alerts]);
 
+  // Terminal/ops-center styles
+  const styles: Record<string, React.CSSProperties> = {
+    page: {
+      backgroundColor: '#060a10',
+      minHeight: '100vh',
+      padding: '16px 20px',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      color: '#c8d6e5',
+    },
+    headerRow: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '12px',
+      flexWrap: 'wrap',
+    },
+    titleBlock: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+    },
+    titleIcon: {
+      padding: '8px',
+      borderRadius: '6px',
+      background: 'rgba(255,51,85,0.12)',
+      border: '1px solid rgba(255,51,85,0.25)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: '20px',
+      fontWeight: 700,
+      color: '#00d4ff',
+      letterSpacing: '3px',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      textTransform: 'uppercase' as const,
+      margin: 0,
+      lineHeight: 1.1,
+    },
+    subtitle: {
+      fontSize: '11px',
+      color: '#5a7a9a',
+      margin: '4px 0 0',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    liveBadge: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      marginLeft: '10px',
+      color: '#00ff41',
+      fontSize: '11px',
+      fontWeight: 700,
+      letterSpacing: '1px',
+    },
+    liveDot: {
+      width: '7px',
+      height: '7px',
+      borderRadius: '50%',
+      backgroundColor: '#00ff41',
+      boxShadow: '0 0 6px #00ff41, 0 0 12px rgba(0,255,65,0.5)',
+      animation: 'livePulse 1.4s ease-in-out infinite',
+    },
+    buttonGroup: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      flexWrap: 'wrap',
+    },
+    btnBase: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '6px 12px',
+      borderRadius: '6px',
+      fontSize: '11px',
+      fontWeight: 600,
+      border: '1px solid',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      transition: 'all 0.15s ease',
+      background: 'rgba(10,18,28,0.9)',
+    },
+    liveToggleActive: {
+      color: '#00ff41',
+      borderColor: 'rgba(0,255,65,0.4)',
+      boxShadow: '0 0 8px rgba(0,255,65,0.2)',
+    },
+    liveTogglePaused: {
+      color: '#5a7a9a',
+      borderColor: 'rgba(90,122,154,0.3)',
+    },
+    exportBtn: {
+      color: '#c8d6e5',
+      borderColor: 'rgba(0,212,255,0.25)',
+      boxShadow: '0 0 4px rgba(0,212,255,0.1)',
+    },
+    severityGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '10px',
+    },
+    severityCard: (cfg: typeof severityConfig.critical, active: boolean) => ({
+      padding: '12px 14px',
+      borderRadius: '6px',
+      textAlign: 'left' as const,
+      border: `1px solid ${active ? cfg.border : 'rgba(90,122,154,0.15)'}`,
+      background: active ? cfg.bg : 'rgba(10,18,28,0.6)',
+      cursor: 'pointer',
+      opacity: active ? 1 : 0.4,
+      transition: 'all 0.2s ease',
+      boxShadow: active ? cfg.glow : 'none',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    }),
+    severityLabel: (cfg: typeof severityConfig.critical) => ({
+      fontSize: '10px',
+      fontWeight: 700,
+      color: cfg.text,
+      letterSpacing: '1.5px',
+    }),
+    severityDot: (cfg: typeof severityConfig.critical, active: boolean) => ({
+      width: '8px',
+      height: '8px',
+      borderRadius: '50%',
+      backgroundColor: cfg.dot,
+      boxShadow: active ? cfg.glow : 'none',
+      animation: active ? 'livePulse 1.4s ease-in-out infinite' : 'none',
+    }),
+    severityCount: {
+      fontSize: '24px',
+      fontWeight: 700,
+      color: '#c8d6e5',
+      marginTop: '6px',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      textShadow: '0 0 6px rgba(0,212,255,0.3)',
+    },
+    filterCard: {
+      background: 'rgba(10,18,28,0.85)',
+      border: '1px solid rgba(0,212,255,0.12)',
+      borderRadius: '6px',
+      padding: '14px 16px',
+      marginTop: '14px',
+    },
+    filterHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '12px',
+      flexWrap: 'wrap',
+      marginBottom: '12px',
+    },
+    filterTitleRow: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    },
+    filterTitle: {
+      fontSize: '10px',
+      fontWeight: 700,
+      color: '#c8d6e5',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '2px',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    filterCount: {
+      fontSize: '11px',
+      color: '#5a7a9a',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    filterCountNum: {
+      color: '#c8d6e5',
+      fontWeight: 600,
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    clearLink: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+      fontSize: '10px',
+      color: '#5a7a9a',
+      cursor: 'pointer',
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      transition: 'color 0.15s ease',
+    },
+    filterGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+      gap: '10px',
+    },
+    searchWrapper: {
+      position: 'relative' as const,
+      gridColumn: 'span 2',
+    },
+    searchInput: {
+      width: '100%',
+      padding: '8px 10px 8px 30px',
+      borderRadius: '4px',
+      fontSize: '12px',
+      background: 'rgba(10,18,28,0.9)',
+      border: '1px solid rgba(0,212,255,0.3)',
+      color: '#c8d6e5',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      outline: 'none',
+      boxShadow: '0 0 6px rgba(0,212,255,0.08) inset',
+      transition: 'all 0.15s ease',
+    },
+    select: {
+      width: '100%',
+      padding: '8px 10px',
+      borderRadius: '4px',
+      fontSize: '12px',
+      background: 'rgba(10,18,28,0.9)',
+      border: '1px solid rgba(0,212,255,0.2)',
+      color: '#c8d6e5',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      outline: 'none',
+      cursor: 'pointer',
+      appearance: 'none' as const,
+    },
+    rangeContainer: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: '4px',
+    },
+    rangeLabel: {
+      fontSize: '10px',
+      color: '#5a7a9a',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    rangeValue: {
+      fontSize: '10px',
+      color: '#00d4ff',
+      fontWeight: 600,
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    rangeInput: {
+      width: '100%',
+      height: '4px',
+      borderRadius: '2px',
+      background: 'rgba(10,18,28,0.8)',
+      appearance: 'none' as const,
+      cursor: 'pointer',
+      accentColor: '#00d4ff',
+    },
+    sevToggleBtn: (cfg: typeof severityConfig.critical, active: boolean) => ({
+      flex: 1,
+      padding: '5px 0',
+      borderRadius: '4px',
+      fontSize: '10px',
+      fontWeight: 700,
+      border: `1px solid ${active ? cfg.border : 'rgba(90,122,154,0.15)'}`,
+      background: active ? cfg.bg : 'rgba(10,18,28,0.6)',
+      color: active ? cfg.text : '#5a7a9a',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      letterSpacing: '1px',
+      transition: 'all 0.15s ease',
+      textAlign: 'center' as const,
+    }),
+    resetBtn: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '6px',
+      padding: '8px 12px',
+      borderRadius: '4px',
+      fontSize: '11px',
+      fontWeight: 600,
+      background: 'rgba(10,18,28,0.7)',
+      border: '1px solid rgba(0,212,255,0.2)',
+      color: '#5a7a9a',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      transition: 'all 0.15s ease',
+    },
+    tableCard: {
+      background: 'rgba(10,18,28,0.85)',
+      border: '1px solid rgba(0,212,255,0.12)',
+      borderRadius: '6px',
+      overflow: 'hidden',
+      marginTop: '14px',
+    },
+    tableHeadRow: {
+      background: 'rgba(10,18,28,0.95)',
+      borderBottom: '1px solid rgba(0,212,255,0.15)',
+    },
+    th: {
+      padding: '10px 14px',
+      fontSize: '10px',
+      fontWeight: 700,
+      textTransform: 'uppercase' as const,
+      letterSpacing: '1.5px',
+      color: '#5a7a9a',
+      cursor: 'pointer',
+      userSelect: 'none' as const,
+      transition: 'color 0.15s ease',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      whiteSpace: 'nowrap' as const,
+    },
+    thActive: {
+      color: '#00d4ff',
+    },
+    tableRowEven: {
+      background: 'rgba(10,18,28,0.4)',
+      borderBottom: '1px solid rgba(0,212,255,0.04)',
+      transition: 'background 0.15s ease',
+    },
+    tableRowOdd: {
+      background: 'transparent',
+      borderBottom: '1px solid rgba(0,212,255,0.04)',
+      transition: 'background 0.15s ease',
+    },
+    tableRowExpanded: {
+      background: 'rgba(0,212,255,0.04)',
+      borderBottom: '1px solid rgba(0,212,255,0.1)',
+    },
+    td: {
+      padding: '9px 14px',
+      fontSize: '12px',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    severityBadge: (cfg: typeof severityConfig.critical) => ({
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '2px 8px',
+      borderRadius: '3px',
+      fontSize: '9px',
+      fontWeight: 700,
+      letterSpacing: '1.2px',
+      background: cfg.bg,
+      color: cfg.text,
+      border: `1px solid ${cfg.border}`,
+      boxShadow: cfg.glow,
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    }),
+    confidenceTrack: {
+      width: '56px',
+      height: '6px',
+      borderRadius: '3px',
+      background: 'rgba(10,18,28,0.8)',
+      border: '1px solid rgba(0,212,255,0.08)',
+      overflow: 'hidden',
+    },
+    confidenceFill: (color: string) => ({
+      height: '100%',
+      borderRadius: '2px',
+      background: color,
+      boxShadow: `0 0 6px ${color}`,
+      transition: 'width 0.5s ease',
+    }),
+    confidenceText: (color: string) => ({
+      fontSize: '11px',
+      fontWeight: 600,
+      color,
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      textShadow: `0 0 4px ${color}40`,
+      width: '34px',
+      textAlign: 'right' as const,
+    }),
+    ipText: (color: string) => ({
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      fontSize: '11px',
+      color,
+      textShadow: `0 0 4px ${color}30`,
+    }),
+    protocolBadge: {
+      padding: '1px 6px',
+      borderRadius: '3px',
+      fontSize: '10px',
+      fontWeight: 600,
+      background: 'rgba(10,18,28,0.7)',
+      color: '#c8d6e5',
+      border: '1px solid rgba(0,212,255,0.2)',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    portsText: {
+      fontSize: '10px',
+      color: '#5a7a9a',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    evidenceText: {
+      fontSize: '10px',
+      color: '#5a7a9a',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+    },
+    viewBtn: (active: boolean) => ({
+      padding: '4px',
+      borderRadius: '3px',
+      background: active ? 'rgba(0,212,255,0.15)' : 'transparent',
+      color: active ? '#00d4ff' : '#5a7a9a',
+      border: `1px solid ${active ? 'rgba(0,212,255,0.3)' : 'transparent'}`,
+      cursor: 'pointer',
+      transition: 'all 0.15s ease',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }),
+    expandedSection: {
+      background: 'rgba(0,212,255,0.03)',
+      borderTop: '1px solid rgba(0,212,255,0.08)',
+    },
+    expandedHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      marginBottom: '12px',
+    },
+    expandedTitle: {
+      fontSize: '10px',
+      fontWeight: 700,
+      color: '#c8d6e5',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '2px',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    evidenceGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+      gap: '8px',
+    },
+    evidenceTile: {
+      background: 'rgba(10,18,28,0.6)',
+      border: '1px solid rgba(0,212,255,0.1)',
+      borderRadius: '4px',
+      padding: '10px 12px',
+    },
+    evidenceKey: {
+      fontSize: '9px',
+      color: '#5a7a9a',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '1px',
+      fontWeight: 600,
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      display: 'block',
+      marginBottom: '2px',
+    },
+    evidenceValue: {
+      fontSize: '12px',
+      color: '#c8d6e5',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      wordBreak: 'break-all' as const,
+      textShadow: '0 0 4px rgba(0,212,255,0.15)',
+    },
+    emptyState: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '64px 20px',
+      color: '#5a7a9a',
+    },
+    paginationBar: {
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '12px',
+      padding: '10px 14px',
+      borderTop: '1px solid rgba(0,212,255,0.1)',
+      flexWrap: 'wrap' as const,
+    },
+    paginationText: {
+      fontSize: '10px',
+      color: '#5a7a9a',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    paginationPageNum: {
+      color: '#c8d6e5',
+      fontWeight: 600,
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+    },
+    pageBtnBase: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '4px 8px',
+      borderRadius: '4px',
+      fontSize: '11px',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      cursor: 'pointer',
+      border: '1px solid transparent',
+      background: 'transparent',
+      color: '#5a7a9a',
+      transition: 'all 0.15s ease',
+    },
+    pageBtnActive: {
+      background: 'rgba(0,212,255,0.12)',
+      color: '#00d4ff',
+      border: '1px solid rgba(0,212,255,0.3)',
+      boxShadow: '0 0 6px rgba(0,212,255,0.2)',
+    },
+    clearFiltersBtn: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '6px',
+      padding: '8px 12px',
+      borderRadius: '4px',
+      fontSize: '11px',
+      fontWeight: 600,
+      background: 'rgba(10,18,28,0.7)',
+      border: '1px solid rgba(0,212,255,0.2)',
+      color: '#5a7a9a',
+      cursor: 'pointer',
+      fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+      transition: 'all 0.15s ease',
+      marginTop: '12px',
+    },
+  };
+
+  const getRowStyle = (isEven: boolean, isExpanded: boolean): React.CSSProperties => {
+    if (isExpanded) return styles.tableRowExpanded;
+    if (isEven) return styles.tableRowEven;
+    return styles.tableRowOdd;
+  };
+
   return (
-    <div className="space-y-4 p-4 lg:p-6 min-h-screen">
+    <div style={styles.page}>
+      {/* Inject keyframes for live pulse */}
+      <style>{`
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor, 0 0 12px currentColor; }
+          50% { opacity: 0.4; box-shadow: 0 0 2px currentColor, 0 0 4px currentColor; }
+        }
+        input[type="range"]::-webkit-slider-thumb {
+          appearance: none;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #00d4ff;
+          cursor: pointer;
+          box-shadow: 0 0 6px #00d4ff;
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #00d4ff;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 0 6px #00d4ff;
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-brand-red/10 border border-brand-red/20">
-            <ShieldAlert size={22} className="text-brand-red" />
+      <div style={styles.headerRow}>
+        <div style={styles.titleBlock}>
+          <div style={styles.titleIcon}>
+            <ShieldAlert size={22} style={{ color: '#ff3355' }} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Live Threats</h1>
-            <p className="text-xs text-slate-400">
+            <h1 style={styles.title}>LIVE THREATS</h1>
+            <p style={styles.subtitle}>
               Real-time threat intelligence monitoring
               {isLive && (
-                <span className="ml-2 inline-flex items-center gap-1 text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span style={styles.liveBadge}>
+                  <span style={styles.liveDot} />
                   LIVE
                 </span>
               )}
@@ -287,33 +842,54 @@ const LiveThreats: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div style={styles.buttonGroup}>
           <button
             onClick={() => {
               setIsLive((v) => !v);
               setLiveCount(0);
             }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-              isLive
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-                : 'bg-navy-700 text-slate-400 border-slate-700 hover:text-white'
-            }`}
+            style={{
+              ...styles.btnBase,
+              ...(isLive ? styles.liveToggleActive : styles.liveTogglePaused),
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              if (isLive) {
+                e.currentTarget.style.boxShadow = '0 0 12px rgba(0,255,65,0.3)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              if (isLive) {
+                e.currentTarget.style.boxShadow = '0 0 8px rgba(0,255,65,0.2)';
+              }
+            }}
           >
-            <RefreshCw size={13} className={isLive ? 'animate-spin' : ''} />
-            {isLive ? 'Live' : 'Paused'}
+            <RefreshCw size={13} style={{ animation: isLive ? 'spin 1.2s linear infinite' : 'none' }} />
+            {isLive ? 'LIVE' : 'PAUSED'}
           </button>
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-navy-700 text-slate-300 border border-slate-700 hover:text-white hover:border-slate-600 transition-all"
+            style={styles.btnBase}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 0 10px rgba(0,212,255,0.25)';
+              e.currentTarget.style.color = '#00d4ff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 0 4px rgba(0,212,255,0.1)';
+              e.currentTarget.style.color = '#c8d6e5';
+            }}
           >
             <Download size={13} />
-            Export
+            EXPORT
           </button>
         </div>
       </div>
 
       {/* Severity Summary Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div style={{ ...styles.severityGrid, marginTop: '16px' }}>
         {(['critical', 'high', 'medium', 'low'] as const).map((sev) => {
           const cfg = severityConfig[sev];
           const count = severityCounts[sev];
@@ -321,57 +897,82 @@ const LiveThreats: React.FC = () => {
             <button
               key={sev}
               onClick={() => toggleSeverity(sev)}
-              className={`card p-3 text-left border transition-all ${
-                activeSeverities.has(sev)
-                  ? `${cfg.bg} ${cfg.border}`
-                  : 'opacity-50 border-slate-800'
-              }`}
+              style={styles.severityCard(cfg, activeSeverities.has(sev))}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                if (activeSeverities.has(sev)) {
+                  e.currentTarget.style.boxShadow = cfg.glow;
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = activeSeverities.has(sev) ? cfg.glow : 'none';
+              }}
             >
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold ${cfg.text}`}>{cfg.label}</span>
-                <span className={`w-2 h-2 rounded-full ${cfg.dot} ${activeSeverities.has(sev) ? 'animate-pulse' : ''}`} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={styles.severityLabel(cfg)}>{cfg.label}</span>
+                <span style={styles.severityDot(cfg, activeSeverities.has(sev))} />
               </div>
-              <p className="text-lg font-bold text-white mt-1">{count}</p>
+              <p style={styles.severityCount}>{String(count).padStart(3, '0')}</p>
             </button>
           );
         })}
       </div>
 
       {/* Filter Bar */}
-      <div className="card p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-brand-blue" />
-            <span className="text-xs font-semibold text-white uppercase tracking-wider">Filters</span>
+      <div style={styles.filterCard}>
+        <div style={styles.filterHeader}>
+          <div style={styles.filterTitleRow}>
+            <Filter size={15} style={{ color: '#00d4ff' }} />
+            <span style={styles.filterTitle}>// FILTERS</span>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-white transition-colors ml-2"
+                style={styles.clearLink}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#c8d6e5'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#5a7a9a'; }}
               >
                 <X size={11} />
-                Clear all
+                CLEAR ALL
               </button>
             )}
           </div>
-          <p className="text-xs text-slate-500">
-            Showing <span className="text-slate-300 font-mono font-medium">{filtered.length}</span> of{' '}
-            <span className="text-slate-300 font-mono font-medium">{alerts.length}</span> alerts
+          <p style={styles.filterCount}>
+            Showing <span style={{ ...styles.filterCountNum, color: '#00d4ff' }}>{filtered.length}</span> of{' '}
+            <span style={styles.filterCountNum}>{alerts.length}</span> alerts
             {isLive && liveCount > 0 && (
-              <span className="text-emerald-400 ml-1">(+{liveCount} new)</span>
+              <span style={{ color: '#00ff41', marginLeft: '6px', textShadow: '0 0 6px rgba(0,255,65,0.4)' }}>
+                +{liveCount} new
+              </span>
             )}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+        <div style={styles.filterGrid}>
           {/* IP Search */}
-          <div className="relative lg:col-span-2">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <div style={styles.searchWrapper}>
+            <Search size={14} style={{
+              position: 'absolute',
+              left: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#5a7a9a',
+              pointerEvents: 'none',
+            }} />
             <input
               type="text"
-              placeholder="Search source or destination IP..."
+              placeholder="> SEARCH_IP ..."
               value={searchIp}
               onChange={(e) => setSearchIp(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-navy-900/60 border border-slate-700 rounded-lg text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/20 transition-all"
+              style={styles.searchInput}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(0,212,255,0.6)';
+                e.currentTarget.style.boxShadow = '0 0 10px rgba(0,212,255,0.15) inset';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)';
+                e.currentTarget.style.boxShadow = '0 0 6px rgba(0,212,255,0.08) inset';
+              }}
             />
           </div>
 
@@ -380,20 +981,20 @@ const LiveThreats: React.FC = () => {
             <select
               value={threatTypeFilter}
               onChange={(e) => setThreatTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-navy-900/60 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-brand-blue/50 focus:ring-1 focus:ring-brand-blue/20 transition-all appearance-none cursor-pointer"
+              style={styles.select}
             >
-              <option value="all">All Threat Types</option>
+              <option value="all">ALL_TYPES</option>
               {uniqueThreatTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
+                <option key={type} value={type}>{type.toUpperCase()}</option>
               ))}
             </select>
           </div>
 
           {/* Confidence Slider */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] text-slate-500">Min Confidence</span>
-              <span className="text-[11px] font-mono text-brand-blue font-medium">{minConfidence}%</span>
+          <div style={styles.rangeContainer}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={styles.rangeLabel}>MIN_CONF</span>
+              <span style={styles.rangeValue}>{minConfidence}%</span>
             </div>
             <input
               type="range"
@@ -401,12 +1002,12 @@ const LiveThreats: React.FC = () => {
               max="100"
               value={minConfidence}
               onChange={(e) => setMinConfidence(Number(e.target.value))}
-              className="w-full h-1.5 bg-navy-800 rounded-full appearance-none cursor-pointer accent-brand-blue"
+              style={styles.rangeInput}
             />
           </div>
 
           {/* Severity Quick Toggle */}
-          <div className="flex items-center gap-1.5">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', gridColumn: 'span 2' }}>
             {(['critical', 'high', 'medium', 'low'] as const).map((sev) => {
               const cfg = severityConfig[sev];
               const active = activeSeverities.has(sev);
@@ -415,11 +1016,15 @@ const LiveThreats: React.FC = () => {
                   key={sev}
                   onClick={() => toggleSeverity(sev)}
                   title={`${cfg.label} (${severityCounts[sev]})`}
-                  className={`flex-1 py-1.5 rounded-md text-[10px] font-bold border transition-all ${
-                    active
-                      ? `${cfg.bg} ${cfg.text} ${cfg.border}`
-                      : 'bg-navy-800/50 text-slate-600 border-slate-800/50'
-                  }`}
+                  style={styles.sevToggleBtn(cfg, active)}
+                  onMouseEnter={(e) => {
+                    if (active) {
+                      e.currentTarget.style.boxShadow = cfg.glow;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
                 >
                   {sev === 'critical' ? 'C' : sev === 'high' ? 'H' : sev === 'medium' ? 'M' : 'L'}
                 </button>
@@ -428,14 +1033,24 @@ const LiveThreats: React.FC = () => {
           </div>
 
           {/* Clear filters button */}
-          <div className="flex items-center">
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium bg-navy-700/50 text-slate-400 border border-slate-700 hover:text-white hover:border-slate-600 transition-all"
+                style={styles.resetBtn}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#c8d6e5';
+                  e.currentTarget.style.borderColor = 'rgba(0,212,255,0.5)';
+                  e.currentTarget.style.boxShadow = '0 0 8px rgba(0,212,255,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#5a7a9a';
+                  e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
                 <X size={12} />
-                Reset
+                RESET
               </button>
             )}
           </div>
@@ -443,43 +1058,52 @@ const LiveThreats: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      <div style={styles.tableCard}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' as const, fontSize: '12px' }}>
             <thead>
-              <tr className="bg-navy-700/40 border-b border-slate-800">
-                <th className="px-4 py-3" style={{ width: '40px' }}>
-                  <span className="block w-2.5 h-2.5 rounded-full bg-slate-600" />
+              <tr style={styles.tableHeadRow}>
+                <th style={{ ...styles.th, width: '36px', padding: '10px 8px' }}>
+                  <span style={{ display: 'block', width: '8px', height: '8px', borderRadius: '50%', background: '#5a7a9a' }} />
                 </th>
                 <th
-                  className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-white transition-colors select-none"
+                  style={{ ...styles.th, ...(sortField === 'timestamp' ? styles.thActive : {}) }}
                   onClick={() => handleSort('timestamp')}
                 >
-                  <span className="flex items-center gap-1">Time <SortIcon field="timestamp" /></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    TIME
+                    <SortIcon field="timestamp" />
+                  </span>
                 </th>
                 <th
-                  className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-white transition-colors select-none"
+                  style={{ ...styles.th, ...(sortField === 'severity' ? styles.thActive : {}) }}
                   onClick={() => handleSort('severity')}
                 >
-                  <span className="flex items-center gap-1">Severity <SortIcon field="severity" /></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    SEVERITY
+                    <SortIcon field="severity" />
+                  </span>
                 </th>
-                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Threat</th>
+                <th style={styles.th}>THREAT_TYPE</th>
                 <th
-                  className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 cursor-pointer hover:text-white transition-colors select-none"
+                  style={{ ...styles.th, ...(sortField === 'confidence' ? styles.thActive : {}) }}
                   onClick={() => handleSort('confidence')}
                 >
-                  <span className="flex items-center gap-1">Confidence <SortIcon field="confidence" /></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    CONFIDENCE
+                    <SortIcon field="confidence" />
+                  </span>
                 </th>
-                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Source</th>
-                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Destination</th>
-                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Protocol / Ports</th>
-                <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Evidence</th>
-                <th className="px-4 py-3" style={{ width: '50px' }}>
-                  <Eye size={12} className="text-slate-600" />
+                <th style={styles.th}>SRC_IP</th>
+                <th style={styles.th}>DST_IP</th>
+                <th style={styles.th}>PROTO / PORTS</th>
+                <th style={styles.th}>METRICS</th>
+                <th style={{ ...styles.th, width: '44px', padding: '10px 8px' }}>
+                  <Eye size={12} style={{ color: '#5a7a9a' }} />
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
               {paginated.map((alert, idx) => {
                 const cfg = severityConfig[alert.severity];
                 const isExpanded = expandedId === alert.id;
@@ -495,94 +1119,135 @@ const LiveThreats: React.FC = () => {
                 return (
                   <Fragment key={alert.id}>
                     <tr
-                      className={`transition-colors group ${
-                        isExpanded
-                          ? 'bg-navy-700/25'
+                      style={getRowStyle(isEven, isExpanded)}
+                      onMouseEnter={(e) => {
+                        if (!isExpanded) {
+                          e.currentTarget.style.background = 'rgba(0,212,255,0.04)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = isExpanded
+                          ? 'rgba(0,212,255,0.04)'
                           : isEven
-                            ? 'bg-navy-800/20 hover:bg-navy-700/30'
-                            : 'bg-transparent hover:bg-navy-700/25'
-                      }`}
+                            ? 'rgba(10,18,28,0.4)'
+                            : 'transparent';
+                      }}
                     >
-                      <td className="px-4 py-3">
-                        <span className={`block w-2.5 h-2.5 rounded-full ${cfg.dot} shadow-sm`} title={cfg.label} />
+                      <td style={{ ...styles.td, padding: '9px 8px' }}>
+                        <span style={{
+                          display: 'block',
+                          width: '7px',
+                          height: '7px',
+                          borderRadius: '50%',
+                          backgroundColor: cfg.dot,
+                          boxShadow: cfg.glow,
+                          animation: 'livePulse 2s ease-in-out infinite',
+                        }} title={cfg.label} />
                       </td>
 
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="font-mono text-xs text-slate-300">{formatTimestamp(alert.timestamp)}</span>
-                          <span className="text-[10px] text-slate-600">{formatDate(alert.timestamp)}</span>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                          <span style={{ fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace", fontSize: '11px', color: '#c8d6e5' }}>
+                            {formatTimestamp(alert.timestamp)}
+                          </span>
+                          <span style={{ fontSize: '9px', color: '#5a7a9a' }}>
+                            {formatDate(alert.timestamp)}
+                          </span>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
+                      <td style={styles.td}>
+                        <span style={styles.severityBadge(cfg)}>
                           {cfg.label}
                         </span>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <ThreatIcon size={14} className="text-slate-400 flex-shrink-0" />
-                          <span className="text-sm text-white font-medium whitespace-nowrap">{alert.threat_type}</span>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <ThreatIcon size={14} style={{ color: '#5a7a9a', flexShrink: 0 }} />
+                          <span style={{
+                            fontSize: '12px',
+                            color: '#c8d6e5',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap' as const,
+                            fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+                            textTransform: 'uppercase' as const,
+                            letterSpacing: '0.5px',
+                          }}>
+                            {alert.threat_type}
+                          </span>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-16 h-1.5 bg-navy-800 rounded-full overflow-hidden">
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={styles.confidenceTrack}>
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${conf.bar}`}
-                              style={{ width: `${alert.confidence}%` }}
+                              style={{ ...styles.confidenceFill(conf.bar), width: `${alert.confidence}%` }}
                             />
                           </div>
-                          <span className={`text-xs font-mono font-medium w-9 text-right ${conf.text}`}>
+                          <span style={styles.confidenceText(conf.text)}>
                             {alert.confidence}%
                           </span>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-brand-blue">{alert.src_ip}</span>
+                      <td style={styles.td}>
+                        <span style={styles.ipText('#00d4ff')}>
+                          {alert.src_ip}
+                        </span>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-brand-amber">{alert.dst_ip}</span>
+                      <td style={styles.td}>
+                        <span style={styles.ipText('#00d4ff')}>
+                          {alert.dst_ip}
+                        </span>
                       </td>
 
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-navy-700 text-slate-300 border border-slate-700 font-mono">
+                      <td style={{ ...styles.td, whiteSpace: 'nowrap' as const }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={styles.protocolBadge}>
                             {proto}
                           </span>
                           {srcPort > 0 && dstPort > 0 && (
-                            <span className="text-[11px] font-mono text-slate-500">
+                            <span style={styles.portsText}>
                               {srcPort} &rarr; {dstPort}
                             </span>
                           )}
                         </div>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3 text-[11px]">
-                          <span className="flex items-center gap-1 text-slate-400">
-                            <Activity size={11} className="text-slate-500" />
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ ...styles.evidenceText, color: '#5a7a9a' }}>
+                            <Activity size={11} style={{ color: '#5a7a9a' }} />
                             {packetCount.toLocaleString()} pkts
                           </span>
-                          <span className="flex items-center gap-1 text-slate-400">
-                            <Server size={11} className="text-slate-500" />
+                          <span style={{ ...styles.evidenceText, color: '#5a7a9a' }}>
+                            <Server size={11} style={{ color: '#5a7a9a' }} />
                             {Number(anomalyScore).toFixed(2)}
                           </span>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td style={{ ...styles.td, padding: '9px 8px' }}>
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : alert.id)}
-                          className={`p-1 rounded transition-all ${
-                            isExpanded
-                              ? 'bg-brand-blue/20 text-brand-blue'
-                              : 'text-slate-500 hover:text-white hover:bg-navy-700'
-                          }`}
+                          style={styles.viewBtn(isExpanded)}
+                          onMouseEnter={(e) => {
+                            if (!isExpanded) {
+                              e.currentTarget.style.color = '#00d4ff';
+                              e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)';
+                              e.currentTarget.style.background = 'rgba(0,212,255,0.08)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isExpanded) {
+                              e.currentTarget.style.color = '#5a7a9a';
+                              e.currentTarget.style.borderColor = 'transparent';
+                              e.currentTarget.style.background = 'transparent';
+                            }
+                          }}
                           title="View evidence details"
                         >
                           {isExpanded ? <ChevronUp size={14} /> : <Eye size={14} />}
@@ -591,41 +1256,95 @@ const LiveThreats: React.FC = () => {
                     </tr>
 
                     {isExpanded && (
-                      <tr className="bg-navy-700/15">
-                        <td colSpan={10} className="px-4 py-0">
-                          <div className="py-4">
-                            <div className="flex items-center gap-2 mb-3">
-                              <ShieldAlert size={14} className="text-brand-amber" />
-                              <span className="text-xs font-semibold text-white uppercase tracking-wider">Full Evidence Report</span>
-                              <span className="text-[10px] text-slate-500 font-mono">Alert ID: {alert.id}</span>
+                      <tr style={styles.expandedSection}>
+                        <td colSpan={10} style={{ padding: '16px 14px' }}>
+                          <div>
+                            <div style={styles.expandedHeader}>
+                              <ShieldAlert size={14} style={{ color: '#ffc832' }} />
+                              <span style={styles.expandedTitle}>Full Evidence Report</span>
+                              <span style={{
+                                fontSize: '9px',
+                                color: '#5a7a9a',
+                                fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+                              }}>
+                                Alert ID: {alert.id}
+                              </span>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                              {/* JA3 fingerprint for TLS alerts */}
+                            <div style={styles.evidenceGrid}>
                               {(alert.threat_type === 'TLS Anomaly' || alert.threat_type === 'tls_anomaly') && alert.evidence?.tls_fingerprint && (
-                                <div className="bg-navy-800/40 border border-cyan-500/30 rounded-lg px-3 py-2.5 col-span-2">
-                                  <span className="text-[10px] text-cyan-400 uppercase tracking-wider font-medium block">JA3 Fingerprint</span>
-                                  <p className="text-sm text-cyan-300 font-mono mt-0.5 break-all">{String(alert.evidence.tls_fingerprint)}</p>
-                                  <span className="text-[9px] text-cyan-600 mt-1 block">Metadata only — no decryption</span>
+                                <div style={{
+                                  ...styles.evidenceTile,
+                                  gridColumn: 'span 2',
+                                  border: '1px solid rgba(0,212,255,0.3)',
+                                  boxShadow: '0 0 8px rgba(0,212,255,0.1)',
+                                }}>
+                                  <span style={{
+                                    fontSize: '9px',
+                                    color: '#00d4ff',
+                                    textTransform: 'uppercase' as const,
+                                    letterSpacing: '1px',
+                                    fontWeight: 600,
+                                    fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+                                    display: 'block',
+                                    marginBottom: '4px',
+                                  }}>
+                                    JA3 Fingerprint
+                                  </span>
+                                  <p style={{
+                                    fontSize: '12px',
+                                    color: '#00d4ff',
+                                    fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+                                    wordBreak: 'break-all' as const,
+                                    textShadow: '0 0 6px rgba(0,212,255,0.3)',
+                                    margin: 0,
+                                  }}>
+                                    {String(alert.evidence.tls_fingerprint)}
+                                  </p>
+                                  <span style={{
+                                    fontSize: '8px',
+                                    color: 'rgba(0,212,255,0.5)',
+                                    marginTop: '4px',
+                                    display: 'block',
+                                    fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+                                  }}>
+                                    [ METADATA ONLY - NO DECRYPTION ]
+                                  </span>
                                 </div>
                               )}
                               {Object.entries(alert.evidence).map(([key, value]) => {
                                 const displayValue = typeof value === 'number' ? value.toLocaleString() : String(value ?? '--');
                                 const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
                                 return (
-                                  <div key={key} className="bg-navy-800/40 border border-slate-700/50 rounded-lg px-3 py-2.5">
-                                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-medium block">{displayKey}</span>
-                                    <p className="text-sm text-slate-200 font-mono mt-0.5 break-all">{displayValue}</p>
+                                  <div key={key} style={styles.evidenceTile}>
+                                    <span style={styles.evidenceKey}>{displayKey}</span>
+                                    <p style={{
+                                      ...styles.evidenceValue,
+                                      color: '#c8d6e5',
+                                      textShadow: '0 0 4px rgba(0,212,255,0.12)',
+                                    }}>
+                                      {displayValue}
+                                    </p>
                                   </div>
                                 );
                               })}
                             </div>
-                            <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
-                              <span className="flex items-center gap-1">
-                                <Activity size={12} />
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '16px',
+                              marginTop: '14px',
+                              fontSize: '11px',
+                              color: '#5a7a9a',
+                              fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace",
+                            }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Activity size={12} style={{ color: '#5a7a9a' }} />
                                 Flow Count: {alert.flow_count}
                               </span>
-                              <span className="text-slate-700">|</span>
-                              <span>{formatTimestamp(alert.timestamp)} &mdash; {formatDate(alert.timestamp)}</span>
+                              <span style={{ color: 'rgba(0,212,255,0.2)' }}>|</span>
+                              <span>
+                                {formatTimestamp(alert.timestamp)} &mdash; {formatDate(alert.timestamp)}
+                              </span>
                             </div>
                           </div>
                         </td>
@@ -640,16 +1359,29 @@ const LiveThreats: React.FC = () => {
 
         {/* Empty state */}
         {paginated.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-            <AlertTriangle size={48} className="mb-3 opacity-40" />
-            <p className="text-sm font-medium text-slate-400">No alerts match your filters</p>
-            <p className="text-xs text-slate-600 mt-1">Try adjusting your search criteria or clearing filters</p>
+          <div style={styles.emptyState}>
+            <AlertTriangle size={48} style={{ opacity: 0.35, marginBottom: '12px' }} />
+            <p style={{ fontSize: '13px', fontWeight: 600, color: '#c8d6e5', fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace" }}>
+              NO_ALERTS_MATCH_FILTERS
+            </p>
+            <p style={{ fontSize: '11px', color: '#5a7a9a', marginTop: '6px', fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace" }}>
+              Try adjusting your search criteria or clearing filters
+            </p>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="mt-3 px-4 py-1.5 rounded-lg text-xs font-medium bg-navy-700 text-slate-300 border border-slate-700 hover:text-white hover:border-slate-600 transition-all"
+                style={styles.clearFiltersBtn}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#c8d6e5';
+                  e.currentTarget.style.borderColor = 'rgba(0,212,255,0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#5a7a9a';
+                  e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)';
+                }}
               >
-                Clear all filters
+                <X size={12} />
+                CLEAR ALL FILTERS
               </button>
             )}
           </div>
@@ -657,17 +1389,33 @@ const LiveThreats: React.FC = () => {
 
         {/* Pagination */}
         {paginated.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t border-slate-800">
-            <p className="text-[11px] text-slate-500">
-              Page <span className="text-slate-300 font-mono">{safePage}</span> of{' '}
-              <span className="text-slate-300 font-mono">{totalPages}</span>
-              <span className="ml-2">({filtered.length} total)</span>
+          <div style={styles.paginationBar}>
+            <p style={styles.paginationText}>
+              Page <span style={styles.paginationPageNum}>{safePage}</span> of{' '}
+              <span style={styles.paginationPageNum}>{totalPages}</span>
+              <span style={{ marginLeft: '8px' }}>({filtered.length} total)</span>
             </p>
-            <div className="flex items-center gap-1">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={safePage === 1}
-                className="p-1.5 rounded-md hover:bg-navy-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-400 hover:text-white transition-all border border-transparent hover:border-slate-700"
+                style={{
+                  ...styles.pageBtnBase,
+                  opacity: safePage === 1 ? 0.3 : 1,
+                  cursor: safePage === 1 ? 'not-allowed' : 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  if (safePage !== 1) {
+                    e.currentTarget.style.color = '#00d4ff';
+                    e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (safePage !== 1) {
+                    e.currentTarget.style.color = '#5a7a9a';
+                    e.currentTarget.style.borderColor = 'transparent';
+                  }
+                }}
               >
                 <ChevronLeft size={15} />
               </button>
@@ -692,16 +1440,33 @@ const LiveThreats: React.FC = () => {
                 return pages;
               })().map((p, i) =>
                 p === '...' ? (
-                  <span key={`ellipsis-${i}`} className="px-2 text-xs text-slate-600">...</span>
+                  <span key={`ellipsis-${i}`} style={{ padding: '0 4px', fontSize: '11px', color: '#5a7a9a', fontFamily: "'Courier New', 'Fira Code', 'Consolas', monospace" }}>
+                    ...
+                  </span>
                 ) : (
                   <button
                     key={p}
                     onClick={() => setCurrentPage(Number(p))}
-                    className={`w-8 h-8 rounded-md text-xs font-mono transition-all ${
-                      safePage === p
-                        ? 'bg-brand-blue/20 text-brand-blue border border-brand-blue/30'
-                        : 'text-slate-400 hover:text-white hover:bg-navy-700 border border-transparent'
-                    }`}
+                    style={{
+                      ...styles.pageBtnBase,
+                      width: '30px',
+                      height: '30px',
+                      ...(safePage === p ? styles.pageBtnActive : {}),
+                    }}
+                    onMouseEnter={(e) => {
+                      if (safePage !== p) {
+                        e.currentTarget.style.color = '#00d4ff';
+                        e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)';
+                        e.currentTarget.style.background = 'rgba(0,212,255,0.06)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (safePage !== p) {
+                        e.currentTarget.style.color = '#5a7a9a';
+                        e.currentTarget.style.borderColor = 'transparent';
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
                   >
                     {p}
                   </button>
@@ -711,7 +1476,23 @@ const LiveThreats: React.FC = () => {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={safePage === totalPages}
-                className="p-1.5 rounded-md hover:bg-navy-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-400 hover:text-white transition-all border border-transparent hover:border-slate-700"
+                style={{
+                  ...styles.pageBtnBase,
+                  opacity: safePage === totalPages ? 0.3 : 1,
+                  cursor: safePage === totalPages ? 'not-allowed' : 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  if (safePage !== totalPages) {
+                    e.currentTarget.style.color = '#00d4ff';
+                    e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (safePage !== totalPages) {
+                    e.currentTarget.style.color = '#5a7a9a';
+                    e.currentTarget.style.borderColor = 'transparent';
+                  }
+                }}
               >
                 <ChevronRight size={15} />
               </button>

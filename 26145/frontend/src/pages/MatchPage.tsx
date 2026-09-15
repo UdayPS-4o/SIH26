@@ -103,75 +103,76 @@ function MatchPage() {
 
   const getSimilarityColor = (sim: number) => {
     if (sim >= 0.9) return '#00ff41';
-    if (sim >= 0.75) return '#ffb000';
+    if (sim >= 0.75) return '#ff8833';
     if (sim >= threshold) return '#00d4ff';
-    return '#666';
+    return '#2d4a6a';
   };
 
   const renderResults = () => {
     if (results.length === 0) {
       return (
         <div className="empty-state">
-          <div className="empty-icon">&#x2B21;</div>
-          <p>Select a material and run matching to see results</p>
+          <div className="empty-icon" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)', fontSize: '32px' }}>◈</div>
+          <p style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>Select a material and run matching to see results</p>
         </div>
       );
     }
     return results.map(result => (
-      <div key={result.id} className="match-card">
-        <div className="match-card-header">
+      <div key={result.id} style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="match-card rounded-lg p-4">
+        <div className="match-card-header flex items-center justify-between mb-3">
           <div>
-            <span className="match-material">{result.material_name}</span>
-            <span className="match-algo">{result.algorithm}</span>
+            <span className="match-material" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{result.material_name}</span>
+            <span className="match-algo block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '11px' }}>{result.algorithm}</span>
           </div>
-          <div className="match-meta">
-            <span className={`match-status status-${result.status}`}>
-              {result.status === 'searching' && '&#x27F3; Searching'}
-              {result.status === 'complete' && '&#x2713; Complete'}
-              {result.status === 'error' && '&#x2715; Error'}
+          <div className="match-meta flex items-center gap-3">
+            <span className={`match-status px-2 py-1 rounded text-[10px] uppercase tracking-wider`} style={{
+              fontFamily: 'var(--font-mono)',
+              color: result.status === 'searching' ? '#00d4ff' : result.status === 'complete' ? '#00ff41' : '#ff3355',
+              border: `1px solid ${result.status === 'searching' ? 'rgba(0,212,255,0.3)' : result.status === 'complete' ? 'rgba(0,255,65,0.3)' : 'rgba(255,51,85,0.3)'}`,
+              background: result.status === 'searching' ? 'rgba(0,212,255,0.08)' : result.status === 'complete' ? 'rgba(0,255,65,0.08)' : 'rgba(255,51,85,0.08)',
+            }}>
+              {result.status === 'searching' && '⟳ Searching'}
+              {result.status === 'complete' && '✓ Complete'}
+              {result.status === 'error' && '✕ Error'}
             </span>
-            <span className="match-time">{result.processing_ms}ms</span>
+            <span className="match-time" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px' }}>{result.processing_ms}ms</span>
           </div>
         </div>
         {result.candidates.length === 0 ? (
-          <div className="match-no-candidates">No matches above threshold ({result.threshold})</div>
+          <div className="match-no-candidates" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px' }}>No matches above threshold ({result.threshold})</div>
         ) : (
-          <table className="match-table">
+          <table className="match-table w-full">
             <thead>
-              <tr>
-                <th>Candidate</th>
-                <th>Similarity</th>
-                <th>Threat Class</th>
-                <th>Source</th>
-                <th>Updated</th>
+              <tr style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Candidate</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Similarity</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Threat Class</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Source</th>
+                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Updated</th>
               </tr>
             </thead>
             <tbody>
               {result.candidates.map((c, i) => (
-                <tr key={c.id}>
-                  <td>
-                    <span className="candidate-rank">#{i + 1}</span>
-                    {c.name}
+                <tr key={c.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span className="candidate-rank mr-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px' }}>#{i + 1}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{c.name}</span>
                   </td>
-                  <td>
-                    <div className="similarity-bar-wrap">
-                      <div className="similarity-bar">
-                        <div
-                          className="similarity-fill"
-                          style={{
-                            width: `${c.similarity * 100}%`,
-                            backgroundColor: getSimilarityColor(c.similarity),
-                          }}
-                        />
+                  <td style={{ padding: '10px 12px' }}>
+                    <div className="similarity-bar-wrap flex items-center gap-2">
+                      <div className="similarity-bar w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.08)' }}>
+                        <div className="similarity-fill h-full rounded-full transition-all" style={{ width: `${c.similarity * 100}%`, backgroundColor: getSimilarityColor(c.similarity) }} />
                       </div>
-                      <span className="similarity-val" style={{ color: getSimilarityColor(c.similarity) }}>
+                      <span className="similarity-val" style={{ color: getSimilarityColor(c.similarity), fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
                         {(c.similarity * 100).toFixed(1)}%
                       </span>
                     </div>
                   </td>
-                  <td><span className="threat-badge">{c.threat_class}</span></td>
-                  <td><span className="source-text">{c.source}</span></td>
-                  <td><span className="date-text">{c.last_updated}</span></td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span className="threat-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ background: 'rgba(255,51,85,0.08)', color: '#ff3355', border: '1px solid rgba(255,51,85,0.25)', fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{c.threat_class}</span>
+                  </td>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px', padding: '10px 12px' }}>{c.source}</td>
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px', padding: '10px 12px' }}>{c.last_updated}</td>
                 </tr>
               ))}
             </tbody>
@@ -185,25 +186,29 @@ function MatchPage() {
     <div className="page">
       <header className="page-header">
         <div>
-          <h1 className="page-title">
-            <span className="icon-glow">&#x2B21;</span> Pattern Matching Engine
+          <div className="flex items-center gap-3 mb-1">
+            <span style={{ color: '#00ff41', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+          </div>
+          <h1 className="page-title" style={{ color: '#00d4ff', letterSpacing: '3px' }}>
+            {''} Pattern Matching Engine
           </h1>
-          <p className="page-subtitle">LSH, SimHash, ML Embedding, Fuzzy Hash — registry similarity search</p>
+          <p className="page-subtitle" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>LSH, SimHash, ML Embedding, Fuzzy Hash — registry similarity search</p>
         </div>
         <div className="header-actions">
-          <div className="active-indicator">
-            {activeQueries > 0 && <><span className="pulse-dot" /> {activeQueries} active</>}
+          <div className="active-indicator flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px' }}>
+            {activeQueries > 0 && <><span className="pulse-dot" style={{ backgroundColor: '#00d4ff', width: '6px', height: '6px', borderRadius: '50%', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} /> {activeQueries} active</>}
           </div>
         </div>
       </header>
 
-      <div className="match-layout">
+      <div className="match-layout grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Controls */}
-        <div className="match-controls">
+        <div className="match-controls lg:col-span-1 space-y-4">
           <div className="control-group">
-            <label className="control-label">Material</label>
+            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Material</label>
             <select
-              className="cyber-select"
+              className="cyber-select w-full rounded-lg px-3 py-2 outline-none cursor-pointer"
+              style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }}
               value={selectedMaterial}
               onChange={e => setSelectedMaterial(e.target.value)}
             >
@@ -213,23 +218,27 @@ function MatchPage() {
           </div>
 
           <div className="control-group">
-            <label className="control-label">Algorithm</label>
-            <div className="algo-list">
+            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Algorithm</label>
+            <div className="algo-list space-y-2">
               {ALGORITHMS.map(algo => (
                 <button
                   key={algo.id}
-                  className={`algo-card ${algorithm === algo.id ? 'algo-active' : ''}`}
+                  style={{
+                    background: algorithm === algo.id ? 'rgba(0,212,255,0.08)' : 'transparent',
+                    border: `1px solid ${algorithm === algo.id ? 'rgba(0,212,255,0.3)' : 'rgba(0,212,255,0.12)'}`,
+                  }}
+                  className="algo-card w-full text-left rounded-lg p-3 transition-all cursor-pointer"
                   onClick={() => setAlgorithm(algo.id)}
                 >
-                  <div className="algo-name">{algo.name}</div>
-                  <div className="algo-desc">{algo.desc}</div>
+                  <div className="algo-name" style={{ fontFamily: 'var(--font-mono)', color: algorithm === algo.id ? '#00d4ff' : '#c8d6e5', fontSize: '12px', fontWeight: 600 }}>{algo.name}</div>
+                  <div className="algo-desc" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', marginTop: '2px' }}>{algo.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="control-group">
-            <label className="control-label">Similarity Threshold: {threshold.toFixed(2)}</label>
+            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Similarity Threshold: {threshold.toFixed(2)}</label>
             <input
               type="range"
               min="0.3"
@@ -237,9 +246,10 @@ function MatchPage() {
               step="0.01"
               value={threshold}
               onChange={e => setThreshold(parseFloat(e.target.value))}
-              className="cyber-slider"
+              className="cyber-slider w-full"
+              style={{ accentColor: '#00d4ff' }}
             />
-            <div className="threshold-marks">
+            <div className="threshold-marks flex justify-between mt-1" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '10px' }}>
               <span>0.3 (loose)</span>
               <span>0.7 (balanced)</span>
               <span>0.99 (strict)</span>
@@ -247,30 +257,31 @@ function MatchPage() {
           </div>
 
           <button
-            className="btn btn-primary btn-full"
+            className="btn btn-primary btn-full cursor-pointer"
             onClick={handleRunMatch}
             disabled={!selectedMaterial || running}
+            style={{ fontFamily: 'var(--font-mono)' }}
           >
-            {running ? '&#x27F3; Scanning Registry...' : '&#x25B6; Run Matching'}
+            {running ? '⟳ Scanning Registry...' : '▶ Run Matching'}
           </button>
         </div>
 
         {/* Results area */}
-        <div className="match-results">
-          <h3 className="results-header">Matches</h3>
+        <div className="match-results lg:col-span-2">
+          <h3 className="results-header mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Matches</h3>
           {renderResults()}
         </div>
       </div>
 
       {/* History section */}
       {searchHistory.length > 0 && (
-        <div className="match-history">
-          <h3 className="section-title">Recent Searches</h3>
-          <div className="history-list">
+        <div className="match-history mt-6 rounded-lg p-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
+          <h3 className="section-title mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Recent Searches</h3>
+          <div className="history-list space-y-2">
             {searchHistory.slice(0, 5).map(h => (
-              <div key={h.id} className="history-item">
-                <span className="history-material">{h.material_name}</span>
-                <span className="history-meta">{h.candidates.length} matches &middot; {h.algorithm} &middot; {h.processing_ms}ms</span>
+              <div key={h.id} className="history-item flex items-center justify-between p-2 rounded" style={{ background: 'rgba(6,10,16,0.6)', border: '1px solid rgba(0,212,255,0.08)' }}>
+                <span className="history-material" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{h.material_name}</span>
+                <span className="history-meta" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px' }}>{h.candidates.length} matches · {h.algorithm} · {h.processing_ms}ms</span>
               </div>
             ))}
           </div>

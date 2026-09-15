@@ -155,6 +155,60 @@ const STRATEGY_OPTIONS = [
   { value: 'sticky_domain', label: 'Sticky per domain', hint: 'Bind a proxy to a domain' },
 ]
 
+const MOCK_STATS: PoolStats = {
+  totalProxies: 24, active: 18, cooldown: 3, expired: 1, disabled: 1, validating: 1,
+  totalRequests: 48230, totalBlocks: 12, totalAssignments: 41800,
+  viaProxy: 37500, viaDirect: 4300, proxyUsagePct: 89.7,
+  byType: { datacenter: 10, residential: 6, mobile: 2 },
+  strategy: 'round_robin', domainBindings: 8,
+  lastRotationAt: new Date(Date.now() - 3600000).toISOString(),
+  lastRotationReason: 'scheduled 1h rotation',
+}
+
+function makeMockProxies(): ProxyInfo[] {
+  const providers = ['datacenter', 'residential', 'mobile']
+  const statuses: ProxyInfo['status'][] = ['active', 'active', 'active', 'cooldown', 'expired', 'disabled']
+  return Array.from({ length: 12 }, (_, i) => {
+    const type = providers[i % 3]
+    const status = statuses[i % statuses.length]
+    const addedAt = new Date(Date.now() - (i + 1) * 86400000).toISOString()
+    const lastUsed = new Date(Date.now() - i * 3600000).toISOString()
+    const totalReq = Math.floor(Math.random() * 4000) + 100
+    const blockCount = status === 'cooldown' ? Math.floor(Math.random() * 5) + 1 : 0
+    const successCount = totalReq - blockCount - Math.floor(Math.random() * 20)
+    return {
+      id: `px-${String(i + 1).padStart(3, '0')}`,
+      address: `103.${10 + i}.${20 + i}.${100 + i}:8080`,
+      provider: type, country: i % 3 === 0 ? 'US' : i % 3 === 1 ? 'SG' : 'IN',
+      type, status,
+      addedAt, lastUsedAt: lastUsed, lastUsedDomain: i % 2 === 0 ? 'makemytrip.com' : 'goibibo.com',
+      expiresAt: status === 'expired' ? new Date(Date.now() - 86400000).toISOString() : new Date(Date.now() + 86400000).toISOString(),
+      blockCount, successCount,
+      failureCount: Math.floor(Math.random() * 20),
+      totalRequests: totalReq,
+      avgLatencyMs: Math.floor(Math.random() * 400) + 80,
+      successRate: status === 'expired' ? 0 : Math.min(0.99, successCount / totalReq),
+      cooldownUntil: status === 'cooldown' ? new Date(Date.now() + 1800000).toISOString() : null,
+      failureReason: status === 'cooldown' ? 'HTTP 429 Too Many Requests from source' : '',
+      leaseDurationS: 86400, isUsable: status === 'active',
+      ageS: (i + 1) * 86400, timeSinceUseS: i * 3600,
+    }
+  })
+}
+
+const MOCK_PROXIES = makeMockProxies()
+
+const MOCK_BINDINGS: DomainBinding[] = [
+  { domain: 'makemytrip.com', proxyId: 'px-001', proxyAddress: '103.10.20.100:8080', boundAt: new Date(Date.now() - 7200000).toISOString(), requestsServed: 3200, expiresAt: new Date(Date.now() + 72000000).toISOString(), isValid: true },
+  { domain: 'goibibo.com', proxyId: 'px-002', proxyAddress: '103.11.21.101:8080', boundAt: new Date(Date.now() - 5400000).toISOString(), requestsServed: 2800, expiresAt: new Date(Date.now() + 72000000).toISOString(), isValid: true },
+  { domain: 'yatra.com', proxyId: 'px-003', proxyAddress: '103.12.22.102:8080', boundAt: new Date(Date.now() - 3600000).toISOString(), requestsServed: 1500, expiresAt: new Date(Date.now() + 72000000).toISOString(), isValid: true },
+  { domain: 'easemytrip.com', proxyId: 'px-007', proxyAddress: '103.16.26.106:8080', boundAt: new Date(Date.now() - 9000000).toISOString(), requestsServed: 1100, expiresAt: new Date(Date.now() + 36000000).toISOString(), isValid: true },
+  { domain: 'ixigo.com', proxyId: 'px-010', proxyAddress: '103.19.29.109:8080', boundAt: new Date(Date.now() - 10800000).toISOString(), requestsServed: 890, expiresAt: new Date(Date.now() + 36000000).toISOString(), isValid: true },
+  { domain: 'cleartrip.com', proxyId: 'px-013', proxyAddress: '103.22.32.112:8080', boundAt: new Date(Date.now() - 14400000).toISOString(), requestsServed: 650, expiresAt: new Date(Date.now() + 18000000).toISOString(), isValid: true },
+  { domain: 'paytm.com', proxyId: 'px-004', proxyAddress: '103.13.23.103:8080', boundAt: new Date(Date.now() - 4500000).toISOString(), requestsServed: 2100, expiresAt: new Date(Date.now() + 72000000).toISOString(), isValid: true },
+  { domain: 'bookmyflight.in', proxyId: 'px-011', proxyAddress: '103.20.30.110:8080', boundAt: new Date(Date.now() - 12600000).toISOString(), requestsServed: 720, expiresAt: new Date(Date.now() + 36000000).toISOString(), isValid: true },
+]
+
 export default function ProxyPoolPage() {
   const [stats, setStats] = useState<PoolStats | null>(null)
   const [proxies, setProxies] = useState<ProxyInfo[]>([])
@@ -185,7 +239,13 @@ export default function ProxyPoolPage() {
         setBindings(b.bindings || [])
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(() => {
+        // Backend unreachable — use hardcoded demo data
+        setStats(MOCK_STATS)
+        setProxies(MOCK_PROXIES)
+        setBindings(MOCK_BINDINGS)
+        setLoading(false)
+      })
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])

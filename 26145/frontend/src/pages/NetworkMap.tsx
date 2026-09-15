@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Zap, Globe, Shield, AlertTriangle, Activity, Network, Link2 } from 'lucide-react';
 import type { ThreatNode } from '../types';
 import { MockBackend, mockBackend } from '../lib/mockBackend';
 
@@ -22,16 +21,16 @@ interface CanvasEdge {
 // ── Color maps ─────────────────────────────────────────────────────────────
 
 const NODE_COLORS: Record<string, { fill: string; stroke: string; glow: string; text: string }> = {
-  internal:   { fill: 'rgba(59,130,246,0.15)',  stroke: '#3b82f6', glow: 'rgba(59,130,246,0.6)',  text: '#93c5fd' },
-  external:   { fill: 'rgba(148,163,184,0.1)',  stroke: '#64748b', glow: 'rgba(148,163,184,0.4)',text: '#94a3b8' },
-  server:     { fill: 'rgba(16,185,129,0.15)',  stroke: '#10b981', glow: 'rgba(16,185,129,0.6)', text: '#6ee7b7' },
-  attacker:   { fill: 'rgba(239,68,68,0.2)',    stroke: '#ef4444', glow: 'rgba(239,68,68,0.7)',  text: '#fca5a5' },
+  internal:   { fill: 'rgba(0,212,255,0.15)',   stroke: '#00d4ff', glow: 'rgba(0,212,255,0.6)',   text: '#00d4ff' },
+  external:   { fill: 'rgba(90,122,154,0.1)',   stroke: '#5a7a9a', glow: 'rgba(90,122,154,0.4)', text: '#5a7a9a' },
+  server:     { fill: 'rgba(0,255,65,0.15)',    stroke: '#00ff41', glow: 'rgba(0,255,65,0.6)',  text: '#00ff41' },
+  attacker:   { fill: 'rgba(255,51,85,0.2)',    stroke: '#ff3355', glow: 'rgba(255,51,85,0.7)', text: '#ff3355' },
 };
 
 const EDGE_COLORS: Record<string, { stroke: string; glow: string }> = {
-  normal:     { stroke: 'rgba(100,116,139,0.25)', glow: 'rgba(100,116,139,0)' },
-  suspicious: { stroke: 'rgba(245,158,11,0.5)',   glow: 'rgba(245,158,11,0.3)' },
-  attack:     { stroke: 'rgba(239,68,68,0.7)',    glow: 'rgba(239,68,68,0.4)' },
+  normal:     { stroke: 'rgba(90,122,154,0.25)', glow: 'rgba(90,122,154,0)' },
+  suspicious: { stroke: 'rgba(255,136,51,0.5)',  glow: 'rgba(255,136,51,0.3)' },
+  attack:     { stroke: 'rgba(255,51,85,0.7)',   glow: 'rgba(255,51,85,0.4)' },
 };
 
 const PROTOCOLS = ['TCP', 'UDP', 'HTTP', 'HTTPS', 'DNS', 'ICMP'];
@@ -244,12 +243,12 @@ const NetworkMap: React.FC = () => {
 
       ctx.clearRect(0, 0, w, h);
 
-      // Background
-      ctx.fillStyle = '#0a0e1a';
+      // Background — dark terminal
+      ctx.fillStyle = '#060a10';
       ctx.fillRect(0, 0, w, h);
 
       // Grid
-      ctx.strokeStyle = 'rgba(30,41,59,0.3)';
+      ctx.strokeStyle = 'rgba(0,212,255,0.04)';
       ctx.lineWidth = 0.5;
       for (let x = 40; x < w; x += 40) {
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
@@ -325,7 +324,7 @@ const NetworkMap: React.FC = () => {
           const arrowSize = 6;
           ctx.save();
           ctx.globalAlpha = alpha * pulseAlpha;
-          ctx.fillStyle = '#ef4444';
+          ctx.fillStyle = '#ff3355';
           ctx.beginPath();
           ctx.moveTo(midX + arrowSize * Math.cos(angle), midY + arrowSize * Math.sin(angle));
           ctx.lineTo(midX + arrowSize * Math.cos(angle + 2.5), midY + arrowSize * Math.sin(angle + 2.5));
@@ -392,7 +391,7 @@ const NetworkMap: React.FC = () => {
         // Threat arc indicator
         if (node.threat_score > 50 && alpha > 0.5) {
           ctx.save(); ctx.globalAlpha = alpha * 0.8;
-          ctx.strokeStyle = node.type === 'attacker' ? '#ef4444' : '#f59e0b';
+          ctx.strokeStyle = node.type === 'attacker' ? '#ff3355' : '#ff8833';
           ctx.lineWidth = 2.5;
           ctx.beginPath();
           ctx.arc(node.x, node.y, finalR + 3, -Math.PI / 2, -Math.PI / 2 + (node.threat_score / 100) * Math.PI * 2);
@@ -402,7 +401,7 @@ const NetworkMap: React.FC = () => {
         // Score text inside node
         if (finalR > 14 && alpha > 0.5) {
           ctx.save(); ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 9px "SF Mono","Fira Code","Consolas",monospace';
+          ctx.font = 'bold 9px "JetBrains Mono",monospace';
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(`${Math.round(node.threat_score)}`, node.x, node.y);
           ctx.restore();
@@ -411,7 +410,7 @@ const NetworkMap: React.FC = () => {
         // Label
         ctx.save(); ctx.globalAlpha = alpha * 0.9;
         ctx.fillStyle = colors.text;
-        ctx.font = `${node.type === 'attacker' ? 'bold ' : ''}10px "SF Mono","Fira Code","Consolas",monospace`;
+        ctx.font = `${node.type === 'attacker' ? 'bold ' : ''}10px "JetBrains Mono",monospace`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'top';
         ctx.fillText(node.label, node.x, node.y + finalR + 5);
         ctx.restore();
@@ -426,15 +425,15 @@ const NetworkMap: React.FC = () => {
           const lines = [node.label, node.ip, `Type: ${node.type}`, `Threat Score: ${Math.round(node.threat_score)}`, `Connections: ${node.connections.length}`];
           const maxW = Math.max(...lines.map(l => ctx.measureText(l).width));
           const px = 10, py = 6, tipW = maxW + px * 2 + 20, tipH = lines.length * 14 + py * 2;
-          ctx.save(); ctx.globalAlpha = 0.95; ctx.fillStyle = 'rgba(15,23,42,0.95)';
+          ctx.save(); ctx.globalAlpha = 0.95; ctx.fillStyle = 'rgba(10,16,24,0.95)';
           ctx.strokeStyle = NODE_COLORS[node.type].stroke; ctx.lineWidth = 1;
           roundRect(ctx, tipX, tipY, tipW, tipH, 6); ctx.fill(); ctx.stroke();
-          ctx.font = 'bold 10px Inter,system-ui,sans-serif'; ctx.fillStyle = NODE_COLORS[node.type].text;
+          ctx.font = 'bold 10px "JetBrains Mono",monospace'; ctx.fillStyle = NODE_COLORS[node.type].text;
           ctx.textAlign = 'left'; ctx.textBaseline = 'top';
           ctx.fillText(lines[0], tipX + px, tipY + py);
-          ctx.font = '9px "SF Mono","Fira Code","Consolas",monospace';
+          ctx.font = '9px "JetBrains Mono",monospace';
           lines.slice(1).forEach((line, i) => {
-            ctx.fillStyle = '#94a3b8';
+            ctx.fillStyle = '#5a7a9a';
             ctx.fillText(line, tipX + px, tipY + py + 4 + (i + 1) * 14);
           });
           ctx.restore();
@@ -443,10 +442,10 @@ const NetworkMap: React.FC = () => {
 
       // Title overlay
       ctx.save(); ctx.globalAlpha = 0.7;
-      ctx.font = 'bold 11px Inter,system-ui,sans-serif'; ctx.fillStyle = '#64748b';
+      ctx.font = 'bold 11px "JetBrains Mono",monospace'; ctx.fillStyle = '#5a7a9a';
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillText('NETWORK TOPOLOGY', 12, 12);
-      ctx.font = '9px Inter,system-ui,sans-serif';
+      ctx.font = '9px "JetBrains Mono",monospace';
       ctx.fillText(`Live · ${nodes.length} nodes · ${edges.length} edges`, 12, 28);
       ctx.restore();
 
@@ -498,21 +497,21 @@ const NetworkMap: React.FC = () => {
     if (!stats) return null;
     return (
       <div className="grid grid-cols-4 gap-3 mb-4">
-        <div className="bg-navy-800/60 border border-slate-700/40 rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-1">Total Nodes</p>
-          <p className="text-lg font-bold text-white">{stats.total_nodes}</p>
+        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Total Nodes</p>
+          <p className="text-lg font-bold" style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>{stats.total_nodes}</p>
         </div>
-        <div className="bg-navy-800/60 border border-red-500/20 rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-1">Active Threats</p>
-          <p className="text-lg font-bold text-brand-red">{stats.active_threats}</p>
+        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(255,51,85,0.12)' }} className="rounded-lg p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Active Threats</p>
+          <p className="text-lg font-bold" style={{ color: '#ff3355', fontFamily: 'var(--font-mono)' }}>{stats.active_threats}</p>
         </div>
-        <div className="bg-navy-800/60 border border-amber-500/20 rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-1">Suspicious</p>
-          <p className="text-lg font-bold text-brand-amber">{stats.suspicious_connections}</p>
+        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(255,136,51,0.12)' }} className="rounded-lg p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Suspicious</p>
+          <p className="text-lg font-bold" style={{ color: '#ff8833', fontFamily: 'var(--font-mono)' }}>{stats.suspicious_connections}</p>
         </div>
-        <div className="bg-navy-800/60 border border-brand-blue/20 rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-1">Blocked IPs</p>
-          <p className="text-lg font-bold text-brand-blue">{stats.blocked_ips}</p>
+        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3 text-center">
+          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Blocked IPs</p>
+          <p className="text-lg font-bold" style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>{stats.blocked_ips}</p>
         </div>
       </div>
     );
@@ -524,22 +523,23 @@ const NetworkMap: React.FC = () => {
         const cn = nodesRef.current.find(n => n.id === node.id);
         return (
           <div key={node.id}
-            className="flex items-center justify-between p-2.5 rounded-lg bg-navy-800/40 border border-slate-700/30 hover:border-brand-red/30 transition-colors cursor-pointer"
+            style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}
+            className="flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors"
             onClick={() => setSelectedNode(cn || null)}>
             <div className="flex items-center gap-2.5">
-              <div className={`w-2 h-2 rounded-full ${
-                node.type === 'attacker' ? 'bg-brand-red' :
-                node.type === 'server' ? 'bg-brand-green' :
-                node.type === 'internal' ? 'bg-brand-blue' : 'bg-slate-500'
-              }`} />
+              <div className="w-2 h-2 rounded-full" style={{
+                backgroundColor: node.type === 'attacker' ? '#ff3355' :
+                  node.type === 'server' ? '#00ff41' :
+                  node.type === 'internal' ? '#00d4ff' : '#5a7a9a'
+              }} />
               <div>
-                <p className="text-xs font-mono text-slate-200">{node.label}</p>
-                <p className="text-[10px] text-slate-500">{node.ip}</p>
+                <p className="text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{node.label}</p>
+                <p className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>{node.ip}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs font-bold text-brand-red">{Math.round(node.threat_score)}</p>
-              <p className="text-[10px] text-slate-500">{node.connections?.length || 0} conn</p>
+              <p className="text-xs font-bold" style={{ color: '#ff3355', fontFamily: 'var(--font-mono)' }}>{Math.round(node.threat_score)}</p>
+              <p className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>{node.connections?.length || 0} conn</p>
             </div>
           </div>
         );
@@ -550,30 +550,30 @@ const NetworkMap: React.FC = () => {
   const AttackPathsList = () => (
     <div className="space-y-3">
       {attackPaths.map((path, i) => {
-        const sevColor = path.severity === 'critical' ? 'text-brand-red border-red-500/40'
-          : path.severity === 'high' ? 'text-orange-400 border-orange-500/30'
-          : 'text-brand-amber border-amber-500/30';
+        const sevColor = path.severity === 'critical' ? { text: '#ff3355', border: 'rgba(255,51,85,0.4)' }
+          : path.severity === 'high' ? { text: '#ff8833', border: 'rgba(255,136,51,0.3)' }
+          : { text: '#ffcc00', border: 'rgba(255,204,0,0.3)' };
         return (
-          <div key={i} className={`p-3 rounded-lg bg-navy-800/40 border ${sevColor}`}>
+          <div key={i} style={{ background: 'rgba(10,18,28,0.85)', border: `1px solid ${sevColor.border}` }} className="p-3 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-brand-red">Attack Path #{i + 1}</span>
-              <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${sevColor}`}>
+              <span className="text-xs font-semibold" style={{ color: '#ff3355', fontFamily: 'var(--font-mono)' }}>Attack Path #{i + 1}</span>
+              <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ fontFamily: 'var(--font-mono)', color: sevColor.text, border: `1px solid ${sevColor.border}` }}>
                 {path.severity}
               </span>
             </div>
             <div className="flex items-center gap-1.5 text-[11px]">
-              <span className="font-mono text-brand-red whitespace-nowrap">
+              <span className="font-mono whitespace-nowrap" style={{ color: '#ff3355' }}>
                 {path.source.split('.').slice(-1)[0]}
               </span>
               {path.hops.map((hop, j) => (
-                <span key={j} className="text-slate-500">→</span>
+                <span key={j} style={{ color: '#2d4a6a' }}>{'→'}</span>
               ))}
-              <span className="text-brand-green font-mono whitespace-nowrap">
+              <span className="font-mono whitespace-nowrap" style={{ color: '#00ff41' }}>
                 {path.target.split('.').slice(-1)[0]}
               </span>
             </div>
-            <div className="text-[10px] text-slate-500 mt-1 font-mono truncate">
-              {path.source} → … → {path.target}
+            <div className="text-[10px] mt-1 font-mono truncate" style={{ color: '#2d4a6a' }}>
+              {path.source} {'→'} … {'→'} {path.target}
             </div>
           </div>
         );
@@ -589,7 +589,7 @@ const NetworkMap: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 p-4">
         <StatBar />
 
-        <div ref={containerRef} className="flex-1 relative rounded-xl overflow-hidden border border-slate-700/40 shadow-2xl">
+        <div ref={containerRef} className="flex-1 relative rounded-xl overflow-hidden" style={{ border: '1px solid rgba(0,212,255,0.12)', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}>
           <canvas
             ref={canvasRef}
             onMouseMove={handleMouseMove}
@@ -599,61 +599,67 @@ const NetworkMap: React.FC = () => {
           />
 
           {/* Legend */}
-          <div className="absolute top-3 left-3 bg-navy-900/80 backdrop-blur-sm border border-slate-700/40 rounded-lg p-3">
-            <p className="text-[10px] uppercase tracking-wider text-slate-400 mb-2 font-semibold">Legend</p>
+          <div style={{ background: 'rgba(6,10,16,0.8)', border: '1px solid rgba(0,212,255,0.12)' }} className="absolute top-3 left-3 rounded-lg p-3">
+            <p className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Legend</p>
             <div className="space-y-1.5">
               {Object.entries(NODE_COLORS).map(([type, colors]) => (
                 <div key={type} className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full border-2"
                     style={{ backgroundColor: colors.fill, borderColor: colors.stroke }} />
-                  <span className="text-[11px] text-slate-300 capitalize">{type}</span>
+                  <span className="text-[11px] capitalize" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{type}</span>
                 </div>
               ))}
             </div>
-            <div className="border-t border-slate-700/40 mt-2 pt-2 space-y-1.5">
+            <div style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }} className="mt-2 pt-2 space-y-1.5">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5 bg-slate-500/40 rounded" />
-                <span className="text-[11px] text-slate-400">Normal</span>
+                <div className="w-5 h-0.5 rounded" style={{ backgroundColor: 'rgba(90,122,154,0.4)' }} />
+                <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Normal</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5" style={{ borderBottom: '2px dashed rgba(245,158,11,0.6)' }} />
-                <span className="text-[11px] text-slate-400">Suspicious</span>
+                <div className="w-5 h-0.5" style={{ borderBottom: '2px dashed rgba(255,136,51,0.6)' }} />
+                <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Suspicious</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5 bg-red-500/70 rounded" />
-                <span className="text-[11px] text-slate-400">Attack</span>
+                <div className="w-5 h-0.5 rounded" style={{ backgroundColor: 'rgba(255,51,85,0.7)' }} />
+                <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Attack</span>
               </div>
             </div>
           </div>
 
           {/* Selected node detail panel */}
           {selectedNode && (
-            <div className="absolute bottom-3 left-3 right-3 bg-navy-900/90 backdrop-blur-sm border border-brand-blue/30 rounded-lg p-4">
+            <div style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.2)' }} className="absolute bottom-3 left-3 right-3 rounded-lg p-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center"
-                    style={{ borderColor: NODE_COLORS[selectedNode.type].stroke, backgroundColor: NODE_COLORS[selectedNode.type].fill }}>
-                    {selectedNode.type === 'attacker' && <AlertTriangle size={18} className="text-brand-red" />}
-                    {selectedNode.type === 'server' && <Shield size={18} className="text-brand-green" />}
-                    {selectedNode.type === 'internal' && <Globe size={18} className="text-brand-blue" />}
-                    {selectedNode.type === 'external' && <Network size={18} className="text-slate-400" />}
+                    style={{ borderColor: NODE_COLORS[selectedNode.type].stroke, backgroundColor: NODE_COLORS[selectedNode.type].fill, color: NODE_COLORS[selectedNode.type].text, fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
+                    {selectedNode.type === 'attacker' && '[!]'}
+                    {selectedNode.type === 'server' && '[S]'}
+                    {selectedNode.type === 'internal' && '[I]'}
+                    {selectedNode.type === 'external' && '[E]'}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white">{selectedNode.label}</p>
-                    <p className="text-xs font-mono text-slate-400">{selectedNode.ip}</p>
+                    <p className="text-sm font-bold" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)' }}>{selectedNode.label}</p>
+                    <p className="text-xs font-mono" style={{ color: '#5a7a9a' }}>{selectedNode.ip}</p>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
-                        selectedNode.type === 'attacker' ? 'bg-brand-red/20 text-brand-red' :
-                        selectedNode.type === 'server' ? 'bg-brand-green/20 text-brand-green' :
-                        selectedNode.type === 'internal' ? 'bg-brand-blue/20 text-brand-blue' :
-                        'bg-slate-500/20 text-slate-400'
-                      }`}>{selectedNode.type}</span>
-                      <span className="text-[10px] text-slate-500">Score: <span className="text-white font-bold">{Math.round(selectedNode.threat_score)}</span></span>
-                      <span className="text-[10px] text-slate-500">Conns: <span className="text-white font-bold">{selectedNode.connections.length}</span></span>
+                      <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded" style={{
+                        backgroundColor: selectedNode.type === 'attacker' ? 'rgba(255,51,85,0.15)' :
+                          selectedNode.type === 'server' ? 'rgba(0,255,65,0.15)' :
+                          selectedNode.type === 'internal' ? 'rgba(0,212,255,0.15)' : 'rgba(90,122,154,0.15)',
+                        color: selectedNode.type === 'attacker' ? '#ff3355' :
+                          selectedNode.type === 'server' ? '#00ff41' :
+                          selectedNode.type === 'internal' ? '#00d4ff' : '#5a7a9a',
+                        border: `1px solid ${selectedNode.type === 'attacker' ? 'rgba(255,51,85,0.3)' :
+                          selectedNode.type === 'server' ? 'rgba(0,255,65,0.3)' :
+                          selectedNode.type === 'internal' ? 'rgba(0,212,255,0.3)' : 'rgba(90,122,154,0.3)'}`,
+                        fontFamily: 'var(--font-mono)'
+                      }}>{selectedNode.type}</span>
+                      <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Score: <span className="font-bold" style={{ color: '#c8d6e5' }}>{Math.round(selectedNode.threat_score)}</span></span>
+                      <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Conns: <span className="font-bold" style={{ color: '#c8d6e5' }}>{selectedNode.connections.length}</span></span>
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setSelectedNode(null)} className="text-slate-500 hover:text-white transition-colors p-1">
+                <button onClick={() => setSelectedNode(null)} className="transition-colors p-1" style={{ color: '#2d4a6a' }}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
@@ -665,12 +671,12 @@ const NetworkMap: React.FC = () => {
       </div>
 
       {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-14' : 'w-80'} border-l border-slate-700/40 bg-navy-900/50 transition-all duration-300 flex flex-col overflow-hidden`}>
-        <div className="p-3 border-b border-slate-700/40 flex items-center justify-between">
+      <div className={`${sidebarCollapsed ? 'w-14' : 'w-80'} flex flex-col overflow-hidden transition-all duration-300`} style={{ borderLeft: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,16,24,0.9)' }}>
+        <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="p-3 flex items-center justify-between">
           {!sidebarCollapsed && (
-            <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Network Intel</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Network Intel</h3>
           )}
-          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="text-slate-500 hover:text-white transition-colors p-1">
+          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="transition-colors p-1" style={{ color: '#2d4a6a' }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               {sidebarCollapsed ? (
                 <path d="M2 7H12M9 4L12 7L9 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -684,31 +690,36 @@ const NetworkMap: React.FC = () => {
         {!sidebarCollapsed && (
           <>
             {stats && (
-              <div className="px-3 py-3 border-b border-slate-700/30">
+              <div style={{ borderBottom: '1px solid rgba(0,212,255,0.08)' }} className="px-3 py-3">
                 <div className="flex items-center gap-2 text-xs">
-                  <Activity size={14} className="text-brand-green" />
-                  <span className="text-slate-400">Total Connections:</span>
-                  <span className="text-white font-bold ml-auto">{totalConns}</span>
+                  <span style={{ color: '#00ff41' }}>●</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Total Connections:</span>
+                  <span className="font-bold ml-auto" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{totalConns}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs mt-1">
-                  <Zap size={14} className="text-brand-amber" />
-                  <span className="text-slate-400">Avg Threat Score:</span>
-                  <span className="text-white font-bold ml-auto">{avgScore}%</span>
+                  <span style={{ color: '#ff8833' }}>▲</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Avg Threat Score:</span>
+                  <span className="font-bold ml-auto" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{avgScore}%</span>
                 </div>
               </div>
             )}
 
-            <div className="flex border-b border-slate-700/40">
+            <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="flex">
               {[
-                { key: 'stats' as const, label: 'Stats', icon: Activity },
-                { key: 'threats' as const, label: 'Threats', icon: AlertTriangle },
-                { key: 'paths' as const, label: 'Paths', icon: Link2 },
+                { key: 'stats' as const, label: 'Stats', symbol: '◉' },
+                { key: 'threats' as const, label: 'Threats', symbol: '⚠' },
+                { key: 'paths' as const, label: 'Paths', symbol: '↯' },
               ].map(tab => (
                 <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] uppercase tracking-wider transition-colors ${
-                    activeTab === tab.key ? 'text-brand-blue border-b-2 border-brand-blue bg-navy-800/50' : 'text-slate-500 hover:text-slate-300'
-                  }`}>
-                  <tab.icon size={12} /> {tab.label}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] uppercase tracking-wider transition-colors"
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    letterSpacing: '2px',
+                    borderBottom: activeTab === tab.key ? '2px solid #00d4ff' : '2px solid transparent',
+                    color: activeTab === tab.key ? '#00d4ff' : '#2d4a6a',
+                    background: activeTab === tab.key ? 'rgba(0,212,255,0.06)' : 'transparent'
+                  }}>
+                  {tab.symbol} {tab.label}
                 </button>
               ))}
             </div>
@@ -716,27 +727,26 @@ const NetworkMap: React.FC = () => {
             <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
               {activeTab === 'stats' && (
                 <div className="space-y-4">
-                  <div className="bg-navy-800/40 border border-slate-700/30 rounded-lg p-3">
-                    <h4 className="text-[10px] uppercase tracking-wider text-slate-400 mb-3 font-semibold">Node Distribution</h4>
+                  <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3">
+                    <h4 className="text-[10px] uppercase tracking-wider mb-3 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Node Distribution</h4>
                     {stats && (
                       <div className="space-y-2">
                         {[
-                          { label: 'Internal', count: nodesRef.current.filter(n => n.type === 'internal').length, color: 'bg-brand-blue', text: 'text-brand-blue' },
-                          { label: 'External', count: nodesRef.current.filter(n => n.type === 'external').length, color: 'bg-slate-500', text: 'text-slate-400' },
-                          { label: 'Servers', count: nodesRef.current.filter(n => n.type === 'server').length, color: 'bg-brand-green', text: 'text-brand-green' },
-                          { label: 'Attackers', count: nodesRef.current.filter(n => n.type === 'attacker').length, color: 'bg-brand-red', text: 'text-brand-red' },
+                          { label: 'Internal', count: nodesRef.current.filter(n => n.type === 'internal').length, color: '#00d4ff' },
+                          { label: 'External', count: nodesRef.current.filter(n => n.type === 'external').length, color: '#5a7a9a' },
+                          { label: 'Servers', count: nodesRef.current.filter(n => n.type === 'server').length, color: '#00ff41' },
+                          { label: 'Attackers', count: nodesRef.current.filter(n => n.type === 'attacker').length, color: '#ff3355' },
                         ].map(item => (
                           <div key={item.label} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                              <span className="text-xs text-slate-300">{item.label}</span>
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                              <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{item.label}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <div className="w-16 h-1.5 bg-navy-700 rounded-full overflow-hidden">
-                                <div className={`h-full ${item.color} rounded-full`}
-                                  style={{ width: `${(item.count / (stats.total_nodes || 1)) * 100}%` }} />
+                              <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.08)' }}>
+                                <div className="h-full rounded-full" style={{ width: `${(item.count / (stats.total_nodes || 1)) * 100}%`, backgroundColor: item.color }} />
                               </div>
-                              <span className={`text-[11px] font-mono w-6 text-right ${item.text}`}>{item.count}</span>
+                              <span className="text-[11px] font-mono w-6 text-right" style={{ color: item.color }}>{item.count}</span>
                             </div>
                           </div>
                         ))}
@@ -744,30 +754,30 @@ const NetworkMap: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="bg-navy-800/40 border border-slate-700/30 rounded-lg p-3">
-                    <h4 className="text-[10px] uppercase tracking-wider text-slate-400 mb-3 font-semibold">Edge Status</h4>
+                  <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3">
+                    <h4 className="text-[10px] uppercase tracking-wider mb-3 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Edge Status</h4>
                     <div className="space-y-2">
                       {[
-                        { label: 'Normal', count: edgesRef.current.filter(e => e.status === 'normal').length, color: 'text-slate-400' },
-                        { label: 'Suspicious', count: edgesRef.current.filter(e => e.status === 'suspicious').length, color: 'text-brand-amber' },
-                        { label: 'Attack', count: edgesRef.current.filter(e => e.status === 'attack').length, color: 'text-brand-red' },
+                        { label: 'Normal', count: edgesRef.current.filter(e => e.status === 'normal').length, color: '#5a7a9a' },
+                        { label: 'Suspicious', count: edgesRef.current.filter(e => e.status === 'suspicious').length, color: '#ff8833' },
+                        { label: 'Attack', count: edgesRef.current.filter(e => e.status === 'attack').length, color: '#ff3355' },
                       ].map(item => (
                         <div key={item.label} className="flex items-center justify-between">
-                          <span className="text-xs text-slate-300">{item.label}</span>
-                          <span className={`text-[11px] font-mono font-bold ${item.color}`}>{item.count}</span>
+                          <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{item.label}</span>
+                          <span className="text-[11px] font-mono font-bold" style={{ color: item.color }}>{item.count}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="bg-navy-800/40 border border-slate-700/30 rounded-lg p-3">
-                    <h4 className="text-[10px] uppercase tracking-wider text-slate-400 mb-2 font-semibold">Protocols</h4>
+                  <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3">
+                    <h4 className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Protocols</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(
                         edgesRef.current.reduce((acc, e) => { acc[e.protocol] = (acc[e.protocol] || 0) + 1; return acc; }, {} as Record<string, number>)
                       ).sort((a, b) => b[1] - a[1]).map(([proto, count]) => (
-                        <span key={proto} className="text-[10px] font-mono px-2 py-1 bg-navy-700/60 text-slate-300 rounded border border-slate-700/30">
-                          {proto} <span className="text-slate-500">({count})</span>
+                        <span key={proto} className="text-[10px] font-mono px-2 py-1 rounded" style={{ background: 'rgba(10,18,28,0.85)', color: '#c8d6e5', border: '1px solid rgba(0,212,255,0.12)' }}>
+                          {proto} <span style={{ color: '#2d4a6a' }}>({count})</span>
                         </span>
                       ))}
                     </div>
@@ -779,9 +789,9 @@ const NetworkMap: React.FC = () => {
               {activeTab === 'paths' && <AttackPathsList />}
             </div>
 
-            <div className="p-3 border-t border-slate-700/40">
-              <div className="flex items-center gap-2 text-[10px] text-slate-600">
-                <Activity size={10} />
+            <div style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }} className="p-3">
+              <div className="flex items-center gap-2 text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>
+                <span>◉</span>
                 <span>Simulated threat data · MockBackend</span>
               </div>
             </div>
