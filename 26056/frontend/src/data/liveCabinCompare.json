@@ -8,45 +8,15 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-09-14T21:30:00+05:30",
-      "sourceUrl": "https://www.cleartrip.com",
-      "cardCount": 22,
-      "cheapest": {
-        "price": 1890,
-        "airlineCode": "6E",
-        "flightNumber": "6402",
-        "stops": 0,
-        "departTime": "2026-09-29T06:30:00+05:30",
-        "arriveTime": "2026-09-29T08:25:00+05:30"
-      }
+      "error": "Timed out after waiting 30000ms"
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-09-14T21:30:00+05:30",
-      "sourceUrl": "https://www.cleartrip.com",
-      "cardCount": 18,
-      "cheapest": {
-        "price": 3240,
-        "airlineCode": "AI",
-        "flightNumber": "8503",
-        "stops": 0,
-        "departTime": "2026-09-29T07:15:00+05:30",
-        "arriveTime": "2026-09-29T09:10:00+05:30"
-      }
+      "error": "Timed out after waiting 30000ms"
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-09-14T21:30:00+05:30",
-      "sourceUrl": "https://www.cleartrip.com",
-      "cardCount": 14,
-      "cheapest": {
-        "price": 7850,
-        "airlineCode": "IX",
-        "flightNumber": "1534",
-        "stops": 0,
-        "departTime": "2026-09-29T06:45:00+05:30",
-        "arriveTime": "2026-09-29T08:30:00+05:30"
-      }
+      "error": "Timed out after waiting 30000ms"
     }
   ]
 }
