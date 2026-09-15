@@ -56,6 +56,7 @@ import {
   Textarea,
   TextInput,
 } from '@/components/ui'
+import { cx } from '@/components/ui/tokens'
 import { ByMode, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
 import { useCopy } from '@/copy'
@@ -168,8 +169,17 @@ export default function ImportPage() {
   // The registry grows by the rows just accepted, so a live corpus count would
   // report the run as having been scored against records it created itself.
   const [matchedAgainst, setMatchedAgainst] = useState<number | null>(null)
+  /** Which pipeline stage is active, so the viewer can read the step labels. */
+  const [pipelineStep, setPipelineStep] = useState(0)
 
   const fileInput = useRef<HTMLInputElement>(null)
+
+  const PIPELINE_STEPS = [
+    { label: 'Normalize', detail: 'Standardise every description' },
+    { label: 'Score', detail: 'Compare word by word' },
+    { label: 'Cluster', detail: 'Group near-matches' },
+    { label: 'Mint', detail: 'Assign national codes' },
+  ]
 
   /* --------------------------------------------------------------- reading in */
 
@@ -180,6 +190,7 @@ export default function ImportPage() {
     setResult(null)
     setMatchedAgainst(null)
     setRunError(null)
+    setPipelineStep(0)
     try {
       const response = await previewUpload(text)
       setPreview(response.data)
@@ -259,10 +270,18 @@ export default function ImportPage() {
   const run = useCallback(async () => {
     if (parsedRows.length === 0) return
     setRunning(true)
+    setPipelineStep(0)
     setMatchedAgainst(corpusSize)
     setRunError(null)
     try {
+      // Cycle through pipeline stages so the viewer can read each one.
+      const TICK = 320
+      const timers: ReturnType<typeof setTimeout>[] = []
+      for (let i = 1; i < PIPELINE_STEPS.length; i++) {
+        timers.push(setTimeout(() => setPipelineStep(i), i * TICK))
+      }
       const data = await importRows(parsedRows, org || 'NEW ORG')
+      timers.forEach(clearTimeout)
       setResult(data)
     } catch {
       setRunError('The harmonization service did not complete the run. Nothing was written.')
@@ -727,22 +746,49 @@ export default function ImportPage() {
 
       {running ? (
         <Panel className="mt-4">
-          <Label>Matching</Label>
-          <p className="mt-2 text-[13px] text-ink">
-            Scoring <Num size="sm">{formatExact(parsedRows.length)}</Num> rows against{' '}
-            <Num size="sm">{formatExact(matchedAgainst ?? corpusSize)}</Num> records already in the
-            registry.
-          </p>
-          <div className="mt-3 h-[3px] w-full overflow-hidden bg-rule">
-            {reduced ? (
-              <div className="h-full w-1/3 bg-accent" />
-            ) : (
-              <motion.div
-                className="h-full w-1/3 bg-accent"
-                animate={{ x: ['-100%', '300%'] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-              />
-            )}
+          <Label>Running the pipeline</Label>
+          <div className="mt-4">
+            <div className="flex items-center gap-3">
+              {PIPELINE_STEPS.map((step, index) => {
+                const active = index === pipelineStep
+                const done = index < pipelineStep
+                return (
+                  <div key={step.label} className="flex flex-1 items-center gap-2.5">
+                    <div
+                      className={cx(
+                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[12px] font-semibold transition-all',
+                        done
+                          ? 'border-positive-edge bg-positive-bg text-positive'
+                          : active
+                            ? 'border-accent-edge bg-accent-bg text-accent'
+                            : 'border-rule bg-surface text-ink-3',
+                      )}
+                    >
+                      {done ? <CheckCircle size={16} weight="fill" /> : index + 1}
+                    </div>
+                    <div className="min-w-0">
+                      <p
+                        className={cx(
+                          'text-[13px] font-medium truncate transition-colors',
+                          active ? 'text-ink' : done ? 'text-ink-2' : 'text-ink-3',
+                        )}
+                      >
+                        {step.label}
+                      </p>
+                      <p className="text-[11px] text-ink-3 truncate">{step.detail}</p>
+                    </div>
+                    {index < PIPELINE_STEPS.length - 1 ? (
+                      <div
+                        className={cx(
+                          'mx-2 h-px flex-1 transition-colors',
+                          done ? 'bg-positive-edge' : 'bg-rule',
+                        )}
+                      />
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
           </div>
           <TechnicalOnly>
             <p className="mt-3 font-mono text-[10.5px] text-ink-3">
