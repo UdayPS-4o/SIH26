@@ -1,0 +1,167 @@
+{
+  "sources": [
+    {
+      "name": "IndiGo",
+      "url": "https://www.goindigo.com",
+      "posture": "ALLOWED",
+      "robots": "User-agent: * Allow: /",
+      "crawl_delay": 6.0,
+      "nightly_cap": 500,
+      "status": "ACTIVE",
+      "quotes_last_run": 98,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "name": "Air India",
+      "url": "https://www.airindia.com",
+      "posture": "ALLOWED",
+      "robots": "User-agent: * Allow: /",
+      "crawl_delay": 0.0,
+      "nightly_cap": 500,
+      "status": "ACTIVE",
+      "quotes_last_run": 89,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "name": "Akasa Air",
+      "url": "https://www.akasaair.com",
+      "posture": "ALLOWED",
+      "robots": "User-agent: * Allow: /",
+      "crawl_delay": 4.0,
+      "nightly_cap": 300,
+      "status": "ACTIVE",
+      "quotes_last_run": 64,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "name": "Cleartrip",
+      "url": "https://www.cleartrip.com",
+      "posture": "ALLOWED",
+      "robots": "User-agent: * Allow: /search",
+      "crawl_delay": 0.0,
+      "nightly_cap": 500,
+      "status": "ACTIVE",
+      "quotes_last_run": 112,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "name": "MakeMyTrip",
+      "url": "https://www.makemytrip.com",
+      "posture": "ALLOWED",
+      "robots": "User-agent: * Allow: /",
+      "crawl_delay": 2.0,
+      "nightly_cap": 500,
+      "status": "ACTIVE",
+      "quotes_last_run": 97,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "name": "Yatra",
+      "url": "https://www.yatra.com",
+      "posture": "PENDING_REVIEW",
+      "robots": "User-agent: * Disallow: /",
+      "crawl_delay": 0.0,
+      "nightly_cap": 0,
+      "status": "QUARANTINED",
+      "quotes_last_run": 0,
+      "last_checked": "2026-09-10",
+      "note": "robots.txt disallows automated access. Under legal review."
+    },
+    {
+      "name": "Amadeus",
+      "url": "https://test.api.amadeus.com",
+      "posture": "API_CONTRACT",
+      "robots": "N/A (OAuth2 API)",
+      "crawl_delay": 0.0,
+      "nightly_cap": 1000,
+      "status": "ACTIVE",
+      "quotes_last_run": 78,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "name": "Duffel",
+      "url": "https://api.duffel.com",
+      "posture": "API_CONTRACT",
+      "robots": "N/A (Bearer API)",
+      "crawl_delay": 0.0,
+      "nightly_cap": 1000,
+      "status": "ACTIVE",
+      "quotes_last_run": 71,
+      "last_checked": "2026-09-14"
+    },
+    {
+      "name": "DGCA Feed",
+      "url": "sftp://data.mospi.gov.in/dgca/tariff",
+      "posture": "PENDING_CREDENTIALS",
+      "robots": "N/A (SFTP)",
+      "crawl_delay": 0.0,
+      "nightly_cap": 0,
+      "status": "PENDING",
+      "quotes_last_run": 0,
+      "last_checked": "2026-09-01",
+      "note": "SFTP credentials with MoSPI pending. Hardcoded stub in production."
+    }
+  ],
+  "rules": [
+    {
+      "id": 1,
+      "rule": "robots.txt compliance",
+      "status": "ENFORCED",
+      "library": "protego"
+    },
+    {
+      "id": 2,
+      "rule": "Crawl-delay enforcement",
+      "status": "ENFORCED",
+      "library": "token-bucket"
+    },
+    {
+      "id": 3,
+      "rule": "Rate limiting per domain",
+      "status": "ENFORCED",
+      "library": "threading.Lock"
+    },
+    {
+      "id": 4,
+      "rule": "Kill-switch (3\u00d7 429 \u2192 quarantine)",
+      "status": "ENFORCED",
+      "library": "kill_switch.py"
+    },
+    {
+      "id": 5,
+      "rule": "No CAPTCHA solving",
+      "status": "ENFORCED",
+      "library": "N/A"
+    },
+    {
+      "id": 6,
+      "rule": "User-Agent identification",
+      "status": "ENFORCED",
+      "library": "VIMAAN/1.0"
+    },
+    {
+      "id": 7,
+      "rule": "Request logging (append-only)",
+      "status": "ENFORCED",
+      "library": "audit_log"
+    },
+    {
+      "id": 8,
+      "rule": "Data minimisation (base fare only)",
+      "status": "ENFORCED",
+      "library": "fare split"
+    },
+    {
+      "id": 9,
+      "rule": "IP rotation support",
+      "status": "PLANNED",
+      "library": "proxy config"
+    },
+    {
+      "id": 10,
+      "rule": "GDPR/PIPL data handling",
+      "status": "COMPLIANT",
+      "library": "no PII collected"
+    }
+  ]
+}

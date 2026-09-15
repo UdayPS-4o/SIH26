@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import {
   ArrowRight,
   Clock,
@@ -14,10 +13,7 @@ import {
 } from '@phosphor-icons/react'
 import {
   Badge,
-  Callout,
   DataTable,
-  KeyValue,
-  Legend,
   PageHeader,
   Panel,
   StatTile,
@@ -229,7 +225,6 @@ export function ScraperArchPage() {
             label="Index engine"
             color="bg-accent-soft text-accent ring-accent-line"
             nodes={['Jevons computation', 'Block bootstrap bands', 'Publication gate (70% coverage)']}
-            noArrow
           />
         </div>
       </Panel>
@@ -368,7 +363,7 @@ export function ScraperArchPage() {
           {/* Timeline spine */}
           <div className="absolute inset-y-2 left-[44px] w-px bg-[var(--vm-line)]" aria-hidden />
 
-          {PIPELINE_STEPS.map((step, i) => (
+          {PIPELINE_STEPS.map((step) => (
             <li
               key={step.label}
               className="relative flex gap-4 pb-4 last:pb-0"
@@ -435,11 +430,10 @@ interface ArchLayerProps {
   label: string
   color: string
   nodes: string[]
-  noArrow?: boolean
   children?: React.ReactNode
 }
 
-function ArchLayer({ label, color, nodes, noArrow, children }: ArchLayerProps) {
+function ArchLayer({ label, color, nodes, children }: ArchLayerProps) {
   return (
     <div className="flex items-center gap-3">
       <div className="flex min-w-0 flex-1 items-center gap-3 rounded-control bg-surface-2 p-3 ring-1 ring-line">

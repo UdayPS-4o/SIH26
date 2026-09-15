@@ -1,4 +1,5 @@
 import raw from './liveFareLadder.json'
+import { type Aggregator } from './crossCheck'
 
 const AIRLINE_NAME: Record<string, string> = {
   '6E': 'IndiGo',
@@ -6,6 +7,35 @@ const AIRLINE_NAME: Record<string, string> = {
   IX: 'Air India Express',
   QP: 'Akasa Air',
   SG: 'SpiceJet',
+}
+
+function airlineCode(name: string): string {
+  const entry = Object.entries(AIRLINE_NAME).find(([, n]) => n === name)
+  return entry?.[0] ?? name
+}
+
+function parts(departDate: string) {
+  const d = new Date(`${departDate}T00:00:00`)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = String(d.getFullYear())
+  const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]
+  return { dd, mm, yyyy, mon }
+}
+
+const CLEARTRIP_SEARCH: Aggregator = {
+  id: 'cleartrip',
+  name: 'Cleartrip',
+  multiplier: 1,
+  buildUrl: (r, origin, dest) => {
+    const { dd, mm, yyyy } = parts(r.departDate)
+    const code = airlineCode(r.airline)
+    return `https://www.cleartrip.com/flights/${origin}-${dest}-${dd}${mm}${yyyy}-?adults=1&class=Economy&airline=${code}`
+  },
+}
+
+export function buildVerifyUrl(rung: LiveFareRung, origin: string, dest: string): string {
+  return CLEARTRIP_SEARCH.buildUrl(rung, origin, dest)
 }
 
 export interface LiveFareRung {

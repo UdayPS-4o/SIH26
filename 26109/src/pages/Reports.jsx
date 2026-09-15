@@ -4,6 +4,7 @@ import { TrendChart } from '../components/common/charts.jsx'
 import { RiskBadge } from '../components/common/ui.jsx'
 import { HERD_STATS, HERD_RISK_TREND, ANIMALS, MILK_STATS, ENV_NOW } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 export default function Reports() {
   const { t } = useI18n()
@@ -131,6 +132,7 @@ export default function Reports() {
           </Card>
         </div>
       </div>
+      <DataFooter />
     </div>
   )
 }

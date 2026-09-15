@@ -3,6 +3,7 @@ import { PageHeader, Card, SectionTitle, AiDisclaimer, Pill } from '../component
 import { TrendChart } from '../components/common/charts.jsx'
 import { ENV_NOW, ENV_TREND } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 const toneFor = (v) => {
   const s = String(v).toLowerCase()
@@ -72,7 +73,7 @@ export default function Environment() {
         <ul className="space-y-2">
           {recs.map((r, i) => (
             <li key={i} className="flex gap-3 rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-amber-50 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
                 {i + 1}
               </span>
               {r}
@@ -81,6 +82,7 @@ export default function Environment() {
         </ul>
         <AiDisclaimer className="mt-3" />
       </div>
+      <DataFooter />
     </div>
   )
 }

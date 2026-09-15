@@ -5,6 +5,7 @@ import { AnimalTable } from '../components/shared.jsx'
 import { EmptyState } from '../components/common/ui.jsx'
 import { ANIMALS } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 const PAGE_SIZE = 8
 const RISK_ORDER = { HIGH: 3, MODERATE: 2, LOW: 1, NONE: 0 }
@@ -101,7 +102,7 @@ export default function Animals() {
                   key={i}
                   onClick={() => setPage(i + 1)}
                   className={`h-8 w-8 rounded-lg text-sm font-medium ${
-                    current === i + 1 ? 'bg-brand-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                    current === i + 1 ? 'bg-amber-600 text-white' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
                   }`}
                 >
                   {i + 1}
@@ -118,6 +119,7 @@ export default function Animals() {
           </div>
         </>
       )}
+      <DataFooter />
     </div>
   )
 }

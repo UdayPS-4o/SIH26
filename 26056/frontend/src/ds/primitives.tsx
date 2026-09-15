@@ -663,7 +663,7 @@ export function Legend({
 export interface Column<R> {
   key: string
   header: ReactNode
-  align?: 'left' | 'right'
+  align?: 'left' | 'right' | 'center'
   width?: string
   cell: (row: R) => ReactNode
 }

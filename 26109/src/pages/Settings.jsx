@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check, Wifi, Radio, CloudSun, PhoneCall, MessageSquare } from 'lucide-react'
 import { PageHeader, Card, SectionTitle, Toggle } from '../components/common/ui.jsx'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 export default function Settings() {
   const { t, lang, setLang } = useI18n()
@@ -55,7 +56,7 @@ export default function Settings() {
             <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
               <MessageSquare size={13} /> {t('settings.noSmartphonePreview')}
             </p>
-            <div className="inline-block max-w-[280px] rounded-2xl rounded-bl-sm bg-brand-600 px-3.5 py-2.5 text-xs leading-relaxed text-white shadow-sm">
+            <div className="inline-block max-w-[280px] rounded-2xl rounded-bl-sm bg-amber-600 px-3.5 py-2.5 text-xs leading-relaxed text-white shadow-sm">
               {t('settings.smsSample')}
             </div>
             <p className="mt-3 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
@@ -100,8 +101,8 @@ export default function Settings() {
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{s.name}</p>
                     <p className="text-xs text-gray-400">{s.id}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                     {t('status.connected')}
                   </span>
                 </li>
@@ -111,6 +112,7 @@ export default function Settings() {
           <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Mock statuses — no physical hardware required for this prototype.</p>
         </Card>
       </div>
+      <DataFooter />
     </div>
   )
 }

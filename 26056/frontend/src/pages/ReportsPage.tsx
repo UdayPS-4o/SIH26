@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import {
   CheckCircle,
   Clock,
@@ -6,7 +5,6 @@ import {
   FileText,
   Envelope,
   Globe,
-  Warning,
 } from '@phosphor-icons/react'
 import {
   Badge,
@@ -17,7 +15,6 @@ import {
   PageHeader,
   Panel,
   StatTile,
-  cx,
 } from '@/ds'
 import { fmtDayFull, fmtIndex, fmtInt } from '@/lib/format'
 import { downloadCsv, downloadJson } from '@/lib/download'
@@ -251,10 +248,6 @@ export function ReportsPage() {
             variant="ghost"
             icon={DownloadSimple}
             onClick={() => {
-              const blob = new Blob(
-                [`VIMAAN — ${r.reportType}\nDate: ${TODAY}\nFormat: ${r.format}\n\nAPIx: 107.83 (+1.17%)\n\nThis is a synthetic preview report.`],
-                { type: 'text/plain' },
-              )
               downloadCsv(`vimaan-${r.reportType.toLowerCase().replace(/\s+/g, '-')}-${TODAY}.${r.format.toLowerCase()}`, [], [])
             }}
           >

@@ -6,6 +6,7 @@ import { AreaTrend } from '../components/common/charts.jsx'
 import { RiskFactors, HealthTimeline, RecommendationCard } from '../components/shared.jsx'
 import { getAnimal, animalTimeSeries, TIMELINE, feedingProfile } from '../data/mockData'
 import { predictMastitisRisk } from '../services/predictionService'
+import { quarterAsymmetry } from '../utils/asymmetry'
 import { useI18n } from '../i18n/i18n.jsx'
 import {
   ResponsiveContainer,
@@ -20,6 +21,7 @@ import {
   ReferenceArea,
 } from 'recharts'
 import { useTheme } from '../context/ThemeContext.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 function buildTimeline(animal, liveScore) {
   if (animal.id === 'BUF-042') return TIMELINE
@@ -164,6 +166,7 @@ export default function AnimalDetails() {
         <PageHeader title="Animal not found" />
         <EmptyState title={`No animal with ID "${id}"`} hint="Return to the animals list." />
         <Link to="/animals" className="btn-ghost mt-4">{t('detail.back')}</Link>
+        <DataFooter />
       </div>
     )
   }
@@ -242,12 +245,36 @@ export default function AnimalDetails() {
         <Card className="p-5 lg:col-span-2">
           <SectionTitle>{t('detail.why')}</SectionTitle>
           <RiskFactors factors={factorRows} />
-          <p className="mt-4 rounded-lg bg-brand-50 px-3 py-2.5 text-xs leading-relaxed text-brand-900 dark:bg-brand-900/20 dark:text-brand-200">
+          <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-900 dark:bg-amber-900/20 dark:text-amber-200">
             The current risk score is primarily driven by per-animal baseline deviation in SCC, electrical conductivity spikes, and
             behavioural changes.
           </p>
           <AiDisclaimer className="mt-3" />
         </Card>
+
+        {/* Quarter Conductivity */}
+        {animal.quarterEc && (() => {
+          const asym = quarterAsymmetry(animal.quarterEc)
+          if (!asym) return null
+          return (
+            <Card className="p-5 lg:col-span-2">
+              <SectionTitle>Quarter Conductivity</SectionTitle>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {asym.values.map((q) => (
+                  <div key={q.short} className={`rounded-lg border p-3 ${q.short === asym.maxQuarterShort ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20' : 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'}`}>
+                    <p className="text-xs font-medium text-gray-500">{q.label}</p>
+                    <p className={`text-lg font-bold ${q.short === asym.maxQuarterShort ? 'text-red-600' : 'text-gray-900 dark:text-gray-100'}`}>{q.value.toFixed(1)} <span className="text-xs font-normal text-gray-400">mS/cm</span></p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 rounded-lg bg-amber-50 px-3 py-2.5 text-xs dark:bg-amber-950/30">
+                <span className="font-semibold text-amber-700 dark:text-amber-400">Asymmetry: {asym.ratio}</span>
+                <span className="text-gray-500 dark:text-gray-400"> (max / median_q)</span>
+                <p className="mt-1 text-amber-800 dark:text-amber-300">⚠ {asym.maxQuarterLabel} shows significant asymmetry. Inspect this quarter first.</p>
+              </div>
+            </Card>
+          )
+        })()}
 
         {/* Timeline */}
         <Card className="p-5">
@@ -281,6 +308,48 @@ export default function AnimalDetails() {
           Recommendations are preventive guidance only. This prototype does not prescribe medicines or dosages.
         </p>
       </div>
+
+      {/* Nutrition, Mineral, Ayurvedic Plans */}
+      {(animal.nutritionPlan || animal.mineralPlan || animal.ayurvedicPlan) && (
+        <div className="mt-6">
+          <SectionTitle>Care Plans / देखभाल योजनाएं</SectionTitle>
+          <div className="grid gap-3 md:grid-cols-3">
+            {animal.nutritionPlan && (
+              <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🥗</span>
+                  <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">{animal.nutritionPlan.title}</p>
+                </div>
+                <p className="text-xs text-gray-700 dark:text-gray-300">{animal.nutritionPlan.actions}</p>
+                <p className="mt-2 text-[10px] text-gray-400">Based on: {animal.nutritionPlan.basedOn}</p>
+              </Card>
+            )}
+            {animal.mineralPlan && (
+              <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900/40 dark:bg-blue-950/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">🧪</span>
+                  <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">{animal.mineralPlan.title}</p>
+                </div>
+                <p className="text-xs text-gray-700 dark:text-gray-300">{animal.mineralPlan.actions}</p>
+                <p className="mt-2 text-[10px] text-gray-400">Based on: {animal.mineralPlan.basedOn}</p>
+              </Card>
+            )}
+            {animal.ayurvedicPlan && (
+              <Card className="border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20 relative overflow-hidden">
+                <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-emerald-100 opacity-50 dark:bg-emerald-900/30"></div>
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🌿</span>
+                    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">{animal.ayurvedicPlan.title}</p>
+                  </div>
+                  <p className="text-xs text-gray-700 dark:text-gray-300">{animal.ayurvedicPlan.actions}</p>
+                  <p className="mt-2 text-[10px] text-gray-400">Based on: {animal.ayurvedicPlan.basedOn}</p>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

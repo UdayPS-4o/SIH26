@@ -1,3 +1,5 @@
+import { computeBaseline } from '../utils/baseline'
+
 // Deterministic mock data for Gaurogya Setu prototype.
 // A tiny seeded PRNG keeps values stable across renders/reloads.
 
@@ -46,15 +48,162 @@ export const ALERT_BUDGET = {
 
 // Curated leading animals so the demo story matches deck requirements
 const CURATED = [
-  { id: 'BUF-042', breed: 'Murrah', age: 6, lactation: 3, milkYield: 6.1, scc: 420, baselineScc: 150, conductivity: 6.2, ph: 7.1, activity: -18, rumination: -15, temperature: 39.9, previousMastitis: true, riskScore: 87, shed: 'C', trend: 'up' },
-  { id: 'COW-018', breed: 'Holstein Friesian', age: 5, lactation: 2, milkYield: 14.2, scc: 260, baselineScc: 160, conductivity: 5.6, ph: 6.8, activity: -14, rumination: -7, temperature: 39.2, previousMastitis: false, riskScore: 64, shed: 'B', trend: 'up' },
-  { id: 'BUF-076', breed: 'Murrah', age: 7, lactation: 4, milkYield: 5.9, scc: 235, baselineScc: 145, conductivity: 5.5, ph: 6.9, activity: -8, rumination: -6, temperature: 39.6, previousMastitis: true, riskScore: 58, shed: 'C', trend: 'up' },
-  { id: 'COW-136', breed: 'Crossbred', age: 4, lactation: 2, milkYield: 11.0, scc: 306, baselineScc: 130, conductivity: 5.7, ph: 6.9, activity: -9, rumination: -7, temperature: 39.1, previousMastitis: true, riskScore: 58, shed: 'B', trend: 'up' },
-  { id: 'COW-053', breed: 'Crossbred', age: 5, lactation: 2, milkYield: 10.6, scc: 210, baselineScc: 150, conductivity: 5.3, ph: 6.7, activity: -5, rumination: -3, temperature: 39.0, previousMastitis: false, riskScore: 52, shed: 'B', trend: 'flat' },
-  { id: 'BUF-091', breed: 'Murrah', age: 8, lactation: 5, milkYield: 6.4, scc: 190, baselineScc: 140, conductivity: 5.2, ph: 6.7, activity: -3, rumination: -1, temperature: 38.9, previousMastitis: true, riskScore: 46, shed: 'B', trend: 'down' },
-  { id: 'COW-055', breed: 'Sahiwal', age: 4, lactation: 1, milkYield: 8.1, scc: 140, baselineScc: 135, conductivity: 4.9, ph: 6.6, activity: -2, rumination: 1, temperature: 38.7, previousMastitis: false, riskScore: 28, shed: 'A', trend: 'flat' },
-  { id: 'COW-202', breed: 'Gir', age: 5, lactation: 2, milkYield: 9.8, scc: 118, baselineScc: 115, conductivity: 4.8, ph: 6.6, activity: 1, rumination: 2, temperature: 38.5, previousMastitis: false, riskScore: 12, shed: 'A', trend: 'down' },
-  { id: 'COW-112', breed: 'Gir', age: 6, lactation: 3, milkYield: 7.8, scc: 95, baselineScc: 90, conductivity: 4.7, ph: 6.6, activity: 3, rumination: 2, temperature: 38.5, previousMastitis: false, riskScore: 9, shed: 'A', trend: 'down' },
+  { id: 'BUF-042', breed: 'Murrah', age: 6, lactation: 3, milkYield: 6.1, scc: 420, baselineScc: 150, conductivity: 6.2, ph: 7.1, activity: -18, rumination: -15, temperature: 39.9, previousMastitis: true, riskScore: 87, shed: 'C', trend: 'up',
+    sccHistory: [118, 125, 132, 140, 145, 148, 152, 155, 160, 420],
+    ecHistory: [5.0, 5.1, 5.0, 5.2, 5.1, 5.0, 5.1, 5.2, 5.1, 6.2],
+    nutritionPlan: {
+      title: 'Nutrition Plan — BUF-042',
+      actions: 'Increase green fodder by 15%. Add 200g/d cottonseed cake. Reduce wheat straw.',
+      basedOn: 'Milk yield 12% below target, BCS 2.75',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — BUF-042',
+      actions: 'Zn-Mn-Se chelate: 5g/d orally for 14 days. Topical iodine spray on affected quarter.',
+      basedOn: 'Subclinical mastitis risk, winter season',
+    },
+    ayurvedicPlan: {
+      title: 'Ayurvedic Care — BUF-042',
+      actions: 'Turmeric (Curcuma longa) 50g/d + Neem (Azadirachta indica) leaf paste — local application on affected quarter.',
+      basedOn: 'Traditional udder health protocol, vet-reviewed template #7',
+    },
+    quarterEc: { lf: 5.1, rf: 5.3, lr: 5.2, rr: 7.9 }, quarterTemp: { lf: 38.5, rf: 38.7, lr: 38.6, rr: 39.2 } },
+  { id: 'COW-018', breed: 'Holstein Friesian', age: 5, lactation: 2, milkYield: 14.2, scc: 260, baselineScc: 160, conductivity: 5.6, ph: 6.8, activity: -14, rumination: -7, temperature: 39.2, previousMastitis: false, riskScore: 64, shed: 'B', trend: 'up',
+    sccHistory: [148, 152, 155, 160, 162, 165, 168, 170, 230, 260],
+    ecHistory: [4.8, 4.9, 4.9, 5.0, 5.1, 5.0, 5.1, 5.2, 5.4, 5.6],
+    nutritionPlan: {
+      title: 'Nutrition Plan — COW-018',
+      actions: 'Increase energy density by 10%. Add 300g/d maize meal. Monitor protein balance.',
+      basedOn: 'SCC 260k, lactation peak, activity declining',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — COW-018',
+      actions: 'Zn-Mn-Se chelate: 4g/d orally for 10 days. Vitamin E + selenium injection.',
+      basedOn: 'Elevated SCC, moderate risk, high milk yield',
+    },
+    ayurvedicPlan: {
+      title: 'Ayurvedic Care — COW-018',
+      actions: 'Kanchanar (Bauhinia variegata) powder 25g/d — internal. Lodhra (Symplocos racemosa) decoction — local wash.',
+      basedOn: 'Vet-reviewed template #12 for moderate-risk lactating cows',
+    },
+    quarterEc: { lf: 4.9, rf: 6.2, lr: 5.3, rr: 5.4 }, quarterTemp: { lf: 38.5, rf: 38.9, lr: 38.6, rr: 38.8 } },
+  { id: 'BUF-076', breed: 'Murrah', age: 7, lactation: 4, milkYield: 5.9, scc: 235, baselineScc: 145, conductivity: 5.5, ph: 6.9, activity: -8, rumination: -6, temperature: 39.6, previousMastitis: true, riskScore: 58, shed: 'C', trend: 'up',
+    sccHistory: [130, 138, 142, 145, 148, 150, 152, 155, 200, 235],
+    ecHistory: [4.8, 5.0, 4.9, 5.0, 5.0, 5.1, 5.1, 5.2, 5.3, 5.5],
+    nutritionPlan: {
+      title: 'Nutrition Plan — BUF-076',
+      actions: 'Boost protein intake: add 250g/d soybean meal. Supplement with bypass fat.',
+      basedOn: 'SCC 235k, previous mastitis, milk yield declining',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — BUF-076',
+      actions: 'Zn-Mn-Se chelate: 5g/d orally for 14 days. Copper bolus: 1 bolus.',
+      basedOn: 'Recurrent mastitis history, subclinical risk',
+    },
+    ayurvedicPlan: {
+      title: 'Ayurvedic Care — BUF-076',
+      actions: 'Turmeric (Curcuma longa) 40g/d + Dashamula kwath 100ml/d orally. Neem leaf paste local application.',
+      basedOn: 'Vet-reviewed template #7 for recurrent mastitis protocol',
+    },
+    quarterEc: { lf: 5.1, rf: 5.4, lr: 5.3, rr: 6.2 }, quarterTemp: { lf: 38.5, rf: 38.7, lr: 38.6, rr: 39.0 } },
+  { id: 'COW-136', breed: 'Crossbred', age: 4, lactation: 2, milkYield: 11.0, scc: 306, baselineScc: 130, conductivity: 5.7, ph: 6.9, activity: -9, rumination: -7, temperature: 39.1, previousMastitis: true, riskScore: 58, shed: 'B', trend: 'up',
+    sccHistory: [112, 118, 122, 126, 128, 130, 132, 135, 250, 306],
+    ecHistory: [4.6, 4.7, 4.8, 4.8, 4.9, 5.0, 5.0, 5.1, 5.3, 5.7],
+    nutritionPlan: {
+      title: 'Nutrition Plan — COW-136',
+      actions: 'Reduce concentrate load. Increase roughage: 2kg extra green fodder. Add yeast culture supplement.',
+      basedOn: 'SCC 306k (+135% above baseline), crossbred high-output',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — COW-136',
+      actions: 'Zn-Mn-Se chelate: 4g/d orally for 10 days. Magnesium oxide: 10g/d.',
+      basedOn: 'High SCC, previous mastitis, moderate risk',
+    },
+    ayurvedicPlan: {
+      title: 'Ayurvedic Care — COW-136',
+      actions: 'Nirgundi (Vitex negundo) paste local application. Punarnava (Boerhavia diffusa) 20g/d internally.',
+      basedOn: 'Vet-reviewed template #7 for elevated SCC crossbred cows',
+    },
+    quarterEc: { lf: 4.9, rf: 6.2, lr: 5.4, rr: 5.5 }, quarterTemp: { lf: 38.5, rf: 38.9, lr: 38.7, rr: 38.8 } },
+  { id: 'COW-053', breed: 'Crossbred', age: 5, lactation: 2, milkYield: 10.6, scc: 210, baselineScc: 150, conductivity: 5.3, ph: 6.7, activity: -5, rumination: -3, temperature: 39.0, previousMastitis: false, riskScore: 52, shed: 'B', trend: 'flat',
+    sccHistory: [142, 146, 150, 154, 156, 158, 160, 162, 180, 210],
+    ecHistory: [4.8, 4.9, 4.9, 5.0, 5.0, 5.1, 5.1, 5.1, 5.2, 5.3],
+    nutritionPlan: {
+      title: 'Nutrition Plan — COW-053',
+      actions: 'Maintain current ration. Add 100g/d mineral mixture and 50g/d rumen-protected lysine.',
+      basedOn: 'SCC 210k, mild activity decline, moderate risk',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — COW-053',
+      actions: 'Zn-Mn-Se chelate: 3g/d orally for 7 days. Vitamin D3 bolus: 1 bolus.',
+      basedOn: 'Preventive protocol for moderate-risk animals',
+    },
+    ayurvedicPlan: {
+      title: 'Ayurvedic Care — COW-053',
+      actions: 'Haridra (Curcuma longa) 30g/d internally. Jatyadi ghrita local application if teat irritation present.',
+      basedOn: 'Vet-reviewed preventive template #14',
+    },
+    quarterEc: { lf: 4.8, rf: 5.3, lr: 5.1, rr: 5.9 }, quarterTemp: { lf: 38.4, rf: 38.7, lr: 38.6, rr: 39.0 } },
+  { id: 'BUF-091', breed: 'Murrah', age: 8, lactation: 5, milkYield: 6.4, scc: 190, baselineScc: 140, conductivity: 5.2, ph: 6.7, activity: -3, rumination: -1, temperature: 38.9, previousMastitis: true, riskScore: 46, shed: 'B', trend: 'down',
+    sccHistory: [195, 192, 188, 185, 182, 178, 175, 172, 165, 190],
+    ecHistory: [5.0, 4.9, 4.9, 4.8, 4.8, 4.7, 4.7, 4.6, 4.5, 5.2],
+    nutritionPlan: {
+      title: 'Nutrition Plan — BUF-091',
+      actions: 'Improve overall diet quality. Add 150g/d mineral mixture. Monitor water intake.',
+      basedOn: 'SCC 190k, previous mastitis, BCS borderline',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — BUF-091',
+      actions: 'Zn-Mn-Se chelate: 3g/d orally for 7 days. Iodine bolus for seasonal support.',
+      basedOn: 'Moderate risk, recurrent mastitis history, winter season',
+    },
+    ayurvedicPlan: {
+      title: 'Ayurvedic Care — BUF-091',
+      actions: 'Trifala churna 20g/d internally. Chandana (Santalum album) paste for topical cooling.',
+      basedOn: 'Vet-reviewed template #7 variant for recovered animals',
+    },
+    quarterEc: { lf: 4.8, rf: 5.1, lr: 5.0, rr: 5.7 }, quarterTemp: { lf: 38.4, rf: 38.6, lr: 38.5, rr: 38.9 } },
+  { id: 'COW-055', breed: 'Sahiwal', age: 4, lactation: 1, milkYield: 8.1, scc: 140, baselineScc: 135, conductivity: 4.9, ph: 6.6, activity: -2, rumination: 1, temperature: 38.7, previousMastitis: false, riskScore: 28, shed: 'A', trend: 'flat',
+    sccHistory: [130, 132, 133, 134, 135, 136, 137, 138, 138, 140],
+    ecHistory: [4.7, 4.7, 4.8, 4.8, 4.8, 4.9, 4.9, 4.9, 4.9, 5.0],
+    nutritionPlan: {
+      title: 'Nutrition Plan — COW-055',
+      actions: 'Maintain current ration. Add 100g/d mineral mixture. Monitor body condition.',
+      basedOn: 'Low risk, stable SCC',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — COW-055',
+      actions: 'Zn-Mn-Se chelate: 2.5g/d orally for 7 days.',
+      basedOn: 'Preventive protocol',
+    },
+    quarterEc: { lf: 4.8, rf: 4.9, lr: 4.9, rr: 5.0 }, quarterTemp: { lf: 38.3, rf: 38.4, lr: 38.4, rr: 38.5 } },
+  { id: 'COW-202', breed: 'Gir', age: 5, lactation: 2, milkYield: 9.8, scc: 118, baselineScc: 115, conductivity: 4.8, ph: 6.6, activity: 1, rumination: 2, temperature: 38.5, previousMastitis: false, riskScore: 12, shed: 'A', trend: 'down',
+    sccHistory: [120, 119, 119, 118, 118, 117, 117, 116, 116, 118],
+    ecHistory: [4.8, 4.8, 4.8, 4.7, 4.7, 4.7, 4.7, 4.6, 4.6, 4.8],
+    nutritionPlan: {
+      title: 'Nutrition Plan — COW-202',
+      actions: 'Maintain current ration. Add 100g/d mineral mixture.',
+      basedOn: 'Stable milk yield',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — COW-202',
+      actions: 'Zn-Mn-Se chelate: 2.5g/d orally for 7 days.',
+      basedOn: 'Preventive protocol',
+    },
+    quarterEc: { lf: 4.7, rf: 4.8, lr: 4.8, rr: 4.9 }, quarterTemp: { lf: 38.3, rf: 38.4, lr: 38.4, rr: 38.5 } },
+  { id: 'COW-112', breed: 'Gir', age: 6, lactation: 3, milkYield: 7.8, scc: 95, baselineScc: 90, conductivity: 4.7, ph: 6.6, activity: 3, rumination: 2, temperature: 38.5, previousMastitis: false, riskScore: 9, shed: 'A', trend: 'down',
+    sccHistory: [92, 93, 93, 94, 94, 94, 95, 95, 95, 95],
+    ecHistory: [4.6, 4.6, 4.7, 4.7, 4.7, 4.7, 4.8, 4.8, 4.8, 4.8],
+    nutritionPlan: {
+      title: 'Nutrition Plan — COW-112',
+      actions: 'Maintain current ration. Add 100g/d mineral mixture.',
+      basedOn: 'Stable milk yield',
+    },
+    mineralPlan: {
+      title: 'Mineral Supplement — COW-112',
+      actions: 'Zn-Mn-Se chelate: 2.5g/d orally for 7 days.',
+      basedOn: 'Preventive protocol',
+    },
+    quarterEc: { lf: 4.6, rf: 4.7, lr: 4.7, rr: 4.8 }, quarterTemp: { lf: 38.3, rf: 38.4, lr: 38.4, rr: 38.5 } },
 ]
 
 const NAMES = ['Ganga', 'Kaveri', 'Lakshmi', 'Radha', 'Nandini', 'Champa', 'Gauri', 'Kamdhenu', 'Basanti', 'Shyama', 'Tara', 'Meera', 'Saraswati', 'Rukmini', 'Parvati', 'Sita']
@@ -68,6 +217,43 @@ function makeGenerated(n) {
     const score = between(2, 66)
     const shed = pick(SHEDS).id
     const sccVal = between(60, 320)
+    let quarterEc, quarterTemp
+    if (score >= 55) {
+      const elevatedQuarter = ['lf', 'rf', 'lr', 'rr'][Math.floor(rand() * 4)]
+      const baseEc = between(4.5, 5.2, 1)
+      quarterEc = { lf: baseEc, rf: baseEc, lr: baseEc, rr: baseEc }
+      quarterEc[elevatedQuarter] = Number((baseEc * between(1.2, 1.5, 1)).toFixed(1))
+      quarterTemp = { lf: between(38.3, 38.8, 1), rf: between(38.3, 38.8, 1), lr: between(38.3, 38.8, 1), rr: between(38.6, 39.4, 1) }
+    } else {
+      quarterEc = { lf: between(4.5, 5.5, 1), rf: between(4.5, 5.5, 1), lr: between(4.5, 5.5, 1), rr: between(4.5, 5.5, 1) }
+      quarterTemp = { lf: between(38.3, 39.0, 1), rf: between(38.3, 39.0, 1), lr: between(38.3, 39.0, 1), rr: between(38.3, 39.0, 1) }
+    }
+
+    const trendDir = score >= 55 ? 'up' : score >= 25 ? 'slight_up' : 'flat'
+    const historyLen = 10
+    const sccHistory = []
+    for (let j = 0; j < historyLen; j++) {
+      if (trendDir === 'up' && j >= historyLen - 2) {
+        sccHistory.push(Math.round(sccVal * between(1.5, 2.5, 0)))
+      } else if (trendDir === 'slight_up' && j >= historyLen - 3) {
+        sccHistory.push(Math.round(sccVal * between(1.1, 1.4, 0)))
+      } else {
+        sccHistory.push(Math.round(sccVal * between(0.7, 1.0, 0)))
+      }
+    }
+
+    const baseEc = between(4.5, 5.2, 1)
+    const ecHistory = []
+    for (let j = 0; j < historyLen; j++) {
+      if (trendDir === 'up' && j >= historyLen - 2) {
+        ecHistory.push(Number((baseEc * between(1.1, 1.4, 1)).toFixed(1)))
+      } else if (trendDir === 'slight_up' && j >= historyLen - 3) {
+        ecHistory.push(Number((baseEc * between(1.02, 1.1, 1)).toFixed(1)))
+      } else {
+        ecHistory.push(Number((baseEc * between(0.9, 1.05, 1)).toFixed(1)))
+      }
+    }
+
     out.push({
       id: `${prefix}-${num}`,
       breed,
@@ -84,12 +270,38 @@ function makeGenerated(n) {
       previousMastitis: rand() > 0.7,
       riskScore: score,
       shed,
+      sccHistory,
+      ecHistory,
+      quarterEc,
+      quarterTemp,
+      nutritionPlan: {
+        title: `Nutrition Plan — ${id}`,
+        actions: 'Maintain current ration. Add 100g/d mineral mixture.',
+        basedOn: 'Stable milk yield',
+      },
+      mineralPlan: {
+        title: `Mineral Supplement — ${id}`,
+        actions: 'Zn-Mn-Se chelate: 2.5g/d orally for 7 days.',
+        basedOn: 'Preventive protocol',
+      },
+      ayurvedicPlan: score >= 45 ? {
+        title: `Ayurvedic Care — ${id}`,
+        actions: 'Turmeric (Curcuma longa) 25g/d — internal. Neem leaf paste local application on affected quarter if any.',
+        basedOn: 'Preventive Ayurvedic protocol, moderate risk',
+      } : null,
+      pashuAadhaar: String(120000000000 + i * 1000000 + between(100000, 999999)),
     })
   }
   return out
 }
 
 const rawAnimals = [...CURATED, ...makeGenerated(10)]
+
+// Compute per-animal baselines from history arrays
+rawAnimals.forEach((a) => {
+  a.sccBaseline = computeBaseline(a.sccHistory)
+  a.ecBaseline = computeBaseline(a.ecHistory)
+})
 
 function sparkFor(score, dir) {
   const end = score
@@ -110,6 +322,7 @@ export const ANIMALS = rawAnimals.map((a, idx) => {
     riskLevel: riskLevelFromScore(a.riskScore),
     spark: sparkFor(a.riskScore, trend),
     lastUpdated: ['5 min ago', '18 min ago', '42 min ago', '1 hr ago', '2 hr ago', '3 hr ago'][idx % 6],
+    pashuAadhaar: a.pashuAadhaar || String(120000000000 + idx * 1000000 + between(100000, 999999)),
   }
 })
 

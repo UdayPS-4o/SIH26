@@ -4,9 +4,10 @@ import { PageHeader, KpiCard, Card, SectionTitle, Pill, AiDisclaimer } from '../
 import { TrendChart } from '../components/common/charts.jsx'
 import { WORKERS, WORKER_STATS, SHED_HYGIENE, HYGIENE_TREND, HYGIENE_THRESHOLD, CHECKLIST_ITEMS } from '../data/workerData'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 function complianceTone(score) {
-  if (score >= 80) return { pill: 'green', text: 'text-brand-700', bar: 'bg-brand-500', hex: '#16a34a' }
+  if (score >= 80) return { pill: 'green', text: 'text-amber-700', bar: 'bg-amber-500', hex: '#16a34a' }
   if (score >= HYGIENE_THRESHOLD) return { pill: 'amber', text: 'text-amber-700', bar: 'bg-amber-500', hex: '#f59e0b' }
   return { pill: 'red', text: 'text-red-700', bar: 'bg-red-500', hex: '#ef4444' }
 }
@@ -16,7 +17,7 @@ function ChecklistRow({ item, compliant, t }) {
     <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50/70 px-3 py-2 text-sm dark:border-gray-800 dark:bg-gray-800/50">
       <span className="text-gray-600 dark:text-gray-400">{t(`hygiene.item.${item.key}`)}</span>
       {compliant ? (
-        <span className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
+        <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
           <Check size={12} /> {t('hygiene.compliant')}
         </span>
       ) : (
@@ -140,7 +141,7 @@ export default function WorkerHygiene() {
                         <td className="px-4 py-3">
                           <button
                             onClick={() => toggle(w.id)}
-                            className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline dark:text-brand-400"
+                            className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:underline dark:text-amber-400"
                           >
                             {isOpen ? t('hygiene.hideChecklist') : t('hygiene.viewChecklist')}
                             {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -201,6 +202,7 @@ export default function WorkerHygiene() {
         </div>
         <AiDisclaimer className="mt-3" />
       </div>
+      <DataFooter />
     </div>
   )
 }

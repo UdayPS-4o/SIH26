@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   CalendarBlank,
   CheckCircle,
@@ -6,10 +6,8 @@ import {
   Lightning,
   Play,
   Pause,
-  Prohibit,
   Timer,
   Trash,
-  Warning,
   Power,
   DownloadSimple,
   ShieldWarning,
@@ -20,7 +18,6 @@ import {
   Button,
   Callout,
   DataTable,
-  KeyValue,
   PageHeader,
   Panel,
   StatTile,
@@ -695,7 +692,7 @@ export function ScraperConfigPage() {
         </div>
 
         {purgeConfirm && (
-          <Callout tone="critical" title="Confirm purge and reseed" className="mt-3">
+          <Callout tone="critical" title="Confirm purge and reseed">
             This will archive all raw payloads older than 2 years and reset the cleaned panel to
             its seeded state. This action cannot be undone. Click the button again within 4 seconds
             to confirm.

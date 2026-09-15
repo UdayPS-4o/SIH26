@@ -4,6 +4,7 @@ import { AreaTrend } from '../components/common/charts.jsx'
 import { RiskBadge } from '../components/common/ui.jsx'
 import { MILK_STATS, MILK_TRENDS, ANIMALS } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 export default function MilkQuality() {
   const { t } = useI18n()
@@ -67,6 +68,7 @@ export default function MilkQuality() {
         </Card>
         <AiDisclaimer className="mt-3" />
       </div>
+      <DataFooter />
     </div>
   )
 }

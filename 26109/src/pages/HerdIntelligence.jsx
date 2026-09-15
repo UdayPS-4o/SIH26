@@ -5,6 +5,7 @@ import { TrendChart } from '../components/common/charts.jsx'
 import { ShedRiskBar, ShedRiskCard } from '../components/shared.jsx'
 import { SHEDS, HERD_RISK_TREND, HERD_STATS } from '../data/mockData'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 export default function HerdIntelligence() {
   const { t } = useI18n()
@@ -68,6 +69,7 @@ export default function HerdIntelligence() {
         </div>
         <AiDisclaimer className="mt-3" />
       </div>
+      <DataFooter />
     </div>
   )
 }

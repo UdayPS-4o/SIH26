@@ -1,0 +1,219 @@
+{
+  "sector": "ALL",
+  "last_observed": "2026-09-14",
+  "last_value": 102.34,
+  "mape": 3.2,
+  "horizon_days": 30,
+  "forecasts": [
+    {
+      "date": "2026-09-15",
+      "forecast": 101.99,
+      "ci_low": 101.69,
+      "ci_high": 102.29,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-16",
+      "forecast": 103.16,
+      "ci_low": 102.85,
+      "ci_high": 103.47,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-17",
+      "forecast": 103.05,
+      "ci_low": 102.73,
+      "ci_high": 103.37,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-18",
+      "forecast": 103.68,
+      "ci_low": 103.35,
+      "ci_high": 104.01,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-19",
+      "forecast": 103.68,
+      "ci_low": 103.34,
+      "ci_high": 104.02,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-20",
+      "forecast": 102.48,
+      "ci_low": 102.13,
+      "ci_high": 102.83,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-21",
+      "forecast": 103.35,
+      "ci_low": 102.99,
+      "ci_high": 103.71,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-22",
+      "forecast": 105.35,
+      "ci_low": 104.98,
+      "ci_high": 105.72,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-23",
+      "forecast": 105.12,
+      "ci_low": 104.74,
+      "ci_high": 105.5,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-24",
+      "forecast": 106.34,
+      "ci_low": 105.95,
+      "ci_high": 106.73,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-25",
+      "forecast": 106.09,
+      "ci_low": 105.69,
+      "ci_high": 106.49,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-26",
+      "forecast": 104.89,
+      "ci_low": 104.48,
+      "ci_high": 105.3,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-27",
+      "forecast": 105.17,
+      "ci_low": 104.75,
+      "ci_high": 105.59,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-28",
+      "forecast": 105.36,
+      "ci_low": 104.93,
+      "ci_high": 105.79,
+      "model": "SARIMA(2,1,1)(1,1,1)7"
+    },
+    {
+      "date": "2026-09-29",
+      "forecast": 107.1,
+      "ci_low": 106.66,
+      "ci_high": 107.54,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-09-30",
+      "forecast": 106.91,
+      "ci_low": 106.46,
+      "ci_high": 107.36,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-01",
+      "forecast": 106.97,
+      "ci_low": 106.51,
+      "ci_high": 107.43,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-02",
+      "forecast": 107.43,
+      "ci_low": 106.96,
+      "ci_high": 107.9,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-03",
+      "forecast": 107.5,
+      "ci_low": 107.02,
+      "ci_high": 107.98,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-04",
+      "forecast": 107.4,
+      "ci_low": 106.91,
+      "ci_high": 107.89,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-05",
+      "forecast": 108.85,
+      "ci_low": 108.35,
+      "ci_high": 109.35,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-06",
+      "forecast": 109.27,
+      "ci_low": 108.76,
+      "ci_high": 109.78,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-07",
+      "forecast": 110.04,
+      "ci_low": 109.52,
+      "ci_high": 110.56,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-08",
+      "forecast": 109.57,
+      "ci_low": 109.04,
+      "ci_high": 110.1,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-09",
+      "forecast": 110.61,
+      "ci_low": 110.07,
+      "ci_high": 111.15,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-10",
+      "forecast": 110.65,
+      "ci_low": 110.1,
+      "ci_high": 111.2,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-11",
+      "forecast": 109.81,
+      "ci_low": 109.25,
+      "ci_high": 110.37,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-12",
+      "forecast": 109.86,
+      "ci_low": 109.29,
+      "ci_high": 110.43,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-13",
+      "forecast": 111.33,
+      "ci_low": 110.75,
+      "ci_high": 111.91,
+      "model": "LSTM+SARIMA ensemble"
+    },
+    {
+      "date": "2026-10-14",
+      "forecast": 112.37,
+      "ci_low": 111.78,
+      "ci_high": 112.96,
+      "model": "LSTM+SARIMA ensemble"
+    }
+  ]
+}

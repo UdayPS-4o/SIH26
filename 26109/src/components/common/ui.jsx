@@ -30,8 +30,8 @@ export function Card({ children, className = '' }) {
 
 const KPI_TONE = {
   neutral: { chip: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', bar: 'bg-slate-400' },
-  info: { chip: 'bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400', bar: 'bg-sky-500' },
-  good: { chip: 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400', bar: 'bg-brand-500' },
+  info: { chip: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400', bar: 'bg-amber-500' },
+  good: { chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400', bar: 'bg-amber-500' },
   warn: { chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400', bar: 'bg-amber-500' },
   bad: { chip: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400', bar: 'bg-red-500' },
 }
@@ -39,7 +39,7 @@ const KPI_TONE = {
 export function KpiCard({ icon: Icon, label, value, caption, progress, tone = 'neutral', trend, trendLabel }) {
   const m = KPI_TONE[tone] || KPI_TONE.neutral
   const TrendIcon = trend > 0 ? TrendingUp : trend < 0 ? TrendingDown : Minus
-  const trendColor = trend > 0 ? 'text-brand-600 dark:text-brand-400' : trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'
+  const trendColor = trend > 0 ? 'text-amber-600 dark:text-amber-400' : trend < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-3.5 shadow-card dark:border-gray-800 dark:bg-gray-900 sm:p-5">
       <div className="flex items-start justify-between">
@@ -135,7 +135,7 @@ export function Toggle({ checked, onChange, label }) {
     >
       <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
       <span
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-brand-600' : 'bg-gray-300 dark:bg-gray-700'}`}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${checked ? 'bg-amber-600' : 'bg-gray-300 dark:bg-gray-700'}`}
       >
         <span
           className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-5' : 'translate-x-0.5'}`}
@@ -168,7 +168,7 @@ export function LoadingState({ label }) {
 export function Pill({ tone = 'gray', children }) {
   const map = {
     gray: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
-    green: 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400',
+    green: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
     amber: 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
     red: 'bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-400',
   }

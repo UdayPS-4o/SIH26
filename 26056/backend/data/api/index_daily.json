@@ -1,0 +1,13 @@
+{
+  "date": "2026-08-29",
+  "index_value": 104.94,
+  "band_low": 104.35,
+  "band_high": 105.52,
+  "formula": "Jevons",
+  "n_quotes": 670,
+  "n_cells": 93,
+  "survival_rate": 0.894,
+  "yoy_change": 0.105,
+  "mom_change": -0.007,
+  "status": "PUBLISHED"
+}
