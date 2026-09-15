@@ -14,7 +14,7 @@
  * move would turn the drag into a slideshow.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowUUpLeft, CaretDown, Check, CheckCircle, Checks, Lightbulb, Question, X, XCircle } from '@phosphor-icons/react'
 import {
@@ -36,7 +36,6 @@ import {
   Stat,
   VerdictChip,
 } from '@/components/ui'
-import { cx } from '@/components/ui/tokens'
 import { ThresholdHistogram, type HistogramBucket } from '@/components/ui/charts'
 import { ByMode, SimpleOnly, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'

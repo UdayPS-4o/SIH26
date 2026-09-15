@@ -885,7 +885,7 @@ function GoldenRecord({ cluster, onClose }: { cluster: Cluster; onClose: () => v
         {/* RIGHT column: spend + chart */}
         <div className="flex flex-col items-center gap-4">
           <div className="w-full border border-rule bg-surface-2 px-3 py-2.5 text-center">
-            <IconTile icon={<Coins size={14} weight="regular" />} tone="accent" size="sm" className="mx-auto mb-1" />
+            <IconTile icon={<Coins size={14} weight="regular" />} tone="accent" size="sm" />
             <Num size="lg">{formatRupees(cluster.annualSpend)}</Num>
             <p className="mt-0.5 text-[10px] text-ink-3">
               {technical ? 'annual spend' : 'per year, total'}

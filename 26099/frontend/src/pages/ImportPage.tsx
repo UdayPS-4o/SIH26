@@ -136,7 +136,6 @@ const PASTE_PLACEHOLDER =
 
 export default function ImportPage() {
   const c = useCopy()
-  const reduced = useReducedMotion()
 
   const ready = useService(s => s.ready)
   const storeError = useService(s => s.error)
