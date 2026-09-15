@@ -738,7 +738,7 @@ How can I assist you today?`,
         </div>
 
         {/* Input Bar */}
-        <div style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }} className="p-4" style={{ background: 'rgba(10,16,24,0.9)' }}>
+        <div className="p-4" style={{ borderTop: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,16,24,0.9)' }}>
           <div className="flex items-center gap-3 rounded-xl px-4 py-2" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
             <input
               ref={inputRef}
