@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ArrowSquareOut, CheckCircle, ShieldCheck } from '@phosphor-icons/react'
 import { Callout, DataTable, PageHeader, Panel, RankedBars, SegmentedControl } from '@/ds'
 import { LIVE_FARE_LADDER, LIVE_FARE_LADDER_ROUTE, type LiveFareRung } from '@/data/liveFareLadder'
 import { AGGREGATORS } from '@/data/crossCheck'
 import { fmtDayFull, fmtLead, fmtRupee } from '@/lib/format'
-import { useRelativeTime } from '@/lib/useRelativeTime'
 
 interface Row {
   id: string
@@ -22,15 +21,13 @@ function buildRows(rung: LiveFareRung): Row[] {
   })).sort((a, b) => a.price - b.price)
 }
 
-function LiveBadge({ scrapedAt }: { scrapedAt: string }) {
-  const age = useRelativeTime(scrapedAt)
+function DemoBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-good">
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-3">
       <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-75" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-good" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-ink-3" />
       </span>
-      Refreshed {age}
+      Demo data
     </span>
   )
 }
@@ -67,7 +64,7 @@ export function CrossCheckPage() {
           icon={ShieldCheck}
           title="The flight being cross-checked"
           meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · ${fmtLead(rung.leadDays)} · non-stop`}
-          actions={<LiveBadge scrapedAt={rung.scrapedAt} />}
+          actions={<DemoBadge />}
           bleed
         >
           <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">

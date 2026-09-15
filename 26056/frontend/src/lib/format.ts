@@ -34,7 +34,7 @@ export function fmtDay(iso: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`
 }
 
-export function fmtDayFull(iso: string): string {
+export function fmtDayFull(iso: string | number): string {
   const d = new Date(`${iso}T00:00:00`)
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }

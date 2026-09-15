@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Radio, Wifi, Eye, RefreshCw, CheckCircle, Zap, Sparkles } from 'lucide-react'
 import { PageHeader, Card, SectionTitle } from '../components/common/ui.jsx'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 import { ANIMALS, feedingProfile } from '../data/mockData'
 import { predictMastitisRisk } from '../services/predictionService'
 import {
@@ -131,7 +132,7 @@ export default function Devices() {
             <Card key={d.id} className="p-5">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                     <Icon size={20} />
                   </span>
                   <div>
@@ -139,8 +140,8 @@ export default function Devices() {
                     <p className="text-xs text-gray-400">{d.id} · {d.type}</p>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                   {d.status}
                 </span>
               </div>
@@ -175,7 +176,7 @@ export default function Devices() {
 
       {/* Item #3: Colour-Sensor CMT Flow Wizard */}
       <Card className="mt-6 p-6">
-        <SectionTitle right={<span className="text-xs font-semibold text-brand-600">CMT Optical Workflow</span>}>
+        <SectionTitle right={<span className="text-xs font-semibold text-amber-600">CMT Optical Workflow</span>}>
           Color-Sensor CMT Test Flow (Capture → RGB/HSV → Gel Score → Estimated SCC)
         </SectionTitle>
 
@@ -199,7 +200,7 @@ export default function Devices() {
                     key={s.gelScore}
                     onClick={() => setSwatch(s)}
                     className={`flex flex-col items-center justify-center rounded-xl p-2 border-2 transition-all ${
-                      swatch.gelScore === s.gelScore ? 'border-brand-600 ring-2 ring-brand-300' : 'border-transparent'
+                      swatch.gelScore === s.gelScore ? 'border-amber-600 ring-2 ring-amber-300' : 'border-transparent'
                     }`}
                     style={{ backgroundColor: s.rgb }}
                   >
@@ -217,7 +218,7 @@ export default function Devices() {
               <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                 <div><span className="text-gray-400">RGB Target:</span> <p className="font-mono font-bold text-gray-800 dark:text-gray-200">{swatch.rgb}</p></div>
                 <div><span className="text-gray-400">HSV Hue:</span> <p className="font-mono font-bold text-gray-800 dark:text-gray-200">{swatch.hsvHue}°</p></div>
-                <div><span className="text-gray-400">Inferred CMT Gel Score:</span> <p className="font-bold text-brand-600">{swatch.gelScore}</p></div>
+                <div><span className="text-gray-400">Inferred CMT Gel Score:</span> <p className="font-bold text-amber-600">{swatch.gelScore}</p></div>
                 <div><span className="text-gray-400">Derived SCC:</span> <p className="font-bold text-amber-600">{swatch.estimatedScc}k cells/mL</p></div>
               </div>
             </div>
@@ -230,8 +231,8 @@ export default function Devices() {
           {/* Test Result Display */}
           <div>
             {testResult ? (
-              <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-5 dark:border-brand-900/40 dark:bg-brand-950/20">
-                <div className="flex items-center gap-2 text-brand-800 dark:text-brand-300 font-semibold">
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold">
                   <CheckCircle size={18} /> Test Successfully Processed
                 </div>
                 <div className="mt-3 space-y-2 text-xs text-gray-700 dark:text-gray-300">
@@ -273,6 +274,7 @@ export default function Devices() {
           </ScatterChart>
         </ResponsiveContainer>
       </Card>
+      <DataFooter />
     </div>
   )
 }

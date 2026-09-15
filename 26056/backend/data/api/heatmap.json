@@ -1,0 +1,992 @@
+[
+  {
+    "sector": "DEL-BOM",
+    "lead_days": 1,
+    "avg_fare": 5400.0,
+    "wow_change": 3.7,
+    "mom_change": 1.8,
+    "weight": 0.18,
+    "n_quotes": 75
+  },
+  {
+    "sector": "DEL-BOM",
+    "lead_days": 7,
+    "avg_fare": 6410.0,
+    "wow_change": 2.4,
+    "mom_change": 1.1,
+    "weight": 0.18,
+    "n_quotes": 52
+  },
+  {
+    "sector": "DEL-BOM",
+    "lead_days": 15,
+    "avg_fare": 7270.0,
+    "wow_change": 1.2,
+    "mom_change": 1.1,
+    "weight": 0.18,
+    "n_quotes": 39
+  },
+  {
+    "sector": "DEL-BOM",
+    "lead_days": 30,
+    "avg_fare": 7640.0,
+    "wow_change": 7.8,
+    "mom_change": 3.3,
+    "weight": 0.18,
+    "n_quotes": 35
+  },
+  {
+    "sector": "DEL-BOM",
+    "lead_days": 45,
+    "avg_fare": 8280.0,
+    "wow_change": 2.4,
+    "mom_change": 2.2,
+    "weight": 0.18,
+    "n_quotes": 52
+  },
+  {
+    "sector": "DEL-BLR",
+    "lead_days": 1,
+    "avg_fare": 4320.0,
+    "wow_change": 0.4,
+    "mom_change": -1.4,
+    "weight": 0.12,
+    "n_quotes": 70
+  },
+  {
+    "sector": "DEL-BLR",
+    "lead_days": 7,
+    "avg_fare": 5450.0,
+    "wow_change": -2.8,
+    "mom_change": 3.8,
+    "weight": 0.12,
+    "n_quotes": 70
+  },
+  {
+    "sector": "DEL-BLR",
+    "lead_days": 15,
+    "avg_fare": 5770.0,
+    "wow_change": -0.8,
+    "mom_change": 2.9,
+    "weight": 0.12,
+    "n_quotes": 65
+  },
+  {
+    "sector": "DEL-BLR",
+    "lead_days": 30,
+    "avg_fare": 6520.0,
+    "wow_change": -3.9,
+    "mom_change": 3.3,
+    "weight": 0.12,
+    "n_quotes": 72
+  },
+  {
+    "sector": "DEL-BLR",
+    "lead_days": 45,
+    "avg_fare": 6760.0,
+    "wow_change": -3.6,
+    "mom_change": -2.5,
+    "weight": 0.12,
+    "n_quotes": 29
+  },
+  {
+    "sector": "BOM-BLR",
+    "lead_days": 1,
+    "avg_fare": 3950.0,
+    "wow_change": -1.3,
+    "mom_change": -2.5,
+    "weight": 0.08,
+    "n_quotes": 54
+  },
+  {
+    "sector": "BOM-BLR",
+    "lead_days": 7,
+    "avg_fare": 4840.0,
+    "wow_change": -5.0,
+    "mom_change": -1.6,
+    "weight": 0.08,
+    "n_quotes": 23
+  },
+  {
+    "sector": "BOM-BLR",
+    "lead_days": 15,
+    "avg_fare": 5470.0,
+    "wow_change": 6.7,
+    "mom_change": -0.6,
+    "weight": 0.08,
+    "n_quotes": 61
+  },
+  {
+    "sector": "BOM-BLR",
+    "lead_days": 30,
+    "avg_fare": 5780.0,
+    "wow_change": 4.8,
+    "mom_change": -1.1,
+    "weight": 0.08,
+    "n_quotes": 71
+  },
+  {
+    "sector": "BOM-BLR",
+    "lead_days": 45,
+    "avg_fare": 5940.0,
+    "wow_change": 4.7,
+    "mom_change": 3.9,
+    "weight": 0.08,
+    "n_quotes": 39
+  },
+  {
+    "sector": "DEL-CCU",
+    "lead_days": 1,
+    "avg_fare": 4680.0,
+    "wow_change": 5.6,
+    "mom_change": -2.4,
+    "weight": 0.09,
+    "n_quotes": 29
+  },
+  {
+    "sector": "DEL-CCU",
+    "lead_days": 7,
+    "avg_fare": 5380.0,
+    "wow_change": 4.5,
+    "mom_change": 0.1,
+    "weight": 0.09,
+    "n_quotes": 29
+  },
+  {
+    "sector": "DEL-CCU",
+    "lead_days": 15,
+    "avg_fare": 6290.0,
+    "wow_change": 7.1,
+    "mom_change": -0.1,
+    "weight": 0.09,
+    "n_quotes": 58
+  },
+  {
+    "sector": "DEL-CCU",
+    "lead_days": 30,
+    "avg_fare": 6610.0,
+    "wow_change": 3.7,
+    "mom_change": 2.6,
+    "weight": 0.09,
+    "n_quotes": 55
+  },
+  {
+    "sector": "DEL-CCU",
+    "lead_days": 45,
+    "avg_fare": 6750.0,
+    "wow_change": -2.4,
+    "mom_change": 0.5,
+    "weight": 0.09,
+    "n_quotes": 51
+  },
+  {
+    "sector": "BLR-HYD",
+    "lead_days": 1,
+    "avg_fare": 2950.0,
+    "wow_change": 2.1,
+    "mom_change": 3.8,
+    "weight": 0.06,
+    "n_quotes": 60
+  },
+  {
+    "sector": "BLR-HYD",
+    "lead_days": 7,
+    "avg_fare": 3280.0,
+    "wow_change": 4.8,
+    "mom_change": 1.9,
+    "weight": 0.06,
+    "n_quotes": 50
+  },
+  {
+    "sector": "BLR-HYD",
+    "lead_days": 15,
+    "avg_fare": 3760.0,
+    "wow_change": 8.0,
+    "mom_change": 3.9,
+    "weight": 0.06,
+    "n_quotes": 79
+  },
+  {
+    "sector": "BLR-HYD",
+    "lead_days": 30,
+    "avg_fare": 4120.0,
+    "wow_change": 5.9,
+    "mom_change": -1.1,
+    "weight": 0.06,
+    "n_quotes": 75
+  },
+  {
+    "sector": "BLR-HYD",
+    "lead_days": 45,
+    "avg_fare": 4180.0,
+    "wow_change": 5.2,
+    "mom_change": 2.5,
+    "weight": 0.06,
+    "n_quotes": 79
+  },
+  {
+    "sector": "MAA-DEL",
+    "lead_days": 1,
+    "avg_fare": 4750.0,
+    "wow_change": 7.0,
+    "mom_change": 1.1,
+    "weight": 0.08,
+    "n_quotes": 76
+  },
+  {
+    "sector": "MAA-DEL",
+    "lead_days": 7,
+    "avg_fare": 5990.0,
+    "wow_change": 5.4,
+    "mom_change": 2.9,
+    "weight": 0.08,
+    "n_quotes": 44
+  },
+  {
+    "sector": "MAA-DEL",
+    "lead_days": 15,
+    "avg_fare": 6790.0,
+    "wow_change": -4.5,
+    "mom_change": 1.5,
+    "weight": 0.08,
+    "n_quotes": 68
+  },
+  {
+    "sector": "MAA-DEL",
+    "lead_days": 30,
+    "avg_fare": 7050.0,
+    "wow_change": 0.3,
+    "mom_change": -3.0,
+    "weight": 0.08,
+    "n_quotes": 39
+  },
+  {
+    "sector": "MAA-DEL",
+    "lead_days": 45,
+    "avg_fare": 7250.0,
+    "wow_change": 2.2,
+    "mom_change": -2.1,
+    "weight": 0.08,
+    "n_quotes": 63
+  },
+  {
+    "sector": "BOM-CCU",
+    "lead_days": 1,
+    "avg_fare": 3840.0,
+    "wow_change": 4.4,
+    "mom_change": 0.3,
+    "weight": 0.05,
+    "n_quotes": 31
+  },
+  {
+    "sector": "BOM-CCU",
+    "lead_days": 7,
+    "avg_fare": 4280.0,
+    "wow_change": 6.1,
+    "mom_change": -2.5,
+    "weight": 0.05,
+    "n_quotes": 70
+  },
+  {
+    "sector": "BOM-CCU",
+    "lead_days": 15,
+    "avg_fare": 4880.0,
+    "wow_change": -3.2,
+    "mom_change": -1.7,
+    "weight": 0.05,
+    "n_quotes": 35
+  },
+  {
+    "sector": "BOM-CCU",
+    "lead_days": 30,
+    "avg_fare": 5310.0,
+    "wow_change": -0.4,
+    "mom_change": 2.7,
+    "weight": 0.05,
+    "n_quotes": 37
+  },
+  {
+    "sector": "BOM-CCU",
+    "lead_days": 45,
+    "avg_fare": 5360.0,
+    "wow_change": 2.3,
+    "mom_change": -0.3,
+    "weight": 0.05,
+    "n_quotes": 32
+  },
+  {
+    "sector": "CCU-DEL",
+    "lead_days": 1,
+    "avg_fare": 4000.0,
+    "wow_change": -3.6,
+    "mom_change": 1.4,
+    "weight": 0.05,
+    "n_quotes": 75
+  },
+  {
+    "sector": "CCU-DEL",
+    "lead_days": 7,
+    "avg_fare": 4680.0,
+    "wow_change": -2.2,
+    "mom_change": -0.0,
+    "weight": 0.05,
+    "n_quotes": 51
+  },
+  {
+    "sector": "CCU-DEL",
+    "lead_days": 15,
+    "avg_fare": 5290.0,
+    "wow_change": 3.8,
+    "mom_change": -0.9,
+    "weight": 0.05,
+    "n_quotes": 24
+  },
+  {
+    "sector": "CCU-DEL",
+    "lead_days": 30,
+    "avg_fare": 5860.0,
+    "wow_change": 3.2,
+    "mom_change": 0.6,
+    "weight": 0.05,
+    "n_quotes": 52
+  },
+  {
+    "sector": "CCU-DEL",
+    "lead_days": 45,
+    "avg_fare": 5650.0,
+    "wow_change": -1.2,
+    "mom_change": 1.2,
+    "weight": 0.05,
+    "n_quotes": 35
+  },
+  {
+    "sector": "DEL-HYD",
+    "lead_days": 1,
+    "avg_fare": 3320.0,
+    "wow_change": -3.2,
+    "mom_change": -2.0,
+    "weight": 0.04,
+    "n_quotes": 65
+  },
+  {
+    "sector": "DEL-HYD",
+    "lead_days": 7,
+    "avg_fare": 4010.0,
+    "wow_change": 7.9,
+    "mom_change": -2.7,
+    "weight": 0.04,
+    "n_quotes": 28
+  },
+  {
+    "sector": "DEL-HYD",
+    "lead_days": 15,
+    "avg_fare": 4320.0,
+    "wow_change": -1.2,
+    "mom_change": -0.3,
+    "weight": 0.04,
+    "n_quotes": 33
+  },
+  {
+    "sector": "DEL-HYD",
+    "lead_days": 30,
+    "avg_fare": 4590.0,
+    "wow_change": 4.8,
+    "mom_change": 2.5,
+    "weight": 0.04,
+    "n_quotes": 46
+  },
+  {
+    "sector": "DEL-HYD",
+    "lead_days": 45,
+    "avg_fare": 4870.0,
+    "wow_change": 7.9,
+    "mom_change": -0.9,
+    "weight": 0.04,
+    "n_quotes": 65
+  },
+  {
+    "sector": "BLR-CCU",
+    "lead_days": 1,
+    "avg_fare": 3160.0,
+    "wow_change": -2.3,
+    "mom_change": -3.0,
+    "weight": 0.03,
+    "n_quotes": 29
+  },
+  {
+    "sector": "BLR-CCU",
+    "lead_days": 7,
+    "avg_fare": 3720.0,
+    "wow_change": 1.8,
+    "mom_change": -0.8,
+    "weight": 0.03,
+    "n_quotes": 41
+  },
+  {
+    "sector": "BLR-CCU",
+    "lead_days": 15,
+    "avg_fare": 3870.0,
+    "wow_change": 5.7,
+    "mom_change": 3.1,
+    "weight": 0.03,
+    "n_quotes": 71
+  },
+  {
+    "sector": "BLR-CCU",
+    "lead_days": 30,
+    "avg_fare": 4200.0,
+    "wow_change": -1.6,
+    "mom_change": -2.8,
+    "weight": 0.03,
+    "n_quotes": 36
+  },
+  {
+    "sector": "BLR-CCU",
+    "lead_days": 45,
+    "avg_fare": 4580.0,
+    "wow_change": -1.6,
+    "mom_change": 0.1,
+    "weight": 0.03,
+    "n_quotes": 59
+  },
+  {
+    "sector": "BOM-GOA",
+    "lead_days": 1,
+    "avg_fare": 2460.0,
+    "wow_change": -4.3,
+    "mom_change": 2.3,
+    "weight": 0.04,
+    "n_quotes": 57
+  },
+  {
+    "sector": "BOM-GOA",
+    "lead_days": 7,
+    "avg_fare": 3040.0,
+    "wow_change": -1.1,
+    "mom_change": -1.0,
+    "weight": 0.04,
+    "n_quotes": 56
+  },
+  {
+    "sector": "BOM-GOA",
+    "lead_days": 15,
+    "avg_fare": 3460.0,
+    "wow_change": 6.5,
+    "mom_change": 2.0,
+    "weight": 0.04,
+    "n_quotes": 28
+  },
+  {
+    "sector": "BOM-GOA",
+    "lead_days": 30,
+    "avg_fare": 3550.0,
+    "wow_change": -4.9,
+    "mom_change": -0.3,
+    "weight": 0.04,
+    "n_quotes": 68
+  },
+  {
+    "sector": "BOM-GOA",
+    "lead_days": 45,
+    "avg_fare": 3720.0,
+    "wow_change": 5.0,
+    "mom_change": 3.2,
+    "weight": 0.04,
+    "n_quotes": 78
+  },
+  {
+    "sector": "DEL-PNQ",
+    "lead_days": 1,
+    "avg_fare": 2400.0,
+    "wow_change": -4.9,
+    "mom_change": 3.9,
+    "weight": 0.03,
+    "n_quotes": 25
+  },
+  {
+    "sector": "DEL-PNQ",
+    "lead_days": 7,
+    "avg_fare": 2710.0,
+    "wow_change": 7.9,
+    "mom_change": -1.9,
+    "weight": 0.03,
+    "n_quotes": 67
+  },
+  {
+    "sector": "DEL-PNQ",
+    "lead_days": 15,
+    "avg_fare": 3120.0,
+    "wow_change": -0.2,
+    "mom_change": 0.4,
+    "weight": 0.03,
+    "n_quotes": 50
+  },
+  {
+    "sector": "DEL-PNQ",
+    "lead_days": 30,
+    "avg_fare": 3550.0,
+    "wow_change": -2.0,
+    "mom_change": 1.3,
+    "weight": 0.03,
+    "n_quotes": 37
+  },
+  {
+    "sector": "DEL-PNQ",
+    "lead_days": 45,
+    "avg_fare": 3610.0,
+    "wow_change": -3.7,
+    "mom_change": -2.4,
+    "weight": 0.03,
+    "n_quotes": 61
+  },
+  {
+    "sector": "BOM-GOI",
+    "lead_days": 1,
+    "avg_fare": 2140.0,
+    "wow_change": -1.0,
+    "mom_change": 1.4,
+    "weight": 0.02,
+    "n_quotes": 34
+  },
+  {
+    "sector": "BOM-GOI",
+    "lead_days": 7,
+    "avg_fare": 2470.0,
+    "wow_change": 2.0,
+    "mom_change": -1.8,
+    "weight": 0.02,
+    "n_quotes": 38
+  },
+  {
+    "sector": "BOM-GOI",
+    "lead_days": 15,
+    "avg_fare": 2740.0,
+    "wow_change": 1.9,
+    "mom_change": -0.7,
+    "weight": 0.02,
+    "n_quotes": 21
+  },
+  {
+    "sector": "BOM-GOI",
+    "lead_days": 30,
+    "avg_fare": 3090.0,
+    "wow_change": 7.4,
+    "mom_change": -0.3,
+    "weight": 0.02,
+    "n_quotes": 40
+  },
+  {
+    "sector": "BOM-GOI",
+    "lead_days": 45,
+    "avg_fare": 3250.0,
+    "wow_change": -4.5,
+    "mom_change": 2.0,
+    "weight": 0.02,
+    "n_quotes": 79
+  },
+  {
+    "sector": "DEL-GAU",
+    "lead_days": 1,
+    "avg_fare": 2050.0,
+    "wow_change": 7.9,
+    "mom_change": -1.0,
+    "weight": 0.02,
+    "n_quotes": 66
+  },
+  {
+    "sector": "DEL-GAU",
+    "lead_days": 7,
+    "avg_fare": 2330.0,
+    "wow_change": -4.1,
+    "mom_change": -1.2,
+    "weight": 0.02,
+    "n_quotes": 68
+  },
+  {
+    "sector": "DEL-GAU",
+    "lead_days": 15,
+    "avg_fare": 2590.0,
+    "wow_change": 1.7,
+    "mom_change": 1.3,
+    "weight": 0.02,
+    "n_quotes": 20
+  },
+  {
+    "sector": "DEL-GAU",
+    "lead_days": 30,
+    "avg_fare": 2890.0,
+    "wow_change": 4.2,
+    "mom_change": 2.2,
+    "weight": 0.02,
+    "n_quotes": 79
+  },
+  {
+    "sector": "DEL-GAU",
+    "lead_days": 45,
+    "avg_fare": 2930.0,
+    "wow_change": -4.1,
+    "mom_change": -2.2,
+    "weight": 0.02,
+    "n_quotes": 50
+  },
+  {
+    "sector": "DEL-AMD",
+    "lead_days": 1,
+    "avg_fare": 1900.0,
+    "wow_change": 5.1,
+    "mom_change": 2.2,
+    "weight": 0.02,
+    "n_quotes": 57
+  },
+  {
+    "sector": "DEL-AMD",
+    "lead_days": 7,
+    "avg_fare": 2220.0,
+    "wow_change": -3.8,
+    "mom_change": 1.9,
+    "weight": 0.02,
+    "n_quotes": 30
+  },
+  {
+    "sector": "DEL-AMD",
+    "lead_days": 15,
+    "avg_fare": 2630.0,
+    "wow_change": -3.4,
+    "mom_change": 1.4,
+    "weight": 0.02,
+    "n_quotes": 67
+  },
+  {
+    "sector": "DEL-AMD",
+    "lead_days": 30,
+    "avg_fare": 2760.0,
+    "wow_change": 0.4,
+    "mom_change": 2.6,
+    "weight": 0.02,
+    "n_quotes": 63
+  },
+  {
+    "sector": "DEL-AMD",
+    "lead_days": 45,
+    "avg_fare": 2860.0,
+    "wow_change": 2.8,
+    "mom_change": 2.1,
+    "weight": 0.02,
+    "n_quotes": 72
+  },
+  {
+    "sector": "DEL-SXR",
+    "lead_days": 1,
+    "avg_fare": 1690.0,
+    "wow_change": -4.0,
+    "mom_change": -0.9,
+    "weight": 0.01,
+    "n_quotes": 32
+  },
+  {
+    "sector": "DEL-SXR",
+    "lead_days": 7,
+    "avg_fare": 2030.0,
+    "wow_change": 4.2,
+    "mom_change": 1.6,
+    "weight": 0.01,
+    "n_quotes": 53
+  },
+  {
+    "sector": "DEL-SXR",
+    "lead_days": 15,
+    "avg_fare": 2190.0,
+    "wow_change": -0.3,
+    "mom_change": 3.1,
+    "weight": 0.01,
+    "n_quotes": 30
+  },
+  {
+    "sector": "DEL-SXR",
+    "lead_days": 30,
+    "avg_fare": 2510.0,
+    "wow_change": -3.3,
+    "mom_change": 1.3,
+    "weight": 0.01,
+    "n_quotes": 78
+  },
+  {
+    "sector": "DEL-SXR",
+    "lead_days": 45,
+    "avg_fare": 2500.0,
+    "wow_change": -2.5,
+    "mom_change": -2.8,
+    "weight": 0.01,
+    "n_quotes": 64
+  },
+  {
+    "sector": "BOM-AMD",
+    "lead_days": 1,
+    "avg_fare": 2040.0,
+    "wow_change": -3.6,
+    "mom_change": 1.4,
+    "weight": 0.02,
+    "n_quotes": 36
+  },
+  {
+    "sector": "BOM-AMD",
+    "lead_days": 7,
+    "avg_fare": 2370.0,
+    "wow_change": 2.5,
+    "mom_change": -0.9,
+    "weight": 0.02,
+    "n_quotes": 79
+  },
+  {
+    "sector": "BOM-AMD",
+    "lead_days": 15,
+    "avg_fare": 2630.0,
+    "wow_change": 0.7,
+    "mom_change": -1.5,
+    "weight": 0.02,
+    "n_quotes": 71
+  },
+  {
+    "sector": "BOM-AMD",
+    "lead_days": 30,
+    "avg_fare": 3040.0,
+    "wow_change": 3.6,
+    "mom_change": 2.4,
+    "weight": 0.02,
+    "n_quotes": 47
+  },
+  {
+    "sector": "BOM-AMD",
+    "lead_days": 45,
+    "avg_fare": 2850.0,
+    "wow_change": -3.4,
+    "mom_change": -2.1,
+    "weight": 0.02,
+    "n_quotes": 60
+  },
+  {
+    "sector": "DEL-LKO",
+    "lead_days": 1,
+    "avg_fare": 1830.0,
+    "wow_change": 6.4,
+    "mom_change": 0.5,
+    "weight": 0.02,
+    "n_quotes": 53
+  },
+  {
+    "sector": "DEL-LKO",
+    "lead_days": 7,
+    "avg_fare": 2150.0,
+    "wow_change": 2.1,
+    "mom_change": 2.9,
+    "weight": 0.02,
+    "n_quotes": 25
+  },
+  {
+    "sector": "DEL-LKO",
+    "lead_days": 15,
+    "avg_fare": 2550.0,
+    "wow_change": 1.5,
+    "mom_change": 0.1,
+    "weight": 0.02,
+    "n_quotes": 78
+  },
+  {
+    "sector": "DEL-LKO",
+    "lead_days": 30,
+    "avg_fare": 2610.0,
+    "wow_change": -2.5,
+    "mom_change": 1.5,
+    "weight": 0.02,
+    "n_quotes": 50
+  },
+  {
+    "sector": "DEL-LKO",
+    "lead_days": 45,
+    "avg_fare": 2670.0,
+    "wow_change": 2.4,
+    "mom_change": -2.3,
+    "weight": 0.02,
+    "n_quotes": 52
+  },
+  {
+    "sector": "BLR-MAA",
+    "lead_days": 1,
+    "avg_fare": 3150.0,
+    "wow_change": -4.5,
+    "mom_change": -0.4,
+    "weight": 0.02,
+    "n_quotes": 29
+  },
+  {
+    "sector": "BLR-MAA",
+    "lead_days": 7,
+    "avg_fare": 3740.0,
+    "wow_change": 6.7,
+    "mom_change": 0.4,
+    "weight": 0.02,
+    "n_quotes": 74
+  },
+  {
+    "sector": "BLR-MAA",
+    "lead_days": 15,
+    "avg_fare": 3950.0,
+    "wow_change": -0.3,
+    "mom_change": -2.5,
+    "weight": 0.02,
+    "n_quotes": 43
+  },
+  {
+    "sector": "BLR-MAA",
+    "lead_days": 30,
+    "avg_fare": 4560.0,
+    "wow_change": 1.0,
+    "mom_change": 0.1,
+    "weight": 0.02,
+    "n_quotes": 50
+  },
+  {
+    "sector": "BLR-MAA",
+    "lead_days": 45,
+    "avg_fare": 4610.0,
+    "wow_change": -2.4,
+    "mom_change": -0.5,
+    "weight": 0.02,
+    "n_quotes": 57
+  },
+  {
+    "sector": "BOM-COK",
+    "lead_days": 1,
+    "avg_fare": 3220.0,
+    "wow_change": -0.8,
+    "mom_change": 1.5,
+    "weight": 0.02,
+    "n_quotes": 24
+  },
+  {
+    "sector": "BOM-COK",
+    "lead_days": 7,
+    "avg_fare": 3990.0,
+    "wow_change": -0.5,
+    "mom_change": -1.3,
+    "weight": 0.02,
+    "n_quotes": 33
+  },
+  {
+    "sector": "BOM-COK",
+    "lead_days": 15,
+    "avg_fare": 4320.0,
+    "wow_change": 0.3,
+    "mom_change": 3.7,
+    "weight": 0.02,
+    "n_quotes": 75
+  },
+  {
+    "sector": "BOM-COK",
+    "lead_days": 30,
+    "avg_fare": 4730.0,
+    "wow_change": -4.5,
+    "mom_change": 2.3,
+    "weight": 0.02,
+    "n_quotes": 53
+  },
+  {
+    "sector": "BOM-COK",
+    "lead_days": 45,
+    "avg_fare": 4700.0,
+    "wow_change": -1.4,
+    "mom_change": 1.4,
+    "weight": 0.02,
+    "n_quotes": 62
+  },
+  {
+    "sector": "DEL-BBI",
+    "lead_days": 1,
+    "avg_fare": 1490.0,
+    "wow_change": -3.2,
+    "mom_change": -2.8,
+    "weight": 0.01,
+    "n_quotes": 70
+  },
+  {
+    "sector": "DEL-BBI",
+    "lead_days": 7,
+    "avg_fare": 1830.0,
+    "wow_change": -2.6,
+    "mom_change": -1.0,
+    "weight": 0.01,
+    "n_quotes": 37
+  },
+  {
+    "sector": "DEL-BBI",
+    "lead_days": 15,
+    "avg_fare": 2020.0,
+    "wow_change": 4.7,
+    "mom_change": -2.4,
+    "weight": 0.01,
+    "n_quotes": 35
+  },
+  {
+    "sector": "DEL-BBI",
+    "lead_days": 30,
+    "avg_fare": 2230.0,
+    "wow_change": 5.4,
+    "mom_change": 0.0,
+    "weight": 0.01,
+    "n_quotes": 77
+  },
+  {
+    "sector": "DEL-BBI",
+    "lead_days": 45,
+    "avg_fare": 2250.0,
+    "wow_change": 3.5,
+    "mom_change": 2.9,
+    "weight": 0.01,
+    "n_quotes": 20
+  },
+  {
+    "sector": "IDR-BLR",
+    "lead_days": 1,
+    "avg_fare": 3390.0,
+    "wow_change": -2.8,
+    "mom_change": 1.2,
+    "weight": 0.03,
+    "n_quotes": 62
+  },
+  {
+    "sector": "IDR-BLR",
+    "lead_days": 7,
+    "avg_fare": 3770.0,
+    "wow_change": 6.0,
+    "mom_change": -0.6,
+    "weight": 0.03,
+    "n_quotes": 75
+  },
+  {
+    "sector": "IDR-BLR",
+    "lead_days": 15,
+    "avg_fare": 4520.0,
+    "wow_change": -1.6,
+    "mom_change": -1.9,
+    "weight": 0.03,
+    "n_quotes": 79
+  },
+  {
+    "sector": "IDR-BLR",
+    "lead_days": 30,
+    "avg_fare": 4850.0,
+    "wow_change": 2.2,
+    "mom_change": 0.2,
+    "weight": 0.03,
+    "n_quotes": 63
+  },
+  {
+    "sector": "IDR-BLR",
+    "lead_days": 45,
+    "avg_fare": 4610.0,
+    "wow_change": 2.8,
+    "mom_change": -2.3,
+    "weight": 0.03,
+    "n_quotes": 53
+  }
+]

@@ -1,0 +1,39 @@
+{
+  "origin": "IDR",
+  "dest": "BLR",
+  "originCity": "Indore",
+  "destCity": "Bangalore",
+  "departDate": "2026-09-29",
+  "leadDays": 15,
+  "results": [
+    {
+      "cabin": "Economy",
+      "scrapedAt": "2026-09-14T07:02:43.203035+00:00",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=29/09/2026&from=IDR&to=BLR&intl=false&sd=&mmb=false",
+      "cheapest": {
+        "price": 8248.0,
+        "flightNumber": "IX-1368",
+        "stops": 0,
+        "departTime": "2026-09-29T17:00:00.000+05:30",
+        "arriveTime": "2026-09-29T19:05:00.000+05:30"
+      },
+      "cardCount": 56
+    },
+    {
+      "cabin": "Premium Economy",
+      "scrapedAt": "2026-09-14T07:02:45.799489+00:00",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=29/09/2026&from=IDR&to=BLR&intl=false&sd=&mmb=false",
+      "cheapest": null,
+      "cardCount": 34,
+      "error": "no fares"
+    },
+    {
+      "cabin": "Business",
+      "scrapedAt": "2026-09-14T07:02:48.536702+00:00",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=29/09/2026&from=IDR&to=BLR&intl=false&sd=&mmb=false",
+      "cheapest": null,
+      "cardCount": 38,
+      "error": "no fares"
+    }
+  ]
+}

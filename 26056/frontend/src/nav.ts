@@ -17,7 +17,6 @@ import {
   StackSimple,
   Table,
   TrendDown,
-  TrendUp,
 } from '@phosphor-icons/react'
 
 export interface NavItem {
@@ -75,6 +74,7 @@ export const NAV: NavGroup[] = [
       { to: '/scraper-config', label: 'Scraper config', icon: Gear, blurb: 'Rate limits, schedule, kill-switches, per-source overrides' },
       { to: '/quotes', label: 'Quote explorer', icon: Table, blurb: 'The cleaned panel, row by row' },
       { to: '/scraper', label: 'Scraper architecture', icon: Robot, blurb: 'Multi-source engine, collectors, pipeline' },
+      { to: '/proxy-pool', label: 'Proxy pool', icon: PlugsConnected, blurb: 'Rotating IP pool, cooldown, sticky domain' },
     ],
   },
   {

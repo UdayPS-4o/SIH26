@@ -19,6 +19,7 @@ import {
   Leaf,
 } from 'lucide-react'
 import { RiskBadge, Pill } from './common/ui.jsx'
+import OutcomeButtons from './common/OutcomeButtons.jsx'
 import { riskMeta, levelFromScore } from '../utils/riskUtils'
 import { useI18n } from '../i18n/i18n.jsx'
 import farmMap from '../assets/farm-map.svg'
@@ -106,7 +107,7 @@ export function AlertCard({ alert, onReview, compact = false }) {
             title="Play Hindi IVR Voice Alert"
             className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold transition-all shadow-sm ${speaking
               ? 'bg-red-500 text-white animate-pulse ring-2 ring-red-300'
-              : 'bg-white/80 text-gray-700 hover:bg-brand-600 hover:text-white dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-brand-600'
+              : 'bg-white/80 text-gray-700 hover:bg-amber-600 hover:text-white dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-amber-600'
               }`}
           >
             {speaking ? <VolumeX size={13} /> : <Volume2 size={13} />}
@@ -118,7 +119,7 @@ export function AlertCard({ alert, onReview, compact = false }) {
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div>
-            <Link to={`/animals/${alert.animalId}`} className="text-base font-semibold text-gray-900 hover:text-brand-700 dark:text-gray-100">
+            <Link to={`/animals/${alert.animalId}`} className="text-base font-semibold text-gray-900 hover:text-amber-700 dark:text-gray-100">
               {alert.animalId}
             </Link>
             <p className="text-xs text-gray-400">Shed {alert.shed}</p>
@@ -152,11 +153,19 @@ export function AlertCard({ alert, onReview, compact = false }) {
               {t('common.markReviewed')}
             </button>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-700">
+            <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700">
               <CheckCircle2 size={15} /> {t('alerts.filter.resolved')}
             </span>
           )}
         </div>
+        {alert.status === 'open' && (
+          <OutcomeButtons
+            alertId={alert.id}
+            onRecord={(id, outcome) => {
+              onRecord?.(id)
+            }}
+          />
+        )}
       </div>
     </div>
   )
@@ -166,7 +175,7 @@ export function AlertCard({ alert, onReview, compact = false }) {
 export function InsightCard({ title, body, actions }) {
   return (
     <div className="card overflow-hidden">
-      <div className="bg-gradient-to-br from-brand-600 to-brand-700 px-5 py-4 text-white">
+      <div className="bg-gradient-to-br from-amber-600 to-amber-700 px-5 py-4 text-white">
         <div className="flex items-center gap-2">
           <Sparkles size={16} />
           <span className="text-sm font-semibold">{title}</span>
@@ -195,7 +204,7 @@ export function RiskFactors({ factors }) {
               <span className="font-medium text-gray-900 dark:text-gray-100">{f.delta}</span>
             </div>
             <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-              <div className="h-full rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
+              <div className="h-full rounded-full bg-amber-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
         )
@@ -207,7 +216,7 @@ export function RiskFactors({ factors }) {
 /* ---------------- HealthTimeline ---------------- */
 export function HealthTimeline({ items }) {
   const toneMap = {
-    ok: { dot: 'bg-brand-500', icon: CheckCircle2 },
+    ok: { dot: 'bg-amber-500', icon: CheckCircle2 },
     warn: { dot: 'bg-amber-500', icon: Clock },
     alert: { dot: 'bg-red-500', icon: AlertTriangle },
   }
@@ -239,7 +248,7 @@ export function RecommendationCard({ rec, index }) {
     <div className={`flex gap-3 rounded-xl border p-4 ${isAyurvedic ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/40 relative overflow-hidden' : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'}`}>
       {isAyurvedic && <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-100 opacity-50 dark:bg-emerald-900/30"></div>}
 
-      <span className={`relative grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-semibold ${isAyurvedic ? 'bg-emerald-200 text-emerald-800 dark:bg-emerald-800/80 dark:text-emerald-200' : 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400'}`}>
+      <span className={`relative grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-semibold ${isAyurvedic ? 'bg-emerald-200 text-emerald-800 dark:bg-emerald-800/80 dark:text-emerald-200' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'}`}>
         {isAyurvedic ? <Leaf size={14} /> : index + 1}
       </span>
       <div className="relative min-w-0 flex-1">
@@ -275,7 +284,7 @@ export function AnimalTable({ animals }) {
             {animals.map((a) => (
               <tr key={a.id} className="hover:bg-gray-50/70 dark:hover:bg-gray-800/50">
                 <td className="px-4 py-3">
-                  <Link to={`/animals/${a.id}`} className="font-medium text-gray-900 hover:text-brand-700 dark:text-gray-100">{a.id}</Link>
+                  <Link to={`/animals/${a.id}`} className="font-medium text-gray-900 hover:text-amber-700 dark:text-gray-100">{a.id}</Link>
                   <div className="text-xs text-gray-400">{a.name} · {a.species}</div>
                 </td>
                 <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{a.breed}</td>
@@ -287,7 +296,7 @@ export function AnimalTable({ animals }) {
                 <td className="px-4 py-3"><RiskBadge level={a.riskLevel} score={a.riskScore} /></td>
                 <td className="px-4 py-3 text-xs text-gray-400">{a.lastUpdated}</td>
                 <td className="px-4 py-3">
-                  <Link to={`/animals/${a.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline">
+                  <Link to={`/animals/${a.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 hover:underline">
                     {t('common.viewAnimal')} <ArrowUpRight size={14} />
                   </Link>
                 </td>
@@ -355,29 +364,58 @@ export function ShedRiskBar({ shed }) {
 }
 
 /* ---------------- Sparkline ---------------- */
-export function Sparkline({ data, color = '#16a34a', width = 72, height = 26 }) {
+export function Sparkline({ data, color = '#16a34a', width = 72, height = 26, baseline }) {
   if (!data?.length) return null
   const vals = data.map((d) => d.v)
   const min = Math.min(...vals)
   const max = Math.max(...vals)
   const span = max - min || 1
+  const pad = span * 0.1
+  const yMin = min - pad
+  const yMax = max + pad
+  const ySpan = yMax - yMin || 1
+
   const pts = data
     .map((d, i) => {
       const x = (i / (data.length - 1)) * width
-      const y = height - ((d.v - min) / span) * (height - 4) - 2
-      return `${x.toFixed(1)},${y.toFixed(1)}`
+      const y = height - ((d.v - yMin) / ySpan) * height
+      return { x, y }
     })
-    .join(' ')
+
+  const pathD = pts.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ')
+
+  // Baseline band
+  let baselineEl = null
+  if (baseline) {
+    const baseY = height - ((baseline.median - yMin) / ySpan) * height
+    const bandTop = height - ((baseline.median + baseline.mad - yMin) / ySpan) * height
+    const bandBot = height - ((baseline.median - baseline.mad - yMin) / ySpan) * height
+    baselineEl = (
+      <g>
+        <rect
+          x={0}
+          y={Math.max(0, bandTop)}
+          width={width}
+          height={Math.min(height, bandBot) - Math.max(0, bandTop)}
+          fill={color}
+          fillOpacity={0.08}
+        />
+        <line x1={0} y1={baseY} x2={width} y2={baseY} stroke={color} strokeWidth={1} strokeDasharray="2 2" opacity={0.5} />
+      </g>
+    )
+  }
+
   return (
-    <svg width={width} height={height} className="overflow-visible">
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+      {baselineEl}
+      <path d={pathD} fill="none" stroke={color} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
     </svg>
   )
 }
 
 export function TrendArrow({ dir }) {
   if (dir === 'up') return <TrendingUp size={15} className="text-red-500" />
-  if (dir === 'down') return <TrendingDown size={15} className="text-brand-600" />
+  if (dir === 'down') return <TrendingDown size={15} className="text-amber-600" />
   return <Minus size={15} className="text-gray-400" />
 }
 
@@ -402,7 +440,7 @@ export function RecentHighRiskTable({ animals }) {
             return (
               <tr key={a.id}>
                 <td className="py-2.5">
-                  <Link to={`/animals/${a.id}`} className="font-semibold text-gray-900 hover:text-brand-700 dark:text-gray-100">{a.id}</Link>
+                  <Link to={`/animals/${a.id}`} className="font-semibold text-gray-900 hover:text-amber-700 dark:text-gray-100">{a.id}</Link>
                 </td>
                 <td className="py-2.5 text-gray-500 dark:text-gray-400">{t(`species.${a.species.toLowerCase()}`)}</td>
                 <td className="py-2.5">
@@ -549,9 +587,9 @@ export function QuickAction({ icon: Icon, label, to }) {
   return (
     <Link
       to={to}
-      className="flex items-center gap-3 rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:bg-brand-50/50 dark:border-gray-800 dark:text-gray-300 dark:hover:border-brand-700 dark:hover:bg-brand-900/20"
+      className="flex items-center gap-3 rounded-lg border border-gray-200 px-3.5 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:border-amber-300 hover:bg-amber-50/50 dark:border-gray-800 dark:text-gray-300 dark:hover:border-amber-700 dark:hover:bg-amber-900/20"
     >
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
+      <span className="grid h-8 w-8 place-items-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
         <Icon size={16} />
       </span>
       {label}

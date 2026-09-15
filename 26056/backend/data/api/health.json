@@ -1,0 +1,39 @@
+{
+  "status": "HEALTHY",
+  "last_run": "2026-09-14T22:01:42+05:30",
+  "next_run": "2026-09-15T22:00:00+05:30",
+  "scheduler": "Celery Beat (cron: 0 22 * * *)",
+  "coverage": {
+    "target_sectors": 22,
+    "target_windows": 5,
+    "expected_cells": 110,
+    "covered_cells": 98,
+    "coverage_pct": 93.3,
+    "gate_threshold": 70.0,
+    "gate_passed": true
+  },
+  "database": {
+    "total_quotes": 58671,
+    "total_index_days": 90,
+    "connection": "postgresql://vimaan@localhost:5432/apix",
+    "pool_size": 5
+  },
+  "sources": {
+    "active": 6,
+    "quarantined": 1,
+    "pending": 1,
+    "total": 8
+  },
+  "index": {
+    "current": 102.34,
+    "band_low": 101.87,
+    "band_high": 102.81,
+    "status": "PUBLISHED"
+  },
+  "tests": {
+    "total": 47,
+    "passed": 47,
+    "coverage": "87%"
+  },
+  "uptime": "99.7%"
+}

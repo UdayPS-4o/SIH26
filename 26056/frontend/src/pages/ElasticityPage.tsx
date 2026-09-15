@@ -26,20 +26,17 @@ import {
 } from '@/ds'
 import { elasticityCurve, fareAtLead, leadSpread } from '@/data/generate'
 import { LEAD_BUCKETS, SECTORS, sectorOf, type LeadBucket } from '@/data/reference'
-import { LIVE_FARE_LADDER, LIVE_FARE_LADDER_ROUTE, type LiveFareRung } from '@/data/liveFareLadder'
-import { LIVE_CABIN_COMPARE, LIVE_CABIN_COMPARE_ROUTE } from '@/data/liveCabinCompare'
+import { LIVE_FARE_LADDER, LIVE_FARE_LADDER_ROUTE, type LiveFareRung, buildVerifyUrl } from '@/data/liveFareLadder'
+import { LIVE_CABIN_COMPARE, LIVE_CABIN_COMPARE_ROUTE, buildCabinVerifyUrl } from '@/data/liveCabinCompare'
 import { fmtDayFull, fmtInt, fmtLead, fmtRupee } from '@/lib/format'
-import { useRelativeTime } from '@/lib/useRelativeTime'
 
-function LiveBadge({ scrapedAt }: { scrapedAt: string }) {
-  const age = useRelativeTime(scrapedAt)
+function DemoBadge() {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-good">
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-3">
       <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-75" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-good" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-ink-3" />
       </span>
-      Refreshed {age}
+      Demo data
     </span>
   )
 }
@@ -117,9 +114,9 @@ export function ElasticityPage() {
           icon={ShieldCheck}
           title="Live fare ladder"
           meta={`${LIVE_FARE_LADDER_ROUTE.originCity} (${LIVE_FARE_LADDER_ROUTE.originCode}) to ${LIVE_FARE_LADDER_ROUTE.destCity} (${LIVE_FARE_LADDER_ROUTE.destCode}) · the same non-stop IndiGo flight, priced at each collection window`}
-          actions={<LiveBadge scrapedAt={LIVE_FARE_LADDER[0]?.scrapedAt ?? new Date().toISOString()} />}
+          actions={<DemoBadge />}
           bleed
-          footnote="Same flight, same airline, same non-stop routing at every window — only the booking date changes. That isolates the booking-window effect instead of mixing it with a cheaper-but-connecting itinerary. Click Verify to open the same search and compare."
+          footnote="Same flight, same airline, same non-stop routing at every window — only the booking date changes. That isolates the booking-window effect instead of mixing it with a cheaper-but-connecting itinerary. Fares are demo data. Click Verify to open the same search on Cleartrip and compare."
         >
           <div className="grid grid-cols-2 divide-y divide-line sm:grid-cols-3 sm:divide-y-0 sm:divide-x lg:grid-cols-6">
             {LIVE_FARE_LADDER.map((rung: LiveFareRung) => (
@@ -136,7 +133,7 @@ export function ElasticityPage() {
                   {rung.stops > 0 ? ` · ${rung.stops} stop${rung.stops > 1 ? 's' : ''}` : ' · non-stop'}
                 </span>
                 <a
-                  href={rung.sourceUrl}
+                  href={buildVerifyUrl(rung, LIVE_FARE_LADDER_ROUTE.originCode, LIVE_FARE_LADDER_ROUTE.destCode)}
                   target="_blank"
                   rel="noreferrer noopener"
                   className="mt-1 inline-flex w-fit items-center gap-1 rounded-control bg-surface-2 px-2 py-1 text-[10.5px]
@@ -190,9 +187,9 @@ export function ElasticityPage() {
           icon={ShieldCheck}
           title="Live cabin comparison"
           meta={`${LIVE_CABIN_COMPARE_ROUTE.originCity} (${LIVE_CABIN_COMPARE_ROUTE.originCode}) to ${LIVE_CABIN_COMPARE_ROUTE.destCity} (${LIVE_CABIN_COMPARE_ROUTE.destCode}), ${fmtDayFull(LIVE_CABIN_COMPARE_ROUTE.departDate)} (T+${LIVE_CABIN_COMPARE_ROUTE.leadDays}) · cheapest real Cleartrip fare in each cabin, same night`}
-          actions={<LiveBadge scrapedAt={LIVE_CABIN_COMPARE[0]?.scrapedAt ?? new Date().toISOString()} />}
+          actions={<DemoBadge />}
           bleed
-          footnote="Each bar is the cheapest fare Cleartrip returned for that cabin on the same departure date. Click Verify to open the same search."
+          footnote="Each bar is the cheapest fare Cleartrip returned for that cabin on the same departure date. Fares are demo data. Click Verify to open the same search."
         >
           <div className="grid grid-cols-1 gap-3 p-4 lg:grid-cols-12">
             <div className="lg:col-span-7">
@@ -219,7 +216,7 @@ export function ElasticityPage() {
                     </p>
                   </div>
                   <a
-                    href={c.sourceUrl}
+                    href={buildCabinVerifyUrl(c, LIVE_FARE_LADDER_ROUTE.originCode, LIVE_FARE_LADDER_ROUTE.destCode, LIVE_CABIN_COMPARE_ROUTE.departDate)}
                     target="_blank"
                     rel="noreferrer noopener"
                     className="inline-flex shrink-0 items-center gap-1 rounded-control bg-surface-3 px-2 py-1 text-[10.5px]

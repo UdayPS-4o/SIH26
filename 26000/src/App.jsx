@@ -4,6 +4,12 @@ import ThreatMap from './components/ThreatMap'
 import DeviceGrid from './components/DeviceGrid'
 import TrafficVisualizer from './components/TrafficVisualizer'
 import AlertDetail from './components/AlertDetail'
+import AlertsPage from './pages/AlertsPage'
+import ThreatsPage from './pages/ThreatsPage'
+import EvidencePage from './pages/EvidencePage'
+import ThroughputPage from './pages/ThroughputPage'
+import SettingsPage from './pages/SettingsPage'
+import { generateMockAlerts, makeAlert } from './lib/shared.jsx'
 
 /* ═══════════════════════════════════════════════════════════════════
    EKADHARA — Explosive Demo Edition
@@ -21,30 +27,19 @@ const THREAT_TYPES = {
 }
 const SEVERITY_LEVELS = ['critical','high','medium','low','info']
 
-// ── Mock data generators ─────────────────────────────────────────────
-const generateMockAlerts = (count = 50) => {
-  const alerts = []
-  const threats = Object.keys(THREAT_TYPES)
-  const now = Date.now()
-  for (let i = 0; i < count; i++) {
-    const threat = threats[Math.floor(Math.random() * threats.length)]
-    const severity = SEVERITY_LEVELS[Math.floor(Math.random() * SEVERITY_LEVELS.length)]
-    alerts.push({
-      id: `ALT-${String(1000 + i)}`,
-      timestamp: now - Math.floor(Math.random() * 3600000),
-      threat, severity,
-      confidence: (0.5 + Math.random() * 0.5).toFixed(2),
-      srcIp: `10.${~~(Math.random()*256)}.${~~(Math.random()*256)}.${~~(Math.random()*256)}`,
-      dstIp: `192.168.${~~(Math.random()*256)}.${~~(Math.random()*256)}`,
-      evidence: {
-        features: ['packet_rate','byte_ratio','interval_variance'].slice(0, 2 + ~~(Math.random()*2)),
-        hash: Array.from({length:12}, () => ~~(Math.random()*16).toString(16)).join(''),
-      },
-      validity: ['MEASURED','ESTIMATED','MISSING'][~~(Math.random()*3)],
-    })
-  }
-  return alerts.sort((a, b) => b.timestamp - a.timestamp)
+// ── Page titles + subtitles ──────────────────────────────────────────
+const PAGE_META = {
+  dashboard:  { title:'Operations Dashboard',    subtitle:'Real-time threat intelligence from air-gapped monitoring enclave' },
+  alerts:     { title:'Alert Feed',              subtitle:'Every detection, filterable and triaged — with the DEG consensus behind each one' },
+  threats:    { title:'Threat Detection Matrix', subtitle:'Detector coverage across capture modes — what a data diode costs, and what ACK-Shadow wins back' },
+  evidence:   { title:'Evidence Vault',          subtitle:'Merkle-sealed forensic records — tamper-evident, offline, operator-gated export' },
+  throughput: { title:'Throughput Analytics',    subtitle:'Line-rate performance and constant memory under burst, on commodity hardware' },
+  settings:   { title:'System Configuration',    subtitle:'Capture, detectors, thresholds, and hardware-enforced egress lockdown' },
 }
+
+// Alert shape and generators live in src/lib/shared.jsx so the dashboard and
+// every page agree on the fields — pages read packets/bytes/ports, which a
+// local copy of the generator kept omitting.
 
 const degradationData = [
   { threat:'scan',    label:'Recon / Port Scan',     fullScore:0.94, diodeScore:0.94 },
@@ -583,7 +578,7 @@ function Sidebar({ currentPage, setPage, darkMode, toggleDarkMode, uptime }) {
 // ═══════════════════════════════════════════════════════════════════
 // TOPBAR
 // ═══════════════════════════════════════════════════════════════════
-function Topbar({ stats, hasCritical }) {
+function Topbar({ stats, hasCritical, title = 'Dashboard' }) {
   return (
     <header style={{
       background:'rgba(10,14,23,0.92)',
@@ -612,7 +607,7 @@ function Topbar({ stats, hasCritical }) {
           <h2 style={{
             fontFamily:"'Space Grotesk', system-ui, sans-serif",
             fontSize:17, fontWeight:700, color:'#f1f5f9',
-          }}>Dashboard</h2>
+          }}>{title}</h2>
           <div style={{
             display:'flex', alignItems:'center', gap:8, fontSize:11, color:'#64748b',
             fontFamily:"'JetBrains Mono', monospace",
@@ -1390,23 +1385,11 @@ export default function App() {
     if (!booted) return
     const interval = setInterval(() => {
       if (Math.random() > 0.65) {
-        const threats = Object.keys(THREAT_TYPES)
-        const threat = threats[Math.floor(Math.random() * threats.length)]
-        const severity = SEVERITY_LEVELS[Math.floor(Math.random() * SEVERITY_LEVELS.length)]
-        const newAlert = {
-          id: `ALT-${String(1000 + Date.now())}`,
-          timestamp: Date.now(),
-          threat, severity,
-          confidence: (0.5 + Math.random() * 0.5).toFixed(2),
-          srcIp: `10.${~~(Math.random()*256)}.${~~(Math.random()*256)}.${~~(Math.random()*256)}`,
-          dstIp: `192.168.${~~(Math.random()*256)}.${~~(Math.random()*256)}`,
-          evidence: { features: ['packet_rate','byte_ratio','interval_variance'].slice(0, 2 + ~~(Math.random()*2)), hash: Array.from({length:12}, () => ~~(Math.random()*16).toString(16)).join('') },
-          validity: ['MEASURED','ESTIMATED','MISSING'][~~(Math.random()*3)],
-        }
+        const newAlert = makeAlert()
         setAlerts(prev => [newAlert, ...prev].slice(0, 100))
 
         // Trigger glitch on critical
-        if (severity === 'critical') {
+        if (newAlert.severity === 'critical') {
           setGlitchActive(true)
           setTimeout(() => setGlitchActive(false), 300)
 
@@ -1475,7 +1458,11 @@ export default function App() {
 
         {/* Topbar */}
         <div ref={headerRef}>
-          <Topbar stats={stats} hasCritical={alerts.some(a => a.severity === 'critical')} />
+          <Topbar
+            stats={stats}
+            hasCritical={alerts.some(a => a.severity === 'critical')}
+            title={PAGE_META[currentPage].title}
+          />
         </div>
 
         {/* Main */}
@@ -1486,16 +1473,9 @@ export default function App() {
               fontFamily:"'Space Grotesk', system-ui, sans-serif",
               fontSize:26, fontWeight:800, color:'#f1f5f9',
               margin:'0 0 4px', letterSpacing:-0.5,
-            }}>
-              {currentPage === 'dashboard' && 'Operations Dashboard'}
-              {currentPage === 'alerts' && 'Alert Feed'}
-              {currentPage === 'threats' && 'Threat Detection Matrix'}
-              {currentPage === 'evidence' && 'Evidence Vault'}
-              {currentPage === 'throughput' && 'Throughput Analytics'}
-              {currentPage === 'settings' && 'System Configuration'}
-            </h2>
+            }}>{PAGE_META[currentPage].title}</h2>
             <p style={{ fontSize:13, color:'#64748b', margin:0 }}>
-              Real-time threat intelligence from air-gapped monitoring enclave
+              {PAGE_META[currentPage].subtitle}
             </p>
           </div>
 
@@ -1559,20 +1539,47 @@ export default function App() {
             </div>
           )}
 
-          {currentPage !== 'dashboard' && (
-            <div className="ek-card" style={{
-              background:'rgba(17,24,39,0.6)', border:'1px solid rgba(30,41,59,0.8)',
-              borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center',
-              minHeight:400, color:'#64748b',
-            }}>
-              <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:48, marginBottom:16 }}>🚧</div>
-                <h3 style={{ fontSize:16, fontWeight:700, color:'#f1f5f9', margin:'0 0 8px' }}>
-                  {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
-                </h3>
-                <p style={{ fontSize:13 }}>This module is available in the full prototype.</p>
-              </div>
-            </div>
+          {currentPage === 'alerts' && (
+            <AlertsPage
+              alerts={alerts}
+              selectedAlert={selectedAlert}
+              onSelectAlert={setSelectedAlert}
+              diodeMode={diodeMode}
+            />
+          )}
+
+          {currentPage === 'threats' && (
+            <ThreatsPage
+              alerts={alerts}
+              diodeMode={diodeMode}
+              setDiodeMode={setDiodeMode}
+              ackShadow={ackShadow}
+              setAckShadow={setAckShadow}
+            />
+          )}
+
+          {currentPage === 'evidence' && (
+            <EvidencePage
+              alerts={alerts}
+              selectedAlert={selectedAlert}
+              onSelectAlert={setSelectedAlert}
+            />
+          )}
+
+          {currentPage === 'throughput' && (
+            <ThroughputPage stats={stats} diodeMode={diodeMode} />
+          )}
+
+          {currentPage === 'settings' && (
+            <SettingsPage
+              diodeMode={diodeMode}
+              setDiodeMode={setDiodeMode}
+              ackShadow={ackShadow}
+              setAckShadow={setAckShadow}
+              darkMode={darkMode}
+              toggleDarkMode={toggleDarkMode}
+              stats={stats}
+            />
           )}
         </main>
       </div>

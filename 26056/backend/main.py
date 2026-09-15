@@ -21,23 +21,27 @@ import logging
 import time
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Callable, Awaitable
 
 
 try:
-    from collectors.base import BaseCollector, CollectorStatus
-    from collectors.playwright_collectors import IndiGoCollector, AirIndiaCollector, AkasaCollector
-    from collectors.scrapy_collectors import CleartripCollector, MakeMyTripCollector, YatraCollector
-    from collectors.api_connectors import AmadeusCollector, DuffelCollector, DGCAFeedCollector
-    from cleaning.pipeline import clean_pipeline
-    from index.aggregator import aggregate_index, APIndexResult
+    from collectors.base import BaseCollector, CollectorStatus  # type: ignore
+    from collectors.playwright_collectors import IndiGoCollector, AirIndiaCollector, AkasaCollector  # type: ignore
+    from collectors.scrapy_collectors import CleartripCollector, MakeMyTripCollector, YatraCollector  # type: ignore
+    from collectors.api_connectors import AmadeusCollector, DuffelCollector, DGCAFeedCollector  # type: ignore
+    from cleaning.pipeline import clean_pipeline  # type: ignore
+    from index.aggregator import aggregate_index, APIndexResult  # type: ignore
     from compliance.kill_switch import KillSwitchRegistry
     from compliance.robots import is_allowed
     from compliance.rate_limiter import PerDomainRateLimiter, RateLimitConfig
+    from compliance.proxy_pool import ProxyPool, RotationStrategy
     from storage.postgres import Base, QuoteStore, IndexStore, AnomalyStore, AuditLog
     from sqlalchemy import create_engine
     from sqlalchemy.orm import Session
+    HAS_DEPS = True
 except ImportError as e:
+    HAS_DEPS = False
+    import logging
     logging.warning(f"Optional import failed: {e}")
 
 logger = logging.getLogger("vimaan.main")
@@ -62,6 +66,7 @@ class PipelineResult:
 
 
 def build_collectors(kill_switches: KillSwitchRegistry) -> list:
+    """Instantiate all collectors, respecting kill-switch state."""
     collectors = [
         IndiGoCollector,
         AirIndiaCollector,
@@ -77,8 +82,45 @@ def build_collectors(kill_switches: KillSwitchRegistry) -> list:
     return collectors
 
 
-def run_pipeline(collectors: list, db_url: str = "postgresql://vimaan:vimaan@localhost:5432/apix") -> PipelineResult:
+def build_proxy_pool() -> ProxyPool:
+    """Create and seed the proxy pool with Oxylabs endpoints."""
+    pool = ProxyPool(strategy=RotationStrategy.ROUND_ROBIN)
+
+    # Oxylabs datacenter proxies (from user-provided config)
+    oxylabs_proxies = [
+        {"address": "dc.oxylabs.io:8001", "provider": "oxylabs", "country": "US", "type": "datacenter"},
+        {"address": "dc.oxylabs.io:8002", "provider": "oxylabs", "country": "US", "type": "datacenter"},
+        {"address": "dc.oxylabs.io:8003", "provider": "oxylabs", "country": "US", "type": "datacenter"},
+        {"address": "dc.oxylabs.io:8004", "provider": "oxylabs", "country": "US", "type": "datacenter"},
+        {"address": "dc.oxylabs.io:8005", "provider": "oxylabs", "country": "US", "type": "datacenter"},
+    ]
+    pool.add_from_config(oxylabs_proxies)
+    logger.info(f"Proxy pool seeded with {len(oxylabs_proxies)} Oxylabs endpoints")
+    return pool
+
+
+def build_rate_limiter() -> PerDomainRateLimiter:
+    """Create rate limiter matching scraper config defaults."""
+    return PerDomainRateLimiter(RateLimitConfig(
+        min_interval_s=6.0,   # 6s per domain (matches scraper config)
+        nightly_cap=500,
+        backoff_max_s=900.0,
+    ))
+
+
+def run_pipeline(
+    collectors: list,
+    db_url: str = "postgresql://vimaan:vimaan@localhost:5432/apix",
+    rate_limiter: Optional[PerDomainRateLimiter] = None,
+    proxy_pool: Optional[ProxyPool] = None,
+    kill_switches: Optional[KillSwitchRegistry] = None,
+) -> PipelineResult:
+    """Execute one full nightly pipeline run."""
     t0 = time.monotonic()
+
+    if not HAS_DEPS:
+        raise RuntimeError("Pipeline dependencies not available")
+
     engine = create_engine(db_url)
     Base.metadata.create_all(engine)
 
@@ -88,6 +130,14 @@ def run_pipeline(collectors: list, db_url: str = "postgresql://vimaan:vimaan@loc
             logger.info(f"Skipping disabled collector: {collector.name}")
             continue
         try:
+            # Assign proxy if pool is available
+            if proxy_pool and collector.base_url:
+                from urllib.parse import urlparse
+                domain = urlparse(collector.base_url).hostname or "default"
+                proxy = proxy_pool.assign(domain)
+                if proxy:
+                    logger.info(f"{collector.name}: routed via {proxy.address}")
+
             quotes = collector.run(SECTORS, LEAD_WINDOWS)
             raw_quotes.extend(quotes)
             logger.info(f"{collector.name}: {len(quotes)} quotes, status={collector.status.value}")
@@ -95,7 +145,10 @@ def run_pipeline(collectors: list, db_url: str = "postgresql://vimaan:vimaan@loc
             logger.error(f"{collector.name} failed: {exc}")
 
     clean_qs, clean_stats = clean_pipeline(raw_quotes)
-    logger.info(f"Cleaning: {clean_stats.raw_in} in -> {clean_stats.clean_out} out ({clean_stats.survival_rate:.1%} survival)")
+    logger.info(
+        f"Cleaning: {clean_stats.raw_in} in -> {clean_stats.clean_out} out "
+        f"({clean_stats.survival_rate:.1%} survival)"
+    )
 
     with Session(engine) as session:
         for q in clean_qs:
@@ -156,14 +209,23 @@ def run_pipeline(collectors: list, db_url: str = "postgresql://vimaan:vimaan@loc
 
 
 def main():
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    """CLI entry point for manual pipeline runs."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     kill_switches = KillSwitchRegistry()
+    rate_limiter = build_rate_limiter()
+    proxy_pool = build_proxy_pool()
     collectors = build_collectors(kill_switches)
-    result = run_pipeline(collectors)
+    result = run_pipeline(collectors, rate_limiter=rate_limiter, proxy_pool=proxy_pool)
     if result.gate_passed:
         logger.info("Publication gate PASSED — APIx published.")
     else:
-        logger.warning(f"Publication gate FAILED — survival {result.index.survival_rate:.1%}, suppressed cells: {result.suppressed_cells}")
+        logger.warning(
+            f"Publication gate FAILED — survival {result.index.survival_rate:.1%}, "
+            f"suppressed cells: {result.suppressed_cells}"
+        )
 
 
 if __name__ == "__main__":

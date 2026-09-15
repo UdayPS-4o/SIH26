@@ -59,7 +59,7 @@ export default function Topbar({ onMenu }) {
         align="left"
         button={
           <button className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-2 py-2 text-sm hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 sm:gap-2 sm:px-3">
-            <Home size={15} className="shrink-0 text-brand-600" />
+            <Home size={15} className="shrink-0 text-amber-600" />
             <span className="max-w-[5rem] truncate font-semibold text-gray-800 dark:text-gray-100 sm:max-w-[9rem]">{farm}</span>
             <ChevronDown size={14} className="shrink-0 text-gray-400" />
           </button>
@@ -72,7 +72,7 @@ export default function Topbar({ onMenu }) {
             className="flex w-full items-center justify-between px-3 py-2.5 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
           >
             {f}
-            {f === farm && <Check size={14} className="text-brand-600" />}
+            {f === farm && <Check size={14} className="text-amber-600" />}
           </button>
         ))}
       </Dropdown>
@@ -120,7 +120,7 @@ export default function Topbar({ onMenu }) {
               className="flex w-full items-center justify-between px-3 py-2.5 text-sm hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               {l.label}
-              {lang === l.code && <Check size={14} className="text-brand-600" />}
+              {lang === l.code && <Check size={14} className="text-amber-600" />}
             </button>
           ))}
         </Dropdown>
@@ -156,7 +156,7 @@ export default function Topbar({ onMenu }) {
           width="w-48"
           button={
             <button className="ml-1 flex shrink-0 items-center gap-2 border-l border-gray-200 pl-3 dark:border-gray-700 hover:opacity-90">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-400">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-100 text-sm font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
                 RK
               </span>
               <div className="hidden leading-tight lg:block text-left">

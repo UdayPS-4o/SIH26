@@ -1,13 +1,16 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Beef, BellRing, Network, SlidersHorizontal } from 'lucide-react'
+import { LayoutDashboard, Beef, BellRing, Cpu, Settings } from 'lucide-react'
 import { useI18n } from '../../i18n/i18n.jsx'
+import { ALERTS } from '../../data/mockData'
+
+const openAlerts = ALERTS.filter((a) => a.status === 'open').length
 
 const items = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'nav.dashboard' },
   { to: '/animals', icon: Beef, label: 'nav.animals' },
-  { to: '/alerts', icon: BellRing, label: 'nav.alerts' },
-  { to: '/herd', icon: Network, label: 'nav.herd' },
-  { to: '/simulator', icon: SlidersHorizontal, label: 'nav.simulator' },
+  { to: '/alerts', icon: BellRing, label: 'nav.alerts', badge: openAlerts },
+  { to: '/devices', icon: Cpu, label: 'nav.devices' },
+  { to: '/settings', icon: Settings, label: 'nav.settings' },
 ]
 
 export default function BottomNav() {
@@ -21,13 +24,18 @@ export default function BottomNav() {
             key={it.to}
             to={it.to}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium ${
-                isActive ? 'text-brand-700 dark:text-brand-400' : 'text-gray-400 dark:text-gray-500'
+              `flex flex-1 flex-col items-center gap-1 py-2 text-[10px] font-medium relative ${
+                isActive ? 'text-amber-700 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'
               }`
             }
           >
             <Icon size={19} />
             {t(it.label)}
+            {it.badge ? (
+              <span className="absolute top-1 right-1/4 grid h-4 min-w-[16px] place-items-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                {it.badge}
+              </span>
+            ) : null}
           </NavLink>
         )
       })}

@@ -4,6 +4,7 @@ import { PageHeader, Card, SectionTitle, RiskGauge, Toggle } from '../components
 import { RiskFactors } from '../components/shared.jsx'
 import { predictMastitisRisk } from '../services/predictionService'
 import { useI18n } from '../i18n/i18n.jsx'
+import DataFooter from '../components/common/DataFooter.jsx'
 
 const DEFAULTS = {
   scc: 420,
@@ -100,7 +101,7 @@ export default function Simulator() {
 
           <Card className="p-5">
             <div className="mb-3 flex items-center gap-2">
-              <Sparkles size={15} className="text-brand-600" />
+              <Sparkles size={15} className="text-amber-600" />
               <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top contributing factors</span>
             </div>
             {result.contributingFactors.length ? (
@@ -127,6 +128,7 @@ export default function Simulator() {
           sensor, laboratory and farm-record data. Result is clamped between 0 and 99.
         </p>
       </Card>
+      <DataFooter />
     </div>
   )
 }

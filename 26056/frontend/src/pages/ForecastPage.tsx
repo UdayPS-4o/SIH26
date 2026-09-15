@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   CalendarBlank as CalendarBlankIcon,
   Function as FnIcon,
@@ -7,7 +7,6 @@ import {
   Target,
   TrendDown,
   TrendUp,
-  Warning,
 } from '@phosphor-icons/react'
 import {
   Badge,
@@ -23,7 +22,7 @@ import {
   useChartTokens,
 } from '@/ds'
 import { SECTORS, type SectorDef } from '@/data/reference'
-import { fmtDayFull, fmtIndex, fmtPct, fmtRupee, fmtSigned } from '@/lib/format'
+import { fmtDayFull, fmtIndex, fmtPct, fmtRupee } from '@/lib/format'
 
 /* ==========================================================================
    Types
@@ -247,7 +246,7 @@ export function ForecastPage() {
           label: `${dayOffset}d`,
           color: dayOffset === 14 ? t.s2 : t.s3,
         }
-      }).filter(Boolean),
+      }).filter((d): d is NonNullable<typeof d> => d !== null),
     [chartData, dayIndex, t],
   )
 
@@ -313,10 +312,11 @@ export function ForecastPage() {
           yFormat={(n) => `₹${n.toFixed(0)}`}
           valueFormat={fmtIndex}
           tipTitle={(v) => fmtDayFull(v)}
+          xFormat={(v): string => fmtDayFull(v)}
           dots={forecastDots}
           bands={[
-            { from: chartData.find((d) => d.forecast14 != null)?.date, to: chartData.find((d) => d.forecast14 != null && d.forecast30 == null)?.date, label: '14-day window' },
-            { from: chartData.find((d) => d.forecast30 != null)?.date, to: chartData[chartData.length - 1].date, label: '30-day window' },
+            { from: chartData.find((d) => d.forecast14 != null)?.date ?? '', to: chartData.find((d) => d.forecast14 != null && d.forecast30 == null)?.date ?? '', label: '14-day window' },
+            { from: chartData.find((d) => d.forecast30 != null)?.date ?? '', to: chartData[chartData.length - 1]?.date ?? '', label: '30-day window' },
           ].filter((b) => b.from && b.to)}
         />
       </Panel>

@@ -36,6 +36,22 @@ interface RawResult {
   error?: string
 }
 
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+function parts(departDate: string) {
+  const d = new Date(`${departDate}T00:00:00`)
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = String(d.getFullYear())
+  const mon = MONTHS_SHORT[d.getMonth()]
+  return { dd, mm, yyyy, mon }
+}
+
+export function buildCabinVerifyUrl(_c: LiveCabinFare, origin: string, dest: string, departDate: string): string {
+  const { dd, mm, yyyy } = parts(departDate)
+  return `https://www.cleartrip.com/flights/${origin}-${dest}-${dd}${mm}${yyyy}-?adults=1&class=Economy`
+}
+
 const data = raw as {
   origin: string
   dest: string

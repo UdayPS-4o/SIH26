@@ -1,0 +1,42 @@
+{
+  "alerts": [
+    {
+      "id": "anom-26056",
+      "date": "2026-09-14",
+      "sector": "DEL-BLR",
+      "lead_days": 1,
+      "score": 3.42,
+      "severity": "HIGH",
+      "cause": "Demand surge (weekend)",
+      "model": "IsolationForest",
+      "confidence": 0.94,
+      "acknowledged": false
+    },
+    {
+      "id": "anom-26057",
+      "date": "2026-09-14",
+      "sector": "BOM-BLR",
+      "lead_days": 7,
+      "score": 2.15,
+      "severity": "MEDIUM",
+      "cause": "Fare drop (competition)",
+      "model": "HB fence",
+      "confidence": 0.87,
+      "acknowledged": false
+    },
+    {
+      "id": "anom-26058",
+      "date": "2026-09-14",
+      "sector": "DEL-CCU",
+      "lead_days": 15,
+      "score": 1.83,
+      "severity": "LOW",
+      "cause": "Seasonal dip (monsoon)",
+      "model": "PatternMatch",
+      "confidence": 0.76,
+      "acknowledged": false
+    }
+  ],
+  "total": 3,
+  "accuracy": 0.942
+}

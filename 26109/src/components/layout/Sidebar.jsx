@@ -43,7 +43,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
     <>
       {mobileOpen && <div className="fixed inset-0 z-30 bg-gray-900/50 lg:hidden" onClick={onClose} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-navy-800 to-navy-950 text-slate-300 transition-transform dark:from-navy-950 dark:to-black lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-gradient-to-b from-stone-800 to-stone-900 text-slate-300 transition-transform dark:from-stone-900 dark:to-black lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

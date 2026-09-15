@@ -1,0 +1,523 @@
+{
+  "api_series": [
+    {
+      "date": "2026-07-31",
+      "index_value": 102.79,
+      "band_low": 102.29,
+      "band_high": 103.3,
+      "formula": "Jevons",
+      "n_quotes": 638,
+      "n_cells": 98,
+      "survival_rate": 0.916,
+      "yoy_change": 0.076,
+      "mom_change": 0.016,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-01",
+      "index_value": 102.49,
+      "band_low": 101.99,
+      "band_high": 102.99,
+      "formula": "Jevons",
+      "n_quotes": 617,
+      "n_cells": 102,
+      "survival_rate": 0.932,
+      "yoy_change": 0.09,
+      "mom_change": 0.028,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-02",
+      "index_value": 102.78,
+      "band_low": 102.34,
+      "band_high": 103.23,
+      "formula": "Jevons",
+      "n_quotes": 679,
+      "n_cells": 100,
+      "survival_rate": 0.955,
+      "yoy_change": 0.045,
+      "mom_change": 0.006,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-03",
+      "index_value": 104.48,
+      "band_low": 104.07,
+      "band_high": 104.9,
+      "formula": "Jevons",
+      "n_quotes": 644,
+      "n_cells": 102,
+      "survival_rate": 0.937,
+      "yoy_change": 0.074,
+      "mom_change": 0.007,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-04",
+      "index_value": 106.75,
+      "band_low": 106.39,
+      "band_high": 107.12,
+      "formula": "Jevons",
+      "n_quotes": 650,
+      "n_cells": 103,
+      "survival_rate": 0.927,
+      "yoy_change": 0.079,
+      "mom_change": -0.0,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-05",
+      "index_value": 105.21,
+      "band_low": 104.86,
+      "band_high": 105.56,
+      "formula": "Jevons",
+      "n_quotes": 694,
+      "n_cells": 92,
+      "survival_rate": 0.906,
+      "yoy_change": 0.092,
+      "mom_change": -0.008,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-06",
+      "index_value": 105.11,
+      "band_low": 104.65,
+      "band_high": 105.56,
+      "formula": "Jevons",
+      "n_quotes": 651,
+      "n_cells": 91,
+      "survival_rate": 0.941,
+      "yoy_change": 0.109,
+      "mom_change": 0.001,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-07",
+      "index_value": 105.29,
+      "band_low": 104.83,
+      "band_high": 105.76,
+      "formula": "Jevons",
+      "n_quotes": 669,
+      "n_cells": 105,
+      "survival_rate": 0.936,
+      "yoy_change": 0.089,
+      "mom_change": 0.005,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-08",
+      "index_value": 104.43,
+      "band_low": 103.97,
+      "band_high": 104.89,
+      "formula": "Jevons",
+      "n_quotes": 635,
+      "n_cells": 96,
+      "survival_rate": 0.963,
+      "yoy_change": 0.05,
+      "mom_change": -0.005,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-09",
+      "index_value": 105.76,
+      "band_low": 105.17,
+      "band_high": 106.34,
+      "formula": "Jevons",
+      "n_quotes": 648,
+      "n_cells": 92,
+      "survival_rate": 0.953,
+      "yoy_change": 0.039,
+      "mom_change": -0.009,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-10",
+      "index_value": 105.28,
+      "band_low": 104.93,
+      "band_high": 105.63,
+      "formula": "Jevons",
+      "n_quotes": 696,
+      "n_cells": 104,
+      "survival_rate": 0.929,
+      "yoy_change": 0.096,
+      "mom_change": 0.003,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-11",
+      "index_value": 104.82,
+      "band_low": 104.36,
+      "band_high": 105.27,
+      "formula": "Jevons",
+      "n_quotes": 618,
+      "n_cells": 97,
+      "survival_rate": 0.92,
+      "yoy_change": 0.106,
+      "mom_change": 0.022,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-12",
+      "index_value": 105.83,
+      "band_low": 105.52,
+      "band_high": 106.14,
+      "formula": "Jevons",
+      "n_quotes": 673,
+      "n_cells": 102,
+      "survival_rate": 0.944,
+      "yoy_change": 0.05,
+      "mom_change": 0.024,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-13",
+      "index_value": 105.5,
+      "band_low": 104.94,
+      "band_high": 106.06,
+      "formula": "Jevons",
+      "n_quotes": 640,
+      "n_cells": 104,
+      "survival_rate": 0.893,
+      "yoy_change": 0.021,
+      "mom_change": -0.002,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-14",
+      "index_value": 104.61,
+      "band_low": 104.3,
+      "band_high": 104.92,
+      "formula": "Jevons",
+      "n_quotes": 644,
+      "n_cells": 105,
+      "survival_rate": 0.93,
+      "yoy_change": 0.111,
+      "mom_change": 0.015,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-15",
+      "index_value": 105.47,
+      "band_low": 104.94,
+      "band_high": 106.0,
+      "formula": "Jevons",
+      "n_quotes": 620,
+      "n_cells": 92,
+      "survival_rate": 0.929,
+      "yoy_change": 0.044,
+      "mom_change": 0.021,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-16",
+      "index_value": 106.13,
+      "band_low": 105.58,
+      "band_high": 106.67,
+      "formula": "Jevons",
+      "n_quotes": 620,
+      "n_cells": 97,
+      "survival_rate": 0.964,
+      "yoy_change": 0.048,
+      "mom_change": 0.024,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-17",
+      "index_value": 106.23,
+      "band_low": 105.74,
+      "band_high": 106.71,
+      "formula": "Jevons",
+      "n_quotes": 670,
+      "n_cells": 90,
+      "survival_rate": 0.951,
+      "yoy_change": 0.11,
+      "mom_change": 0.014,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-18",
+      "index_value": 106.99,
+      "band_low": 106.53,
+      "band_high": 107.45,
+      "formula": "Jevons",
+      "n_quotes": 642,
+      "n_cells": 96,
+      "survival_rate": 0.932,
+      "yoy_change": 0.074,
+      "mom_change": 0.002,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-19",
+      "index_value": 107.99,
+      "band_low": 107.65,
+      "band_high": 108.32,
+      "formula": "Jevons",
+      "n_quotes": 617,
+      "n_cells": 105,
+      "survival_rate": 0.903,
+      "yoy_change": 0.077,
+      "mom_change": 0.015,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-20",
+      "index_value": 107.43,
+      "band_low": 106.88,
+      "band_high": 107.97,
+      "formula": "Jevons",
+      "n_quotes": 630,
+      "n_cells": 91,
+      "survival_rate": 0.886,
+      "yoy_change": 0.039,
+      "mom_change": 0.018,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-21",
+      "index_value": 107.73,
+      "band_low": 107.38,
+      "band_high": 108.07,
+      "formula": "Jevons",
+      "n_quotes": 699,
+      "n_cells": 95,
+      "survival_rate": 0.94,
+      "yoy_change": 0.106,
+      "mom_change": 0.001,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-22",
+      "index_value": 108.58,
+      "band_low": 108.07,
+      "band_high": 109.1,
+      "formula": "Jevons",
+      "n_quotes": 686,
+      "n_cells": 100,
+      "survival_rate": 0.924,
+      "yoy_change": 0.093,
+      "mom_change": -0.007,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-23",
+      "index_value": 108.81,
+      "band_low": 108.22,
+      "band_high": 109.4,
+      "formula": "Jevons",
+      "n_quotes": 628,
+      "n_cells": 98,
+      "survival_rate": 0.96,
+      "yoy_change": 0.023,
+      "mom_change": -0.009,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-24",
+      "index_value": 109.46,
+      "band_low": 108.88,
+      "band_high": 110.03,
+      "formula": "Jevons",
+      "n_quotes": 604,
+      "n_cells": 99,
+      "survival_rate": 0.925,
+      "yoy_change": 0.111,
+      "mom_change": 0.028,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-25",
+      "index_value": 109.86,
+      "band_low": 109.43,
+      "band_high": 110.29,
+      "formula": "Jevons",
+      "n_quotes": 677,
+      "n_cells": 99,
+      "survival_rate": 0.914,
+      "yoy_change": 0.084,
+      "mom_change": -0.0,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-26",
+      "index_value": 110,
+      "band_low": 109.49,
+      "band_high": 110.51,
+      "formula": "Jevons",
+      "n_quotes": 618,
+      "n_cells": 95,
+      "survival_rate": 0.962,
+      "yoy_change": 0.088,
+      "mom_change": 0.001,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-27",
+      "index_value": 110,
+      "band_low": 109.58,
+      "band_high": 110.42,
+      "formula": "Jevons",
+      "n_quotes": 647,
+      "n_cells": 98,
+      "survival_rate": 0.883,
+      "yoy_change": 0.025,
+      "mom_change": 0.026,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-28",
+      "index_value": 108.75,
+      "band_low": 108.33,
+      "band_high": 109.17,
+      "formula": "Jevons",
+      "n_quotes": 678,
+      "n_cells": 102,
+      "survival_rate": 0.932,
+      "yoy_change": 0.031,
+      "mom_change": 0.022,
+      "status": "PUBLISHED"
+    },
+    {
+      "date": "2026-08-29",
+      "index_value": 108.43,
+      "band_low": 108.03,
+      "band_high": 108.83,
+      "formula": "Jevons",
+      "n_quotes": 602,
+      "n_cells": 93,
+      "survival_rate": 0.92,
+      "yoy_change": 0.045,
+      "mom_change": 0.024,
+      "status": "PUBLISHED"
+    }
+  ],
+  "dgca_series": [
+    {
+      "date": "2026-07-31",
+      "value": 99.89
+    },
+    {
+      "date": "2026-08-01",
+      "value": 98.99
+    },
+    {
+      "date": "2026-08-02",
+      "value": 101.0
+    },
+    {
+      "date": "2026-08-03",
+      "value": 104.79
+    },
+    {
+      "date": "2026-08-04",
+      "value": 104.03
+    },
+    {
+      "date": "2026-08-05",
+      "value": 104.87
+    },
+    {
+      "date": "2026-08-06",
+      "value": 99.7
+    },
+    {
+      "date": "2026-08-07",
+      "value": 101.31
+    },
+    {
+      "date": "2026-08-08",
+      "value": 103.82
+    },
+    {
+      "date": "2026-08-09",
+      "value": 100.28
+    },
+    {
+      "date": "2026-08-10",
+      "value": 106.04
+    },
+    {
+      "date": "2026-08-11",
+      "value": 104.32
+    },
+    {
+      "date": "2026-08-12",
+      "value": 100.73
+    },
+    {
+      "date": "2026-08-13",
+      "value": 100.01
+    },
+    {
+      "date": "2026-08-14",
+      "value": 102.12
+    },
+    {
+      "date": "2026-08-15",
+      "value": 100.63
+    },
+    {
+      "date": "2026-08-16",
+      "value": 104.03
+    },
+    {
+      "date": "2026-08-17",
+      "value": 101.37
+    },
+    {
+      "date": "2026-08-18",
+      "value": 106.41
+    },
+    {
+      "date": "2026-08-19",
+      "value": 104.68
+    },
+    {
+      "date": "2026-08-20",
+      "value": 103.38
+    },
+    {
+      "date": "2026-08-21",
+      "value": 108.23
+    },
+    {
+      "date": "2026-08-22",
+      "value": 103.89
+    },
+    {
+      "date": "2026-08-23",
+      "value": 105.46
+    },
+    {
+      "date": "2026-08-24",
+      "value": 105.58
+    },
+    {
+      "date": "2026-08-25",
+      "value": 109.45
+    },
+    {
+      "date": "2026-08-26",
+      "value": 105.79
+    },
+    {
+      "date": "2026-08-27",
+      "value": 106.95
+    },
+    {
+      "date": "2026-08-28",
+      "value": 104.23
+    },
+    {
+      "date": "2026-08-29",
+      "value": 104.29
+    }
+  ],
+  "metrics": {
+    "correlation": 0.937,
+    "rmse": 2.87,
+    "mape": 2.5,
+    "n_points": 30,
+    "dgca_source": "eSankhyiki.mospi.gov.in (monthly average fare)"
+  }
+}

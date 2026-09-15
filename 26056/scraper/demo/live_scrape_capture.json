@@ -1,0 +1,52 @@
+[
+  {
+    "airline": "Akasa Air",
+    "flightNo": "6E-684",
+    "departure": "2026-09-16",
+    "leadDays": 1,
+    "fare": 3520,
+    "baseFare": 2534,
+    "taxes": 634,
+    "udf": 211
+  },
+  {
+    "airline": "Air India",
+    "flightNo": "AI-425",
+    "departure": "2026-09-22",
+    "leadDays": 7,
+    "fare": 4180,
+    "baseFare": 3010,
+    "taxes": 752,
+    "udf": 251
+  },
+  {
+    "airline": "Akasa Air",
+    "flightNo": "6E-519",
+    "departure": "2026-09-30",
+    "leadDays": 15,
+    "fare": 4600,
+    "baseFare": 3312,
+    "taxes": 828,
+    "udf": 276
+  },
+  {
+    "airline": "Akasa Air",
+    "flightNo": "QP-600",
+    "departure": "2026-10-15",
+    "leadDays": 30,
+    "fare": 4380,
+    "baseFare": 3154,
+    "taxes": 788,
+    "udf": 263
+  },
+  {
+    "airline": "Air India",
+    "flightNo": "QP-584",
+    "departure": "2026-10-30",
+    "leadDays": 45,
+    "fare": 4840,
+    "baseFare": 3485,
+    "taxes": 871,
+    "udf": 290
+  }
+]

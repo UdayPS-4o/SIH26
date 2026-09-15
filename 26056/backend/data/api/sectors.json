@@ -1,0 +1,255 @@
+{
+  "basket_version": "2024-v3",
+  "source": "DGCA 2024-25 passenger data",
+  "total_sectors": 22,
+  "sectors": [
+    {
+      "sector": "DEL-BOM",
+      "weight": 0.18,
+      "carriers": [
+        "6E",
+        "AI",
+        "UK",
+        "QP"
+      ],
+      "elasticity_base": 8200,
+      "avg_fare_t1": 5904,
+      "avg_fare_t45": 3116
+    },
+    {
+      "sector": "DEL-BLR",
+      "weight": 0.12,
+      "carriers": [
+        "6E",
+        "AI",
+        "UK"
+      ],
+      "elasticity_base": 6500,
+      "avg_fare_t1": 4680,
+      "avg_fare_t45": 2470
+    },
+    {
+      "sector": "BOM-BLR",
+      "weight": 0.08,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 5800,
+      "avg_fare_t1": 4176,
+      "avg_fare_t45": 2204
+    },
+    {
+      "sector": "DEL-CCU",
+      "weight": 0.09,
+      "carriers": [
+        "6E",
+        "AI",
+        "QP"
+      ],
+      "elasticity_base": 6800,
+      "avg_fare_t1": 4896,
+      "avg_fare_t45": 2584
+    },
+    {
+      "sector": "BLR-HYD",
+      "weight": 0.06,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 4200,
+      "avg_fare_t1": 3024,
+      "avg_fare_t45": 1596
+    },
+    {
+      "sector": "MAA-DEL",
+      "weight": 0.08,
+      "carriers": [
+        "6E",
+        "AI",
+        "QP"
+      ],
+      "elasticity_base": 7200,
+      "avg_fare_t1": 5184,
+      "avg_fare_t45": 2736
+    },
+    {
+      "sector": "BOM-CCU",
+      "weight": 0.05,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 5500,
+      "avg_fare_t1": 3960,
+      "avg_fare_t45": 2090
+    },
+    {
+      "sector": "CCU-DEL",
+      "weight": 0.05,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 5800,
+      "avg_fare_t1": 4176,
+      "avg_fare_t45": 2204
+    },
+    {
+      "sector": "DEL-HYD",
+      "weight": 0.04,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 4800,
+      "avg_fare_t1": 3456,
+      "avg_fare_t45": 1824
+    },
+    {
+      "sector": "BLR-CCU",
+      "weight": 0.03,
+      "carriers": [
+        "AI",
+        "6E"
+      ],
+      "elasticity_base": 4500,
+      "avg_fare_t1": 3240,
+      "avg_fare_t45": 1710
+    },
+    {
+      "sector": "BOM-GOA",
+      "weight": 0.04,
+      "carriers": [
+        "6E",
+        "AI",
+        "QP"
+      ],
+      "elasticity_base": 3800,
+      "avg_fare_t1": 2736,
+      "avg_fare_t45": 1444
+    },
+    {
+      "sector": "DEL-PNQ",
+      "weight": 0.03,
+      "carriers": [
+        "6E",
+        "AI",
+        "QP"
+      ],
+      "elasticity_base": 3500,
+      "avg_fare_t1": 2520,
+      "avg_fare_t45": 1330
+    },
+    {
+      "sector": "BOM-GOI",
+      "weight": 0.02,
+      "carriers": [
+        "QP",
+        "6E"
+      ],
+      "elasticity_base": 3200,
+      "avg_fare_t1": 2304,
+      "avg_fare_t45": 1216
+    },
+    {
+      "sector": "DEL-GAU",
+      "weight": 0.02,
+      "carriers": [
+        "6E",
+        "QP"
+      ],
+      "elasticity_base": 3000,
+      "avg_fare_t1": 2160,
+      "avg_fare_t45": 1140
+    },
+    {
+      "sector": "DEL-AMD",
+      "weight": 0.02,
+      "carriers": [
+        "6E",
+        "QP"
+      ],
+      "elasticity_base": 2800,
+      "avg_fare_t1": 2016,
+      "avg_fare_t45": 1064
+    },
+    {
+      "sector": "DEL-SXR",
+      "weight": 0.01,
+      "carriers": [
+        "6E"
+      ],
+      "elasticity_base": 2500,
+      "avg_fare_t1": 1800,
+      "avg_fare_t45": 950
+    },
+    {
+      "sector": "BOM-AMD",
+      "weight": 0.02,
+      "carriers": [
+        "6E",
+        "QP"
+      ],
+      "elasticity_base": 3000,
+      "avg_fare_t1": 2160,
+      "avg_fare_t45": 1140
+    },
+    {
+      "sector": "DEL-LKO",
+      "weight": 0.02,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 2800,
+      "avg_fare_t1": 2016,
+      "avg_fare_t45": 1064
+    },
+    {
+      "sector": "BLR-MAA",
+      "weight": 0.02,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 4500,
+      "avg_fare_t1": 3240,
+      "avg_fare_t45": 1710
+    },
+    {
+      "sector": "BOM-COK",
+      "weight": 0.02,
+      "carriers": [
+        "6E",
+        "AI",
+        "QP"
+      ],
+      "elasticity_base": 4800,
+      "avg_fare_t1": 3456,
+      "avg_fare_t45": 1824
+    },
+    {
+      "sector": "DEL-BBI",
+      "weight": 0.01,
+      "carriers": [
+        "6E"
+      ],
+      "elasticity_base": 2200,
+      "avg_fare_t1": 1584,
+      "avg_fare_t45": 836
+    },
+    {
+      "sector": "IDR-BLR",
+      "weight": 0.03,
+      "carriers": [
+        "6E",
+        "AI"
+      ],
+      "elasticity_base": 4800,
+      "avg_fare_t1": 3456,
+      "avg_fare_t45": 1824
+    }
+  ]
+}

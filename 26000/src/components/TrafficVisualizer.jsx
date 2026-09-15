@@ -11,87 +11,101 @@ const PROTOCOLS = [
   { name: 'ICMP', color: '#ef4444', pct: 5 },
 ]
 
+const EMPTY_STATS = { tcp: 0, udp: 0, dns: 0, icmp: 0, attack: 0, total: 0 }
+
 export default function TrafficVisualizer({ throughput = 47200 }) {
   const canvasRef = useRef(null)
-  const [packets, setPackets] = useState([])
-  const [stats, setStats] = useState({ tcp: 0, udp: 0, dns: 0, icmp: 0, total: 0 })
+  const [stats, setStats] = useState(EMPTY_STATS)
   const [attackActive, setAttackActive] = useState(false)
+
+  // Packets and tallies live in refs, not state: they change ~20x/sec and the
+  // canvas draws them directly, so putting them in state only bought us a
+  // render storm (each setPackets re-ran the draw effect, which called
+  // setPackets again — an unbounded loop).
+  const packetsRef = useRef([])
+  const tallyRef = useRef({ ...EMPTY_STATS })
+  const attackRef = useRef(false)
+
+  useEffect(() => { attackRef.current = attackActive }, [attackActive])
 
   // Spawn packets
   useEffect(() => {
     const interval = setInterval(() => {
       const proto = PROTOCOLS[Math.floor(Math.random() * PROTOCOLS.length)]
-      const isAttack = attackActive && Math.random() > 0.7
+      const isAttack = attackRef.current && Math.random() > 0.7
 
-      setPackets(prev => {
-        const next = [...prev, {
-          id: Math.random(),
-          x: 0,
-          y: 20 + Math.random() * 60, // lane
-          speed: isAttack ? 3 + Math.random() * 4 : 1 + Math.random() * 2,
-          color: isAttack ? '#ef4444' : proto.color,
-          width: isAttack ? 3 : 2,
-          protocol: isAttack ? 'ATTACK' : proto.name,
-        }]
-        // Keep max 100 packets
-        if (next.length > 100) next.shift()
-        return next
+      const packets = packetsRef.current
+      packets.push({
+        id: Math.random(),
+        x: 0,
+        y: 20 + Math.random() * 60, // lane
+        speed: isAttack ? 3 + Math.random() * 4 : 1 + Math.random() * 2,
+        color: isAttack ? '#ef4444' : proto.color,
+        width: isAttack ? 3 : 2,
+        protocol: isAttack ? 'ATTACK' : proto.name,
       })
+      if (packets.length > 100) packets.shift()
 
-      // Update stats
-      setStats(prev => {
-        const key = attackActive && Math.random() > 0.7 ? 'attack' : proto.name.toLowerCase()
-        return {
-          ...prev,
-          [key]: prev[key] + 1,
-          total: prev.total + 1,
-        }
-      })
+      const key = isAttack ? 'attack' : proto.name.toLowerCase()
+      tallyRef.current[key] += 1
+      tallyRef.current.total += 1
     }, 50)
 
     return () => clearInterval(interval)
-  }, [attackActive])
-
-  // Animate packets
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect()
-    canvas.width = rect.width * dpr
-    canvas.height = rect.height * dpr
-    ctx.scale(dpr, dpr)
   }, [])
 
+  // Size the canvas to its box, and keep it sized on resize
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const resize = () => {
+      const ctx = canvas.getContext('2d')
+      const dpr = window.devicePixelRatio || 1
+      const rect = canvas.getBoundingClientRect()
+      canvas.width = rect.width * dpr
+      canvas.height = rect.height * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+    resize()
+    const ro = new ResizeObserver(resize)
+    ro.observe(canvas)
+    return () => ro.disconnect()
+  }, [])
+
+  // Animate packets — one rAF loop, zero re-renders
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
-    const rect = canvas.getBoundingClientRect()
-    const w = rect.width
-    const h = rect.height
+    let raf
 
-    // Clear
-    ctx.clearRect(0, 0, w, h)
+    const draw = () => {
+      const rect = canvas.getBoundingClientRect()
+      const w = rect.width
+      const h = rect.height
 
-    // Background grid
-    const isDark = document.documentElement.classList.contains('dark')
-    ctx.strokeStyle = isDark ? '#1e293b' : '#e2e8f0'
-    ctx.lineWidth = 0.5
-    for (let y = 0; y < h; y += 30) {
-      ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(w, y)
-      ctx.stroke()
-    }
+      ctx.clearRect(0, 0, w, h)
 
-    // Draw packets
-    setPackets(prev => {
-      const next = prev.map(p => ({ ...p, x: p.x + p.speed }))
-      const remaining = next.filter(p => p.x < w + 10)
+      // Background grid
+      const isDark = document.documentElement.classList.contains('dark')
+      ctx.strokeStyle = isDark ? '#1e293b' : '#e2e8f0'
+      ctx.lineWidth = 0.5
+      for (let y = 0; y < h; y += 30) {
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(w, y)
+        ctx.stroke()
+      }
 
-      remaining.forEach(p => {
+      // Advance and cull in place
+      const next = []
+      for (const p of packetsRef.current) {
+        p.x += p.speed
+        if (p.x < w + 10) next.push(p)
+      }
+      packetsRef.current = next
+
+      for (const p of next) {
         ctx.beginPath()
         ctx.arc(p.x, p.y, p.width, 0, Math.PI * 2)
         ctx.fillStyle = p.color + 'cc'
@@ -104,21 +118,20 @@ export default function TrafficVisualizer({ throughput = 47200 }) {
         ctx.strokeStyle = p.color + '40'
         ctx.lineWidth = p.width * 0.5
         ctx.stroke()
-      })
-
-      if (remaining.length !== prev.length) {
-        setPackets(remaining)
       }
-      return remaining
-    })
-  }, [packets])
 
-  // Reset stats periodically
+      raf = requestAnimationFrame(draw)
+    }
+
+    raf = requestAnimationFrame(draw)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  // Publish tallies to the UI a few times a second, and roll the window over
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats({ tcp: 0, udp: 0, dns: 0, icmp: 0, total: 0, attack: 0 })
-    }, 5000)
-    return () => clearInterval(interval)
+    const publish = setInterval(() => setStats({ ...tallyRef.current }), 250)
+    const reset = setInterval(() => { tallyRef.current = { ...EMPTY_STATS } }, 5000)
+    return () => { clearInterval(publish); clearInterval(reset) }
   }, [])
 
   return (
