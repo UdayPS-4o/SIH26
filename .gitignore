@@ -58,7 +58,6 @@ meili_data/
 secrets/
 
 # IDE / Editor Files
-.vscode/
 .idea/
 *.swp
 *.swo
