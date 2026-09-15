@@ -57,6 +57,9 @@ export function CrossCheckPage() {
           />
         }
       />
+      <div className="flex justify-end -mt-2 mb-2">
+        <Badge tone="neutral" size="sm">Demo data</Badge>
+      </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
