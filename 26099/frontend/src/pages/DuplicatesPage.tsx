@@ -14,7 +14,7 @@
  * move would turn the drag into a slideshow.
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { ArrowUUpLeft, CaretDown, Check, CheckCircle, Checks, Lightbulb, Question, X, XCircle } from '@phosphor-icons/react'
 import {
@@ -36,6 +36,7 @@ import {
   Stat,
   VerdictChip,
 } from '@/components/ui'
+import { cx } from '@/components/ui/tokens'
 import { ThresholdHistogram, type HistogramBucket } from '@/components/ui/charts'
 import { ByMode, SimpleOnly, TechnicalOnly } from '@/components/Gate'
 import NothingLoaded from '@/components/NothingLoaded'
@@ -718,21 +719,28 @@ function PairRow({
           <Side record={pair.right} norm={pair.rightNorm} only={pair.rightOnlyTokens} />
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          {decision ? (
-            <Chip tone={decision === 'approved' ? 'positive' : 'negative'}>
-              {decision === 'approved' ? 'You agreed' : 'You rejected'}
-            </Chip>
-          ) : null}
-          <VerdictChip verdict={pair.verdict} label={SHORT_VERDICT[pair.verdict]} />
-          <Num size="sm" className="w-[46px] text-right text-ink">
-            {pair.score.combined.toFixed(3)}
-          </Num>
-          <CaretDown
-            size={16}
-            weight="regular"
-            className={open ? 'text-ink-2' : '-rotate-90 text-ink-3'}
-          />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {decision ? (
+              <Chip tone={decision === 'approved' ? 'positive' : 'negative'}>
+                {decision === 'approved' ? 'You agreed' : 'You rejected'}
+              </Chip>
+            ) : null}
+            {decision === 'approved' ? (
+              <Mono className="rounded-md border border-positive-edge bg-positive-bg px-2 py-0.5 text-[12px] font-semibold text-positive">
+                {pair.proposedCode}
+              </Mono>
+            ) : null}
+            <VerdictChip verdict={pair.verdict} label={SHORT_VERDICT[pair.verdict]} />
+            <Num size="sm" className="w-[46px] text-right text-ink">
+              {pair.score.combined.toFixed(3)}
+            </Num>
+            <CaretDown
+              size={16}
+              weight="regular"
+              className={open ? 'text-ink-2' : '-rotate-90 text-ink-3'}
+            />
+          </div>
         </div>
       </button>
 
