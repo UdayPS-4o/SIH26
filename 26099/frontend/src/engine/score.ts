@@ -22,7 +22,7 @@ import {
 export const DEFAULT_WEIGHTS: ScoringWeights = { lexical: 0.3, attribute: 0.45, numeric: 0.25 }
 
 /** Above this a pair is treated as the same item. Between the two it needs a human. */
-export const DEFAULT_ACCEPT = 0.88
+export const DEFAULT_ACCEPT = 0.90
 export const DEFAULT_REVIEW = 0.72
 
 /** Sub-scores are rounded to two decimals before combination so that what is shown
@@ -258,11 +258,11 @@ export function verdictFor(
   combined: number,
   accept: number,
   review: number,
-  unexplained = 0,
+  _unexplained = 0,
   conflicts: AttributeConflict[] = [],
 ): Verdict {
   if (decisiveConflicts(conflicts).length > 0) return 'different'
-  if (combined >= accept) return unexplained > 0 ? 'review' : 'same'
+  if (combined >= accept) return 'same'
   if (combined >= review) return 'review'
   return 'different'
 }
