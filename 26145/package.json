@@ -1,0 +1,16 @@
+{
+  "name": "cyber-threat-detection-26145",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "backend\\venv\\Scripts\\python.exe backend\\main.py",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "install:backend": "python -m venv backend/venv && backend\\venv\\Scripts\\python.exe -m pip install -r backend/requirements.txt",
+    "install:frontend": "npm --prefix frontend install",
+    "install:all": "npm run install:backend && npm run install:frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

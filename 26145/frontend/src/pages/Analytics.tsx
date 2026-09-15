@@ -184,7 +184,7 @@ function SectionTitle({
 /*  Main Analytics page                                                */
 /* ------------------------------------------------------------------ */
 
-const Analytics: React.FC<{ darkMode: boolean }> = () => {
+const Analytics: React.FC<{ darkMode?: boolean }> = () => {
   const [alertsTrend, setAlertsTrend] = useState<{ time: string; alerts: number }[]>([]);
   const [flowSeries, setFlowSeries] = useState<{ time: string; flows: number }[]>([]);
   const [threatTypeData, setThreatTypeData] = useState<{ name: string; count: number; severity: string }[]>([]);

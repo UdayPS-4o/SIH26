@@ -1,102 +1,126 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, Fragment, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Shield } from 'lucide-react';
+import {
+  LayoutDashboard,
+  ShieldAlert,
+  Network,
+  BarChart3,
+  Brain,
+  FolderOpen,
+  Activity,
+  Plug,
+  Settings,
+  Zap,
+  Search,
+} from 'lucide-react';
 
-interface NavItem {
-  label: string;
-  path: string;
-  icon: React.ReactNode;
-}
-
-const navItems: NavItem[] = [
-  { label: 'Dashboard', path: '/', icon: <span className="text-lg">📊</span> },
-  { label: 'Live Threats', path: '/live-threats', icon: <span className="text-lg">⚡</span> },
-  { label: 'Network Map', path: '/network-map', icon: <span className="text-lg">🌐</span> },
-  { label: 'Analytics', path: '/analytics', icon: <span className="text-lg">📈</span> },
-  { label: 'AI Analyzer', path: '/ai-analyzer', icon: <span className="text-lg">🤖</span> },
+const NAV_ITEMS = [
+  { label: 'Dashboard', path: '/', icon: LayoutDashboard, key: 'dash' },
+  { label: 'Live Threats', path: '/live-threats', icon: ShieldAlert, key: 'threats', badge: 'LIVE' },
+  { label: 'Network Map', path: '/network-map', icon: Network, key: 'netmap' },
+  { label: 'Analytics', path: '/analytics', icon: BarChart3, key: 'analytics' },
+  { label: 'AI Analyzer', path: '/ai-analyzer', icon: Brain, key: 'ai' },
+  { label: 'Evidence', path: '/materials', icon: FolderOpen, key: 'materials' },
+  { label: 'Activity Log', path: '/activity', icon: Activity, key: 'activity' },
+  { label: 'Integrations', path: '/integrations', icon: Plug, key: 'integrations' },
+  { label: 'Administration', path: '/admin', icon: Settings, key: 'admin' },
 ];
 
 interface SidebarProps {
-  isCollapsed: boolean;
-  onToggleCollapse: () => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
 
   return (
     <>
       {/* Mobile overlay */}
-      {!isCollapsed && (
+      {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onToggleCollapse}
+          onClick={onClose}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 200,
+          }}
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`
-          fixed top-0 left-0 z-50 h-screen
-          bg-navy-800 border-r border-slate-800
-          transition-all duration-300 ease-in-out
-          ${isCollapsed ? '-translate-x-full lg:translate-x-0 lg:w-16' : 'translate-x-0 w-64'}
-          flex flex-col
-        `}
+        className="sidebar"
+        style={{
+          transform: isOpen ? 'translateX(0)' : undefined,
+        }}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between px-4 h-16 border-b border-slate-800">
-          {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <Shield className="text-brand-blue" size={28} />
-              <div>
-                <h1 className="text-lg font-bold text-white tracking-tight">Ekadhara</h1>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider">Threat Detection</p>
-              </div>
+        <div className="sidebar-header">
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">
+              <ShieldAlert size={18} />
             </div>
-          )}
-          <button
-            onClick={onToggleCollapse}
-            className="p-2 rounded-lg hover:bg-navy-700 text-slate-400 hover:text-white transition-colors lg:hidden"
-          >
-            {isCollapsed ? <Menu size={20} /> : <X size={20} />}
-          </button>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>
+                EKADHARA
+              </div>
+              <div className="sidebar-version">v2.1.0 — SIH26</div>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
-          {navItems.map((item) => {
+        <nav className="sidebar-section" style={{ flex: 1, padding: '12px' }}>
+          <div className="sidebar-section-label">Platform</div>
+          {NAV_ITEMS.map(item => {
             const isActive = location.pathname === item.path;
+            const Icon = item.icon;
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg
-                  transition-all duration-150 group
-                  ${isActive
-                    ? 'bg-brand-blue/10 text-brand-blue border border-brand-blue/20'
-                    : 'text-slate-400 hover:text-white hover:bg-navy-700 border border-transparent'
-                  }
-                  ${isCollapsed ? 'lg:justify-center' : ''}
-                `}
+                className={`nav-item ${isActive ? 'active' : ''}`}
+                onClick={onClose}
               >
-                <span className={isActive ? 'text-brand-blue' : 'text-slate-500 group-hover:text-white'}>
-                  {item.icon}
-                </span>
-                {!isCollapsed && (
-                  <span className="text-sm font-medium">{item.label}</span>
+                <Icon size={18} />
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {item.badge && (
+                  <span style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '9999px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: 'var(--red-600)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    letterSpacing: '0.5px',
+                  }}>
+                    {item.badge}
+                  </span>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Bottom */}
-        <div className="p-3 border-t border-slate-800">
-          <p className="text-[10px] text-slate-500 text-center px-3">
-            {!isCollapsed ? 'v1.0 — SIH26' : 'v1.0'}
-          </p>
+        {/* Footer */}
+        <div className="sidebar-footer">
+          <div style={{
+            padding: '12px',
+            background: 'var(--bg-muted)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border-subtle)',
+          }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Problem Statement</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+              PS-26145 · NTRO
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
+              Smart India Hackathon 2026
+            </div>
+          </div>
         </div>
       </aside>
     </>
