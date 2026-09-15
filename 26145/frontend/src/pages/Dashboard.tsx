@@ -97,7 +97,6 @@ const SEVERITY_CONFIG: Record<string, { color: string; bg: string; label: string
    ══════════════════════════════════════════════════════════════════════ */
 
 const Dashboard: React.FC = () => {
-  const [booted, setBooted] = useState(() => !sessionStorage.getItem('ekadhara-booted'));
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [flows, setFlows] = useState<Flow[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -105,9 +104,8 @@ const Dashboard: React.FC = () => {
   const [totalProcessed, setTotalProcessed] = useState(0);
   const startTimeRef = useRef(Date.now());
 
-  /* ── Boot ──────────────────────────────────────────────────────── */
+  /* ── Backend ─────────────────────────────────────────────────────── */
   useEffect(() => {
-    if (booted) return;
     const backend = mockBackend;
 
     const handleAlert = (alert: Alert): void => {
