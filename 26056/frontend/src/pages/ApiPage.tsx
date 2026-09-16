@@ -35,6 +35,7 @@ interface Endpoint {
   note: string
   admin?: boolean
   queryParams?: { name: string; type: string; required: boolean; example?: string }[]
+  bodyExample?: Record<string, unknown>
   tag: string
 }
 
@@ -339,6 +340,20 @@ const ENDPOINTS: Endpoint[] = [
     path: '/api/v1/scraper/config',
     summary: 'Scraper config',
     note: 'active scraper configuration',
+    tag: 'Scraper',
+  },
+  {
+    method: 'POST',
+    path: '/api/v1/scraper/live-scrape',
+    summary: 'Live scrape',
+    note: 'on-demand real fare collection via Playwright',
+    admin: true,
+    bodyExample: {
+      sector: 'DEL-BOM',
+      leadDays: 15,
+      sources: ['cleartrip', 'makemytrip'],
+      maxQuotes: 5,
+    },
     tag: 'Scraper',
   },
   {
@@ -753,7 +768,12 @@ export default function ApiPage() {
         headers['Authorization'] = `Bearer ${user.token}`
       }
 
-      const res = await fetch(url, { method: selected.method, headers })
+      const opts: RequestInit = { method: selected.method, headers }
+      if (selected.method !== 'GET' && selected.bodyExample) {
+        opts.body = JSON.stringify(selected.bodyExample)
+      }
+
+      const res = await fetch(url, opts)
       const timing = Math.round(performance.now() - start)
 
       if (!res.ok) {
@@ -766,7 +786,6 @@ export default function ApiPage() {
       setResponse({ data, status: res.status, timing, error: null })
     } catch {
       const timing = Math.round(performance.now() - start)
-      // Backend unavailable — return mock data
       const mockKey = `${selected.method} ${selected.path}`
       const mockData = MOCK_RESPONSES[mockKey] ?? {
         _mock: true,

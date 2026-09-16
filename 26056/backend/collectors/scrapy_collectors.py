@@ -89,6 +89,21 @@ class CleartripCollector:
             logger.warning("Playwright not installed — Cleartrip collector cannot run")
             return []
 
+        stealth_s = None
+        try:
+            from playwright_stealth import Stealth
+            stealth_s = Stealth(
+                chrome_runtime=True,
+                sec_ch_ua=True,
+                navigator_user_agent_data=True,
+                webgl_vendor=True,
+                webgl_renderer_override="Intel Iris Xe Graphics",
+                navigator_vendor_override="Google Inc.",
+                sec_ch_ua_override='"Chromium";v="131", "Google Chrome";v="131", "Not_A Brand";v="99"',
+            )
+        except ImportError:
+            pass
+
         origin, dest = sector.split("-")
         dep = datetime.now(timezone.utc).strftime("%d/%m/%Y")
         url = (
@@ -106,6 +121,7 @@ class CleartripCollector:
                     '--disable-blink-features=AutomationControlled',
                     '--disable-web-security',
                     '--disable-features=IsolateOrigins,site-per-process',
+                    '--no-sandbox',
                 ],
             )
             context = browser.new_context(
@@ -121,14 +137,16 @@ class CleartripCollector:
                 permissions=['geolocation'],
             )
             page = context.new_page()
-            # Remove navigator.webdriver and other automation fingerprints
-            page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                delete navigator.__proto__.webdriver;
-                window.chrome = { runtime: {} };
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-                Object.defineProperty(navigator, 'languages', { get: () => ['en-IN', 'en', 'hi'] });
-            """)
+            if stealth_s:
+                stealth_s.apply_stealth_sync(context)
+            else:
+                page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                    delete navigator.__proto__.webdriver;
+                    window.chrome = { runtime: {} };
+                    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                    Object.defineProperty(navigator, 'languages', { get: () => ['en-IN', 'en', 'hi'] });
+                """)
             try:
                 with page.expect_response(
                     lambda r: "/flight/search/v2" in r.url and r.status == 200,
@@ -229,6 +247,21 @@ class MakeMyTripCollector:
             logger.warning("Playwright not installed — MakeMyTrip collector cannot run")
             return []
 
+        stealth_s = None
+        try:
+            from playwright_stealth import Stealth
+            stealth_s = Stealth(
+                chrome_runtime=True,
+                sec_ch_ua=True,
+                navigator_user_agent_data=True,
+                webgl_vendor=True,
+                webgl_renderer_override="Intel Iris Xe Graphics",
+                navigator_vendor_override="Google Inc.",
+                sec_ch_ua_override='"Chromium";v="131", "Google Chrome";v="131", "Not_A Brand";v="99"',
+            )
+        except ImportError:
+            pass
+
         origin, dest = sector.split("-")
         dep = datetime.now(timezone.utc).strftime("%d%m%Y")
         url = (
@@ -244,6 +277,7 @@ class MakeMyTripCollector:
                     '--disable-blink-features=AutomationControlled',
                     '--disable-web-security',
                     '--disable-features=IsolateOrigins,site-per-process',
+                    '--no-sandbox',
                 ],
             )
             context = browser.new_context(
@@ -259,13 +293,16 @@ class MakeMyTripCollector:
                 permissions=['geolocation'],
             )
             page = context.new_page()
-            page.add_init_script("""
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-                delete navigator.__proto__.webdriver;
-                window.chrome = { runtime: {} };
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-                Object.defineProperty(navigator, 'languages', { get: () => ['en-IN', 'en', 'hi'] });
-            """)
+            if stealth_s:
+                stealth_s.apply_stealth_sync(context)
+            else:
+                page.add_init_script("""
+                    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                    delete navigator.__proto__.webdriver;
+                    window.chrome = { runtime: {} };
+                    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+                    Object.defineProperty(navigator, 'languages', { get: () => ['en-IN', 'en', 'hi'] });
+                """)
             try:
                 page.goto(url, wait_until="domcontentloaded", timeout=45_000)
                 page.wait_for_timeout(3_000)

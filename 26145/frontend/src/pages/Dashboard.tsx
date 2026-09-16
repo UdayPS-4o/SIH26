@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Alert, Flow, Stats } from '../types';
-import { mockBackend } from '../lib/mockBackend';
 import {
   Shield, Activity, Gauge, Clock, Network, AlertTriangle,
-  TrendingUp, Zap, Eye,
+  TrendingUp, Zap, Eye, Crosshair, Radar, Scan,
 } from 'lucide-react';
 
 /* ══════════════════════════════════════════════════════════════════════
-   HELPERS
+   CONSTANTS & HELPERS
    ══════════════════════════════════════════════════════════════════════ */
 
 const formatUptime = (secs: number): string => {
@@ -28,21 +26,407 @@ const formatBytes = (bytes: number): string => {
   return `${bytes}B`;
 };
 
+const THREAT_TYPES = [
+  'DDoS', 'Data Exfiltration', 'DGA', 'Beaconing',
+  'Brute Force', 'Port Scan', 'Malware', 'Phishing',
+  'SQL Injection', 'XSS', 'Ransomware', 'Zero-Day',
+];
+
 const SEVERITY_CONFIG: Record<string, { color: string; bg: string; label: string; glow: string }> = {
-  critical: { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.08)', label: 'CRITICAL', glow: 'rgba(239, 68, 68, 0.4)' },
-  high:     { color: '#f97316', bg: 'rgba(249, 115, 22, 0.08)', label: 'HIGH', glow: 'rgba(249, 115, 22, 0.3)' },
-  medium:   { color: '#eab308', bg: 'rgba(234, 179, 8, 0.08)', label: 'MEDIUM', glow: 'rgba(234, 179, 8, 0.2)' },
-  low:      { color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.08)', label: 'LOW', glow: 'rgba(6, 182, 212, 0.2)' },
+  critical: { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)', label: 'CRITICAL', glow: 'rgba(239, 68, 68, 0.5)' },
+  high:     { color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)', label: 'HIGH', glow: 'rgba(249, 115, 22, 0.4)' },
+  medium:   { color: '#eab308', bg: 'rgba(234, 179, 8, 0.12)', label: 'MEDIUM', glow: 'rgba(234, 179, 8, 0.3)' },
+  low:      { color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)', label: 'LOW', glow: 'rgba(6, 182, 212, 0.3)' },
 };
 
-const SECTION_LABEL_STYLE: React.CSSProperties = {
+const SECTION_LABEL: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 700,
-  letterSpacing: '2px',
+  letterSpacing: '3px',
   textTransform: 'uppercase',
   color: '#00d4ff',
   fontFamily: '"JetBrains Mono", monospace',
   marginBottom: 4,
+};
+
+const CARD_BASE: React.CSSProperties = {
+  background: '#0a1118',
+  border: '1px solid #1a2736',
+  borderRadius: 8,
+  padding: 20,
+  position: 'relative',
+  overflow: 'hidden',
+};
+
+const HOVER_GLOW: React.CSSProperties = {
+  transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   MOCK DATA GENERATOR
+   ══════════════════════════════════════════════════════════════════════ */
+
+const generateMockData = () => {
+  const now = Date.now();
+  const alerts: Array<{
+    id: string;
+    timestamp: number;
+    threat_type: string;
+    severity: string;
+    src_ip: string;
+    dst_ip: string;
+    confidence: number;
+  }> = [];
+  for (let i = 0; i < 24; i++) {
+    alerts.push({
+      id: `ALT-${1000 + i}`,
+      timestamp: now - i * 34000 - Math.floor(Math.random() * 10000),
+      threat_type: THREAT_TYPES[Math.floor(Math.random() * THREAT_TYPES.length)],
+      severity: ['critical', 'high', 'medium', 'low'][Math.floor(Math.random() * 4)],
+      src_ip: `${10 + Math.floor(Math.random() * 240)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+      dst_ip: `${192 + Math.floor(Math.random() * 16)}.168.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+      confidence: 55 + Math.floor(Math.random() * 45),
+    });
+  }
+
+  const threatCounts: Record<string, number> = {};
+  THREAT_TYPES.forEach(t => { threatCounts[t] = Math.floor(Math.random() * 45) + 5; });
+  threatCounts['DDoS'] = 87;
+  threatCounts['Data Exfiltration'] = 42;
+  threatCounts['DGA'] = 38;
+  threatCounts['Beaconing'] = 35;
+  threatCounts['Brute Force'] = 62;
+  threatCounts['Port Scan'] = 71;
+  threatCounts['Malware'] = 29;
+  threatCounts['Phishing'] = 18;
+
+  const severityCounts = { critical: 23, high: 47, medium: 83, low: 156 };
+
+  return { alerts, threatCounts, severityCounts };
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   ANIMATED COMPONENTS
+   ══════════════════════════════════════════════════════════════════════ */
+
+const PulsingDot: React.FC<{ color?: string; size?: number }> = ({ color = '#22c55e', size = 8 }) => (
+  <span style={{
+    width: size,
+    height: size,
+    borderRadius: '50%',
+    background: color,
+    boxShadow: `0 0 ${size}px ${color}80`,
+    animation: 'wtd-pulse 1.5s ease-in-out infinite',
+    display: 'inline-block',
+    flexShrink: 0,
+  }} />
+);
+
+const ProgressBar: React.FC<{
+  value: number;
+  max?: number;
+  height?: number;
+  animated?: boolean;
+  color?: string;
+  showLabel?: boolean;
+}> = ({ value, max = 100, height = 6, animated = true, color = '#00d4ff', showLabel = false }) => {
+  const pct = Math.min((value / max) * 100, 100);
+  return (
+    <div style={{ position: 'relative', flex: 1 }}>
+      <div style={{
+        width: '100%',
+        height,
+        background: '#1a2736',
+        borderRadius: height / 2,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${pct}%`,
+          height: '100%',
+          background: `linear-gradient(90deg, #00d4ff, #0088cc)`,
+          borderRadius: height / 2,
+          boxShadow: `0 0 8px ${color}40`,
+          transition: 'width 1s ease-out',
+          position: 'relative',
+        }}>
+          {animated && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+              animation: 'wtd-scan 2s ease-in-out infinite',
+            }} />
+          )}
+        </div>
+      </div>
+      {showLabel && (
+        <span style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: '#00d4ff',
+          fontFamily: '"JetBrains Mono", monospace',
+          marginLeft: 10,
+          minWidth: 40,
+        }}>
+          {pct.toFixed(0)}%
+        </span>
+      )}
+    </div>
+  );
+};
+
+const ConfidenceBar: React.FC<{ value: number }> = ({ value }) => {
+  const color = value > 85 ? '#22c55e' : value > 60 ? '#eab308' : '#ef4444';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{
+        width: 48,
+        height: 4,
+        background: '#1a2736',
+        borderRadius: 2,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${value}%`,
+          height: '100%',
+          background: color,
+          borderRadius: 2,
+        }} />
+      </div>
+      <span style={{
+        fontSize: 10,
+        fontWeight: 700,
+        color,
+        fontFamily: '"JetBrains Mono", monospace',
+      }}>
+        {value.toFixed(0)}%
+      </span>
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   BAR CHART — Threat Types Breakdown
+   ══════════════════════════════════════════════════════════════════════ */
+
+const BarChart: React.FC<{ data: Array<{ label: string; value: number }> }> = ({ data }) => {
+  const maxVal = useMemo(() => Math.max(...data.map(d => d.value), 1), [data]);
+  const barColors = useMemo(() => {
+    const colors = ['#00d4ff', '#0088cc', '#06b6d4', '#0ea5e9', '#22c55e', '#a855f7', '#f97316', '#eab308', '#ef4444'];
+    return data.map((_, i) => colors[i % colors.length]);
+  }, [data]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Y-axis grid labels */}
+      {[0, 25, 50, 75, 100].map(tick => (
+        <div key={tick} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          height: 28,
+        }}>
+          <span style={{
+            fontSize: 9,
+            color: '#334155',
+            fontFamily: '"JetBrains Mono", monospace',
+            width: 24,
+            textAlign: 'right',
+            flexShrink: 0,
+          }}>
+            {Math.round((tick / 100) * maxVal)}
+          </span>
+          <div style={{
+            flex: 1,
+            height: 1,
+            background: tick > 0 ? '#1a2736' : 'transparent',
+          }} />
+        </div>
+      ))}
+      {/* Bars */}
+      {data.map((d, i) => {
+        const pct = (d.value / maxVal) * 100;
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 9,
+              color: '#64748b',
+              fontFamily: '"JetBrains Mono", monospace',
+              width: 24,
+              textAlign: 'right',
+              flexShrink: 0,
+              letterSpacing: '0.5px',
+              textTransform: 'capitalize',
+            }}>
+              {d.value}
+            </span>
+            <div style={{
+              flex: 1,
+              height: 22,
+              background: '#0d1520',
+              borderRadius: 3,
+              overflow: 'hidden',
+              position: 'relative',
+            }}>
+              <div style={{
+                width: `${pct}%`,
+                height: '100%',
+                background: `linear-gradient(90deg, ${barColors[i]}40, ${barColors[i]}cc)`,
+                borderRadius: 3,
+                transition: 'width 1.2s ease-out',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                paddingRight: 6,
+                minWidth: pct > 10 ? 'auto' : 0,
+              }}>
+                {pct > 12 && (
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: '#e0e8f0',
+                    fontFamily: '"JetBrains Mono", monospace',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                  }}>
+                    {d.value}
+                  </span>
+                )}
+              </div>
+            </div>
+            <span style={{
+              fontSize: 9,
+              color: '#64748b',
+              fontFamily: '"JetBrains Mono", monospace',
+              width: 80,
+              flexShrink: 0,
+              letterSpacing: '0.3px',
+              textTransform: 'uppercase',
+            }}>
+              {d.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   DONUT CHART — Severity Distribution
+   ══════════════════════════════════════════════════════════════════════ */
+
+const DonutChart: React.FC<{ data: Array<{ label: string; value: number; color: string }> }> = ({ data }) => {
+  const svgSize = 160;
+  const cx = svgSize / 2;
+  const cy = svgSize / 2;
+  const outerR = 70;
+  const innerR = 44;
+
+  const segments = useMemo(() => {
+    const total = data.reduce((s, d) => s + d.value, 0);
+    if (total === 0) return [];
+    let angle = -90;
+    return data.map(d => {
+      const slice = (d.value / total) * 360;
+      const startAngle = angle;
+      const endAngle = angle + slice;
+      angle = endAngle;
+      return { ...d, startAngle, endAngle, pct: ((d.value / total) * 100).toFixed(1) };
+    });
+  }, [data]);
+
+  const polarToXY = (angleDeg: number, r: number) => {
+    const rad = (angleDeg * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  };
+
+  const buildArcPath = (startAngle: number, endAngle: number, outer: number, inner: number) => {
+    const outerStart = polarToXY(startAngle, outer);
+    const outerEnd = polarToXY(endAngle, outer);
+    const innerStart = polarToXY(startAngle, inner);
+    const innerEnd = polarToXY(endAngle, inner);
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+    return [
+      `M ${outerStart.x} ${outerStart.y}`,
+      `A ${outer} ${outer} 0 ${largeArc} 1 ${outerEnd.x} ${outerEnd.y}`,
+      `L ${innerEnd.x} ${innerEnd.y}`,
+      `A ${inner} ${inner} 0 ${largeArc} 0 ${innerStart.x} ${innerStart.y}`,
+      'Z',
+    ].join(' ');
+  };
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
+        {/* Background ring */}
+        <circle cx={cx} cy={cy} r={outerR} fill="none" stroke="#1a2736" strokeWidth={outerR - innerR} />
+        {/* Segments */}
+        {segments.map((seg, i) => (
+          <path
+            key={i}
+            d={buildArcPath(seg.startAngle, seg.endAngle + 1, outerR, innerR)}
+            fill={seg.color}
+            opacity={0.85}
+            style={{ filter: `drop-shadow(0 0 3px ${seg.color}60)`, transition: 'all 0.3s' }}
+          />
+        ))}
+        {/* Center text */}
+        <text x={cx} y={cy - 6} textAnchor="middle" fill="#e0e8f0" fontSize={18} fontWeight={800} fontFamily='"JetBrains Mono", monospace'>
+          {total}
+        </text>
+        <text x={cx} y={cy + 10} textAnchor="middle" fill="#64748b" fontSize={8} fontWeight={700} letterSpacing="2px" fontFamily='"JetBrains Mono", monospace'>
+          TOTAL
+        </text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {data.map((d, i) => {
+          const segPct = segments[i]?.pct || '0.0';
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: 2,
+                background: d.color,
+                boxShadow: `0 0 4px ${d.color}60`,
+                flexShrink: 0,
+              }} />
+              <span style={{
+                fontSize: 10,
+                color: '#94a3b8',
+                fontFamily: '"JetBrains Mono", monospace',
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+                minWidth: 70,
+              }}>
+                {d.label}
+              </span>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: '#e0e8f0',
+                fontFamily: '"JetBrains Mono", monospace',
+              }}>
+                {d.value}
+              </span>
+              <span style={{
+                fontSize: 9,
+                color: '#475569',
+                fontFamily: '"JetBrains Mono", monospace',
+              }}>
+                ({segPct}%)
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 };
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -50,53 +434,14 @@ const SECTION_LABEL_STYLE: React.CSSProperties = {
    ══════════════════════════════════════════════════════════════════════ */
 
 const Dashboard: React.FC = () => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [flows, setFlows] = useState<Flow[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
   const [uptime, setUptime] = useState(0);
-  const [totalProcessed, setTotalProcessed] = useState(0);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [isScanning, setIsScanning] = useState(true);
   const startTimeRef = useRef(Date.now());
 
-  /* ── Backend ─────────────────────────────────────────────────────── */
-  useEffect(() => {
-    const backend = mockBackend;
+  const { alerts, threatCounts, severityCounts } = useMemo(() => generateMockData(), []);
 
-    const handleAlert = (alert: Alert): void => {
-      setAlerts(prev => [alert, ...prev].slice(0, 200));
-    };
-    const handleFlow = (flow: Flow): void => {
-      setFlows(prev => [flow, ...prev].slice(0, 100));
-      setTotalProcessed(c => c + 1);
-    };
-    const handleStats = (s: Stats): void => {
-      setStats(s);
-    };
-
-    backend.onAlert(handleAlert);
-    backend.onFlow(handleFlow);
-    backend.onStats(handleStats);
-    backend.start();
-
-    Promise.all([
-      backend.getFlows(50),
-      backend.getAlerts(50, 0),
-      backend.getStats(),
-    ]).then(([initialFlows, initialAlerts, initialStats]) => {
-      setFlows(initialFlows);
-      setAlerts(initialAlerts);
-      setStats(initialStats);
-    });
-
-    startTimeRef.current = Date.now();
-    return () => {
-      backend.off('alert', handleAlert);
-      backend.off('flow', handleFlow);
-      backend.off('stats', handleStats);
-      backend.stop();
-    };
-  }, []);
-
-  /* ── Uptime ────────────────────────────────────────────────────── */
+  /* ── Uptime tick ──────────────────────────────────────────────────── */
   useEffect(() => {
     const iv = setInterval(() => {
       setUptime(Math.floor((Date.now() - startTimeRef.current) / 1000));
@@ -104,67 +449,52 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(iv);
   }, []);
 
-  /* ── Derived Data ─────────────────────────────────────────────── */
-  const attackFlows = useMemo(() => flows.filter(f => f.isAttack), [flows]);
-  const recentAlerts = useMemo(() => alerts.slice(0, 20), [alerts]);
-  const recentFlows = useMemo(() => flows.slice(0, 15), [flows]);
+  /* ── Scan progress animation ──────────────────────────────────────── */
+  useEffect(() => {
+    let frame: number;
+    const animate = () => {
+      setScanProgress(prev => {
+        if (prev >= 100) {
+          setIsScanning(false);
+          return 100;
+        }
+        // Slowly advance, then complete
+        const increment = prev < 70 ? 0.15 : prev < 90 ? 0.05 : 0.02;
+        return Math.min(prev + increment + Math.random() * 0.1, 100);
+      });
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
-  const threatCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    alerts.forEach(a => { counts[a.threat_type] = (counts[a.threat_type] || 0) + 1; });
-    return counts;
-  }, [alerts]);
+  /* ── Derived stats ────────────────────────────────────────────────── */
+  const totalScanned = 2_847_593;
+  const threatsBlocked = alerts.filter(a => a.severity === 'critical' || a.severity === 'high').length * 137 + 8924;
+  const activeConnections = 1847 + Math.floor(Math.sin(Date.now() / 5000) * 50);
+  const alertsToday = alerts.length * 23 + 156;
+  const detectionRate = 97.3 + Math.sin(Date.now() / 8000) * 1.2;
+  const falsePositiveRate = 2.1 + Math.sin(Date.now() / 10000) * 0.5;
+  const dataProcessed = 14.7; // TB
 
-  const severityCounts = useMemo(() => {
-    const c = { critical: 0, high: 0, medium: 0, low: 0 };
-    alerts.forEach(a => { if (c.hasOwnProperty(a.severity)) c[a.severity]++; });
-    return c;
-  }, [alerts]);
+  const threatTypeData = useMemo(() =>
+    Object.entries(threatCounts)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value),
+    [threatCounts]
+  );
 
-  const threatLevel = useMemo(() => {
-    const tp = stats?.threats_per_type || {};
-    const score =
-      (tp['DDoS'] || 0) * 3 + (tp['Data Exfiltration'] || 0) * 3 +
-      (tp['DGA'] || 0) * 2 + (tp['Beaconing'] || 0) * 2 +
-      (tp['Brute Force'] || 0) * 1.5 + (tp['Port Scan'] || 0) * 1 +
-      (tp['Malware'] || 0) * 2.5 + (tp['Phishing'] || 0) * 1;
-    if (score > 150) return { level: 'CRITICAL', pct: 100, color: '#ef4444' };
-    if (score > 80) return { level: 'HIGH', pct: Math.min((score / 150) * 100, 100), color: '#f97316' };
-    if (score > 30) return { level: 'ELEVATED', pct: Math.min((score / 80) * 100, 100), color: '#eab308' };
-    return { level: 'LOW', pct: Math.min((score / 30) * 100, 100), color: '#06b6d4' };
-  }, [stats]);
+  const severityData = useMemo(() => [
+    { label: 'Critical', value: severityCounts.critical, color: '#ef4444' },
+    { label: 'High', value: severityCounts.high, color: '#f97316' },
+    { label: 'Medium', value: severityCounts.medium, color: '#eab308' },
+    { label: 'Low', value: severityCounts.low, color: '#06b6d4' },
+  ], [severityCounts]);
 
-  const alertTimeline = useMemo(() => {
-    const now = Date.now();
-    const buckets: Record<number, number> = {};
-    for (let i = 19; i >= 0; i--) buckets[now - i * 60000] = 0;
-    alerts.forEach(a => {
-      const slot = Math.floor((a.timestamp - (now - 19 * 60000)) / 60000);
-      if (slot >= 0 && slot <= 19) {
-        const key = now - (19 - slot) * 60000;
-        buckets[key] = (buckets[key] || 0) + 1;
-      }
-    });
-    return Object.entries(buckets)
-      .map(([ts, count]) => ({ time: formatTime(+ts), count }))
-      .slice(-20);
-  }, [alerts]);
-
-  const threatTypeData = useMemo(() => {
-    return Object.entries(threatCounts)
-      .map(([name, count]) => ({ label: name, value: count as number }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
-  }, [threatCounts]);
-
-  const flowsPerSec = stats?.flows_per_sec || 0;
-  const totalFlows = stats?.total_flows || flows.length;
-  const totalAlerts = stats?.total_alerts || alerts.length;
-  const avgConf = stats?.avg_confidence || 0;
-  const activeConns = stats?.active_connections || 0;
+  const recentAlerts = useMemo(() => alerts.slice(0, 15), [alerts]);
 
   /* ══════════════════════════════════════════════════════════════════
-     RENDER — Main Dashboard
+     RENDER
      ══════════════════════════════════════════════════════════════════ */
   return (
     <div style={{
@@ -172,10 +502,29 @@ const Dashboard: React.FC = () => {
       minHeight: '100vh',
       padding: '24px',
       fontFamily: '"JetBrains Mono", monospace',
-      color: '#e2e8f0',
+      color: '#e0e8f0',
       position: 'relative',
     }}>
-      {/* SYS.STATUS badge */}
+      <style>{`
+        @keyframes wtd-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.75); }
+        }
+        @keyframes wtd-scan {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        @keyframes wtd-fadein {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes wtd-typing {
+          from { width: 0; }
+          to { width: 100%; }
+        }
+      `}</style>
+
+      {/* ── SYS.STATUS Badge ────────────────────────────────────────── */}
       <div style={{
         position: 'fixed',
         top: 16,
@@ -185,78 +534,77 @@ const Dashboard: React.FC = () => {
         alignItems: 'center',
         gap: 8,
         padding: '6px 14px',
-        background: 'rgba(10, 18, 28, 0.9)',
+        background: 'rgba(10, 17, 24, 0.95)',
         border: '1px solid rgba(34, 197, 94, 0.3)',
         borderRadius: 4,
-        fontFamily: '"JetBrains Mono", monospace',
+        backdropFilter: 'blur(8px)',
       }}>
-        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '2px', color: '#94a3b8' }}>SYS.STATUS</span>
+        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '2px', color: '#64748b' }}>SYS.STATUS</span>
         <span style={{
           fontSize: 11,
           fontWeight: 700,
           color: '#22c55e',
-          textShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
           letterSpacing: '1px',
+          textShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
         }}>OPERATIONAL</span>
-        <span style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          background: '#22c55e',
-          boxShadow: '0 0 10px rgba(34, 197, 94, 0.8)',
-          animation: 'pulse-green 2s ease-in-out infinite',
-        }} />
+        <PulsingDot color="#22c55e" size={7} />
       </div>
 
-      {/* Page Header */}
-      <div style={{ marginBottom: 32, paddingBottom: 16, borderBottom: '1px solid rgba(0, 212, 255, 0.1)' }}>
+      {/* ── PAGE HEADER ─────────────────────────────────────────────── */}
+      <div style={{
+        marginBottom: 28,
+        paddingBottom: 18,
+        borderBottom: '1px solid rgba(0, 212, 255, 0.12)',
+        animation: 'wtd-fadein 0.5s ease-out',
+      }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div>
-            <div style={SECTION_LABEL_STYLE}>DASHBOARD</div>
+            <div style={SECTION_LABEL}>◈ DASHBOARD</div>
             <h1 style={{
-              fontSize: 32,
+              fontSize: 36,
               fontWeight: 800,
               color: '#00d4ff',
-              letterSpacing: '3px',
+              letterSpacing: '4px',
               fontFamily: '"JetBrains Mono", monospace',
-              margin: 0,
-              lineHeight: 1.2,
-              textShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+              margin: '4px 0 0 0',
+              lineHeight: 1.1,
+              textShadow: '0 0 30px rgba(0, 212, 255, 0.25)',
             }}>
-              EKADHARA<span style={{ color: '#64748b', fontSize: 14, fontWeight: 400, letterSpacing: '1px', marginLeft: 12 }}>v2.4.1</span>
+              WATCHTOWER
             </h1>
             <p style={{
-              fontSize: 12,
-              color: '#64748b',
-              marginTop: 4,
+              fontSize: 11,
+              color: '#475569',
+              marginTop: 6,
               fontFamily: '"JetBrains Mono", monospace',
               letterSpacing: '0.5px',
             }}>
-              PS-26145 · NTRO · SIH26 · REAL-TIME THREAT DETECTION
+              NTRO · SIH26 · NATIONAL THREAT INTELLIGENCE PLATFORM · v3.2.1
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
             <span style={{
               fontSize: 9,
               fontWeight: 700,
               letterSpacing: '2px',
               color: '#94a3b8',
-              fontFamily: '"JetBrains Mono", monospace',
             }}>LIVE</span>
+            <PulsingDot color="#22c55e" size={9} />
             <span style={{
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              background: '#22c55e',
-              boxShadow: '0 0 14px rgba(34, 197, 94, 0.9)',
-              animation: 'pulse-green 1.5s ease-in-out infinite',
-              display: 'inline-block',
-            }} />
+              fontSize: 10,
+              color: '#64748b',
+              fontFamily: '"JetBrains Mono", monospace',
+              letterSpacing: '0.5px',
+            }}>
+              {formatTime(Date.now())}
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* ══════════════════════════════════════════════════════════════
+           SECTION 1: KPI STAT CARDS
+         ══════════════════════════════════════════════════════════════ */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -265,667 +613,648 @@ const Dashboard: React.FC = () => {
       }}>
         {[
           {
-            label: 'TOTAL PROCESSED',
-            value: totalProcessed.toLocaleString(),
-            sub: `${flowsPerSec.toFixed(0)} flows/sec`,
+            label: 'Total Scanned',
+            value: totalScanned.toLocaleString(),
+            sub: `${dataProcessed} TB processed`,
             icon: Activity,
-            iconBg: 'rgba(6, 182, 212, 0.1)',
-            iconColor: '#06b6d4',
-            valueColor: '#e2e8f0',
+            iconColor: '#00d4ff',
+            iconBg: 'rgba(0, 212, 255, 0.08)',
+            progress: 78,
+            progressLabel: '78%',
+            trend: '+2.4K/s',
+            trendUp: true,
           },
           {
-            label: 'ACTIVE THREATS',
-            value: totalAlerts.toString(),
-            sub: `${attackFlows.length} flagged flows`,
+            label: 'Threats Blocked',
+            value: threatsBlocked.toLocaleString(),
+            sub: 'active countermeasures',
             icon: Shield,
-            iconBg: 'rgba(239, 68, 68, 0.1)',
             iconColor: '#ef4444',
-            valueColor: totalAlerts > 50 ? '#ef4444' : '#f97316',
-            trend: totalAlerts > 50 ? '↑ +12% from avg' : null,
-            trendColor: '#ef4444',
+            iconBg: 'rgba(239, 68, 68, 0.08)',
+            progress: 92,
+            progressLabel: '92%',
+            trend: '+12%',
+            trendUp: true,
           },
           {
-            label: 'AVG CONFIDENCE',
-            value: `${avgConf.toFixed(1)}%`,
-            sub: 'ensemble score',
-            icon: Gauge,
-            iconBg: 'rgba(168, 85, 247, 0.1)',
-            iconColor: '#a855f7',
-            valueColor: '#e2e8f0',
-            trend: avgConf > 85 ? '↑ High accuracy' : null,
-            trendColor: '#22c55e',
-          },
-          {
-            label: 'UPTIME',
-            value: formatUptime(uptime),
-            sub: 'system running',
-            icon: Clock,
-            iconBg: 'rgba(234, 179, 8, 0.1)',
-            iconColor: '#eab308',
-            valueColor: '#22c55e',
-          },
-          {
-            label: 'CONNECTIONS',
-            value: activeConns.toLocaleString(),
-            sub: 'simultaneous',
+            label: 'Active Connections',
+            value: activeConnections.toLocaleString(),
+            sub: 'simultaneous sessions',
             icon: Network,
-            iconBg: 'rgba(6, 182, 212, 0.1)',
-            iconColor: '#06b6d4',
-            valueColor: '#e2e8f0',
+            iconColor: '#a855f7',
+            iconBg: 'rgba(168, 85, 247, 0.08)',
+            progress: 65,
+            progressLabel: '65%',
+            trend: '+34',
+            trendUp: true,
           },
           {
-            label: 'CRITICAL',
-            value: severityCounts.critical.toString(),
-            sub: 'requires action',
+            label: 'Alerts Today',
+            value: alertsToday.toLocaleString(),
+            sub: 'detection events',
             icon: AlertTriangle,
-            iconBg: 'rgba(239, 68, 68, 0.1)',
-            iconColor: '#ef4444',
-            valueColor: '#ef4444',
-            trend: severityCounts.critical > 0 ? '↑ Active incidents' : null,
-            trendColor: '#ef4444',
+            iconColor: '#f97316',
+            iconBg: 'rgba(249, 115, 22, 0.08)',
+            progress: 83,
+            progressLabel: '83%',
+            trend: '+7%',
+            trendUp: true,
+          },
+          {
+            label: 'Detection Rate',
+            value: `${detectionRate.toFixed(1)}%`,
+            sub: 'model accuracy',
+            icon: Crosshair,
+            iconColor: '#22c55e',
+            iconBg: 'rgba(34, 197, 94, 0.08)',
+            progress: detectionRate,
+            progressLabel: `${detectionRate.toFixed(0)}%`,
+            trend: 'HIGH',
+            trendUp: true,
+          },
+          {
+            label: 'False Positive',
+            value: `${falsePositiveRate.toFixed(1)}%`,
+            sub: 'noise filter rate',
+            icon: Eye,
+            iconColor: '#eab308',
+            iconBg: 'rgba(234, 179, 8, 0.08)',
+            progress: 100 - falsePositiveRate,
+            progressLabel: `${(100 - falsePositiveRate).toFixed(0)}%`,
+            trend: '-0.3%',
+            trendUp: true,
           },
         ].map((stat, i) => (
-          <div key={i} style={{
-            background: 'rgba(10, 18, 28, 0.85)',
-            border: '1px solid rgba(0, 212, 255, 0.15)',
-            borderRadius: 4,
-            padding: '16px',
-            backdropFilter: 'blur(10px)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}>
+          <div
+            key={i}
+            style={{
+              ...CARD_BASE,
+              animation: `wtd-fadein 0.5s ease-out ${i * 0.08}s both`,
+              ...HOVER_GLOW,
+              cursor: 'default',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.4)';
+              e.currentTarget.style.boxShadow = `0 0 20px rgba(0, 212, 255, 0.08), inset 0 1px 0 rgba(0, 212, 255, 0.1)`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#1a2736';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            {/* Top glow line */}
             <div style={{
               position: 'absolute',
               top: 0,
               left: 0,
               right: 0,
-              height: '1px',
-              background: 'linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent)',
+              height: 1,
+              background: `linear-gradient(90deg, transparent, ${stat.iconColor}40, transparent)`,
             }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
               <div style={{
-                width: 36,
-                height: 36,
-                borderRadius: 4,
+                width: 38,
+                height: 38,
+                borderRadius: 8,
                 background: stat.iconBg,
                 color: stat.iconColor,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <stat.icon size={18} />
+                <stat.icon size={20} strokeWidth={1.5} />
               </div>
               <span style={{
                 fontSize: 10,
                 fontWeight: 700,
                 letterSpacing: '1.5px',
-                color: '#94a3b8',
-                fontFamily: '"JetBrains Mono", monospace',
-              }}>{stat.label}</span>
+                color: '#64748b',
+                fontFamily: '"Inter", "JetBrains Mono", monospace',
+              }}>
+                {stat.label.toUpperCase()}
+              </span>
             </div>
+
+            {/* BIG NUMBER */}
             <div style={{
-              fontSize: 24,
+              fontSize: 34,
               fontWeight: 800,
-              color: stat.valueColor,
+              color: '#e0e8f0',
               fontFamily: '"JetBrains Mono", monospace',
-              letterSpacing: '1px',
+              letterSpacing: '0.5px',
               lineHeight: 1,
-              marginBottom: 4,
+              marginBottom: 6,
             }}>
               {stat.value}
             </div>
+
             <div style={{
-              fontSize: 11,
-              color: '#64748b',
-              fontFamily: '"JetBrains Mono", monospace',
-              letterSpacing: '0.5px',
-            }}>{stat.sub}</div>
-            {stat.trend && (
-              <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 10,
+            }}>
+              <span style={{
                 fontSize: 10,
-                color: stat.trendColor,
+                color: '#475569',
                 fontFamily: '"JetBrains Mono", monospace',
-                marginTop: 4,
-                fontWeight: 600,
+                letterSpacing: '0.3px',
+              }}>
+                {stat.sub}
+              </span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: stat.trendUp ? '#22c55e' : '#ef4444',
+                fontFamily: '"JetBrains Mono", monospace',
                 letterSpacing: '0.5px',
-              }}>{stat.trend}</div>
-            )}
+              }}>
+                {stat.trend}
+              </span>
+            </div>
+
+            {/* Mini progress */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                flex: 1,
+                height: 4,
+                background: '#1a2736',
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${Math.min(stat.progress, 100)}%`,
+                  height: '100%',
+                  background: `linear-gradient(90deg, ${stat.iconColor}80, ${stat.iconColor})`,
+                  borderRadius: 2,
+                  boxShadow: `0 0 6px ${stat.iconColor}40`,
+                  transition: 'width 1s ease-out',
+                }} />
+              </div>
+              <span style={{
+                fontSize: 9,
+                fontWeight: 700,
+                color: stat.iconColor,
+                fontFamily: '"JetBrains Mono", monospace',
+                minWidth: 28,
+                textAlign: 'right',
+              }}>
+                {stat.progressLabel}
+              </span>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Threat Level */}
+      {/* ══════════════════════════════════════════════════════════════
+           SECTION 2: SCAN PROGRESS
+         ══════════════════════════════════════════════════════════════ */}
       <div style={{
-        background: 'rgba(10, 18, 28, 0.85)',
-        border: '1px solid rgba(0, 212, 255, 0.15)',
-        borderRadius: 4,
+        ...CARD_BASE,
         marginBottom: 24,
-        backdropFilter: 'blur(10px)',
+        animation: 'wtd-fadein 0.5s ease-out 0.5s both',
       }}>
         <div style={{
-          padding: '12px 16px',
+          padding: '12px 20px',
           borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-          <span style={SECTION_LABEL_STYLE}>THREAT LEVEL</span>
-          <span style={{
-            padding: '4px 12px',
-            borderRadius: 3,
-            fontSize: 11,
-            fontWeight: 700,
-            fontFamily: '"JetBrains Mono", monospace',
-            letterSpacing: '1px',
-            color: threatLevel.color,
-            background: `${threatLevel.color}15`,
-            border: `1px solid ${threatLevel.color}40`,
-            boxShadow: `0 0 12px ${threatLevel.color}30`,
-          }}>
-            {threatLevel.level}
-          </span>
-        </div>
-        <div style={{ padding: '16px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              flex: 1,
-              height: 8,
-              background: 'rgba(0, 212, 255, 0.05)',
-              borderRadius: 2,
-              overflow: 'hidden',
-              position: 'relative',
-            }}>
-              <div style={{
-                width: `${threatLevel.pct}%`,
-                height: '100%',
-                background: threatLevel.color,
-                boxShadow: `0 0 12px ${threatLevel.color}60`,
-                borderRadius: 2,
-                transition: 'width 0.5s ease',
-              }} />
-            </div>
-            <span style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: threatLevel.color,
-              fontFamily: '"JetBrains Mono", monospace',
-              minWidth: 60,
-              textAlign: 'right',
-              letterSpacing: '1px',
-            }}>
-              {threatLevel.pct.toFixed(0)}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
-
-        {/* Alert Timeline */}
-        <div style={{
-          background: 'rgba(10, 18, 28, 0.85)',
-          border: '1px solid rgba(0, 212, 255, 0.15)',
-          borderRadius: 4,
-          backdropFilter: 'blur(10px)',
-        }}>
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-            <span style={SECTION_LABEL_STYLE}>ALERT TIMELINE</span>
-            <span style={{
-              fontSize: 10,
-              color: '#64748b',
-              fontFamily: '"JetBrains Mono", monospace',
-              letterSpacing: '0.5px',
-            }}>LAST 20 MIN</span>
-          </div>
-          <div style={{ padding: '16px 20px' }}>
-            <svg viewBox="0 0 400 120" style={{ width: '100%', height: 120 }}>
-              {/* Grid lines */}
-              {[0, 25, 50, 75, 100].map(y => (
-                <line key={y} x1="0" y1={y * 1.2} x2="400" y2={y * 1.2}
-                  stroke="rgba(0, 212, 255, 0.05)" strokeWidth="1" />
-              ))}
-              {/* Area */}
-              {alertTimeline.length > 1 && (() => {
-                const max = Math.max(...alertTimeline.map(d => d.count), 1);
-                const points = alertTimeline.map((d, i) => {
-                  const x = (i / Math.max(alertTimeline.length - 1, 1)) * 400;
-                  const y = 120 - (d.count / max) * 100;
-                  return `${x},${y}`;
-                }).join(' ');
-                const areaPoints = `0,120 ${points} 400,120`;
-                return (
-                  <>
-                    <defs>
-                      <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#00d4ff" stopOpacity="0.2" />
-                        <stop offset="100%" stopColor="#00d4ff" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <polygon points={areaPoints} fill="url(#areaGradient)" />
-                    <polyline points={points} fill="none" stroke="#00d4ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </>
-                );
-              })()}
-              {/* Dots */}
-              {alertTimeline.map((d, i) => {
-                const max = Math.max(...alertTimeline.map(x => x.count), 1);
-                const x = (i / Math.max(alertTimeline.length - 1, 1)) * 400;
-                const y = 120 - (d.count / max) * 100;
-                return d.count > 0 ? (
-                  <circle key={i} cx={x} cy={y} r="3" fill="#00d4ff" style={{ filter: 'drop-shadow(0 0 2px #00d4ff)' }} />
-                ) : null;
-              })}
-            </svg>
-          </div>
-        </div>
-
-        {/* Threat Distribution */}
-        <div style={{
-          background: 'rgba(10, 18, 28, 0.85)',
-          border: '1px solid rgba(0, 212, 255, 0.15)',
-          borderRadius: 4,
-          backdropFilter: 'blur(10px)',
-        }}>
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-            <span style={SECTION_LABEL_STYLE}>THREAT DISTRIBUTION</span>
-            <span style={{
-              fontSize: 10,
-              color: '#64748b',
-              fontFamily: '"JetBrains Mono", monospace',
-              letterSpacing: '0.5px',
-            }}>{threatTypeData.length} TYPES</span>
-          </div>
-          <div style={{ padding: '16px 20px' }}>
-            {threatTypeData.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {threatTypeData.map((t, i) => {
-                  const maxVal = Math.max(...threatTypeData.map(x => x.value), 1);
-                  const pct = (t.value / maxVal) * 100;
-                  return (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: '#94a3b8',
-                        minWidth: 120,
-                        fontFamily: '"JetBrains Mono", monospace',
-                        textTransform: 'capitalize',
-                        letterSpacing: '0.5px',
-                      }}>
-                        {t.label}
-                      </span>
-                      <div style={{
-                        flex: 1,
-                        height: 6,
-                        background: 'rgba(0, 212, 255, 0.05)',
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                      }}>
-                        <div style={{
-                          width: `${pct}%`,
-                          height: '100%',
-                          background: '#00d4ff',
-                          boxShadow: '0 0 8px rgba(0, 212, 255, 0.4)',
-                          borderRadius: 2,
-                        }} />
-                      </div>
-                      <span style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: '#00d4ff',
-                        minWidth: 28,
-                        textAlign: 'right',
-                        fontFamily: '"JetBrains Mono", monospace',
-                      }}>
-                        {t.value}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{
-                textAlign: 'center',
-                padding: '40px 20px',
-                color: '#475569',
-              }}>
-                <div style={{
-                  fontSize: 11,
+          <span style={SECTION_LABEL}>◈ NATIONAL TRAFFIC ANALYSIS</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isScanning ? (
+              <>
+                <span style={{
+                  fontSize: 10,
+                  color: '#00d4ff',
                   fontFamily: '"JetBrains Mono", monospace',
                   letterSpacing: '1px',
-                }}>NO THREATS DETECTED</div>
-                <div style={{
-                  fontSize: 10,
-                  marginTop: 4,
-                  color: '#334155',
-                  fontFamily: '"JetBrains Mono", monospace',
-                }}>Distribution will appear once detections start</div>
-              </div>
+                  animation: 'wtd-pulse 1s ease-in-out infinite',
+                }}>
+                  SCANNING...
+                </span>
+                <PulsingDot color="#00d4ff" size={6} />
+              </>
+            ) : (
+              <span style={{
+                fontSize: 10,
+                color: '#22c55e',
+                fontFamily: '"JetBrains Mono", monospace',
+                letterSpacing: '1px',
+                fontWeight: 700,
+              }}>
+                COMPLETE
+              </span>
             )}
           </div>
         </div>
+        <div style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                height: 12,
+                background: '#1a2736',
+                borderRadius: 6,
+                overflow: 'hidden',
+                position: 'relative',
+                border: '1px solid rgba(0, 212, 255, 0.08)',
+              }}>
+                <div style={{
+                  width: `${scanProgress}%`,
+                  height: '100%',
+                  background: `linear-gradient(90deg, #00d4ff, #0088cc)`,
+                  borderRadius: 6,
+                  boxShadow: '0 0 12px rgba(0, 212, 255, 0.3)',
+                  position: 'relative',
+                  transition: 'width 0.3s ease-out',
+                }}>
+                  {isScanning && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%)',
+                      animation: 'wtd-scan 1.8s ease-in-out infinite',
+                    }} />
+                  )}
+                </div>
+                {/* Tick marks */}
+                {[0, 25, 50, 75, 100].map(tick => (
+                  <div key={tick} style={{
+                    position: 'absolute',
+                    left: `${tick}%`,
+                    top: 0,
+                    bottom: 0,
+                    width: 1,
+                    background: 'rgba(0, 212, 255, 0.15)',
+                  }} />
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                <span style={{
+                  fontSize: 9,
+                  color: '#475569',
+                  fontFamily: '"JetBrains Mono", monospace',
+                  letterSpacing: '0.5px',
+                }}>
+                  SESSION INIT
+                </span>
+                <span style={{
+                  fontSize: 9,
+                  color: '#475569',
+                  fontFamily: '"JetBrains Mono", monospace',
+                  letterSpacing: '0.5px',
+                }}>
+                  TRAFFIC ANALYSIS
+                </span>
+                <span style={{
+                  fontSize: 9,
+                  color: '#475569',
+                  fontFamily: '"JetBrains Mono", monospace',
+                  letterSpacing: '0.5px',
+                }}>
+                  THREAT MATCHING
+                </span>
+                <span style={{
+                  fontSize: 9,
+                  color: '#475569',
+                  fontFamily: '"JetBrains Mono", monospace',
+                  letterSpacing: '0.5px',
+                }}>
+                  REPORT GENERATION
+                </span>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', minWidth: 80 }}>
+              <div style={{
+                fontSize: 42,
+                fontWeight: 800,
+                color: '#00d4ff',
+                fontFamily: '"JetBrains Mono", monospace',
+                lineHeight: 1,
+                textShadow: '0 0 20px rgba(0, 212, 255, 0.3)',
+              }}>
+                {scanProgress.toFixed(0)}<span style={{ fontSize: 20 }}>%</span>
+              </div>
+              <div style={{
+                fontSize: 9,
+                color: '#475569',
+                fontFamily: '"JetBrains Mono", monospace',
+                letterSpacing: '0.5px',
+                marginTop: 4,
+              }}>
+                {isScanning ? 'PROCESSING' : 'FINISHED'}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
-
-        {/* Recent Alerts */}
+      {/* ══════════════════════════════════════════════════════════════
+           SECTION 3: CHARTS ROW — Bar + Donut
+         ══════════════════════════════════════════════════════════════ */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1.2fr 0.8fr',
+        gap: 16,
+        marginBottom: 24,
+      }}>
+        {/* Threat Types Bar Chart */}
         <div style={{
-          background: 'rgba(10, 18, 28, 0.85)',
-          border: '1px solid rgba(0, 212, 255, 0.15)',
-          borderRadius: 4,
-          backdropFilter: 'blur(10px)',
+          ...CARD_BASE,
+          animation: 'wtd-fadein 0.5s ease-out 0.6s both',
         }}>
           <div style={{
-            padding: '12px 16px',
+            padding: '12px 20px',
             borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}>
-            <span style={SECTION_LABEL_STYLE}>RECENT ALERTS</span>
+            <span style={SECTION_LABEL}>◈ THREAT TYPE DISTRIBUTION</span>
             <span style={{
               fontSize: 10,
               color: '#64748b',
               fontFamily: '"JetBrains Mono", monospace',
               letterSpacing: '0.5px',
-            }}>{alerts.length} TOTAL</span>
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              fontSize: 12,
             }}>
-              <thead>
-                <tr style={{
-                  borderBottom: '1px solid rgba(0, 212, 255, 0.1)',
-                }}>
-                  {['SEVERITY', 'TIME', 'THREAT TYPE', 'SOURCE IP', 'DEST IP', 'CONFIDENCE'].map(h => (
-                    <th key={h} style={{
-                      padding: '10px 12px',
-                      textAlign: 'left',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '1.5px',
-                      color: '#64748b',
-                      fontFamily: '"JetBrains Mono", monospace',
-                      textTransform: 'uppercase',
-                    }}>{h}</th>
-                  ))}
+              {threatTypeData.length} CLASSIFICATIONS
+            </span>
+          </div>
+          <div style={{ padding: '20px', overflowX: 'auto' }}>
+            <BarChart data={threatTypeData} />
+          </div>
+        </div>
+
+        {/* Severity Donut Chart */}
+        <div style={{
+          ...CARD_BASE,
+          animation: 'wtd-fadein 0.5s ease-out 0.7s both',
+        }}>
+          <div style={{
+            padding: '12px 20px',
+            borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <span style={SECTION_LABEL}>◈ SEVERITY BREAKDOWN</span>
+            <span style={{
+              fontSize: 10,
+              color: '#64748b',
+              fontFamily: '"JetBrains Mono", monospace',
+              letterSpacing: '0.5px',
+            }}>
+              LIVE FEED
+            </span>
+          </div>
+          <div style={{ padding: '20px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <DonutChart data={severityData} />
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════
+           SECTION 4: LIVE THREAT FEED TABLE
+         ══════════════════════════════════════════════════════════════ */}
+      <div style={{
+        ...CARD_BASE,
+        animation: 'wtd-fadein 0.5s ease-out 0.8s both',
+      }}>
+        <div style={{
+          padding: '12px 20px',
+          borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={SECTION_LABEL}>◈ LIVE THREAT FEED</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <PulsingDot color="#ef4444" size={6} />
+              <span style={{
+                fontSize: 9,
+                color: '#ef4444',
+                fontFamily: '"JetBrains Mono", monospace',
+                letterSpacing: '1px',
+                fontWeight: 700,
+              }}>
+                STREAMING
+              </span>
+            </div>
+          </div>
+          <span style={{
+            fontSize: 10,
+            color: '#64748b',
+            fontFamily: '"JetBrains Mono", monospace',
+            letterSpacing: '0.5px',
+          }}>
+            {alerts.length} EVENTS · LAST 60 MIN
+          </span>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{
+                borderBottom: '1px solid rgba(0, 212, 255, 0.1)',
+                background: 'rgba(0, 212, 255, 0.02)',
+              }}>
+                {['SEVERITY', 'TIMESTAMP', 'THREAT TYPE', 'SOURCE IP', 'DEST IP', 'CONFIDENCE', 'STATUS'].map(h => (
+                  <th key={h} style={{
+                    padding: '10px 14px',
+                    textAlign: 'left',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '1.5px',
+                    color: '#64748b',
+                    fontFamily: '"Inter", "JetBrains Mono", monospace',
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recentAlerts.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{
+                    padding: 60,
+                    textAlign: 'center',
+                    color: '#475569',
+                    fontSize: 11,
+                    fontFamily: '"JetBrains Mono", monospace',
+                    letterSpacing: '1px',
+                  }}>
+                    MONITORING ACTIVE — AWAITING THREAT SIGNATURES...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {recentAlerts.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{
-                      padding: 40,
-                      textAlign: 'center',
-                      color: '#475569',
-                      fontSize: 11,
-                      fontFamily: '"JetBrains Mono", monospace',
-                      letterSpacing: '1px',
-                    }}>
-                      MONITORING ACTIVE — NO THREATS IN CURRENT WINDOW
-                    </td>
-                  </tr>
-                ) : (
-                  recentAlerts.map((alert, idx) => {
-                    const sev = SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.low;
-                    const rowBg = idx % 2 === 0 ? 'rgba(0, 212, 255, 0.02)' : 'transparent';
-                    return (
-                      <tr key={alert.id} style={{
-                        background: rowBg,
-                        borderBottom: '1px solid rgba(0, 212, 255, 0.04)',
-                        transition: 'background 0.2s',
+              ) : (
+                recentAlerts.map((alert, idx) => {
+                  const sev = SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.low;
+                  const isNew = idx < 3;
+                  return (
+                    <tr key={alert.id} style={{
+                      background: isNew ? `${sev.bg}` : idx % 2 === 0 ? 'rgba(0, 212, 255, 0.015)' : 'transparent',
+                      borderBottom: '1px solid rgba(0, 212, 255, 0.04)',
+                      transition: 'all 0.2s',
+                      animation: isNew ? 'wtd-fadein 0.3s ease-out' : undefined,
+                    }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 212, 255, 0.05)'; }}
+                      onMouseLeave={(e) => {
+                        if (isNew) e.currentTarget.style.background = sev.bg;
+                        else e.currentTarget.style.background = idx % 2 === 0 ? 'rgba(0, 212, 255, 0.015)' : 'transparent';
                       }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 212, 255, 0.05)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = rowBg}
-                      >
-                        <td style={{ padding: '8px 12px' }}>
-                          <span style={{
-                            display: 'inline-block',
-                            padding: '2px 8px',
-                            borderRadius: 3,
-                            fontSize: 9,
-                            fontWeight: 700,
-                            letterSpacing: '1px',
-                            color: sev.color,
-                            background: sev.bg,
-                            border: `1px solid ${sev.color}30`,
-                            boxShadow: `0 0 6px ${sev.glow}`,
-                            fontFamily: '"JetBrains Mono", monospace',
-                          }}>
-                            {sev.label}
-                          </span>
-                        </td>
-                        <td style={{
-                          padding: '8px 12px',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 11,
-                          color: '#64748b',
-                          letterSpacing: '0.5px',
-                        }}>
-                          {formatTime(alert.timestamp)}
-                        </td>
-                        <td style={{
-                          padding: '8px 12px',
-                          fontWeight: 600,
-                          fontSize: 12,
-                          color: '#e2e8f0',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          textTransform: 'capitalize',
-                        }}>
-                          {alert.threat_type}
-                        </td>
-                        <td style={{
-                          padding: '8px 12px',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 11,
-                          color: '#06b6d4',
-                          letterSpacing: '0.5px',
-                        }}>
-                          {alert.src_ip}
-                        </td>
-                        <td style={{
-                          padding: '8px 12px',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 11,
-                          color: '#06b6d4',
-                          letterSpacing: '0.5px',
-                        }}>
-                          {alert.dst_ip}
-                        </td>
-                        <td style={{
-                          padding: '8px 12px',
-                          textAlign: 'right',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 11,
+                    >
+                      {/* Severity */}
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '3px 10px',
+                          borderRadius: 4,
+                          fontSize: 9,
                           fontWeight: 700,
+                          letterSpacing: '1px',
+                          color: sev.color,
+                          background: sev.bg,
+                          border: `1px solid ${sev.color}25`,
+                          boxShadow: `0 0 6px ${sev.glow}`,
+                          fontFamily: '"JetBrains Mono", monospace',
                         }}>
                           <span style={{
-                            color: alert.confidence > 85 ? '#22c55e' : alert.confidence > 60 ? '#eab308' : '#ef4444',
-                          }}>
-                            {alert.confidence.toFixed(0)}%
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                            width: 5,
+                            height: 5,
+                            borderRadius: '50%',
+                            background: sev.color,
+                            boxShadow: `0 0 4px ${sev.glow}`,
+                            flexShrink: 0,
+                          }} />
+                          {sev.label}
+                        </span>
+                      </td>
 
-        {/* Recent Flows */}
-        <div style={{
-          background: 'rgba(10, 18, 28, 0.85)',
-          border: '1px solid rgba(0, 212, 255, 0.15)',
-          borderRadius: 4,
-          backdropFilter: 'blur(10px)',
-        }}>
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}>
-            <span style={SECTION_LABEL_STYLE}>LIVE FLOWS</span>
-            <span style={{
-              fontSize: 10,
-              color: '#64748b',
-              fontFamily: '"JetBrains Mono", monospace',
-              letterSpacing: '0.5px',
-            }}>{flows.length} TOTAL</span>
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              fontSize: 12,
-            }}>
-              <thead>
-                <tr style={{
-                  borderBottom: '1px solid rgba(0, 212, 255, 0.1)',
-                }}>
-                  {['TIME', 'SOURCE', 'DEST', 'BYTES', 'STATUS'].map(h => (
-                    <th key={h} style={{
-                      padding: '10px 8px',
-                      textAlign: 'left',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '1.5px',
-                      color: '#64748b',
-                      fontFamily: '"JetBrains Mono", monospace',
-                      textTransform: 'uppercase',
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {recentFlows.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{
-                      padding: 40,
-                      textAlign: 'center',
-                      color: '#475569',
-                      fontSize: 11,
-                      fontFamily: '"JetBrains Mono", monospace',
-                      letterSpacing: '1px',
-                    }}>
-                      AWAITING FLOWS...
-                    </td>
-                  </tr>
-                ) : (
-                  recentFlows.map((flow, idx) => {
-                    const rowBg = idx % 2 === 0 ? 'rgba(0, 212, 255, 0.02)' : 'transparent';
-                    return (
-                      <tr key={flow.id} style={{
-                        background: rowBg,
-                        borderBottom: '1px solid rgba(0, 212, 255, 0.04)',
-                      }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0, 212, 255, 0.05)'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = rowBg}
-                      >
-                        <td style={{
-                          padding: '6px 8px',
+                      {/* Timestamp */}
+                      <td style={{
+                        padding: '10px 14px',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: 11,
+                        color: '#64748b',
+                        letterSpacing: '0.5px',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {formatTime(alert.timestamp)}
+                      </td>
+
+                      {/* Threat Type */}
+                      <td style={{
+                        padding: '10px 14px',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        color: '#e0e8f0',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}>
+                        {alert.threat_type}
+                      </td>
+
+                      {/* Source IP */}
+                      <td style={{
+                        padding: '10px 14px',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: 11,
+                        color: '#06b6d4',
+                        letterSpacing: '0.3px',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {alert.src_ip}
+                      </td>
+
+                      {/* Dest IP */}
+                      <td style={{
+                        padding: '10px 14px',
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: 11,
+                        color: '#94a3b8',
+                        letterSpacing: '0.3px',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {alert.dst_ip}
+                      </td>
+
+                      {/* Confidence Bar */}
+                      <td style={{ padding: '10px 14px' }}>
+                        <ConfidenceBar value={alert.confidence} />
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '2px 10px',
+                          borderRadius: 3,
+                          fontSize: 9,
+                          fontWeight: 700,
+                          letterSpacing: '1px',
+                          color: alert.severity === 'critical' || alert.severity === 'high'
+                            ? '#ef4444'
+                            : '#22c55e',
+                          background: alert.severity === 'critical' || alert.severity === 'high'
+                            ? 'rgba(239, 68, 68, 0.1)'
+                            : 'rgba(34, 197, 94, 0.1)',
+                          border: `1px solid ${alert.severity === 'critical' || alert.severity === 'high'
+                            ? 'rgba(239, 68, 68, 0.3)'
+                            : 'rgba(34, 197, 94, 0.3)'}`,
+                          boxShadow: alert.severity === 'critical' || alert.severity === 'high'
+                            ? '0 0 6px rgba(239, 68, 68, 0.3)'
+                            : '0 0 6px rgba(34, 197, 94, 0.2)',
                           fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 10,
-                          color: '#64748b',
-                          letterSpacing: '0.5px',
                         }}>
-                          {formatTime(flow.timestamp)}
-                        </td>
-                        <td style={{
-                          padding: '6px 8px',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 10,
-                          color: '#94a3b8',
-                          letterSpacing: '0.5px',
-                        }}>
-                          {flow.src_ip}:{flow.src_port}
-                        </td>
-                        <td style={{
-                          padding: '6px 8px',
-                          fontFamily: '"JetBrains Mono", monospace',
-                          fontSize: 10,
-                          color: '#94a3b8',
-                          letterSpacing: '0.5px',
-                        }}>
-                          {flow.dst_ip}:{flow.dst_port}
-                        </td>
-                        <td style={{
-                          padding: '6px 8px',
-                          textAlign: 'right',
-                          fontSize: 10,
-                          fontFamily: '"JetBrains Mono", monospace',
-                          color: '#64748b',
-                        }}>
-                          {formatBytes(flow.bytes_sent + flow.bytes_recv)}
-                        </td>
-                        <td style={{ padding: '6px 8px', textAlign: 'center' }}>
-                          {flow.isAttack ? (
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: 3,
-                              fontSize: 9,
-                              fontWeight: 700,
-                              letterSpacing: '1px',
-                              color: '#ef4444',
-                              background: 'rgba(239, 68, 68, 0.1)',
-                              border: '1px solid rgba(239, 68, 68, 0.3)',
-                              boxShadow: '0 0 6px rgba(239, 68, 68, 0.3)',
-                              fontFamily: '"JetBrains Mono", monospace',
-                            }}>THREAT</span>
-                          ) : (
-                            <span style={{
-                              display: 'inline-block',
-                              padding: '2px 8px',
-                              borderRadius: 3,
-                              fontSize: 9,
-                              fontWeight: 700,
-                              letterSpacing: '1px',
-                              color: '#22c55e',
-                              background: 'rgba(34, 197, 94, 0.1)',
-                              border: '1px solid rgba(34, 197, 94, 0.3)',
-                              boxShadow: '0 0 6px rgba(34, 197, 94, 0.2)',
-                              fontFamily: '"JetBrains Mono", monospace',
-                            }}>OK</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                          {alert.severity === 'critical' || alert.severity === 'high' ? 'BLOCKED' : 'LOGGED'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Inject pulse animation */}
-      <style>{`
-        @keyframes pulse-green {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.85); }
-        }
-      `}</style>
+      {/* ── Footer ───────────────────────────────────────────────────── */}
+      <div style={{
+        marginTop: 20,
+        padding: '12px 0',
+        borderTop: '1px solid rgba(0, 212, 255, 0.06)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <span style={{
+          fontSize: 9,
+          color: '#334155',
+          fontFamily: '"JetBrains Mono", monospace',
+          letterSpacing: '1px',
+        }}>
+          WATCHTOWER v3.2.1 · NTRO · SIH26 · UPTIME: {formatUptime(uptime)}
+        </span>
+        <span style={{
+          fontSize: 9,
+          color: '#334155',
+          fontFamily: '"JetBrains Mono", monospace',
+          letterSpacing: '0.5px',
+        }}>
+          LAST SYNC: {formatTime(Date.now())}
+        </span>
+      </div>
     </div>
   );
 };

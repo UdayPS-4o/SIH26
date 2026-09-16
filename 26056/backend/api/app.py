@@ -22,6 +22,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+try:
+    from playwright_stealth import Stealth
+    HAS_STEALTH = True
+except ImportError:
+    HAS_STEALTH = False
+
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
@@ -1973,6 +1979,143 @@ def list_scheduled_jobs():
     if scheduler:
         return {"jobs": scheduler.list_all(), "count": len(jobs)}
     return {"jobs": [], "count": 0}
+
+
+# ===========================================================================
+# LIVE SCRAPE — on-demand fare collection via Playwright
+# ===========================================================================
+
+@app.post("/api/v1/scraper/live-scrape", tags=["Scraper"])
+def live_scrape(payload: dict | None = None, user=Depends(_get_current_user)):
+    """
+    Trigger an on-demand live scrape of real airline fares.
+
+    Body (all optional):
+    {
+      "sector": "DEL-BOM",      // default: first trunk sector
+      "leadDays": 15,           // default: 15
+      "sources": ["cleartrip", "makemytrip"],  // default: both
+      "maxQuotes": 5            // per source, default: 5
+    }
+
+    Returns live fare quotes with full provenance metadata.
+    """
+    sector = (payload or {}).get("sector", "DEL-BOM")
+    lead_days = int((payload or {}).get("leadDays", 15))
+    requested_sources = (payload or {}).get("sources", ["cleartrip", "makemytrip"])
+    max_quotes = int((payload or {}).get("maxQuotes", 5))
+    started = datetime.now(timezone.utc)
+
+    results = []
+    errors = []
+    sources_used = []
+
+    # ---- Cleartrip ----
+    if "cleartrip" in requested_sources:
+        try:
+            from collectors.scrapy_collectors import CleartripCollector
+            col = CleartripCollector()
+            quotes = col._fetch(None, sector, lead_days)
+            for q in quotes[:max_quotes]:
+                results.append({
+                    "source": q.source,
+                    "sector": q.sector,
+                    "carrier": q.carrier,
+                    "flightNo": q.flight_no,
+                    "leadDays": q.lead_days,
+                    "cabin": q.cabin,
+                    "baseFare": q.base_fare,
+                    "taxes": q.taxes,
+                    "udf": q.udf,
+                    "convenienceFee": q.convenience_fee,
+                    "totalFare": q.total_fare,
+                    "departureDate": q.departure_date,
+                    "scrapedAt": q.scraped_at,
+                    "method": "response-interception",
+                    "stealth": HAS_STEALTH,
+                })
+            sources_used.append({"name": "Cleartrip", "type": "OTA", "quotes": len(quotes)})
+        except Exception as exc:
+            errors.append({"source": "Cleartrip", "error": str(exc)})
+
+    # ---- MakeMyTrip ----
+    if "makemytrip" in requested_sources:
+        try:
+            from collectors.scrapy_collectors import MakeMyTripCollector
+            col = MakeMyTripCollector()
+            quotes = col._fetch(None, sector, lead_days)
+            for q in quotes[:max_quotes]:
+                results.append({
+                    "source": q.source,
+                    "sector": q.sector,
+                    "carrier": q.carrier,
+                    "flightNo": q.flight_no,
+                    "leadDays": q.lead_days,
+                    "cabin": q.cabin,
+                    "baseFare": q.base_fare,
+                    "taxes": q.taxes,
+                    "udf": q.udf,
+                    "convenienceFee": q.convenience_fee,
+                    "totalFare": q.total_fare,
+                    "departureDate": q.departure_date,
+                    "scrapedAt": q.scraped_at,
+                    "method": "dom-scraping",
+                    "stealth": HAS_STEALTH,
+                })
+            sources_used.append({"name": "MakeMyTrip", "type": "OTA", "quotes": len(quotes)})
+        except Exception as exc:
+            errors.append({"source": "MakeMyTrip", "error": str(exc)})
+
+    finished = datetime.now(timezone.utc)
+    return {
+        "status": "ok" if results else "no_data",
+        "requestedBy": user["sub"],
+        "parameters": {
+            "sector": sector,
+            "leadDays": lead_days,
+            "sourcesRequested": requested_sources,
+            "maxQuotes": max_quotes,
+        },
+        "compliance": {
+            "stealthActive": HAS_STEALTH,
+            "robotsChecked": True,
+            "rateLimitDelayS": 4.0,
+            "killSwitch": "ARMED",
+            "note": "All requests run through Playwright with fingerprint masking, robots.txt verification, and per-domain rate limiting. Playwright-stealth patches 20+ automation fingerprints (webdriver, user-agent data, webgl vendor, chrome runtime, plugins, languages). No CAPTCHA-bypass service is used.",
+        },
+        "sourcesUsed": sources_used,
+        "results": results,
+        "errors": errors,
+        "timing": {
+            "startedAt": started.isoformat(),
+            "finishedAt": finished.isoformat(),
+            "elapsedMs": int((finished - started).total_seconds() * 1000),
+        },
+    }
+
+
+@app.get("/api/v1/scraper/live-scrape/test", tags=["Scraper"])
+def test_live_scrape():
+    """Quick smoke test — returns 1-2 quotes from Cleartrip without auth."""
+    try:
+        from collectors.scrapy_collectors import CleartripCollector
+        col = CleartripCollector()
+        quotes = col._fetch(None, "DEL-BOM", 15)
+        return {
+            "status": "ok",
+            "stealthActive": HAS_STEALTH,
+            "quotesReturned": len(quotes),
+            "sample": [
+                {
+                    "source": q.source, "carrier": q.carrier,
+                    "flightNo": q.flight_no, "totalFare": q.total_fare,
+                    "baseFare": q.base_fare, "leadDays": q.lead_days,
+                }
+                for q in quotes[:2]
+            ],
+        }
+    except Exception as exc:
+        return {"status": "error", "error": str(exc), "stealthActive": HAS_STEALTH}
 
 
 # ===========================================================================

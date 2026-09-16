@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+/* ═══════════════════════════════════════════════════════════════════════
+   WATCHTOWER — Integrations
+   ═══════════════════════════════════════════════════════════════════════ */
+
 interface Integration {
   id: string;
   name: string;
@@ -22,75 +26,94 @@ interface OutgoingEvent {
   status: 'sent' | 'queued' | 'failed';
 }
 
+const INTEGRATION_DATA: Integration[] = [
+  { id: 'INT-001', name: 'SOC Platform (SIEM)', type: 'siem', endpoint: '192.168.50.10:514', status: 'connected', events_sent: 15234, last_heartbeat: new Date(Date.now() - 5000).toISOString(), latency_ms: 12 },
+  { id: 'INT-002', name: 'SIEM Emulator', type: 'siem-emulator', endpoint: 'localhost:8080/api/v1/alerts', status: 'connected', events_sent: 8921, last_heartbeat: new Date(Date.now() - 2000).toISOString(), latency_ms: 3 },
+  { id: 'INT-003', name: 'REST API Endpoint', type: 'api', endpoint: 'https://api.internal/v2/ingest', status: 'disconnected', events_sent: 2341, last_heartbeat: new Date(Date.now() - 60000).toISOString(), latency_ms: 0 },
+  { id: 'INT-004', name: 'Fluent Bit Forwarder', type: 'forwarder', endpoint: 'localhost:24224', status: 'connected', events_sent: 56789, last_heartbeat: new Date(Date.now() - 1000).toISOString(), latency_ms: 1 },
+  { id: 'INT-005', name: 'Windows Agent', type: 'agent', endpoint: '192.168.50.20:5000', status: 'error', events_sent: 1234, last_heartbeat: new Date(Date.now() - 120000).toISOString(), latency_ms: 0 },
+];
+
+const FORMAT_COLORS: Record<string, string> = { ocsf: '#00d4ff', json: '#00ff41', cef: '#ff8833', syslog: '#b347ff' };
+const THREAT_CLASSES = ['DDoS', 'Port Scan', 'Exfiltration', 'Beaconing', 'DGA', 'TLS Anomaly', 'SQL Injection', 'XSS', 'Brute Force', 'Malware C2'];
+const FORMATS: Array<'ocsf' | 'json' | 'cef' | 'syslog'> = ['ocsf', 'json', 'cef', 'syslog'];
+
+function generateEvents(count: number, integrations: Integration[]): OutgoingEvent[] {
+  const events: OutgoingEvent[] = [];
+  for (let i = 0; i < count; i++) {
+    events.push({
+      id: `EVT-${Date.now()}-${i}`,
+      timestamp: new Date(Date.now() - i * 2000).toISOString(),
+      format: FORMATS[Math.floor(Math.random() * FORMATS.length)],
+      target: integrations[Math.floor(Math.random() * integrations.length)]?.name || 'Unknown',
+      threat_class: THREAT_CLASSES[Math.floor(Math.random() * THREAT_CLASSES.length)],
+      confidence: Math.floor(Math.random() * 40) + 60,
+      size_bytes: Math.floor(Math.random() * 2000) + 200,
+      status: Math.random() < 0.92 ? 'sent' : Math.random() < 0.5 ? 'queued' : 'failed',
+    });
+  }
+  return events;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  connected: '#00ff41', disconnected: '#ff8833', error: '#ef4444',
+};
+const TYPE_COLORS: Record<string, string> = {
+  siem: '#00d4ff', 'siem-emulator': '#00ff41', api: '#ff8833', agent: '#b347ff', forwarder: '#06b6d4',
+};
+
 function IntegrationPage() {
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [outgoingEvents, setOutgoingEvents] = useState<OutgoingEvent[]>([]);
-  const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newEndpoint, setNewEndpoint] = useState('');
+  const [integrations, setIntegrations] = useState<Integration[]>(INTEGRATION_DATA);
+  const [events, setEvents] = useState<OutgoingEvent[]>(() => generateEvents(15, INTEGRATION_DATA));
+  const [selected, setSelected] = useState<Integration | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newEndpoint, setNewEndpoint] = useState('');
   const [newType, setNewType] = useState<string>('siem');
-  const [eventsPerSec, setEventsPerSec] = useState(0);
+  const [eventsPerSec, setEventsPerSec] = useState(142);
   const [totalSent, setTotalSent] = useState(0);
+  const [queueDepth, setQueueDepth] = useState(12);
+  const [throughputHistory, setThroughputHistory] = useState<number[]>(() => Array(60).fill(0).map(() => 100 + Math.random() * 100));
+  const [avgLatency, setAvgLatency] = useState(8);
   const eventsRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const integrationsData: Integration[] = [
-      { id: 'INT-001', name: 'SOC Platform (SIEM)', type: 'siem', endpoint: '192.168.50.10:514', status: 'connected', events_sent: 15234, last_heartbeat: new Date(Date.now() - 5000).toISOString(), latency_ms: 12 },
-      { id: 'INT-002', name: 'SIEM Emulator', type: 'siem-emulator', endpoint: 'localhost:8080/api/v1/alerts', status: 'connected', events_sent: 8921, last_heartbeat: new Date(Date.now() - 2000).toISOString(), latency_ms: 3 },
-      { id: 'INT-003', name: 'REST API Endpoint', type: 'api', endpoint: 'https://api.internal/v2/ingest', status: 'disconnected', events_sent: 2341, last_heartbeat: new Date(Date.now() - 60000).toISOString(), latency_ms: 0 },
-      { id: 'INT-004', name: 'Fluent Bit Forwarder', type: 'forwarder', endpoint: 'localhost:24224', status: 'connected', events_sent: 56789, last_heartbeat: new Date(Date.now() - 1000).toISOString(), latency_ms: 1 },
-      { id: 'INT-005', name: 'Windows Agent', type: 'agent', endpoint: '192.168.50.20:5000', status: 'error', events_sent: 1234, last_heartbeat: new Date(Date.now() - 120000).toISOString(), latency_ms: 0 },
-    ];
-    setIntegrations(integrationsData);
-
-    const events: OutgoingEvent[] = [];
-    for (let i = 0; i < 10; i++) {
-      events.push({
-        id: `EVT-${Date.now()}-${i}`,
-        timestamp: new Date(Date.now() - i * 2000).toISOString(),
-        format: ['ocsf', 'json', 'cef', 'syslog'][Math.floor(Math.random() * 4)] as any,
-        target: integrationsData[Math.floor(Math.random() * integrationsData.length)].name,
-        threat_class: ['DDoS', 'Port Scan', 'Exfiltration', 'Beaconing', 'DGA'][Math.floor(Math.random() * 5)],
-        confidence: Math.floor(Math.random() * 40) + 60,
-        size_bytes: Math.floor(Math.random() * 2000) + 200,
-        status: ['sent', 'sent', 'sent', 'queued', 'failed'][Math.floor(Math.random() * 5)] as any,
-      });
-    }
-    setOutgoingEvents(events);
-  }, []);
-
-  useEffect(() => {
-    if (eventsRef.current) {
-      eventsRef.current.scrollTop = 0;
-    }
-  }, [outgoingEvents]);
-
+  // Live simulation
   useEffect(() => {
     const interval = setInterval(() => {
       const newEvent: OutgoingEvent = {
         id: `EVT-${Date.now()}`,
         timestamp: new Date().toISOString(),
-        format: ['ocsf', 'json', 'cef', 'syslog'][Math.floor(Math.random() * 4)] as any,
+        format: FORMATS[Math.floor(Math.random() * FORMATS.length)],
         target: integrations[Math.floor(Math.random() * integrations.length)]?.name || 'Unknown',
-        threat_class: ['DDoS', 'Port Scan', 'Exfiltration', 'Beaconing', 'DGA', 'TLS Anomaly'][Math.floor(Math.random() * 6)],
+        threat_class: THREAT_CLASSES[Math.floor(Math.random() * THREAT_CLASSES.length)],
         confidence: Math.floor(Math.random() * 40) + 60,
         size_bytes: Math.floor(Math.random() * 2000) + 200,
-        status: Math.random() < 0.95 ? 'sent' : Math.random() < 0.5 ? 'queued' : 'failed',
+        status: Math.random() < 0.92 ? 'sent' : Math.random() < 0.5 ? 'queued' : 'failed',
       };
-      setOutgoingEvents(prev => [newEvent, ...prev].slice(0, 100));
-      setEventsPerSec(Math.floor(Math.random() * 300) + 100);
+      setEvents(prev => [newEvent, ...prev].slice(0, 100));
+      setEventsPerSec(Math.floor(Math.random() * 120) + 80);
       setTotalSent(prev => prev + 1);
+      setQueueDepth(Math.floor(Math.random() * 30) + 5);
+      setThroughputHistory(prev => [...prev.slice(1), Math.floor(Math.random() * 120) + 80]);
+
+      const connected = integrations.filter(i => i.status === 'connected' && i.latency_ms > 0);
+      if (connected.length > 0) {
+        const avg = Math.round(connected.reduce((s, i) => s + i.latency_ms, 0) / connected.length);
+        setAvgLatency(avg);
+      }
     }, 1500);
     return () => clearInterval(interval);
   }, [integrations]);
 
-  const handleAddIntegration = () => {
+  const successRate = events.length > 0 ? (events.filter(e => e.status === 'sent').length / events.length) * 100 : 0;
+  const maxThroughput = Math.max(...throughputHistory, 1);
+
+  const handleAdd = () => {
     if (!newName || !newEndpoint) return;
     const newInt: Integration = {
       id: `INT-${String(integrations.length + 1).padStart(3, '0')}`,
       name: newName,
-      type: newType as any,
+      type: newType as Integration['type'],
       endpoint: newEndpoint,
       status: 'disconnected',
       events_sent: 0,
@@ -98,243 +121,291 @@ function IntegrationPage() {
       latency_ms: 0,
     };
     setIntegrations(prev => [...prev, newInt]);
-    setNewName('');
-    setNewEndpoint('');
-    setNewType('siem');
-    setShowAddForm(false);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'connected': return '#00ff41';
-      case 'disconnected': return '#ff8833';
-      case 'error': return '#ff3355';
-      default: return '#2d4a6a';
-    }
-  };
-
-  const getFormatBadge = (format: string) => {
-    const colors: Record<string, string> = {
-      ocsf: 'rgba(0,212,255,0.15)', json: 'rgba(0,255,65,0.15)', cef: 'rgba(255,136,51,0.15)', syslog: 'rgba(90,122,154,0.15)',
-    };
-    return colors[format] || 'rgba(200,214,229,0.1)';
+    setNewName(''); setNewEndpoint(''); setNewType('siem'); setShowAdd(false);
   };
 
   return (
-    <div className="page">
-      <header className="page-header">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* ── TOP STAT CARDS ─────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+        {[
+          { label: 'Events/sec', value: eventsPerSec, color: '#00d4ff' },
+          { label: 'Total Sent', value: totalSent.toLocaleString(), color: '#00ff41' },
+          { label: 'Online', value: `${integrations.filter(i => i.status === 'connected').length}/${integrations.length}`, color: '#00ff41' },
+          { label: 'Queue', value: queueDepth, color: '#ff8833' },
+          { label: 'Avg Latency', value: `${avgLatency}ms`, color: '#00ff41' },
+          { label: 'Success Rate', value: `${successRate.toFixed(1)}%`, color: '#00d4ff' },
+        ].map(card => (
+          <div key={card.label} style={{
+            background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px',
+          }}>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{card.label}</div>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: card.color, fontSize: '22px', fontWeight: 700, lineHeight: 1 }}>{card.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── THROUGHPUT SPARKLINE ─────────────────────────────────── */}
+      <div style={{
+        background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px',
+        display: 'flex', alignItems: 'center', gap: '20px',
+      }}>
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span style={{ color: '#00ff41', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
-          </div>
-          <h1 className="page-title" style={{ color: '#00d4ff', letterSpacing: '3px' }}>
-            {''} Integrations
-          </h1>
-          <p className="page-subtitle" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Outbound alerting — OCSF, CEF, JSON, Syslog — zero-trust agents</p>
+          <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '4px' }}>Throughput (60s)</div>
+          <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00d4ff', fontSize: '20px', fontWeight: 700 }}>{eventsPerSec} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 400 }}>evt/s</span></div>
         </div>
-        <div className="header-actions">
-          <div className="integration-header-stats flex items-center gap-4">
-            <div className="mini-stat text-center">
-              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '16px', fontWeight: 700 }}>{eventsPerSec}</span>
-              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>evt/s</span>
-            </div>
-            <div className="mini-stat text-center">
-              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#00ff41', fontSize: '16px', fontWeight: 700 }}>{totalSent}</span>
-              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>sent</span>
-            </div>
-            <div className="mini-stat text-center">
-              <span className="mini-val block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '16px', fontWeight: 700 }}>{integrations.filter(i => i.status === 'connected').length}/{integrations.length}</span>
-              <span className="mini-lbl block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px' }}>online</span>
-            </div>
-          </div>
-          <button className="btn btn-primary cursor-pointer" onClick={() => setShowAddForm(!showAddForm)} style={{ fontFamily: 'var(--font-mono)' }}>
-            + Add Integration
-          </button>
-        </div>
-      </header>
+        <svg viewBox="0 0 120 40" style={{ width: '300px', height: '40px', flexShrink: 0 }}>
+          {throughputHistory.map((val, i) => {
+            const h = (val / maxThroughput) * 38;
+            const x = (i / 59) * 120;
+            return <rect key={i} x={x} y={40 - h} width={2} height={h} fill={i > 50 ? '#00ff41' : '#00d4ff'} opacity={0.8} />;
+          })}
+        </svg>
+      </div>
 
-      {/* Add form */}
-      {showAddForm && (
-        <div className="integration-form rounded-lg p-4 mb-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
-          <div className="form-grid grid grid-cols-4 gap-4">
-            <div className="form-group">
-              <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Name</label>
-              <input className="cyber-input w-full rounded-lg px-3 py-2 outline-none" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }} value={newName} onChange={e => setNewName(e.target.value)} placeholder="My SIEM" />
-            </div>
-            <div className="form-group">
-              <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Endpoint</label>
-              <input className="cyber-input w-full rounded-lg px-3 py-2 outline-none" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }} value={newEndpoint} onChange={e => setNewEndpoint(e.target.value)} placeholder="host:port or https://..." />
-            </div>
-            <div className="form-group">
-              <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Type</label>
-              <select className="cyber-select w-full rounded-lg px-3 py-2 outline-none cursor-pointer" style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }} value={newType} onChange={e => setNewType(e.target.value)}>
-                <option value="siem">SIEM</option>
-                <option value="siem-emulator">SIEM Emulator</option>
-                <option value="api">REST API</option>
-                <option value="agent">Agent</option>
-                <option value="forwarder">Forwarder</option>
-              </select>
-            </div>
-            <div className="form-actions flex items-end gap-2">
-              <button className="btn btn-primary cursor-pointer" onClick={handleAddIntegration} style={{ fontFamily: 'var(--font-mono)' }}>Add</button>
-              <button className="btn btn-secondary cursor-pointer" onClick={() => setShowAddForm(false)} style={{ fontFamily: 'var(--font-mono)' }}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Integration cards */}
-      <div className="integrations-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      {/* ── INTEGRATION CARDS ────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
         {integrations.map(int => (
-          <div key={int.id} style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-4 cursor-pointer transition-all" onClick={() => setSelectedIntegration(int)}>
-            <div className="int-card-header flex items-center justify-between mb-3">
-              <div className="int-name" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{int.name}</div>
-              <div className="int-status flex items-center gap-2" style={{ color: getStatusColor(int.status), fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600 }}>
-                <span className="int-dot" style={{ backgroundColor: getStatusColor(int.status), width: '6px', height: '6px', borderRadius: '50%', display: 'inline-block' }} />
-                {int.status}
+          <div key={int.id} onClick={() => setSelected(int)} style={{
+            background: '#0a1118', border: `1px solid ${int.status === 'error' ? 'rgba(239,68,68,0.3)' : int.status === 'disconnected' ? 'rgba(255,136,51,0.2)' : '#1a2736'}`,
+            borderRadius: '8px', padding: '16px', cursor: 'pointer', transition: 'border-color 0.2s',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{int.name}</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '10px', marginTop: '2px' }}>{int.id}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: STATUS_COLOR[int.status] || '#2d4a6a', boxShadow: `0 0 6px ${STATUS_COLOR[int.status] || '#2d4a6a'}66` }} />
+                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: STATUS_COLOR[int.status] || '#2d4a6a', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' }}>{int.status}</span>
               </div>
             </div>
-            <div className="int-card-body space-y-2">
-              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                <span style={{ color: '#5a7a9a' }}>Type</span>
-                <span style={{ color: '#c8d6e5' }}>{int.type}</span>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}>
+                <span style={{ color: '#64748b' }}>Type</span>
+                <span style={{ color: TYPE_COLORS[int.type] || '#c8d6e5', fontSize: '10px', textTransform: 'uppercase' }}>{int.type}</span>
               </div>
-              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                <span style={{ color: '#5a7a9a' }}>Endpoint</span>
-                <code style={{ color: '#00d4ff', fontSize: '11px' }}>{int.endpoint}</code>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}>
+                <span style={{ color: '#64748b' }}>Endpoint</span>
+                <code style={{ color: '#00d4ff', fontSize: '11px', background: 'rgba(0,212,255,0.06)', padding: '1px 6px', borderRadius: '3px' }}>{int.endpoint}</code>
               </div>
-              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                <span style={{ color: '#5a7a9a' }}>Latency</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}>
+                <span style={{ color: '#64748b' }}>Latency</span>
                 <span style={{ color: '#c8d6e5' }}>{int.latency_ms > 0 ? `${int.latency_ms}ms` : '—'}</span>
               </div>
-              <div className="int-row flex justify-between" style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                <span style={{ color: '#5a7a9a' }}>Events</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}>
+                <span style={{ color: '#64748b' }}>Events Sent</span>
                 <span style={{ color: '#c8d6e5' }}>{int.events_sent.toLocaleString()}</span>
               </div>
             </div>
-            <div style={{ borderTop: '1px solid rgba(0,212,255,0.08)' }} className="int-card-footer flex items-center justify-between mt-3 pt-2">
-              <span className="int-id" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '10px' }}>{int.id}</span>
-              <span className="int-heartbeat" style={{ fontFamily: 'var(--font-mono)', color: '#ff3355', fontSize: '10px' }}>♥ {new Date(int.last_heartbeat).toLocaleTimeString()}</span>
+
+            {/* Throughput mini bar */}
+            <div style={{ borderTop: '1px solid rgba(0,212,255,0.08)', paddingTop: '10px' }}>
+              <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Throughput</div>
+              <div style={{ height: '20px', display: 'flex', alignItems: 'flex-end', gap: '2px' }}>
+                {Array.from({ length: 20 }, () => Math.floor(Math.random() * 80) + 20).map((val, i) => (
+                  <div key={i} style={{
+                    flex: 1, height: `${val}%`, borderRadius: '1px',
+                    background: int.status === 'connected' ? '#00ff41' : '#ff8833', opacity: 0.5 + (val / 200),
+                  }} />
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(0,212,255,0.08)' }}>
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '10px' }}>{int.id}</span>
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#ef4444', fontSize: '10px' }}>♥ {new Date(int.last_heartbeat).toLocaleTimeString()}</span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Event stream */}
-      <div className="event-stream-section rounded-lg overflow-hidden" style={{ border: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,18,28,0.85)' }}>
-        <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
-          <h3 className="section-title flex items-center gap-3" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>
-            Outgoing Events
-            <span className="live-badge px-2 py-0.5 rounded text-[10px]" style={{ background: 'rgba(0,255,65,0.1)', color: '#00ff41', border: '1px solid rgba(0,255,65,0.3)', fontFamily: 'var(--font-mono)', animation: 'pulse-dot 2s ease-in-out infinite' }}>LIVE</span>
-          </h3>
+      {/* ── FORMAT DISTRIBUTION + EVENT STREAM ───────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        {/* Format Distribution */}
+        <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
+          <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>Format Distribution</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {Object.entries(FORMAT_COLORS).map(([fmt, color]) => {
+              const count = events.filter(e => e.format === fmt).length;
+              const pct = events.length > 0 ? (count / events.length) * 100 : 0;
+              return (
+                <div key={fmt}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: color, fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>{fmt}</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '11px' }}>{count} ({pct.toFixed(0)}%)</span>
+                  </div>
+                  <div style={{ height: '8px', borderRadius: '4px', background: 'rgba(0,212,255,0.06)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: '4px', background: color, width: (pct + '%'), transition: 'width 0.5s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="event-stream overflow-x-auto" ref={eventsRef}>
-          <table className="event-table w-full">
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Time</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Format</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Target</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Threat Class</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Confidence</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Size</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '10px 16px', textAlign: 'left' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {outgoingEvents.map(evt => (
-                <tr key={evt.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '11px', padding: '10px 16px' }}>{new Date(evt.timestamp).toLocaleTimeString()}</td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span className="format-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ backgroundColor: getFormatBadge(evt.format), color: '#c8d6e5', border: `1px solid ${getFormatBadge(evt.format).replace('0.15', '0.3')}`, fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{evt.format.toUpperCase()}</span>
-                  </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px', padding: '10px 16px' }}>{evt.target}</td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span className="threat-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ background: 'rgba(255,51,85,0.08)', color: '#ff3355', border: '1px solid rgba(255,51,85,0.25)', fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{evt.threat_class}</span>
-                  </td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <div className="confidence-bar flex items-center gap-2">
-                      <div className="confidence-track w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.08)' }}>
-                        <div className="confidence-fill h-full rounded-full" style={{ width: `${evt.confidence}%`, backgroundColor: evt.confidence > 80 ? '#00ff41' : evt.confidence > 60 ? '#ff8833' : '#00d4ff' }} />
-                      </div>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '11px' }}>{evt.confidence}%</span>
-                    </div>
-                  </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px', padding: '10px 16px' }}>{evt.size_bytes}B</td>
-                  <td style={{ padding: '10px 16px' }}>
-                    <span className={`status-indicator flex items-center gap-1.5 px-2 py-1 rounded text-[10px] uppercase tracking-wider`} style={{
-                      background: evt.status === 'sent' ? 'rgba(0,255,65,0.08)' : evt.status === 'queued' ? 'rgba(255,204,0,0.08)' : 'rgba(255,51,85,0.08)',
-                      color: evt.status === 'sent' ? '#00ff41' : evt.status === 'queued' ? '#ffcc00' : '#ff3355',
-                      border: `1px solid ${evt.status === 'sent' ? 'rgba(0,255,65,0.25)' : evt.status === 'queued' ? 'rgba(255,204,0,0.25)' : 'rgba(255,51,85,0.25)'}`,
-                      fontFamily: 'var(--font-mono)',
-                      fontWeight: 600,
-                      letterSpacing: '1px',
-                    }}>
-                      <span>{evt.status === 'sent' ? '✓' : evt.status === 'queued' ? '◌' : '✕'}</span>
-                      {evt.status}
-                    </span>
-                  </td>
+
+        {/* Event Stream */}
+        <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            padding: '12px 16px', borderBottom: '1px solid #1a2736',
+          }}>
+            <span style={{ color: '#00ff41', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+            <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00d4ff', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>Outgoing Events</span>
+          </div>
+          <div ref={eventsRef} style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #1a2736' }}>
+                  {['Time', 'Format', 'Target', 'Class', 'Confidence', 'Status'].map(h => (
+                    <th key={h} style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {events.slice(0, 12).map(evt => (
+                  <tr key={evt.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '10px', padding: '7px 12px' }}>
+                      {new Date(evt.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </td>
+                    <td style={{ padding: '7px 12px' }}>
+                      {(() => {
+                        const fc = FORMAT_COLORS[evt.format] || '#5a7a9a';
+                        return (
+                          <span style={{
+                            fontFamily: '"JetBrains Mono", monospace', color: fc,
+                            background: fc + '18',
+                            border: '1px solid ' + fc + '44',
+                            padding: '2px 8px', borderRadius: '4px', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600,
+                          }}>{evt.format}</span>
+                        );
+                      })()}
+                    </td>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '11px', padding: '7px 12px', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{evt.target}</td>
+                    <td style={{ padding: '7px 12px' }}>
+                      <span style={{
+                        fontFamily: '"JetBrains Mono", monospace', color: '#ef4444',
+                        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                        padding: '2px 6px', borderRadius: '4px', fontSize: '9px', textTransform: 'uppercase',
+                      }}>{evt.threat_class}</span>
+                    </td>
+                    <td style={{ padding: '7px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(0,212,255,0.08)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: '2px', background: evt.confidence > 80 ? '#00ff41' : evt.confidence > 60 ? '#ff8833' : '#00d4ff', width: `${evt.confidence}%` }} />
+                        </div>
+                        <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '10px' }}>{evt.confidence}%</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '7px 12px' }}>
+                      <span style={{
+                        fontFamily: '"JetBrains Mono", monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600,
+                        color: evt.status === 'sent' ? '#00ff41' : evt.status === 'queued' ? '#ffcc00' : '#ef4444',
+                      }}>{evt.status === 'sent' ? '✓' : evt.status === 'queued' ? '◌' : '✕'} {evt.status}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Integration detail modal */}
-      {selectedIntegration && (
-        <div className="modal-overlay fixed inset-0 flex items-center justify-center z-50" style={{ background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)' }} onClick={() => setSelectedIntegration(null)}>
-          <div className="modal-content rounded-lg p-6 max-w-lg w-full" style={{ background: 'rgba(10,18,28,0.95)', border: '1px solid rgba(0,212,255,0.2)' }} onClick={e => e.stopPropagation()}>
-            <div className="material-detail-header flex items-center justify-between mb-4">
-              <h3 className="modal-title" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '16px', fontWeight: 700 }}>{selectedIntegration.name}</h3>
-              <button className="modal-close cursor-pointer" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)' }} onClick={() => setSelectedIntegration(null)}>✕</button>
+      {/* ── ADD INTEGRATION FORM ─────────────────────────────────── */}
+      {showAdd && (
+        <div style={{
+          background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px',
+          display: 'flex', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap',
+        }}>
+          <div style={{ flex: 1, minWidth: '180px' }}>
+            <label style={{ display: 'block', fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>Name</label>
+            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="My SIEM" style={{
+              width: '100%', background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px',
+              padding: '8px 10px', color: '#c8d6e5', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', outline: 'none',
+            }} />
+          </div>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <label style={{ display: 'block', fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>Endpoint</label>
+            <input value={newEndpoint} onChange={e => setNewEndpoint(e.target.value)} placeholder="host:port or https://..." style={{
+              width: '100%', background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px',
+              padding: '8px 10px', color: '#c8d6e5', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', outline: 'none',
+            }} />
+          </div>
+          <div style={{ minWidth: '130px' }}>
+            <label style={{ display: 'block', fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>Type</label>
+            <select value={newType} onChange={e => setNewType(e.target.value)} style={{
+              width: '100%', background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px',
+              padding: '8px 10px', color: '#c8d6e5', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', outline: 'none', cursor: 'pointer',
+            }}>
+              <option value="siem">SIEM</option>
+              <option value="siem-emulator">SIEM Emulator</option>
+              <option value="api">REST API</option>
+              <option value="agent">Agent</option>
+              <option value="forwarder">Forwarder</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={handleAdd} style={{
+              background: 'rgba(0,212,255,0.15)', color: '#00d4ff', border: '1px solid rgba(0,212,255,0.3)',
+              borderRadius: '6px', padding: '8px 16px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
+            }}>+ Add</button>
+            <button onClick={() => setShowAdd(false)} style={{
+              background: 'transparent', color: '#64748b', border: '1px solid rgba(0,212,255,0.12)',
+              borderRadius: '6px', padding: '8px 16px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
+            }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── DETAIL MODAL ─────────────────────────────────────────── */}
+      {selected && (
+        <div onClick={() => setSelected(null)} style={{
+          position: 'fixed', inset: 0, background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#0a1118', border: '1px solid #1a2736', borderRadius: '10px',
+            padding: '24px', maxWidth: '480px', width: '90%',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00d4ff', fontSize: '16px', fontWeight: 600 }}>{selected.name}</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '11px', marginTop: '2px' }}>{selected.id}</div>
+              </div>
+              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: '#2d4a6a', cursor: 'pointer', fontSize: '18px', fontFamily: '"JetBrains Mono", monospace' }}>✕</button>
             </div>
-            <div className="material-detail-grid grid grid-cols-2 gap-4">
-              <div className="detail-field">
-                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>ID</label>
-                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }}>{selectedIntegration.id}</span>
-              </div>
-              <div className="detail-field">
-                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Type</label>
-                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedIntegration.type}</span>
-              </div>
-              <div className="detail-field">
-                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Endpoint</label>
-                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#00d4ff', fontSize: '12px' }}><code>{selectedIntegration.endpoint}</code></span>
-              </div>
-              <div className="detail-field">
-                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Status</label>
-                <span className="detail-value block" style={{ color: getStatusColor(selectedIntegration.status), fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{selectedIntegration.status}</span>
-              </div>
-              <div className="detail-field">
-                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Events Sent</label>
-                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedIntegration.events_sent.toLocaleString()}</span>
-              </div>
-              <div className="detail-field">
-                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Latency</label>
-                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{selectedIntegration.latency_ms}ms</span>
-              </div>
-              <div className="detail-field col-span-2">
-                <label className="block mb-1" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px' }}>Last Heartbeat</label>
-                <span className="detail-value block" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{new Date(selectedIntegration.last_heartbeat).toLocaleString()}</span>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {[
+                { label: 'Type', value: selected.type, color: TYPE_COLORS[selected.type] || '#c8d6e5' },
+                { label: 'Status', value: selected.status, color: STATUS_COLOR[selected.status] },
+                { label: 'Endpoint', value: selected.endpoint, color: '#00d4ff' },
+                { label: 'Latency', value: selected.latency_ms > 0 ? `${selected.latency_ms}ms` : '—', color: '#c8d6e5' },
+                { label: 'Events Sent', value: selected.events_sent.toLocaleString(), color: '#c8d6e5' },
+                { label: 'Last Heartbeat', value: new Date(selected.last_heartbeat).toLocaleString(), color: '#c8d6e5' },
+              ].map(field => (
+                <div key={field.label} style={{ background: 'rgba(6,10,16,0.6)', borderRadius: '6px', padding: '10px', border: '1px solid rgba(0,212,255,0.06)' }}>
+                  <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '4px' }}>{field.label}</div>
+                  <div style={{ fontFamily: '"JetBrains Mono", monospace', color: field.color, fontSize: '12px', fontWeight: 600 }}>{field.value}</div>
+                </div>
+              ))}
             </div>
-            <div className="modal-actions flex gap-2 mt-4">
-              <button className="btn btn-primary cursor-pointer" onClick={() => {
-                setIntegrations(prev => prev.map(i =>
-                  i.id === selectedIntegration.id ? { ...i, status: 'connected' as const, latency_ms: Math.floor(Math.random() * 20) + 1 } : i
-                ));
-                setSelectedIntegration(null);
-              }} style={{ fontFamily: 'var(--font-mono)' }}>
-                Reconnect
-              </button>
-              <button className="btn btn-danger cursor-pointer" onClick={() => {
-                setIntegrations(prev => prev.filter(i => i.id !== selectedIntegration.id));
-                setSelectedIntegration(null);
-              }} style={{ fontFamily: 'var(--font-mono)' }}>
-                Remove
-              </button>
-              <button className="btn btn-secondary cursor-pointer" onClick={() => setSelectedIntegration(null)} style={{ fontFamily: 'var(--font-mono)' }}>Close</button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+              <button onClick={() => {
+                setIntegrations(prev => prev.map(i => i.id === selected.id ? { ...i, status: 'connected' as const, latency_ms: Math.floor(Math.random() * 20) + 1 } : i));
+                setSelected(null);
+              }} style={{
+                flex: 1, background: 'rgba(0,255,65,0.12)', color: '#00ff41', border: '1px solid rgba(0,255,65,0.25)',
+                borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
+              }}>Reconnect</button>
+              <button onClick={() => { setIntegrations(prev => prev.filter(i => i.id !== selected.id)); setSelected(null); }} style={{
+                flex: 1, background: 'rgba(239,68,68,0.12)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)',
+                borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
+              }}>Remove</button>
+              <button onClick={() => setSelected(null)} style={{
+                flex: 1, background: 'transparent', color: '#64748b', border: '1px solid rgba(0,212,255,0.12)',
+                borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
+              }}>Close</button>
             </div>
           </div>
         </div>

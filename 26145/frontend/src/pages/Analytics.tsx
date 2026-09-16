@@ -1,181 +1,564 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-} from 'recharts';
-import { Stats } from '../types';
-import {
-  generateHistoricalAlerts,
-  generateFlowTimeSeries,
-  generateThreatTypeData,
-  generateRadarData,
-  generateTopSourceIPs,
-  generateProtocolDistribution,
-  getDetectionMetrics,
-} from '../lib/mockBackend';
+  AlertTriangle,
+  ShieldCheck,
+  Clock,
+  ShieldX,
+  Activity,
+  Zap,
+  Target,
+  Globe,
+  Server,
+  Radio,
+  Search,
+  Download,
+  Lock,
+} from 'lucide-react';
+import { getDetectionMetrics, generateThreatTypeData, generateTopSourceIPs } from '../lib/mockBackend';
 
 /* ------------------------------------------------------------------ */
-/*  Constants & helpers                                               */
+/*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-const PIE_COLORS = ['#ff3355', '#00d4ff', '#ff8833', '#00ff41', '#b347ff', '#ec4899'];
+interface TrendPoint {
+  time: string;
+  threats: number;
+  timestamp: number;
+}
 
-const TOOLTIP_STYLE = {
-  backgroundColor: 'rgba(10,16,24,0.95)',
-  border: '1px solid rgba(0,212,255,0.2)',
-  borderRadius: '8px',
-  color: '#c8d6e5',
-  fontSize: '12px',
-  fontFamily: 'var(--font-mono), monospace',
+interface ThreatBreakdownItem {
+  name: string;
+  count: number;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+}
+
+interface AttackSource {
+  rank: number;
+  ip: string;
+  country: string;
+  flag: string;
+  attacks: number;
+  threatType: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  trend: number;
+}
+
+type TimeRange = '24h' | '7d' | '30d';
+
+/* ------------------------------------------------------------------ */
+/*  Constants                                                          */
+/* ------------------------------------------------------------------ */
+
+const COLORS = {
+  bg: '#060a10',
+  cardBg: '#0a1118',
+  border: '#1a2736',
+  borderLight: '#1e2d40',
+  textPrimary: '#e0e8f0',
+  textSecondary: '#64748b',
+  textMuted: '#3a4a5e',
+  accent: '#00d4ff',
+  threat: {
+    critical: '#ef4444',
+    high: '#f97316',
+    medium: '#eab308',
+    low: '#06b6d4',
+  },
+  grid: '#1a2736',
+  gridLight: '#14202d',
 };
 
-const GRID_STROKE = 'rgba(0,212,255,0.06)';
-const AXIS_STROKE = 'rgba(0,212,255,0.15)';
-const AXIS_FILL = '#5a7a9a';
+const FONT_MONO = "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace";
+const FONT_SANS = "'Inter', system-ui, -apple-system, sans-serif";
+
+const SEVERITY_LABELS: Record<string, string> = {
+  critical: 'CRITICAL',
+  high: 'HIGH',
+  medium: 'MEDIUM',
+  low: 'LOW',
+};
+
+const THREAT_TYPES = [
+  { id: 'DDoS', icon: Zap, severity: 'critical' as const },
+  { id: 'Port Scan', icon: Search, severity: 'medium' as const },
+  { id: 'Data Exfil', icon: Download, severity: 'critical' as const },
+  { id: 'DGA Domains', icon: Globe, severity: 'high' as const },
+  { id: 'C2 Beaconing', icon: Radio, severity: 'high' as const },
+  { id: 'DNS Tunnel', icon: Server, severity: 'high' as const },
+  { id: 'TLS Anomaly', icon: ShieldCheck, severity: 'medium' as const },
+  { id: 'Brute Force', icon: Lock, severity: 'high' as const },
+  { id: 'SQL Injection', icon: Target, severity: 'high' as const },
+  { id: 'XSS Attack', icon: AlertTriangle, severity: 'medium' as const },
+];
+
+const COUNTRIES = [
+  { code: 'RU', flag: '\u{1F1F7}\u{1F1FA}' },
+  { code: 'CN', flag: '\u{1F1E8}\u{1F1F3}' },
+  { code: 'KP', flag: '\u{1F1F0}\u{1F1F5}' },
+  { code: 'IR', flag: '\u{1F1EE}\u{1F1F7}' },
+  { code: 'BR', flag: '\u{1F1E7}\u{1F1F7}' },
+  { code: 'IN', flag: '\u{1F1EE}\u{1F1F3}' },
+  { code: 'US', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: 'DE', flag: '\u{1F1E9}\u{1F1EA}' },
+  { code: 'VN', flag: '\u{1F1FB}\u{1F1F3}' },
+  { code: 'NG', flag: '\u{1F1F3}\u{1F1EC}' },
+];
 
 /* ------------------------------------------------------------------ */
-/*  Accuracy Gauge component                                           */
+/*  Random helpers (stable per-range)                                  */
 /* ------------------------------------------------------------------ */
 
-function AccuracyGauge({ accuracy }: { accuracy: number }) {
-  const [displayed, setDisplayed] = useState(0);
+const seededRandom = (seed: number) => {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xFFFFFFFF;
+    return (s >>> 0) / 0xFFFFFFFF;
+  };
+};
 
-  useEffect(() => {
-    let frame: number;
-    const start = performance.now();
-    const duration = 1200;
-    const from = 0;
+const pick = <T,>(arr: T[], rand: () => number): T =>
+  arr[Math.floor(rand() * arr.length)];
 
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      // ease-out cubic
-      const ease = 1 - Math.pow(1 - t, 3);
-      setDisplayed(from + (accuracy - from) * ease);
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
+const generateIP = (rand: () => number): string =>
+  `${Math.floor(rand() * 223) + 1}.${Math.floor(rand() * 256)}.${Math.floor(rand() * 256)}.${Math.floor(rand() * 256)}`;
 
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [accuracy]);
+/* ------------------------------------------------------------------ */
+/*  Data generators per time range                                     */
+/* ------------------------------------------------------------------ */
 
-  const pct = displayed / 100;
-  const circumference = 2 * Math.PI * 40;
-  const offset = circumference * (1 - pct);
+function generateTrendData(range: TimeRange): TrendPoint[] {
+  const now = Date.now();
+  const seed = now - (range === '24h' ? 86400000 : range === '7d' ? 604800000 : 2592000000);
+  const rand = seededRandom(Math.floor(seed / 1000));
+  const points: TrendPoint[] = [];
+  let count = range === '24h' ? 24 : range === '7d' ? 7 : 30;
+  let step = range === '24h' ? 3600000 : range === '7d' ? 86400000 : 86400000;
+
+  for (let i = count - 1; i >= 0; i--) {
+    const ts = now - i * step;
+    const d = new Date(ts);
+    const label = range === '24h'
+      ? d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+      : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const hour = d.getHours();
+    const isBusinessHours = hour >= 9 && hour <= 17;
+    const isNight = hour >= 22 || hour <= 5;
+    const peak = range === '24h' ? (isBusinessHours ? 2.5 : isNight ? 0.4 : 1.2) : 1.0;
+    const base = range === '24h' ? 30 : range === '7d' ? 200 : 600;
+    const variance = range === '24h' ? 25 : range === '7d' ? 150 : 400;
+    const threats = Math.max(0, Math.round((base + rand() * variance) * peak + (rand() - 0.5) * variance * 0.5));
+    points.push({ time: label, threats, timestamp: ts });
+  }
+  return points;
+}
+
+function generateThreatBreakdown(range: TimeRange): ThreatBreakdownItem[] {
+  const rand = seededRandom(range === '24h' ? 1 : range === '7d' ? 2 : 3);
+  const multiplier = range === '24h' ? 1 : range === '7d' ? 6 : 25;
+
+  return THREAT_TYPES.map((type) => {
+    const base = type.severity === 'critical' ? 8 : type.severity === 'high' ? 15 : 25;
+    const count = Math.round((base + rand() * base * 2) * multiplier);
+    return { name: type.id, count, severity: type.severity };
+  }).sort((a, b) => b.count - a.count);
+}
+
+function generateAttackSources(range: TimeRange): AttackSource[] {
+  const rand = seededRandom(range === '24h' ? 10 : range === '7d' ? 20 : 30);
+  const sources: AttackSource[] = [];
+  const usedIPs = new Set<string>();
+
+  for (let i = 0; i < 10; i++) {
+    let ip: string;
+    do { ip = generateIP(rand); } while (usedIPs.has(ip));
+    usedIPs.add(ip);
+
+    const country = pick(COUNTRIES, rand);
+    const threatType = pick(THREAT_TYPES, rand);
+    const severityRand = rand();
+    let severity: AttackSource['severity'];
+    if (severityRand < 0.15) severity = 'critical';
+    else if (severityRand < 0.4) severity = 'high';
+    else if (severityRand < 0.75) severity = 'medium';
+    else severity = 'low';
+
+    const baseAttacks = range === '24h' ? 120 : range === '7d' ? 800 : 3000;
+    const attacks = Math.round(baseAttacks * (0.3 + rand() * 0.7) * (1 - i * 0.08));
+    const trend = Math.round((rand() - 0.4) * 60);
+
+    sources.push({
+      rank: i + 1,
+      ip,
+      country: country.code,
+      flag: country.flag,
+      attacks,
+      threatType: threatType.id,
+      severity,
+      trend,
+    });
+  }
+
+  return sources.sort((a, b) => b.attacks - a.attacks).map((s, i) => ({ ...s, rank: i + 1 }));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Metric helpers                                                     */
+/* ------------------------------------------------------------------ */
+
+const THREAT_COLORS: Record<string, string> = {
+  critical: COLORS.threat.critical,
+  high: COLORS.threat.high,
+  medium: COLORS.threat.medium,
+  low: COLORS.threat.low,
+};
+
+/* ------------------------------------------------------------------ */
+/*  Inline SVG chart components                                        */
+/* ------------------------------------------------------------------ */
+
+function ThreatTrendChart({ data }: { data: TrendPoint[] }) {
+  const width = 800;
+  const height = 280;
+  const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+  const chartW = width - padding.left - padding.right;
+  const chartH = height - padding.top - padding.bottom;
+
+  const maxVal = Math.max(...data.map((d) => d.threats));
+  const minVal = Math.min(...data.map((d) => d.threats));
+  const range = maxVal - minVal || 1;
+
+  const points = data.map((d, i) => ({
+    x: padding.left + (i / (data.length - 1)) * chartW,
+    y: padding.top + chartH - ((d.threats - minVal) / range) * chartH,
+  }));
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+  const areaPath =
+    linePath +
+    ` L${points[points.length - 1].x},${padding.top + chartH}` +
+    ` L${points[0].x},${padding.top + chartH} Z`;
+
+  const yTicks = 5;
+  const yTickValues = Array.from({ length: yTicks }, (_, i) =>
+    Math.round(minVal + (range * i) / (yTicks - 1))
+  );
+
+  const xLabels = data.filter((_, i) => i % Math.ceil(data.length / 8) === 0);
 
   return (
-    <div className="relative flex items-center justify-center">
-      <svg width="110" height="110" viewBox="0 0 100 100">
-        {/* background track */}
-        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,212,255,0.08)" strokeWidth="8" />
-        {/* progress arc */}
-        <circle
-          cx="50"
-          cy="50"
-          r="40"
-          fill="none"
-          stroke="#00ff41"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={circumference * 0.61}
-          strokeDashoffset={offset}
-          transform="rotate(126 50 50)"
-          className="transition-all duration-1000"
-        />
-        <text
-          x="50"
-          y="46"
-          textAnchor="middle"
-          fill="#00d4ff"
-          fontSize="18"
-          fontWeight="700"
-          fontFamily="var(--font-mono), monospace"
-        >
-          {displayed.toFixed(1)}%
-        </text>
-        <text
-          x="50"
-          y="62"
-          textAnchor="middle"
-          fill="#5a7a9a"
-          fontSize="9"
-          fontFamily="var(--font-mono), monospace"
-          letterSpacing="1px"
-        >
-          ACCURACY
-        </text>
-      </svg>
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxHeight: height }}>
+      <defs>
+        <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={COLORS.accent} stopOpacity="0.2" />
+          <stop offset="100%" stopColor={COLORS.accent} stopOpacity="0" />
+        </linearGradient>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Grid lines */}
+      {yTickValues.map((val) => {
+        const y = padding.top + chartH - ((val - minVal) / range) * chartH;
+        return (
+          <g key={`grid-${val}`}>
+            <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke={COLORS.gridLight} strokeWidth="1" />
+            <text
+              x={padding.left - 8}
+              y={y + 4}
+              textAnchor="end"
+              fill={COLORS.textSecondary}
+              fontSize="10"
+              fontFamily={FONT_MONO}
+            >
+              {val.toLocaleString()}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Vertical grid lines */}
+      {xLabels.map((_, i) => {
+        const idx = Math.floor((i / 8) * (data.length - 1));
+        const x = points[idx]?.x;
+        if (!x) return null;
+        return <line key={`vgrid-${i}`} x1={x} y1={padding.top} x2={x} y2={padding.top + chartH} stroke={COLORS.gridLight} strokeWidth="1" />;
+      })}
+
+      {/* Area fill */}
+      <path d={areaPath} fill="url(#trendGradient)" />
+
+      {/* Line */}
+      <path d={linePath} fill="none" stroke={COLORS.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)" />
+
+      {/* Data points */}
+      {points.map((p, i) => {
+        const isLast = i === points.length - 1;
+        const isMax = data[i].threats === maxVal;
+        return (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r={isLast || isMax ? 5 : 3} fill={COLORS.bg} stroke={COLORS.accent} strokeWidth="2" />
+            {isLast && (
+              <circle cx={p.x} cy={p.y} r="8" fill={COLORS.accent} opacity="0.15" />
+            )}
+          </g>
+        );
+      })}
+
+      {/* X-axis labels */}
+      {xLabels.map((d, i) => {
+        const idx = Math.floor((i / 8) * (data.length - 1));
+        const x = points[idx]?.x;
+        if (!x) return null;
+        return (
+          <text
+            key={d.time}
+            x={x}
+            y={height - 12}
+            textAnchor="middle"
+            fill={COLORS.textSecondary}
+            fontSize="10"
+            fontFamily={FONT_MONO}
+          >
+            {d.time}
+          </text>
+        );
+      })}
+
+      {/* Max annotation */}
+      {(() => {
+        const maxIdx = data.findIndex((d) => d.threats === maxVal);
+        const p = points[maxIdx];
+        if (!p || maxIdx < 2) return null;
+        return (
+          <g>
+            <text
+              x={p.x}
+              y={p.y - 14}
+              textAnchor="middle"
+              fill={COLORS.accent}
+              fontSize="11"
+              fontWeight="700"
+              fontFamily={FONT_MONO}
+            >
+              {maxVal.toLocaleString()}
+            </text>
+          </g>
+        );
+      })()}
+    </svg>
+  );
+}
+
+function ThreatBreakdownChart({ data }: { data: ThreatBreakdownItem[] }) {
+  const width = 700;
+  const height = 340;
+  const padding = { top: 10, right: 80, bottom: 10, left: 130 };
+  const chartH = height - padding.top - padding.bottom;
+  const barHeight = Math.min(28, (chartH - (data.length - 1) * 6) / data.length);
+  const maxVal = Math.max(...data.map((d) => d.count));
+  const chartW = width - padding.left - padding.right;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxHeight: height }}>
+      {data.map((item, i) => {
+        const y = padding.top + i * (barHeight + 6);
+        const barW = (item.count / maxVal) * chartW;
+        const color = THREAT_COLORS[item.severity] || COLORS.accent;
+
+        return (
+          <g key={item.name}>
+            {/* Label */}
+            <text
+              x={padding.left - 10}
+              y={y + barHeight / 2 + 4}
+              textAnchor="end"
+              fill={COLORS.textSecondary}
+              fontSize="11"
+              fontFamily={FONT_MONO}
+            >
+              {item.name}
+            </text>
+
+            {/* Bar background */}
+            <rect
+              x={padding.left}
+              y={y}
+              width={chartW}
+              height={barHeight}
+              fill={COLORS.grid}
+              rx="2"
+            />
+
+            {/* Bar fill */}
+            <rect
+              x={padding.left}
+              y={y}
+              width={barW}
+              height={barHeight}
+              fill={color}
+              rx="2"
+              opacity="0.85"
+            />
+
+            {/* Value */}
+            <text
+              x={padding.left + barW + 8}
+              y={y + barHeight / 2 + 4}
+              fill={color}
+              fontSize="11"
+              fontWeight="600"
+              fontFamily={FONT_MONO}
+            >
+              {item.count.toLocaleString()}
+            </text>
+
+            {/* Severity dot */}
+            <circle cx={width - padding.right + 18} cy={y + barHeight / 2} r="4" fill={color} />
+            <text
+              x={width - padding.right + 28}
+              y={y + barHeight / 2 + 4}
+              fill={COLORS.textMuted}
+              fontSize="9"
+              fontFamily={FONT_MONO}
+            >
+              {SEVERITY_LABELS[item.severity]}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Severity bar component                                             */
+/* ------------------------------------------------------------------ */
+
+function SeverityBar({ severity, attacks }: { severity: string; attacks: number }) {
+  const color = THREAT_COLORS[severity] || COLORS.accent;
+  const width = Math.min(100, Math.max(15, Math.log10(attacks) * 12));
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="relative h-1.5 rounded-full" style={{ width: 100, background: COLORS.grid }}>
+        <div className="absolute left-0 top-0 h-full rounded-full transition-all duration-500" style={{ width: `${width}%`, background: color }} />
+      </div>
+      <span className="text-[10px] uppercase tracking-wider" style={{ color, fontFamily: FONT_MONO, minWidth: 56 }}>
+        {SEVERITY_LABELS[severity] || severity.toUpperCase()}
+      </span>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Metric Card                                                        */
+/*  Trend indicator                                                    */
 /* ------------------------------------------------------------------ */
 
-interface MetricCardProps {
+function TrendIndicator({ value }: { value: number }) {
+  const isUp = value > 0;
+  const color = isUp ? COLORS.threat.critical : COLORS.threat.low;
+  const arrow = isUp ? '↑' : '↓';
+
+  return (
+    <span className="flex items-center gap-0.5 text-[10px] font-semibold" style={{ color, fontFamily: FONT_MONO }}>
+      {arrow} {Math.abs(value)}%
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  KPI Card                                                           */
+/* ------------------------------------------------------------------ */
+
+interface KPICardProps {
   label: string;
   value: string;
-  subtitle?: string;
+  subValue?: string;
+  icon: React.ReactNode;
   accentColor: string;
-  delay?: number;
+  trend?: number;
+  progress?: number;
 }
 
-function MetricCard({ label, value, subtitle, accentColor, delay = 0 }: MetricCardProps) {
+function KPICard({ label, value, subValue, icon, accentColor, trend, progress }: KPICardProps) {
   return (
     <div
-      style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}
-      className="rounded-lg p-5 transition-all duration-300 animate-in"
+      className="relative overflow-hidden rounded-lg p-5 transition-all duration-300 hover:border-opacity-40 group"
+      style={{
+        background: COLORS.cardBg,
+        border: `1px solid ${COLORS.border}`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = `${accentColor}40`;
+        e.currentTarget.style.boxShadow = `0 0 20px ${accentColor}10`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = COLORS.border;
+        e.currentTarget.style.boxShadow = 'none';
+      }}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className="p-2.5 rounded-lg"
-          style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
-        >
+      {/* Top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, ${accentColor}60, transparent)` }} />
+
+      <div className="flex items-start justify-between mb-3">
+        <div className="p-2 rounded-md" style={{ background: `${accentColor}12`, color: accentColor }}>
+          {icon}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>{label}</p>
-          <p className="text-2xl font-bold tracking-tight" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)' }}>{value}</p>
-          {subtitle && <p className="text-xs mt-1" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)' }}>{subtitle}</p>}
-        </div>
+        {trend !== undefined && <TrendIndicator value={trend} />}
       </div>
+
+      <div className="mb-1">
+        <span className="text-2xl font-bold tracking-tight" style={{ color: COLORS.textPrimary, fontFamily: FONT_MONO }}>
+          {value}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-widest" style={{ color: COLORS.textSecondary, fontFamily: FONT_MONO }}>
+          {label}
+        </span>
+        {subValue && <span className="text-[10px]" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>{subValue}</span>}
+      </div>
+
+      {/* Progress bar */}
+      {progress !== undefined && (
+        <div className="mt-3 relative h-1 rounded-full" style={{ background: COLORS.grid }}>
+          <div
+            className="absolute left-0 top-0 h-full rounded-full transition-all duration-700"
+            style={{ width: `${Math.min(100, progress)}%`, background: accentColor, opacity: 0.6 }}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Section title helper                                               */
+/*  Section header                                                     */
 /* ------------------------------------------------------------------ */
 
-function SectionTitle({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="mb-4">
-      <h2 className="text-base font-semibold uppercase tracking-wider" style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>
-        {title}
-      </h2>
-      {subtitle && <p className="text-xs mt-0.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>{subtitle}</p>}
+    <div className="flex items-center gap-3 mb-4">
+      <span className="text-sm" style={{ color: COLORS.accent, fontFamily: FONT_MONO, letterSpacing: '2px', fontWeight: 700 }}>
+        {'◈'}
+      </span>
+      <div>
+        <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: COLORS.accent, fontFamily: FONT_MONO, letterSpacing: '2px' }}>
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="text-[10px] mt-0.5" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+            {subtitle}
+          </p>
+        )}
+      </div>
+      <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${COLORS.border}, transparent)` }} />
     </div>
   );
 }
@@ -184,328 +567,257 @@ function SectionTitle({
 /*  Main Analytics page                                                */
 /* ------------------------------------------------------------------ */
 
-const Analytics: React.FC<{ darkMode?: boolean }> = () => {
-  const [alertsTrend, setAlertsTrend] = useState<{ time: string; alerts: number }[]>([]);
-  const [flowSeries, setFlowSeries] = useState<{ time: string; flows: number }[]>([]);
-  const [threatTypeData, setThreatTypeData] = useState<{ name: string; count: number; severity: string }[]>([]);
-  const [radarData, setRadarData] = useState<{ category: string; risk: number }[]>([]);
-  const [topIPs, setTopIPs] = useState<{ ip: string; attacks: number }[]>([]);
-  const [protocolData, setProtocolData] = useState<{ name: string; value: number }[]>([]);
-  const [metrics, setMetrics] = useState(getDetectionMetrics());
-  const [stats, setStats] = useState<Stats | null>(null);
+const Analytics: React.FC = () => {
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const [metrics] = useState(getDetectionMetrics);
 
-  /* ---- helpers ---- */
-  const randomBetween = (min: number, max: number) =>
-    Math.floor(Math.random() * (max - min + 1)) + min;
+  const trendData = useMemo(() => generateTrendData(timeRange), [timeRange]);
+  const breakdownData = useMemo(() => generateThreatBreakdown(timeRange), [timeRange]);
+  const attackSources = useMemo(() => generateAttackSources(timeRange), [timeRange]);
 
-  /* ---- load mock data on mount ---- */
-  useEffect(() => {
-    setAlertsTrend(generateHistoricalAlerts(30));
-    setFlowSeries(generateFlowTimeSeries(30));
-    setThreatTypeData(generateThreatTypeData());
-    setRadarData(generateRadarData());
-    setTopIPs(generateTopSourceIPs(8));
-    setProtocolData(generateProtocolDistribution());
-    setMetrics(getDetectionMetrics());
+  const totalThreats = useMemo(() => trendData.reduce((sum, d) => sum + d.threats, 0), [trendData]);
+  const detectionRate = useMemo(() => (94.2 + Math.random() * 2.5).toFixed(1), [timeRange]);
+  const falsePositiveRate = useMemo(() => (2.1 + Math.random() * 2.8).toFixed(1), [timeRange]);
+  const avgResponseTime = useMemo(() => (120 + Math.random() * 80).toFixed(0), [timeRange]);
 
-    // Simulate a Stats fetch
-    const timer = setTimeout(() => {
-      setStats({
-        total_flows: randomBetween(15000, 50000),
-        total_alerts: randomBetween(200, 600),
-        threats_per_type: {},
-        avg_confidence: randomBetween(85, 95),
-        flows_per_sec: randomBetween(50, 200),
-        active_connections: randomBetween(500, 1500),
-        uptime_sec: randomBetween(36000, 86400),
-      });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
-
-  /* ---- refresh handler ---- */
-  const refreshData = () => {
-    setAlertsTrend(generateHistoricalAlerts(30));
-    setFlowSeries(generateFlowTimeSeries(30));
-    setThreatTypeData(generateThreatTypeData());
-    setRadarData(generateRadarData());
-    setTopIPs(generateTopSourceIPs(8));
-    setProtocolData(generateProtocolDistribution());
-    setMetrics(getDetectionMetrics());
+  const rangeLabels: Record<TimeRange, string> = {
+    '24h': 'Last 24 hours',
+    '7d': 'Last 7 days',
+    '30d': 'Last 30 days',
   };
 
-  const totalProtocol = useMemo(
-    () => protocolData.reduce((sum, d) => sum + d.value, 0),
-    [protocolData],
-  );
-
-  const threatsBlocked = metrics.threatsBlockedToday.toLocaleString();
-
   return (
-    <div className="space-y-6 p-6">
-      {/* ---- Header row ---- */}
+    <div className="space-y-5 p-5" style={{ background: COLORS.bg, fontFamily: FONT_SANS }}>
+      {/* ---- Header ---- */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span style={{ color: '#00ff41', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: '#00ff41' }} />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: '#00ff41' }} />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#00ff41', fontFamily: FONT_MONO }}>
+              Live Monitoring Active
+            </span>
           </div>
-          <h1 className="text-2xl font-bold uppercase tracking-wider" style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)', letterSpacing: '3px' }}>Analytics</h1>
-          <p className="text-sm mt-0.5" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>
-            Threat intelligence overview · last 30 minutes
+          <h1 className="text-xl font-bold uppercase tracking-wider" style={{ color: COLORS.accent, fontFamily: FONT_MONO, letterSpacing: '3px' }}>
+            Threat Analytics
+          </h1>
+          <p className="text-xs mt-0.5" style={{ color: COLORS.textSecondary, fontFamily: FONT_MONO }}>
+            {rangeLabels[timeRange]} · Comprehensive threat intelligence overview
           </p>
         </div>
-        <button
-          onClick={refreshData}
-          style={{ background: 'rgba(0,212,255,0.08)', color: '#00d4ff', border: '1px solid rgba(0,212,255,0.3)' }}
-          className="text-xs flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all hover:shadow-lg cursor-pointer"
-          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 0 15px rgba(0,212,255,0.15)'; e.currentTarget.style.background = 'rgba(0,212,255,0.15)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.background = 'rgba(0,212,255,0.08)'; }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="23 4 23 10 17 10" />
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-          </svg>
-          Refresh Data
-        </button>
+
+        {/* Time range selector */}
+        <div className="flex items-center gap-1 p-1 rounded-lg" style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}` }}>
+          {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className="px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-200"
+              style={{
+                background: timeRange === range ? `${COLORS.accent}15` : 'transparent',
+                color: timeRange === range ? COLORS.accent : COLORS.textSecondary,
+                fontFamily: FONT_MONO,
+                border: timeRange === range ? `1px solid ${COLORS.accent}30` : '1px solid transparent',
+              }}
+            >
+              {range}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ============================================================
-           1. THREAT TRENDS
+           1. KPI CARDS
            ============================================================ */}
-      <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-6">
-        <SectionTitle title="Threat Trends" subtitle="Alerts detected per minute — last 30 minutes" />
-
-        <ResponsiveContainer width="100%" height={320}>
-          <AreaChart data={alertsTrend} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-            <defs>
-              <linearGradient id="alertGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ff3355" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="#ff3355" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-            <XAxis
-              dataKey="time"
-              tick={{ fontSize: 10, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }}
-              stroke={GRID_STROKE}
-              interval="preserveStartEnd"
-              minTickGap={50}
-            />
-            <YAxis tick={{ fontSize: 10, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }} stroke={GRID_STROKE} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} />
-            <Area
-              type="monotone"
-              dataKey="alerts"
-              stroke="#ff3355"
-              strokeWidth={2}
-              fill="url(#alertGradient)"
-              dot={false}
-              activeDot={{ r: 4, stroke: '#ff3355', fill: '#060a10' }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <KPICard
+          label="Total Threats Detected"
+          value={totalThreats.toLocaleString()}
+          subValue={`${timeRange}`}
+          icon={<Activity size={20} />}
+          accentColor={COLORS.threat.critical}
+          trend={Math.round(Math.random() * 30 - 10)}
+          progress={75 + Math.random() * 20}
+        />
+        <KPICard
+          label="Detection Rate"
+          value={`${detectionRate}%`}
+          subValue="Model accuracy"
+          icon={<ShieldCheck size={20} />}
+          accentColor={COLORS.threat.low}
+          trend={Math.round(Math.random() * 5)}
+          progress={parseFloat(detectionRate)}
+        />
+        <KPICard
+          label="False Positive Rate"
+          value={`${falsePositiveRate}%`}
+          subValue="Target: < 3%"
+          icon={<Target size={20} />}
+          accentColor={COLORS.threat.medium}
+          trend={Math.round(Math.random() * -15)}
+          progress={parseFloat(falsePositiveRate) * 10}
+        />
+        <KPICard
+          label="Avg Response Time"
+          value={`${avgResponseTime}ms`}
+          subValue="Mean time to respond"
+          icon={<Clock size={20} />}
+          accentColor={COLORS.accent}
+          trend={Math.round(Math.random() * -20)}
+          progress={50 + Math.random() * 30}
+        />
       </div>
 
       {/* ============================================================
-           2. DETECTION PERFORMANCE
+           2. THREAT TREND
            ============================================================ */}
-      <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-6">
-        <SectionTitle title="Detection Performance" subtitle="Real-time model metrics" />
+      <div
+        className="rounded-lg p-5"
+        style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}` }}
+      >
+        <SectionHeader title="Threat Trend" subtitle={`Detected threats over ${rangeLabels[timeRange].toLowerCase()}`} />
+        <div className="w-full overflow-hidden">
+          <ThreatTrendChart data={trendData} />
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Accuracy Gauge */}
-          <div className="flex flex-col items-center justify-center">
-            <AccuracyGauge accuracy={metrics.modelAccuracy} />
-            <p className="text-xs mt-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Model Accuracy</p>
+      {/* ============================================================
+           3. THREAT BREAKDOWN
+           ============================================================ */}
+      <div
+        className="rounded-lg p-5"
+        style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}` }}
+      >
+        <SectionHeader title="Threat Breakdown" subtitle="Distribution by threat category" />
+        <div className="w-full overflow-x-auto">
+          <ThreatBreakdownChart data={breakdownData} />
+        </div>
+      </div>
+
+      {/* ============================================================
+           4. TOP ATTACK SOURCES
+           ============================================================ */}
+      <div
+        className="rounded-lg overflow-hidden"
+        style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}` }}
+      >
+        <div className="p-5 pb-3">
+          <SectionHeader title="Top Attack Sources" subtitle="Ranked by attack volume" />
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${COLORS.border}` }}>
+                <th className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+                  Rank
+                </th>
+                <th className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+                  Source IP
+                </th>
+                <th className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+                  Country
+                </th>
+                <th className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+                  Attack Count
+                </th>
+                <th className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+                  Threat Type
+                </th>
+                <th className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+                  Severity
+                </th>
+                <th className="text-left px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+                  Trend
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {attackSources.map((source) => (
+                <tr
+                  key={source.ip}
+                  className="transition-colors duration-150"
+                  style={{ borderBottom: `1px solid ${COLORS.border}30` }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `${COLORS.accent}05`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <td className="px-5 py-3">
+                    <span
+                      className="inline-flex items-center justify-center w-6 h-6 rounded text-[10px] font-bold"
+                      style={{
+                        background: source.rank <= 3 ? `${COLORS.threat.critical}15` : COLORS.grid,
+                        color: source.rank <= 3 ? COLORS.threat.critical : COLORS.textSecondary,
+                        fontFamily: FONT_MONO,
+                      }}
+                    >
+                      {source.rank}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-xs font-semibold tracking-wide" style={{ color: COLORS.textPrimary, fontFamily: FONT_MONO }}>
+                      {source.ip}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-base" role="img" aria-label={source.country}>
+                      {source.flag}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-xs font-semibold" style={{ color: COLORS.textPrimary, fontFamily: FONT_MONO }}>
+                      {source.attacks.toLocaleString()}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="text-xs" style={{ color: COLORS.textSecondary, fontFamily: FONT_MONO }}>
+                      {source.threatType}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <SeverityBar severity={source.severity} attacks={source.attacks} />
+                  </td>
+                  <td className="px-5 py-3">
+                    <TrendIndicator value={source.trend} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ---- Footer status bar ---- */}
+      <div
+        className="flex items-center justify-between px-4 py-2.5 rounded-lg"
+        style={{ background: COLORS.cardBg, border: `1px solid ${COLORS.border}` }}
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#00ff41' }} />
+            <span className="text-[10px]" style={{ color: COLORS.textSecondary, fontFamily: FONT_MONO }}>
+              SYSTEM ONLINE
+            </span>
           </div>
-
-          <MetricCard
-            label="False Positive Rate"
-            value={`${metrics.falsePositiveRate.toFixed(1)}%`}
-            subtitle="Target: < 5%"
-            accentColor="#ff8833"
-            delay={100}
-          />
-
-          <MetricCard
-            label="Avg Detection Time"
-            value={`${metrics.avgDetectionTime.toFixed(1)}s`}
-            subtitle="Mean time to detect"
-            accentColor="#00d4ff"
-            delay={200}
-          />
-
-          <MetricCard
-            label="Threats Blocked"
-            value={threatsBlocked}
-            subtitle="Past 24 hours"
-            accentColor="#00ff41"
-            delay={300}
-          />
-
-          <MetricCard
-            label="Active Connections"
-            value={stats?.active_connections?.toLocaleString() ?? '---'}
-            subtitle="Current live flows"
-            accentColor="#b347ff"
-            delay={400}
-          />
+          <div className="h-3 w-px" style={{ background: COLORS.border }} />
+          <span className="text-[10px]" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+            NODE: WATCHTOWER-PRIME
+          </span>
         </div>
-      </div>
-
-      {/* ============================================================
-           3. THREAT DISTRIBUTION
-           ============================================================ */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* Horizontal bar chart */}
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-6">
-          <SectionTitle title="Threat Distribution" subtitle="Counts by threat type" />
-
-          <ResponsiveContainer width="100%" height={340}>
-            <BarChart data={threatTypeData} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }} stroke={GRID_STROKE} />
-              <YAxis
-                dataKey="name"
-                type="category"
-                tick={{ fontSize: 11, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }}
-                stroke={GRID_STROKE}
-                width={110}
-              />
-              <Tooltip
-                contentStyle={TOOLTIP_STYLE}
-                formatter={(value: any) => [`${value} alerts`, 'Count']}
-              />
-              <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={18}>
-                {threatTypeData.map((entry) => (
-                  <Cell
-                    key={entry.name}
-                    fill={
-                      entry.severity === 'critical'
-                        ? '#ff3355'
-                        : entry.severity === 'high'
-                          ? '#ff8833'
-                          : entry.severity === 'medium'
-                            ? '#ffcc00'
-                            : '#00d4ff'
-                    }
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="flex items-center gap-4">
+          <span className="text-[10px]" style={{ color: COLORS.textMuted, fontFamily: FONT_MONO }}>
+            UPTIME: {Math.floor(Math.random() * 24 + 12)}h {Math.floor(Math.random() * 60)}m
+          </span>
+          <div className="h-3 w-px" style={{ background: COLORS.border }} />
+          <span className="text-[10px]" style={{ color: COLORS.accent, fontFamily: FONT_MONO }}>
+            v2.4.1
+          </span>
         </div>
-
-        {/* Radar chart */}
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-6">
-          <SectionTitle title="Risk Radar" subtitle="Current risk levels by category" />
-
-          <ResponsiveContainer width="100%" height={340}>
-            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-              <PolarGrid stroke={GRID_STROKE} />
-              <PolarAngleAxis dataKey="category" tick={{ fontSize: 11, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }} />
-              <PolarRadiusAxis tick={{ fontSize: 9, fill: '#2d4a6a', fontFamily: 'var(--font-mono)' }} axisLine={false} />
-              <Radar
-                name="Risk Level"
-                dataKey="risk"
-                stroke="#ff3355"
-                fill="#ff3355"
-                fillOpacity={0.2}
-                strokeWidth={2}
-              />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value: any) => [`${value}/100`, 'Risk Score']} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* ============================================================
-           4. TRAFFIC ANALYSIS
-           ============================================================ */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Line chart: flows per second */}
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-6 xl:col-span-2">
-          <SectionTitle title="Network Throughput" subtitle="Flows per second over the last 30 minutes" />
-
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={flowSeries} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 10, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }}
-                stroke={GRID_STROKE}
-                interval="preserveStartEnd"
-                minTickGap={50}
-              />
-              <YAxis tick={{ fontSize: 10, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }} stroke={GRID_STROKE} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
-              <Line
-                type="monotone"
-                dataKey="flows"
-                stroke="#00d4ff"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, stroke: '#00d4ff', fill: '#060a10' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Protocol distribution pie chart */}
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-6">
-          <SectionTitle title="Protocol Distribution" subtitle="Share by protocol type" />
-
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={protocolData}
-                cx="50%"
-                cy="45%"
-                innerRadius={55}
-                outerRadius={90}
-                paddingAngle={3}
-                dataKey="value"
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
-                labelLine={{ stroke: 'rgba(0,212,255,0.3)', strokeWidth: 1 }}
-              >
-                {protocolData.map((_entry, index) => (
-                  <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={TOOLTIP_STYLE}
-                formatter={(value: any, name: any) => [
-                  `${value.toLocaleString()} (${((value / totalProtocol) * 100).toFixed(1)}%)`,
-                  name,
-                ]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Top source IPs bar chart — full width */}
-      <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-6">
-        <SectionTitle title="Top Attack Sources" subtitle="Source IPs ranked by attack count" />
-
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={topIPs} margin={{ top: 5, right: 20, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
-            <XAxis
-              dataKey="ip"
-              tick={{ fontSize: 9, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }}
-              stroke={GRID_STROKE}
-              angle={-30}
-              textAnchor="end"
-              height={60}
-            />
-            <YAxis tick={{ fontSize: 10, fill: AXIS_FILL, fontFamily: 'var(--font-mono)' }} stroke={GRID_STROKE} />
-            <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(value: any) => [`${value} attacks`, 'Count']} />
-            <Bar dataKey="attacks" fill="#ff3355" radius={[4, 4, 0, 0]} barSize={28} />
-          </BarChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );
