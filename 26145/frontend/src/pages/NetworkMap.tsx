@@ -1,802 +1,1262 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import type { ThreatNode } from '../types';
-import { MockBackend, mockBackend } from '../lib/mockBackend';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Server, Activity, ShieldAlert, HardDrive, TrendingUp, TrendingDown, Minus, Eye } from 'lucide-react';
 
-// ── Local canvas node (extends ThreatNode with rendering fields) ──────────
+// ── Theme tokens ─────────────────────────────────────────────────────────────
 
-interface CanvasNode extends ThreatNode {
-  pulsePhase: number;
+const C = {
+  bg:         '#060a10',
+  card:       '#0a1118',
+  cardHover:  '#0d1620',
+  border:     '#1a2736',
+  borderHi:   '#00d4ff33',
+  text:       '#e0e8f0',
+  muted:      '#64748b',
+  dim:        '#2d4a6a',
+  cyan:       '#00d4ff',
+  cyanDim:    '#00d4ff22',
+  green:      '#00ff41',
+  orange:     '#f97316',
+  yellow:     '#eab308',
+  red:        '#ef4444',
+  gridLine:   '#1a2736',
+  gridLineHi: '#1e2d40',
+};
+
+// ── Mock data generators ──────────────────────────────────────────────────────
+
+const SUBNETS = ['10.0.1', '10.0.2', '10.0.3', '10.0.5', '10.0.10', '172.16.0', '192.168.1', '192.168.2'];
+const HOST_NAMES = ['web-prod', 'db-primary', 'db-replica', 'api-gw', 'auth-svc', 'cache-redis', 'mq-broker', 'storage-nas', 'vpn-gw', 'fw-edge', 'dns-resolver', 'monitor', 'backup-srv', 'mail-srv', 'file-srv', 'ci-cd', 'jump-host', 'fw-internal'];
+const THREAT_CLASSES = ['RECONNAISSANCE', 'BRUTE_FORCE', 'SQL_INJECTION', 'XSS', 'DDoS', 'EXFILTRATION', 'MALWARE', 'PHISHING', 'MITM', 'RANSOMWARE'];
+
+interface MockNode {
+  id: string;
+  ip: string;
+  label: string;
+  type: 'internal' | 'external' | 'server' | 'attacker';
+  threatScore: number;
+  port?: number;
+  protocol?: string;
+  connections: string[];
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
 }
 
-interface CanvasEdge {
+interface MockEdge {
   source: string;
   target: string;
   status: 'normal' | 'suspicious' | 'attack';
+  protocol: string;
   packets: number;
   bytes: number;
-  protocol: string;
-  pulseOffset: number;
 }
 
-// ── Color maps ─────────────────────────────────────────────────────────────
+function seededRand(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
 
-const NODE_COLORS: Record<string, { fill: string; stroke: string; glow: string; text: string }> = {
-  internal:   { fill: 'rgba(0,212,255,0.15)',   stroke: '#00d4ff', glow: 'rgba(0,212,255,0.6)',   text: '#00d4ff' },
-  external:   { fill: 'rgba(90,122,154,0.1)',   stroke: '#5a7a9a', glow: 'rgba(90,122,154,0.4)', text: '#5a7a9a' },
-  server:     { fill: 'rgba(0,255,65,0.15)',    stroke: '#00ff41', glow: 'rgba(0,255,65,0.6)',  text: '#00ff41' },
-  attacker:   { fill: 'rgba(255,51,85,0.2)',    stroke: '#ff3355', glow: 'rgba(255,51,85,0.7)', text: '#ff3355' },
-};
+function generateMockData() {
+  const rand = seededRand(42);
+  const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
+  const nodes: MockNode[] = [];
+  const edges: MockEdge[] = [];
+  const usedIPs = new Set<string>();
 
-const EDGE_COLORS: Record<string, { stroke: string; glow: string }> = {
-  normal:     { stroke: 'rgba(90,122,154,0.25)', glow: 'rgba(90,122,154,0)' },
-  suspicious: { stroke: 'rgba(255,136,51,0.5)',  glow: 'rgba(255,136,51,0.3)' },
-  attack:     { stroke: 'rgba(255,51,85,0.7)',   glow: 'rgba(255,51,85,0.4)' },
-};
-
-const PROTOCOLS = ['TCP', 'UDP', 'HTTP', 'HTTPS', 'DNS', 'ICMP'];
-
-// ── Force simulation ───────────────────────────────────────────────────────
-
-function computeForceLayout(
-  nodes: CanvasNode[],
-  edges: CanvasEdge[],
-  width: number,
-  height: number,
-  damping = 0.82,
-) {
-  const repulsion = 8000;
-  const attraction = 0.006;
-  const centerGravity = 0.008;
-  const idealLength = 160;
-
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = i + 1; j < nodes.length; j++) {
-      const a = nodes[i], b = nodes[j];
-      let dx = b.x - a.x, dy = b.y - a.y;
-      let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const force = repulsion / (dist * dist);
-      const fx = (dx / dist) * force, fy = (dy / dist) * force;
-      a.vx -= fx; a.vy -= fy;
-      b.vx += fx; b.vy += fy;
-    }
+  function genIP(): string {
+    let ip: string;
+    do {
+      const subnet = pick(SUBNETS);
+      const octet3 = Math.floor(rand() * 254) + 1;
+      const octet4 = Math.floor(rand() * 254) + 1;
+      ip = `${subnet}.${octet3}.${octet4}`;
+    } while (usedIPs.has(ip));
+    usedIPs.add(ip);
+    return ip;
   }
 
-  edges.forEach(edge => {
-    const src = nodes.find(n => n.id === edge.source);
-    const tgt = nodes.find(n => n.id === edge.target);
-    if (!src || !tgt) return;
-    let dx = tgt.x - src.x, dy = tgt.y - src.y;
-    let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const force = (dist - idealLength) * attraction;
-    const fx = (dx / dist) * force, fy = (dy / dist) * force;
-    src.vx += fx; src.vy += fy;
-    tgt.vx -= fx; tgt.vy -= fy;
-  });
+  // Generate attackers first (smaller count)
+  const attackerCount = 5;
+  for (let i = 0; i < attackerCount; i++) {
+    const ip = genIP();
+    nodes.push({
+      id: `attacker-${i}`,
+      ip,
+      label: pick(['APT-KNIGHT', 'BruteBot', 'ScanHunter', 'DataLeech', 'ZeroDayX']),
+      type: 'attacker',
+      threatScore: 70 + Math.floor(rand() * 30),
+      port: pick([22, 23, 3389, 445, 8080]),
+      protocol: pick(['TCP', 'HTTP']),
+      connections: [],
+      x: rand() * 900 + 50,
+      y: rand() * 500 + 50,
+      vx: 0,
+      vy: 0,
+    });
+  }
 
-  const cx = width / 2, cy = height / 2;
-  nodes.forEach(node => {
-    node.vx += (cx - node.x) * centerGravity;
-    node.vy += (cy - node.y) * centerGravity;
-    node.vx *= damping; node.vy *= damping;
-    const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
-    if (speed > 4) { node.vx = (node.vx / speed) * 4; node.vy = (node.vy / speed) * 4; }
-    node.x += node.vx; node.y += node.vy;
-    const margin = 40;
-    node.x = Math.max(margin, Math.min(width - margin, node.x));
-    node.y = Math.max(margin, Math.min(height - margin, node.y));
-  });
-}
+  // Generate servers
+  const serverCount = 7;
+  for (let i = 0; i < serverCount; i++) {
+    const ip = genIP();
+    nodes.push({
+      id: `server-${i}`,
+      ip,
+      label: pick(HOST_NAMES.filter(h => !['jump-host', 'fw-edge', 'fw-internal'].includes(h))),
+      type: 'server',
+      threatScore: Math.floor(rand() * 40),
+      port: pick([22, 80, 443, 3306, 5432, 6379, 5672, 445, 53, 25, 21, 8080, 8443]),
+      protocol: pick(['TCP', 'TLS', 'HTTP', 'DNS']),
+      connections: [],
+      x: rand() * 900 + 50,
+      y: rand() * 500 + 50,
+      vx: 0,
+      vy: 0,
+    });
+  }
 
-function getNodeRadius(node: CanvasNode) {
-  return 8 + (node.threat_score / 100) * 14;
-}
+  // Generate internal nodes
+  const internalCount = 12;
+  for (let i = 0; i < internalCount; i++) {
+    const ip = genIP();
+    nodes.push({
+      id: `internal-${i}`,
+      ip,
+      label: pick(HOST_NAMES),
+      type: 'internal',
+      threatScore: Math.floor(rand() * 25),
+      connections: [],
+      x: rand() * 900 + 50,
+      y: rand() * 500 + 50,
+      vx: 0,
+      vy: 0,
+    });
+  }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+  // Generate external nodes
+  const externalCount = 12;
+  for (let i = 0; i < externalCount; i++) {
+    const ip = genIP();
+    nodes.push({
+      id: `external-${i}`,
+      ip,
+      label: pick(['ext-proxy', 'cdn-node', 'vendor-api', 'partner-srv', 'cloud-svc', 'remote-emp', 'iot-device', 'mobile-gw']),
+      type: 'external',
+      threatScore: Math.floor(rand() * 50),
+      connections: [],
+      x: rand() * 900 + 50,
+      y: rand() * 500 + 50,
+      vx: 0,
+      vy: 0,
+    });
+  }
 
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number,
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
+  // Build edges — ensure good connectivity
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const attackers = nodes.filter(n => n.type === 'attacker');
+  const servers = nodes.filter(n => n.type === 'server');
+  const internals = nodes.filter(n => n.type === 'internal');
+  const externals = nodes.filter(n => n.type === 'external');
 
-// Build edges from node connection lists (deterministic with cached nodes)
-function buildEdges(nodes: CanvasNode[]): CanvasEdge[] {
-  const seen = new Set<string>();
-  const edges: CanvasEdge[] = [];
-  for (const node of nodes) {
-    for (const connId of node.connections) {
-      const key = [node.id, connId].sort().join('-');
-      if (!seen.has(key)) {
-        seen.add(key);
-        const isAttacker = node.type === 'attacker';
+  // Attackers connect to random internals and servers
+  attackers.forEach(a => {
+    const targets = [...internals.slice(0, 6), ...servers.slice(0, 3)];
+    const numConns = 2 + Math.floor(rand() * 3);
+    for (let i = 0; i < numConns && targets.length > 0; i++) {
+      const t = targets.splice(Math.floor(rand() * targets.length), 1)[0];
+      if (t && !a.connections.includes(t.id)) {
+        a.connections.push(t.id);
         edges.push({
-          source: node.id,
-          target: connId,
-          status: isAttacker ? 'attack' : Math.random() < 0.2 ? 'suspicious' : 'normal',
-          packets: Math.floor(Math.random() * 10000) + 100,
-          bytes: Math.floor(Math.random() * 5000000) + 1000,
-          protocol: PROTOCOLS[Math.floor(Math.random() * PROTOCOLS.length)],
-          pulseOffset: Math.random() * Math.PI * 2,
+          source: a.id,
+          target: t.id,
+          status: rand() < 0.6 ? 'attack' : 'suspicious',
+          protocol: pick(['TCP', 'HTTP', 'UDP', 'TLS']),
+          packets: Math.floor(rand() * 50000) + 100,
+          bytes: Math.floor(rand() * 50000000) + 10000,
+        });
+      }
+    }
+  });
+
+  // Internals connect to servers
+  internals.forEach(internal => {
+    const numConns = 1 + Math.floor(rand() * 3);
+    for (let i = 0; i < numConns; i++) {
+      const t = servers[Math.floor(rand() * servers.length)];
+      if (t && !internal.connections.includes(t.id) && internal.id !== t.id) {
+        internal.connections.push(t.id);
+        edges.push({
+          source: internal.id,
+          target: t.id,
+          status: rand() < 0.08 ? 'suspicious' : 'normal',
+          protocol: pick(['TCP', 'TLS', 'HTTP', 'DNS', 'UDP']),
+          packets: Math.floor(rand() * 20000) + 50,
+          bytes: Math.floor(rand() * 20000000) + 5000,
+        });
+      }
+    }
+  });
+
+  // External connects to servers/internals
+  externals.forEach(external => {
+    const numConns = 1 + Math.floor(rand() * 2);
+    for (let i = 0; i < numConns; i++) {
+      const pool = rand() < 0.5 ? servers : internals;
+      const t = pool[Math.floor(rand() * pool.length)];
+      if (t && !external.connections.includes(t.id) && external.id !== t.id) {
+        external.connections.push(t.id);
+        edges.push({
+          source: external.id,
+          target: t.id,
+          status: rand() < 0.15 ? 'suspicious' : 'normal',
+          protocol: pick(['TCP', 'TLS', 'HTTP', 'DNS', 'UDP']),
+          packets: Math.floor(rand() * 15000) + 50,
+          bytes: Math.floor(rand() * 10000000) + 5000,
+        });
+      }
+    }
+  });
+
+  // Inter-server connections
+  for (let i = 0; i < servers.length; i++) {
+    for (let j = i + 1; j < servers.length; j++) {
+      if (rand() < 0.4) {
+        servers[i].connections.push(servers[j].id);
+        servers[j].connections.push(servers[i].id);
+        edges.push({
+          source: servers[i].id,
+          target: servers[j].id,
+          status: rand() < 0.05 ? 'suspicious' : 'normal',
+          protocol: pick(['TCP', 'TLS']),
+          packets: Math.floor(rand() * 30000) + 100,
+          bytes: Math.floor(rand() * 30000000) + 10000,
         });
       }
     }
   }
-  return edges;
+
+  return { nodes, edges };
 }
 
-// Build attack path summaries from attacker nodes
-function buildAttackPaths(nodes: CanvasNode[]): { source: string; target: string; hops: string[]; severity: string }[] {
-  const attackers = nodes.filter(n => n.type === 'attacker');
-  const servers = nodes.filter(n => n.type === 'server');
-  return attackers.slice(0, 4).map(a => ({
-    source: a.ip,
-    target: servers[0]?.ip || '10.0.0.1',
-    hops: [a.ip, nodes[Math.floor(Math.random() * nodes.length)]?.ip || '10.0.0.1',
-           nodes[Math.floor(Math.random() * nodes.length)]?.ip || '10.0.0.1',
-           servers[0]?.ip || '10.0.0.1'],
-    severity: 'critical',
+// ── Chart data generators ─────────────────────────────────────────────────────
+
+function generateProtocolTraffic() {
+  const protocols = ['TCP', 'UDP', 'ICMP', 'HTTP', 'DNS', 'TLS'];
+  const baseVolumes = [4200, 1800, 340, 2100, 890, 3200];
+  const variance = 0.3;
+  const rand = seededRand(77);
+  return protocols.map((proto, i) => ({
+    protocol: proto,
+    volume: Math.round(baseVolumes[i] * (1 + (rand() - 0.5) * variance * 2)),
+    color: proto === 'TCP' ? C.cyan :
+           proto === 'TLS' ? '#6366f1' :
+           proto === 'HTTP' ? C.yellow :
+           proto === 'DNS' ? '#22c55e' :
+           proto === 'UDP' ? C.orange :
+           '#a855f7',
   }));
 }
 
-// ── Component ──────────────────────────────────────────────────────────────
+function generate24hTraffic() {
+  const buckets: { hour: string; inbound: number; outbound: number }[] = [];
+  const rand = seededRand(123);
+  const basePattern = [
+    120, 85, 60, 45, 40, 55, 130, 380, 650, 820, 910, 950,
+    880, 920, 870, 810, 780, 820, 890, 760, 550, 380, 250, 160
+  ];
+  for (let h = 0; h < 24; h++) {
+    const noise = 1 + (rand() - 0.5) * 0.25;
+    const base = basePattern[h] * noise;
+    buckets.push({
+      hour: `${String(h).padStart(2, '0')}:00`,
+      inbound: Math.round(base * (0.55 + rand() * 0.2)),
+      outbound: Math.round(base * (0.35 + rand() * 0.15)),
+    });
+  }
+  return buckets;
+}
 
-const NetworkMap: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const nodesRef = useRef<CanvasNode[]>([]);
-  const edgesRef = useRef<CanvasEdge[]>([]);
-  const animFrameRef = useRef<number>(0);
-  const timeRef = useRef(0);
+function generateThreatDistribution() {
+  const rand = seededRand(256);
+  const types = [
+    { name: 'DDoS', count: Math.floor(rand() * 40) + 20, color: C.red },
+    { name: 'Brute Force', count: Math.floor(rand() * 35) + 15, color: C.orange },
+    { name: 'SQL Injection', count: Math.floor(rand() * 25) + 10, color: C.yellow },
+    { name: 'XSS', count: Math.floor(rand() * 20) + 8, color: '#a855f7' },
+    { name: 'Malware', count: Math.floor(rand() * 15) + 5, color: '#ec4899' },
+    { name: 'Phishing', count: Math.floor(rand() * 12) + 3, color: '#14b8a6' },
+    { name: 'MITM', count: Math.floor(rand() * 10) + 2, color: '#f43f5e' },
+  ];
+  const total = types.reduce((s, t) => s + t.count, 0);
+  return types.map(t => ({ ...t, pct: Math.round((t.count / total) * 100) }));
+}
 
-  const [selectedNode, setSelectedNode] = useState<CanvasNode | null>(null);
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [stats, setStats] = useState<{ total_nodes: number; active_threats: number; suspicious_connections: number; blocked_ips: number } | null>(null);
-  const [topThreatened, setTopThreatened] = useState<ThreatNode[]>([]);
-  const [attackPaths, setAttackPaths] = useState<{ source: string; target: string; hops: string[]; severity: string }[]>([]);
-  const [activeTab, setActiveTab] = useState<'stats' | 'threats' | 'paths'>('stats');
-  const [totalConns, setTotalConns] = useState(0);
-  const [avgScore, setAvgScore] = useState(0);
+// ── Force simulation ──────────────────────────────────────────────────────────
 
-  // Initialize from MockBackend
-  useEffect(() => {
-    const mb = mockBackend;
-    mb.start();
+function simulateForces(nodes: MockNode[], width: number, height: number, iterations = 40) {
+  const { nodes: simulated } = nodes.reduce(
+    (acc, n) => {
+      acc.nodes.push({ ...n, vx: 0, vy: 0 });
+      return acc;
+    },
+    { nodes: [] as MockNode[] }
+  );
+  const sim = simulated;
+  const nodeMap = new Map(sim.map(n => [n.id, n]));
 
-    const rawNodes = mb.getNetworkNodes();
-    const canvasNodes: CanvasNode[] = rawNodes.map((n: ThreatNode) => ({
-      ...n,
-      pulsePhase: Math.random() * Math.PI * 2,
-    }));
+  for (let iter = 0; iter < iterations; iter++) {
+    const alpha = 1 - iter / iterations;
 
-    const canvasEdges = buildEdges(canvasNodes);
-    nodesRef.current = canvasNodes;
-    edgesRef.current = canvasEdges;
-    setTotalConns(canvasEdges.length);
-    setAvgScore(Math.round(canvasNodes.reduce((s, n) => s + n.threat_score, 0) / canvasNodes.length));
+    // Repulsion
+    for (let i = 0; i < sim.length; i++) {
+      for (let j = i + 1; j < sim.length; j++) {
+        let dx = sim[j].x - sim[i].x;
+        let dy = sim[j].y - sim[i].y;
+        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const force = 5000 / (dist * dist) * alpha;
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+        sim[i].vx -= fx; sim[i].vy -= fy;
+        sim[j].vx += fx; sim[j].vy += fy;
+      }
+    }
 
-    // Derive stats from nodes
-    const threatCount = canvasNodes.filter(n => n.type === 'attacker').length;
-    setStats({
-      total_nodes: canvasNodes.length,
-      active_threats: threatCount,
-      suspicious_connections: canvasEdges.filter(e => e.status === 'suspicious').length,
-      blocked_ips: Math.floor(Math.random() * 50) + 10,
+    // Attraction along edges
+    const seenEdges = new Set<string>();
+    nodes.forEach(node => {
+      node.connections.forEach(targetId => {
+        const key = [node.id, targetId].sort().join('|');
+        if (seenEdges.has(key)) return;
+        seenEdges.add(key);
+        const src = nodeMap.get(node.id);
+        const tgt = nodeMap.get(targetId);
+        if (!src || !tgt) return;
+        const dx = tgt.x - src.x;
+        const dy = tgt.y - src.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const force = (dist - 140) * 0.004 * alpha;
+        const fx = (dx / dist) * force;
+        const fy = (dy / dist) * force;
+        src.vx += fx; src.vy += fy;
+        tgt.vx -= fx; tgt.vy -= fy;
+      });
     });
 
-    setTopThreatened(
-      [...canvasNodes]
-        .filter(n => n.type === 'attacker' || n.threat_score > 30)
-        .sort((a, b) => b.threat_score - a.threat_score)
-        .slice(0, 5)
-    );
-    setAttackPaths(buildAttackPaths(canvasNodes));
-  }, []);
+    // Center gravity
+    const cx = width / 2, cy = height / 2;
+    sim.forEach(n => {
+      n.vx += (cx - n.x) * 0.005 * alpha;
+      n.vy += (cy - n.y) * 0.005 * alpha;
+    });
 
-  // Resize handler
-  useEffect(() => {
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      const container = containerRef.current;
-      if (!canvas || !container) return;
-      const rect = container.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
-      const ctx = canvas.getContext('2d');
-      if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    // Apply
+    const damping = 0.85;
+    sim.forEach(n => {
+      n.vx *= damping; n.vy *= damping;
+      n.x += n.vx; n.y += n.vy;
+      n.x = Math.max(40, Math.min(width - 40, n.x));
+      n.y = Math.max(40, Math.min(height - 40, n.y));
+    });
+  }
 
-  // Animation loop
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  return sim;
+}
 
-    const draw = (timestamp: number) => {
-      timeRef.current = timestamp * 0.001;
-      const t = timeRef.current;
+// ── SVG chart helpers ─────────────────────────────────────────────────────────
 
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width, h = rect.height;
+const MONO = '"JetBrains Mono", "Fira Code", "SF Mono", monospace';
+const SANS = '"Inter", "Segoe UI", system-ui, sans-serif';
 
-      computeForceLayout(nodesRef.current, edgesRef.current, w, h, 0.82);
+function formatBytes(b: number): string {
+  if (b >= 1e9) return `${(b / 1e9).toFixed(1)} GB`;
+  if (b >= 1e6) return `${(b / 1e6).toFixed(1)} MB`;
+  if (b >= 1e3) return `${(b / 1e3).toFixed(0)} KB`;
+  return `${b} B`;
+}
 
-      ctx.clearRect(0, 0, w, h);
+function formatNumber(n: number): string {
+  return n.toLocaleString();
+}
 
-      // Background — dark terminal
-      ctx.fillStyle = '#060a10';
-      ctx.fillRect(0, 0, w, h);
+function TrendArrow({ value }: { value: number }) {
+  if (value > 0) return <TrendingUp size={14} color="#22c55e" />;
+  if (value < 0) return <TrendingDown size={14} color={C.red} />;
+  return <Minus size={14} color={C.muted} />;
+}
 
-      // Grid
-      ctx.strokeStyle = 'rgba(0,212,255,0.04)';
-      ctx.lineWidth = 0.5;
-      for (let x = 40; x < w; x += 40) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-      }
-      for (let y = 40; y < h; y += 40) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-      }
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-      const nodes = nodesRef.current;
-      const edges = edgesRef.current;
-
-      const connectedToHovered = new Set<string>();
-      if (hoveredNode) {
-        connectedToHovered.add(hoveredNode);
-        edges.forEach(e => {
-          if (e.source === hoveredNode) connectedToHovered.add(e.target);
-          if (e.target === hoveredNode) connectedToHovered.add(e.source);
-        });
-      }
-
-      const selectedConnections = new Set<string>();
-      if (selectedNode) {
-        selectedConnections.add(selectedNode.id);
-        edges.forEach(e => {
-          if (e.source === selectedNode.id) selectedConnections.add(e.target);
-          if (e.target === selectedNode.id) selectedConnections.add(e.source);
-        });
-      }
-
-      // Draw edges
-      edges.forEach(edge => {
-        const src = nodes.find(n => n.id === edge.source);
-        const tgt = nodes.find(n => n.id === edge.target);
-        if (!src || !tgt) return;
-
-        const isConn = hoveredNode && (edge.source === hoveredNode || edge.target === hoveredNode);
-        const isSelEdge = selectedNode && (edge.source === selectedNode.id || edge.target === selectedNode.id);
-
-        let alpha = 0.15, lw = 1;
-        if (hoveredNode && isConn) { alpha = 0.7; lw = 2; }
-        if (selectedNode && isSelEdge) { alpha = 0.9; lw = 2.5; }
-        if (!hoveredNode && !selectedNode) { alpha = edge.status === 'attack' ? 0.5 : 0.2; }
-
-        const colors = EDGE_COLORS[edge.status];
-
-        // Glow for attack edges
-        if (edge.status === 'attack') {
-          ctx.save(); ctx.globalAlpha = alpha * 0.3; ctx.strokeStyle = colors.glow;
-          ctx.lineWidth = lw + 4;
-          ctx.beginPath(); ctx.moveTo(src.x, src.y); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
-          ctx.restore();
-        }
-
-        // Pulse
-        let pulseAlpha = 1;
-        if (edge.status === 'attack') pulseAlpha = 0.6 + 0.4 * Math.sin(t * 4 + edge.pulseOffset);
-        else if (edge.status === 'suspicious') pulseAlpha = 0.7 + 0.3 * Math.sin(t * 2 + edge.pulseOffset);
-
-        ctx.save();
-        ctx.globalAlpha = alpha * pulseAlpha;
-        ctx.strokeStyle = colors.stroke;
-        ctx.lineWidth = lw;
-        ctx.setLineDash(edge.status === 'suspicious' ? [6, 4] : []);
-        ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(src.x, src.y); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-
-        // Arrowhead for attack edges
-        if (edge.status === 'attack') {
-          const midX = (src.x + tgt.x) / 2, midY = (src.y + tgt.y) / 2;
-          const angle = Math.atan2(tgt.y - src.y, tgt.x - src.x);
-          const arrowSize = 6;
-          ctx.save();
-          ctx.globalAlpha = alpha * pulseAlpha;
-          ctx.fillStyle = '#ff3355';
-          ctx.beginPath();
-          ctx.moveTo(midX + arrowSize * Math.cos(angle), midY + arrowSize * Math.sin(angle));
-          ctx.lineTo(midX + arrowSize * Math.cos(angle + 2.5), midY + arrowSize * Math.sin(angle + 2.5));
-          ctx.lineTo(midX + arrowSize * Math.cos(angle - 2.5), midY + arrowSize * Math.sin(angle - 2.5));
-          ctx.closePath(); ctx.fill();
-          ctx.restore();
-        }
-      });
-
-      // Draw nodes
-      nodes.forEach(node => {
-        const r = getNodeRadius(node);
-        const colors = NODE_COLORS[node.type];
-        const isHovered = node.id === hoveredNode;
-        const isSelected = node.id === selectedNode?.id;
-
-        let alpha = 1;
-        if (hoveredNode && !connectedToHovered.has(node.id)) alpha = 0.15;
-        if (selectedNode && !selectedConnections.has(node.id)) alpha = 0.1;
-
-        let pulseScale = 1;
-        if (node.type === 'attacker') pulseScale = 1 + 0.15 * Math.sin(t * 3 + node.pulsePhase);
-        const finalR = r * pulseScale;
-
-        // Outer glow
-        ctx.save();
-        ctx.globalAlpha = alpha * (isHovered || isSelected ? 0.6 : 0.35);
-        ctx.beginPath(); ctx.arc(node.x, node.y, finalR * 3, 0, Math.PI * 2);
-        const glowGrad = ctx.createRadialGradient(node.x, node.y, finalR * 0.3, node.x, node.y, finalR * 3);
-        glowGrad.addColorStop(0, colors.glow);
-        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = glowGrad; ctx.fill();
-        ctx.restore();
-
-        // Selection ring
-        if (isSelected) {
-          ctx.save(); ctx.globalAlpha = 0.8; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
-          ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.arc(node.x, node.y, finalR + 8, 0, Math.PI * 2);
-          ctx.stroke(); ctx.setLineDash([]); ctx.restore();
-        }
-
-        // Hover ring
-        if (isHovered && !isSelected) {
-          ctx.save(); ctx.globalAlpha = 0.5; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
-          ctx.beginPath(); ctx.arc(node.x, node.y, finalR + 5, 0, Math.PI * 2);
-          ctx.stroke(); ctx.restore();
-        }
-
-        // Fill
-        ctx.save(); ctx.globalAlpha = alpha;
-        ctx.beginPath(); ctx.arc(node.x, node.y, finalR, 0, Math.PI * 2);
-        const fillGrad = ctx.createRadialGradient(node.x - finalR * 0.3, node.y - finalR * 0.3, 0, node.x, node.y, finalR);
-        fillGrad.addColorStop(0, colors.fill.replace(/[\d.]+\)$/, '0.4)'));
-        fillGrad.addColorStop(1, colors.fill);
-        ctx.fillStyle = fillGrad; ctx.fill();
-        ctx.restore();
-
-        // Stroke
-        ctx.save(); ctx.globalAlpha = alpha;
-        ctx.strokeStyle = colors.stroke; ctx.lineWidth = (isHovered || isSelected) ? 2.5 : 1.5;
-        ctx.beginPath(); ctx.arc(node.x, node.y, finalR, 0, Math.PI * 2); ctx.stroke();
-        ctx.restore();
-
-        // Threat arc indicator
-        if (node.threat_score > 50 && alpha > 0.5) {
-          ctx.save(); ctx.globalAlpha = alpha * 0.8;
-          ctx.strokeStyle = node.type === 'attacker' ? '#ff3355' : '#ff8833';
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, finalR + 3, -Math.PI / 2, -Math.PI / 2 + (node.threat_score / 100) * Math.PI * 2);
-          ctx.stroke(); ctx.restore();
-        }
-
-        // Score text inside node
-        if (finalR > 14 && alpha > 0.5) {
-          ctx.save(); ctx.globalAlpha = alpha * 0.9; ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 9px "JetBrains Mono",monospace';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(`${Math.round(node.threat_score)}`, node.x, node.y);
-          ctx.restore();
-        }
-
-        // Label
-        ctx.save(); ctx.globalAlpha = alpha * 0.9;
-        ctx.fillStyle = colors.text;
-        ctx.font = `${node.type === 'attacker' ? 'bold ' : ''}10px "JetBrains Mono",monospace`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-        ctx.fillText(node.label, node.x, node.y + finalR + 5);
-        ctx.restore();
-      });
-
-      // Tooltip
-      if (hoveredNode && !selectedNode) {
-        const node = nodes.find(n => n.id === hoveredNode);
-        if (node) {
-          const r = getNodeRadius(node);
-          const tipX = node.x + r + 12, tipY = node.y - 20;
-          const lines = [node.label, node.ip, `Type: ${node.type}`, `Threat Score: ${Math.round(node.threat_score)}`, `Connections: ${node.connections.length}`];
-          const maxW = Math.max(...lines.map(l => ctx.measureText(l).width));
-          const px = 10, py = 6, tipW = maxW + px * 2 + 20, tipH = lines.length * 14 + py * 2;
-          ctx.save(); ctx.globalAlpha = 0.95; ctx.fillStyle = 'rgba(10,16,24,0.95)';
-          ctx.strokeStyle = NODE_COLORS[node.type].stroke; ctx.lineWidth = 1;
-          roundRect(ctx, tipX, tipY, tipW, tipH, 6); ctx.fill(); ctx.stroke();
-          ctx.font = 'bold 10px "JetBrains Mono",monospace'; ctx.fillStyle = NODE_COLORS[node.type].text;
-          ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-          ctx.fillText(lines[0], tipX + px, tipY + py);
-          ctx.font = '9px "JetBrains Mono",monospace';
-          lines.slice(1).forEach((line, i) => {
-            ctx.fillStyle = '#5a7a9a';
-            ctx.fillText(line, tipX + px, tipY + py + 4 + (i + 1) * 14);
-          });
-          ctx.restore();
-        }
-      }
-
-      // Title overlay
-      ctx.save(); ctx.globalAlpha = 0.7;
-      ctx.font = 'bold 11px "JetBrains Mono",monospace'; ctx.fillStyle = '#5a7a9a';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-      ctx.fillText('NETWORK TOPOLOGY', 12, 12);
-      ctx.font = '9px "JetBrains Mono",monospace';
-      ctx.fillText(`Live · ${nodes.length} nodes · ${edges.length} edges`, 12, 28);
-      ctx.restore();
-
-      animFrameRef.current = requestAnimationFrame(draw);
-    };
-
-    animFrameRef.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(animFrameRef.current);
-  }, [hoveredNode, selectedNode]);
-
-  // Mouse handlers
-  const getCanvasPos = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-    const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }, []);
-
-  const findNodeAt = useCallback((pos: { x: number; y: number }) => {
-    const nodes = nodesRef.current;
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const node = nodes[i];
-      const r = getNodeRadius(node) + 4;
-      const dx = pos.x - node.x, dy = pos.y - node.y;
-      if (dx * dx + dy * dy < r * r) return node;
-    }
-    return null;
-  }, []);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const pos = getCanvasPos(e);
-    if (!pos) return;
-    setMousePos(pos);
-    const node = findNodeAt(pos);
-    setHoveredNode(node?.id ?? null);
-    if (canvasRef.current) canvasRef.current.style.cursor = node ? 'pointer' : 'default';
-  }, [getCanvasPos, findNodeAt]);
-
-  const handleMouseLeave = useCallback(() => { setHoveredNode(null); setMousePos(null); }, []);
-  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const pos = getCanvasPos(e);
-    if (!pos) return;
-    setSelectedNode(findNodeAt(pos));
-  }, [getCanvasPos, findNodeAt]);
-
-  // ── Sidebar sub-components ───────────────────────────────────────────────
-
-  const StatBar = () => {
-    if (!stats) return null;
-    return (
-      <div className="grid grid-cols-4 gap-3 mb-4">
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Total Nodes</p>
-          <p className="text-lg font-bold" style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>{stats.total_nodes}</p>
+function StatCard({
+  label, value, icon: Icon, trend, color, suffix = '',
+}: {
+  label: string; value: number | string; icon: React.ElementType; trend: number; color: string; suffix?: string;
+}) {
+  return (
+    <div
+      className="relative overflow-hidden"
+      style={{
+        background: C.card,
+        border: `1px solid ${C.border}`,
+        borderRadius: 8,
+        padding: '18px 20px',
+      }}
+    >
+      <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-[0.03]"
+        style={{ background: `radial-gradient(circle, ${color}, transparent 70%)`, transform: 'translate(30%, -30%)' }}
+      />
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '2.5px' }}>
+            {label}
+          </p>
+          <p className="text-3xl font-bold leading-none" style={{ color: C.text, fontFamily: MONO, fontWeight: 700 }}>
+            {typeof value === 'number' ? formatNumber(value) : value}
+            {suffix && <span className="text-lg ml-0.5" style={{ color: C.muted }}>{suffix}</span>}
+          </p>
+          <div className="flex items-center gap-1.5 mt-2.5">
+            <TrendArrow value={trend} />
+            <span className="text-[11px] font-medium" style={{
+              color: trend > 0 ? '#22c55e' : trend < 0 ? C.red : C.muted,
+              fontFamily: MONO,
+            }}>
+              {trend > 0 ? '+' : ''}{trend}%
+            </span>
+            <span className="text-[10px]" style={{ color: C.muted }}>vs last hour</span>
+          </div>
         </div>
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(255,51,85,0.12)' }} className="rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Active Threats</p>
-          <p className="text-lg font-bold" style={{ color: '#ff3355', fontFamily: 'var(--font-mono)' }}>{stats.active_threats}</p>
-        </div>
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(255,136,51,0.12)' }} className="rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Suspicious</p>
-          <p className="text-lg font-bold" style={{ color: '#ff8833', fontFamily: 'var(--font-mono)' }}>{stats.suspicious_connections}</p>
-        </div>
-        <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Blocked IPs</p>
-          <p className="text-lg font-bold" style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>{stats.blocked_ips}</p>
+        <div className="p-2.5 rounded-lg" style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
+          <Icon size={20} color={color} />
         </div>
       </div>
-    );
+    </div>
+  );
+}
+
+// ── Network Topology SVG ──────────────────────────────────────────────────────
+
+function NetworkTopology({ nodes, edges }: { nodes: MockNode[]; edges: MockEdge[] }) {
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<MockNode | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 900, height: 480 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animTime = useRef(0);
+  const rafRef = useRef(0);
+
+  const nodeMap = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
+  const edgeKey = useMemo(() => {
+    const s = new Set<string>();
+    edges.forEach(e => { s.add([e.source, e.target].sort().join('|')); });
+    return s;
+  }, [edges]);
+
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setDimensions({ width: Math.max(rect.width, 600), height: Math.max(rect.height, 420) });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  // Run force simulation on data change or dimension change
+  const layout = useMemo(() => {
+    return simulateForces(nodes, dimensions.width, dimensions.height);
+  }, [nodes, dimensions.width, dimensions.height]);
+
+  useEffect(() => {
+    let running = true;
+    const animate = (ts: number) => {
+      if (!running) return;
+      animTime.current = ts * 0.001;
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => { running = false; cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  const nodeColor = (node: MockNode) => {
+    if (node.type === 'attacker') return { fill: `${C.red}18`, stroke: C.red, glow: C.red, label: C.red };
+    if (node.type === 'server') return { fill: `${C.green}18`, stroke: C.green, glow: C.green, label: C.green };
+    if (node.type === 'internal') return { fill: `${C.cyan}18`, stroke: C.cyan, glow: C.cyan, label: C.cyan };
+    return { fill: `${C.muted}15`, stroke: C.muted, glow: 'transparent', label: C.muted };
   };
 
-  const ThreatList = () => (
-    <div className="space-y-2">
-      {topThreatened.map((node, i) => {
-        const cn = nodesRef.current.find(n => n.id === node.id);
-        return (
-          <div key={node.id}
-            style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}
-            className="flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors"
-            onClick={() => setSelectedNode(cn || null)}>
-            <div className="flex items-center gap-2.5">
-              <div className="w-2 h-2 rounded-full" style={{
-                backgroundColor: node.type === 'attacker' ? '#ff3355' :
-                  node.type === 'server' ? '#00ff41' :
-                  node.type === 'internal' ? '#00d4ff' : '#5a7a9a'
-              }} />
-              <div>
-                <p className="text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{node.label}</p>
-                <p className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>{node.ip}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-bold" style={{ color: '#ff3355', fontFamily: 'var(--font-mono)' }}>{Math.round(node.threat_score)}</p>
-              <p className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>{node.connections?.length || 0} conn</p>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  const threatColor = (score: number) => {
+    if (score >= 80) return C.red;
+    if (score >= 55) return C.orange;
+    if (score >= 35) return C.yellow;
+    return '#06b6d4';
+  };
 
-  const AttackPathsList = () => (
-    <div className="space-y-3">
-      {attackPaths.map((path, i) => {
-        const sevColor = path.severity === 'critical' ? { text: '#ff3355', border: 'rgba(255,51,85,0.4)' }
-          : path.severity === 'high' ? { text: '#ff8833', border: 'rgba(255,136,51,0.3)' }
-          : { text: '#ffcc00', border: 'rgba(255,204,0,0.3)' };
-        return (
-          <div key={i} style={{ background: 'rgba(10,18,28,0.85)', border: `1px solid ${sevColor.border}` }} className="p-3 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold" style={{ color: '#ff3355', fontFamily: 'var(--font-mono)' }}>Attack Path #{i + 1}</span>
-              <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ fontFamily: 'var(--font-mono)', color: sevColor.text, border: `1px solid ${sevColor.border}` }}>
-                {path.severity}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px]">
-              <span className="font-mono whitespace-nowrap" style={{ color: '#ff3355' }}>
-                {path.source.split('.').slice(-1)[0]}
-              </span>
-              {path.hops.map((hop, j) => (
-                <span key={j} style={{ color: '#2d4a6a' }}>{'→'}</span>
-              ))}
-              <span className="font-mono whitespace-nowrap" style={{ color: '#00ff41' }}>
-                {path.target.split('.').slice(-1)[0]}
-              </span>
-            </div>
-            <div className="text-[10px] mt-1 font-mono truncate" style={{ color: '#2d4a6a' }}>
-              {path.source} {'→'} … {'→'} {path.target}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+  const visibleEdges = useMemo(() => {
+    const h = hoveredNode;
+    const s = selectedNode?.id;
+    if (!h && !s) return edges;
+    const connected = new Set<string>();
+    if (h) { connected.add(h); edges.filter(e => e.source === h || e.target === h).forEach(e => { connected.add(e.source); connected.add(e.target); }); }
+    if (s) { connected.add(s); edges.filter(e => e.source === s || e.target === s).forEach(e => { connected.add(e.source); connected.add(e.target); }); }
+    return edges.filter(e => connected.has(e.source) && connected.has(e.target));
+  }, [edges, hoveredNode, selectedNode]);
 
-  // ── Main render ──────────────────────────────────────────────────────────
+  const visibleNodes = useMemo(() => {
+    if (!hoveredNode && !selectedNode) return layout;
+    const connected = new Set<string>();
+    if (hoveredNode) {
+      connected.add(hoveredNode);
+      edges.filter(e => e.source === hoveredNode || e.target === hoveredNode).forEach(e => { connected.add(e.source); connected.add(e.target); });
+    }
+    if (selectedNode) {
+      connected.add(selectedNode.id);
+      edges.filter(e => e.source === selectedNode.id || e.target === selectedNode.id).forEach(e => { connected.add(e.source); connected.add(e.target); });
+    }
+    return layout.filter(n => connected.has(n.id));
+  }, [layout, hoveredNode, selectedNode, edges]);
+
+  const t = animTime.current;
 
   return (
-    <div className="flex h-[calc(100vh-64px)]">
-      {/* Canvas area */}
-      <div className="flex-1 flex flex-col min-w-0 p-4">
-        <StatBar />
-
-        <div ref={containerRef} className="flex-1 relative rounded-xl overflow-hidden" style={{ border: '1px solid rgba(0,212,255,0.12)', boxShadow: '0 0 30px rgba(0,0,0,0.5)' }}>
-          <canvas
-            ref={canvasRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            onClick={handleClick}
-            className="absolute inset-0 w-full h-full"
-          />
-
-          {/* Legend */}
-          <div style={{ background: 'rgba(6,10,16,0.8)', border: '1px solid rgba(0,212,255,0.12)' }} className="absolute top-3 left-3 rounded-lg p-3">
-            <p className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Legend</p>
-            <div className="space-y-1.5">
-              {Object.entries(NODE_COLORS).map(([type, colors]) => (
-                <div key={type} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full border-2"
-                    style={{ backgroundColor: colors.fill, borderColor: colors.stroke }} />
-                  <span className="text-[11px] capitalize" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{type}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }} className="mt-2 pt-2 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5 rounded" style={{ backgroundColor: 'rgba(90,122,154,0.4)' }} />
-                <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Normal</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5" style={{ borderBottom: '2px dashed rgba(255,136,51,0.6)' }} />
-                <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Suspicious</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5 rounded" style={{ backgroundColor: 'rgba(255,51,85,0.7)' }} />
-                <span className="text-[11px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Attack</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Selected node detail panel */}
-          {selectedNode && (
-            <div style={{ background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.2)' }} className="absolute bottom-3 left-3 right-3 rounded-lg p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center"
-                    style={{ borderColor: NODE_COLORS[selectedNode.type].stroke, backgroundColor: NODE_COLORS[selectedNode.type].fill, color: NODE_COLORS[selectedNode.type].text, fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
-                    {selectedNode.type === 'attacker' && '[!]'}
-                    {selectedNode.type === 'server' && '[S]'}
-                    {selectedNode.type === 'internal' && '[I]'}
-                    {selectedNode.type === 'external' && '[E]'}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)' }}>{selectedNode.label}</p>
-                    <p className="text-xs font-mono" style={{ color: '#5a7a9a' }}>{selectedNode.ip}</p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded" style={{
-                        backgroundColor: selectedNode.type === 'attacker' ? 'rgba(255,51,85,0.15)' :
-                          selectedNode.type === 'server' ? 'rgba(0,255,65,0.15)' :
-                          selectedNode.type === 'internal' ? 'rgba(0,212,255,0.15)' : 'rgba(90,122,154,0.15)',
-                        color: selectedNode.type === 'attacker' ? '#ff3355' :
-                          selectedNode.type === 'server' ? '#00ff41' :
-                          selectedNode.type === 'internal' ? '#00d4ff' : '#5a7a9a',
-                        border: `1px solid ${selectedNode.type === 'attacker' ? 'rgba(255,51,85,0.3)' :
-                          selectedNode.type === 'server' ? 'rgba(0,255,65,0.3)' :
-                          selectedNode.type === 'internal' ? 'rgba(0,212,255,0.3)' : 'rgba(90,122,154,0.3)'}`,
-                        fontFamily: 'var(--font-mono)'
-                      }}>{selectedNode.type}</span>
-                      <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Score: <span className="font-bold" style={{ color: '#c8d6e5' }}>{Math.round(selectedNode.threat_score)}</span></span>
-                      <span className="text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Conns: <span className="font-bold" style={{ color: '#c8d6e5' }}>{selectedNode.connections.length}</span></span>
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => setSelectedNode(null)} className="transition-colors p-1" style={{ color: '#2d4a6a' }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
+    <div className="relative" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+      {/* Section header */}
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${C.border}` }}>
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-5 rounded-full" style={{ background: C.cyan }} />
+          <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.text, fontFamily: MONO, letterSpacing: '3px' }}>
+            Network Topology
+          </h3>
+          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: C.cyanDim, color: C.cyan, fontFamily: MONO, border: `1px solid ${C.cyan}25` }}>
+            LIVE
+          </span>
+        </div>
+        <div className="flex items-center gap-4 text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>
+          <span>{layout.length} nodes</span>
+          <span style={{ color: C.border }}>|</span>
+          <span>{edges.length} connections</span>
+          <span style={{ color: C.border }}>|</span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.red }} />
+            {edges.filter(e => e.status === 'attack').length} attacks
+          </span>
         </div>
       </div>
 
-      {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-14' : 'w-80'} flex flex-col overflow-hidden transition-all duration-300`} style={{ borderLeft: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,16,24,0.9)' }}>
-        <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="p-3 flex items-center justify-between">
-          {!sidebarCollapsed && (
-            <h3 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Network Intel</h3>
-          )}
-          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="transition-colors p-1" style={{ color: '#2d4a6a' }}>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              {sidebarCollapsed ? (
-                <path d="M2 7H12M9 4L12 7L9 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              ) : (
-                <path d="M12 7H2M5 4L2 7L5 10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-              )}
-            </svg>
-          </button>
+      <div ref={containerRef} className="relative" style={{ height: 480 }}>
+        <svg
+          ref={svgRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          className="w-full"
+          style={{ display: 'block' }}
+        >
+          <defs>
+            <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+            <filter id="attackGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="6" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+            <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="8" />
+            </filter>
+            <linearGradient id="gridGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={C.border} stopOpacity="0.3" />
+              <stop offset="100%" stopColor={C.border} stopOpacity="0.1" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid */}
+          <pattern id="smallGrid" width="30" height="30" patternUnits="userSpaceOnUse">
+            <path d={`M 30 0 L 0 0 0 30`} fill="none" stroke={C.border} strokeWidth="0.5" opacity="0.4" />
+          </pattern>
+          <pattern id="grid" width="150" height="150" patternUnits="userSpaceOnUse">
+            <rect width="150" height="150" fill="url(#smallGrid)" />
+            <path d={`M 150 0 L 0 0 0 150`} fill="none" stroke={C.gridLineHi} strokeWidth="1" opacity="0.3" />
+          </pattern>
+          <rect width="100%" height="100%" fill={C.bg} />
+          <rect width="100%" height="100%" fill="url(#grid)" />
+
+          {/* Edges */}
+          {visibleEdges.map((edge, i) => {
+            const src = layout.find(n => n.id === edge.source);
+            const tgt = layout.find(n => n.id === edge.target);
+            if (!src || !tgt) return null;
+
+            const isAttack = edge.status === 'attack';
+            const isSuspicious = edge.status === 'suspicious';
+            const edgeColor = isAttack ? C.red : isSuspicious ? C.orange : C.muted;
+            const edgeOpacity = isAttack ? 0.55 : isSuspicious ? 0.35 : 0.12;
+
+            // Animated dash for attacks
+            const dashOffset = t * (isAttack ? 40 : 15);
+
+            return (
+              <g key={`${edge.source}-${edge.target}-${i}`}>
+                {/* Glow line for attacks */}
+                {isAttack && (
+                  <line
+                    x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+                    stroke={C.red} strokeWidth={4} opacity={0.15}
+                    filter="url(#softGlow)"
+                  />
+                )}
+                <line
+                  x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+                  stroke={edgeColor}
+                  strokeWidth={isAttack ? 1.8 : isSuspicious ? 1.2 : 0.8}
+                  strokeDasharray={isSuspicious ? '6 4' : isAttack ? '8 4' : 'none'}
+                  strokeDashoffset={isAttack || isSuspicious ? -dashOffset : 0}
+                  strokeLinecap="round"
+                  opacity={edgeOpacity}
+                />
+                {/* Arrowhead for attacks */}
+                {isAttack && (
+                  <circle cx={tgt.x} cy={tgt.y} r={3} fill={C.red} opacity={0.6}>
+                    <animate attributeName="r" values="2;5;2" dur="1.5s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.5s" repeatCount="indefinite" />
+                  </circle>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Nodes */}
+          {visibleNodes.map(node => {
+            const colors = nodeColor(node);
+            const isHovered = node.id === hoveredNode;
+            const isSelected = node.id === selectedNode?.id;
+            const isAttacker = node.type === 'attacker';
+            const radius = isAttacker ? 10 : node.type === 'server' ? 9 : 7;
+            const tColor = threatColor(node.threatScore);
+
+            // Pulse for attackers
+            const pulse = isAttacker ? 1 + 0.12 * Math.sin(t * 3 + node.id.charCodeAt(9) || 0) : 1;
+            const finalR = radius * pulse;
+
+            return (
+              <g
+                key={node.id}
+                onMouseEnter={() => setHoveredNode(node.id)}
+                onMouseLeave={() => setHoveredNode(null)}
+                onClick={() => setSelectedNode(node)}
+                style={{ cursor: 'pointer' }}
+              >
+                {/* Outer glow */}
+                <circle
+                  cx={node.x} cy={node.y} r={finalR * 3}
+                  fill={`url(#attackGlow)`}
+                  opacity={isAttacker ? 0.2 : isHovered ? 0.12 : 0.05}
+                >
+                  {isAttacker && (
+                    <animate attributeName="opacity" values="0.15;0.35;0.15" dur="2s" repeatCount="indefinite" />
+                  )}
+                </circle>
+
+                {/* Threat ring */}
+                {node.threatScore > 35 && (
+                  <circle
+                    cx={node.x} cy={node.y} r={finalR + 3}
+                    fill="none"
+                    stroke={tColor}
+                    strokeWidth={2}
+                    strokeDasharray={`${(node.threatScore / 100) * 2 * Math.PI * (finalR + 3)} ${2 * Math.PI * (finalR + 3)}`}
+                    strokeLinecap="round"
+                    opacity={0.7}
+                    transform={`rotate(-90 ${node.x} ${node.y})`}
+                  />
+                )}
+
+                {/* Selection ring */}
+                {isSelected && (
+                  <circle
+                    cx={node.x} cy={node.y} r={finalR + 10}
+                    fill="none"
+                    stroke={C.cyan}
+                    strokeWidth={1.5}
+                    strokeDasharray="4 3"
+                    opacity={0.8}
+                  />
+                )}
+
+                {/* Hover ring */}
+                {isHovered && !isSelected && (
+                  <circle
+                    cx={node.x} cy={node.y} r={finalR + 6}
+                    fill="none"
+                    stroke={C.text}
+                    strokeWidth={1}
+                    opacity={0.4}
+                  />
+                )}
+
+                {/* Node fill */}
+                <circle
+                  cx={node.x} cy={node.y} r={finalR}
+                  fill={colors.fill}
+                  stroke={isHovered || isSelected ? C.text : colors.stroke}
+                  strokeWidth={isHovered || isSelected ? 2 : 1.5}
+                  filter={isAttacker ? 'url(#attackGlow)' : isHovered ? 'url(#nodeGlow)' : undefined}
+                />
+
+                {/* Node inner dot */}
+                <circle
+                  cx={node.x} cy={node.y} r={finalR * 0.35}
+                  fill={isAttacker ? `${C.red}60` : `${colors.stroke}40`}
+                />
+
+                {/* Score text for large nodes */}
+                {finalR >= 10 && (
+                  <text
+                    x={node.x} y={node.y}
+                    textAnchor="middle" dominantBaseline="central"
+                    fill={C.text}
+                    fontSize="8"
+                    fontFamily={MONO}
+                    fontWeight="bold"
+                    opacity={0.85}
+                  >
+                    {node.threatScore}
+                  </text>
+                )}
+
+                {/* Label */}
+                <text
+                  x={node.x} y={node.y + finalR + 14}
+                  textAnchor="middle"
+                  fill={isAttacker ? C.red : isHovered ? C.text : colors.label}
+                  fontSize="9"
+                  fontFamily={MONO}
+                  fontWeight={isAttacker ? 'bold' : 'normal'}
+                  opacity={isHovered ? 1 : 0.7}
+                >
+                  {node.label.length > 14 ? node.label.slice(0, 12) + '…' : node.label}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Tooltip */}
+          {hoveredNode && (() => {
+            const node = nodeMap.get(hoveredNode);
+            if (!node) return null;
+            const tx = Math.min(node.x + 20, dimensions.width - 220);
+            const ty = Math.max(node.y - 100, 10);
+            const lines = [
+              { label: 'NODE', value: node.label, color: node.type === 'attacker' ? C.red : node.type === 'server' ? C.green : C.cyan },
+              { label: 'IP ADDR', value: node.ip, color: C.muted },
+              { label: 'PORT', value: node.port ? String(node.port) : '—', color: C.muted },
+              { label: 'PROTO', value: node.protocol || 'N/A', color: C.muted },
+              { label: 'THREAT', value: `${node.threatScore}%`, color: threatColor(node.threatScore) },
+              { label: 'TYPE', value: node.type.toUpperCase(), color: node.type === 'attacker' ? C.red : node.type === 'server' ? C.green : C.cyan },
+              { label: 'CONNS', value: String(node.connections.length), color: C.muted },
+            ];
+
+            return (
+              <g style={{ pointerEvents: 'none' }}>
+                <rect x={tx - 4} y={ty - 4} width={210} height={lines.length * 17 + 12} rx={6}
+                  fill={C.card} stroke={node.type === 'attacker' ? C.red : C.cyan} strokeWidth={1} opacity={0.97} />
+                {lines.map((line, i) => (
+                  <text key={i} x={tx + 8} y={ty + i * 17 + 6}
+                    fill={line.color} fontSize="10" fontFamily={MONO}>
+                    {line.label === 'NODE' ? (
+                      <tspan fontWeight="bold" fill={line.color}>{line.value}</tspan>
+                    ) : (
+                      <>
+                        <tspan fill={C.dim}>{line.label}</tspan>
+                        <tspan dx="8" fill={line.color} fontWeight="500">{line.value}</tspan>
+                      </>
+                    )}
+                  </text>
+                ))}
+              </g>
+            );
+          })()}
+        </svg>
+
+        {/* Legend */}
+        <div className="absolute bottom-3 left-3 flex items-center gap-4 px-3 py-2 rounded-lg"
+          style={{ background: `${C.bg}dd`, border: `1px solid ${C.border}`, backdropFilter: 'blur(8px)' }}>
+          {[
+            { label: 'Server', color: C.green },
+            { label: 'Internal', color: C.cyan },
+            { label: 'External', color: C.muted },
+            { label: 'Attacker', color: C.red },
+          ].map(item => (
+            <div key={item.label} className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color, boxShadow: `0 0 6px ${item.color}50` }} />
+              <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>{item.label}</span>
+            </div>
+          ))}
         </div>
 
-        {!sidebarCollapsed && (
-          <>
-            {stats && (
-              <div style={{ borderBottom: '1px solid rgba(0,212,255,0.08)' }} className="px-3 py-3">
-                <div className="flex items-center gap-2 text-xs">
-                  <span style={{ color: '#00ff41' }}>●</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Total Connections:</span>
-                  <span className="font-bold ml-auto" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{totalConns}</span>
+        {/* Selected node detail */}
+        {selectedNode && (
+          <div className="absolute top-3 right-3 w-64 rounded-lg p-4"
+            style={{ background: `${C.bg}ee`, border: `1px solid ${C.border}`, backdropFilter: 'blur(8px)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.cyan, fontFamily: MONO, letterSpacing: '2px' }}>
+                Selected Node
+              </span>
+              <button onClick={() => setSelectedNode(null)} className="p-0.5 rounded transition-colors" style={{ color: C.muted }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                style={{ background: `${nodeColor(selectedNode).stroke}18`, border: `1px solid ${nodeColor(selectedNode).stroke}40` }}>
+                <Server size={16} color={nodeColor(selectedNode).stroke} />
+              </div>
+              <div>
+                <p className="text-sm font-bold" style={{ fontFamily: MONO, color: C.text }}>{selectedNode.label}</p>
+                <p className="text-[11px]" style={{ fontFamily: MONO, color: C.muted }}>{selectedNode.ip}</p>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              {[
+                { label: 'Type', value: selectedNode.type.toUpperCase(), color: nodeColor(selectedNode).stroke },
+                { label: 'Threat Score', value: `${selectedNode.threatScore}%`, color: threatColor(selectedNode.threatScore) },
+                { label: 'Connections', value: String(selectedNode.connections.length), color: C.text },
+                { label: 'Status', value: selectedNode.type === 'attacker' ? 'COMPROMISED' : 'ACTIVE', color: selectedNode.type === 'attacker' ? C.red : C.green },
+              ].map(row => (
+                <div key={row.label} className="flex items-center justify-between text-[11px]">
+                  <span style={{ fontFamily: MONO, color: C.muted }}>{row.label}</span>
+                  <span className="font-semibold" style={{ fontFamily: MONO, color: row.color }}>{row.value}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs mt-1">
-                  <span style={{ color: '#ff8833' }}>▲</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>Avg Threat Score:</span>
-                  <span className="font-bold ml-auto" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{avgScore}%</span>
+              ))}
+            </div>
+            {selectedNode.connections.length > 0 && (
+              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${C.border}` }}>
+                <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '1.5px' }}>Connected To</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedNode.connections.slice(0, 6).map(cid => {
+                    const cn = nodeMap.get(cid);
+                    return (
+                      <span key={cid} className="text-[9px] px-1.5 py-0.5 rounded"
+                        style={{ background: C.border, color: C.muted, fontFamily: MONO }}>
+                        {cn?.label?.split('-')[0] || cid.slice(0, 8)}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-            <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="flex">
-              {[
-                { key: 'stats' as const, label: 'Stats', symbol: '◉' },
-                { key: 'threats' as const, label: 'Threats', symbol: '⚠' },
-                { key: 'paths' as const, label: 'Paths', symbol: '↯' },
-              ].map(tab => (
-                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] uppercase tracking-wider transition-colors"
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    letterSpacing: '2px',
-                    borderBottom: activeTab === tab.key ? '2px solid #00d4ff' : '2px solid transparent',
-                    color: activeTab === tab.key ? '#00d4ff' : '#2d4a6a',
-                    background: activeTab === tab.key ? 'rgba(0,212,255,0.06)' : 'transparent'
-                  }}>
-                  {tab.symbol} {tab.label}
-                </button>
-              ))}
+// ── Bar chart: protocol traffic ───────────────────────────────────────────────
+
+function ProtocolBarChart({ data }: { data: { protocol: string; volume: number; color: string }[] }) {
+  const maxVol = Math.max(...data.map(d => d.volume));
+  const barWidth = 28;
+  const chartHeight = 180;
+  const chartWidth = 340;
+
+  return (
+    <div className="flex items-center gap-4">
+      <svg width={chartWidth} height={chartHeight + 50} style={{ flexShrink: 0 }}>
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map(pct => (
+          <line key={pct}
+            x1={40} y1={20 + (1 - pct) * chartHeight}
+            x2={chartWidth - 10} y2={20 + (1 - pct) * chartHeight}
+            stroke={C.border} strokeWidth={0.5} strokeDasharray="3 3"
+          />
+        ))}
+        {/* Y-axis labels */}
+        {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+          const val = Math.round(maxVol * pct);
+          return (
+            <text key={pct} x={38} y={24 + (1 - pct) * chartHeight}
+              textAnchor="end" fill={C.muted} fontSize="8" fontFamily={MONO}>
+              {val >= 1000 ? `${val / 1000}K` : val}
+            </text>
+          );
+        })}
+        {/* Bars */}
+        {data.map((d, i) => {
+          const barH = (d.volume / maxVol) * chartHeight;
+          const x = 50 + i * (barWidth + 8);
+          const y = 20 + chartHeight - barH;
+          return (
+            <g key={d.protocol}>
+              <rect x={x} y={y} width={barWidth} height={barH} rx={3} fill={d.color} opacity={0.8}>
+                <animate attributeName="height" from="0" to={barH} dur="0.6s" fill="freeze" />
+                <animate attributeName="y" from={20 + chartHeight} to={y} dur="0.6s" fill="freeze" />
+              </rect>
+              <rect x={x} y={y} width={barWidth} height={barH} rx={3} fill={C.text} opacity={0.06} />
+              <text x={x + barWidth / 2} y={chartHeight + 36}
+                textAnchor="middle" fill={C.muted} fontSize="9" fontFamily={MONO} fontWeight="600">
+                {d.protocol}
+              </text>
+              <text x={x + barWidth / 2} y={y - 5}
+                textAnchor="middle" fill={C.text} fontSize="8" fontFamily={MONO} opacity={0.7}>
+                {d.volume >= 1000 ? `${(d.volume / 1000).toFixed(1)}K` : d.volume}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="flex flex-col gap-2">
+        {data.map(d => (
+          <div key={d.protocol} className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color }} />
+            <span className="text-[11px]" style={{ fontFamily: MONO, color: C.muted }}>{d.protocol}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Line chart: 24h traffic ───────────────────────────────────────────────────
+
+function TrafficLineChart({ data }: { data: { hour: string; inbound: number; outbound: number }[] }) {
+  const chartHeight = 160;
+  const chartWidth = 580;
+  const padding = { top: 20, right: 30, bottom: 30, left: 45 };
+  const innerW = chartWidth - padding.left - padding.right;
+  const innerH = chartHeight - padding.top - padding.bottom;
+
+  const allVals = data.flatMap(d => [d.inbound, d.outbound]);
+  const maxVal = Math.max(...allVals) * 1.1;
+
+  const points = (vals: number[]) => vals.map((v, i) => ({
+    x: padding.left + (i / (vals.length - 1)) * innerW,
+    y: padding.top + innerH - (v / maxVal) * innerH,
+  }));
+
+  const inboundPts = points(data.map(d => d.inbound));
+  const outboundPts = points(data.map(d => d.outbound));
+
+  const linePath = (pts: typeof inboundPts) =>
+    pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+  const areaPath = (pts: typeof inboundPts) =>
+    `${linePath(pts)} L ${pts[pts.length - 1].x} ${padding.top + innerH} L ${pts[0].x} ${padding.top + innerH} Z`;
+
+  const gridY = [0, 0.25, 0.5, 0.75, 1];
+
+  return (
+    <svg width={chartWidth} height={chartHeight + 40} style={{ display: 'block' }}>
+      {/* Grid */}
+      {gridY.map(pct => (
+        <line key={pct}
+          x1={padding.left} y1={padding.top + (1 - pct) * innerH}
+          x2={padding.left + innerW} y2={padding.top + (1 - pct) * innerH}
+          stroke={C.border} strokeWidth={0.5} opacity={0.5}
+        />
+      ))}
+      {/* Y labels */}
+      {gridY.map(pct => (
+        <text key={pct} x={padding.left - 6} y={padding.top + (1 - pct) * innerH + 3}
+          textAnchor="end" fill={C.muted} fontSize="8" fontFamily={MONO}>
+          {Math.round(maxVal * pct) >= 1000 ? `${(maxVal * pct / 1000).toFixed(0)}K` : Math.round(maxVal * pct)}
+        </text>
+      ))}
+      {/* Area fills */}
+      <path d={areaPath(inboundPts)} fill={C.cyan} opacity={0.06} />
+      <path d={areaPath(outboundPts)} fill={C.green} opacity={0.04} />
+      {/* Lines */}
+      <path d={linePath(outboundPts)} fill="none" stroke={C.green} strokeWidth={1.5} opacity={0.6} />
+      <path d={linePath(inboundPts)} fill="none" stroke={C.cyan} strokeWidth={2} filter="url(#nodeGlow)" />
+      {/* End dots */}
+      {inboundPts.map((p, i) => i % 4 === 0 || i === inboundPts.length - 1 ? (
+        <circle key={i} cx={p.x} cy={p.y} r={3} fill={C.cyan} opacity={0.8} />
+      ) : null)}
+      {/* X labels */}
+      {data.filter((_, i) => i % 3 === 0).map((d, i) => {
+        const idx = i * 3;
+        const x = padding.left + (idx / (data.length - 1)) * innerW;
+        return (
+          <text key={d.hour} x={x} y={padding.top + innerH + 18}
+            textAnchor="middle" fill={C.muted} fontSize="8" fontFamily={MONO}>
+            {d.hour}
+          </text>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ── Donut chart: threat distribution ─────────────────────────────────────────
+
+function ThreatDonutChart({ data }: { data: { name: string; count: number; pct: number; color: string }[] }) {
+  const size = 200;
+  const cx = size / 2;
+  const cy = size / 2;
+  const outerR = 80;
+  const innerR = 48;
+  const total = data.reduce((s, d) => s + d.count, 0);
+
+  let cumulativeAngle = -Math.PI / 2;
+
+  const segments = data.map(d => {
+    const sliceAngle = (d.count / total) * 2 * Math.PI;
+    const startAngle = cumulativeAngle;
+    const endAngle = cumulativeAngle + sliceAngle;
+    const midAngle = startAngle + sliceAngle / 2;
+
+    const x1 = cx + outerR * Math.cos(startAngle);
+    const y1 = cy + outerR * Math.sin(startAngle);
+    const x2 = cx + outerR * Math.cos(endAngle);
+    const y2 = cy + outerR * Math.sin(endAngle);
+
+    const ix1 = cx + innerR * Math.cos(startAngle);
+    const iy1 = cy + innerR * Math.sin(startAngle);
+    const ix2 = cx + innerR * Math.cos(endAngle);
+    const iy2 = cy + innerR * Math.sin(endAngle);
+
+    const largeArc = sliceAngle > Math.PI ? 1 : 0;
+
+    const path = [
+      `M ${x1} ${y1}`,
+      `A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2}`,
+      `L ${ix2} ${iy2}`,
+      `A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix1} ${iy1}`,
+      'Z',
+    ].join(' ');
+
+    const labelR = outerR + 18;
+    const lx = cx + labelR * Math.cos(midAngle);
+    const ly = cy + labelR * Math.sin(midAngle);
+
+    cumulativeAngle = endAngle;
+
+    return { ...d, path, midAngle, lx, ly, sliceAngle };
+  });
+
+  return (
+    <div className="flex items-center gap-5">
+      <svg width={size} height={size} style={{ flexShrink: 0 }}>
+        {segments.map((seg, i) => (
+          <g key={i}>
+            <path d={seg.path} fill={seg.color} opacity={0.8}>
+              <animate attributeName="opacity" from="0" to="0.8" dur="0.5s" fill="freeze" begin={`${i * 0.05}s`} />
+            </path>
+            <path d={seg.path} fill={C.text} opacity={0.06} />
+          </g>
+        ))}
+        {/* Center text */}
+        <text x={cx} y={cy - 4} textAnchor="middle" fill={C.text} fontSize="16" fontFamily={MONO} fontWeight="bold">
+          {total}
+        </text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily={MONO} letterSpacing="1.5">
+          THREATS
+        </text>
+      </svg>
+      <div className="flex flex-col gap-1.5">
+        {segments.map(seg => (
+          <div key={seg.name} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-sm" style={{ background: seg.color }} />
+            <span className="text-[11px]" style={{ fontFamily: MONO, color: C.text }}>{seg.name}</span>
+            <span className="text-[10px] ml-auto" style={{ fontFamily: MONO, color: C.muted }}>
+              {seg.pct}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Section wrapper ───────────────────────────────────────────────────────────
+
+function Section({
+  title, icon, children, accentColor = C.cyan,
+}: {
+  title: string; icon: React.ReactNode; children: React.ReactNode; accentColor?: string;
+}) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-1 h-5 rounded-full" style={{ background: accentColor }} />
+        <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.text, fontFamily: MONO, letterSpacing: '3px' }}>
+          {title}
+        </h3>
+        {icon}
+      </div>
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '16px 20px' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Main NetworkMap component ────────────────────────────────────────────────
+
+import { useRef } from 'react';
+
+const NetworkMap: React.FC = () => {
+  const { nodes, edges } = useMemo(() => generateMockData(), []);
+  const [stats, setStats] = useState({
+    totalNodes: 0,
+    activeConns: 0,
+    threatNodes: 0,
+    dataTransferred: 0,
+  });
+  const [trends, setTrends] = useState({ nodes: 0, conns: 0, threats: 0, data: 0 });
+
+  useEffect(() => {
+    // Simulate live stat changes
+    const threatCount = nodes.filter(n => n.type === 'attacker').length;
+    const totalBytes = edges.reduce((s, e) => s + e.bytes, 0);
+    setStats({
+      totalNodes: nodes.length,
+      activeConns: edges.length,
+      threatNodes: threatCount,
+      dataTransferred: totalBytes,
+    });
+    setTrends({
+      nodes: Math.round((Math.random() - 0.3) * 15),
+      conns: Math.round((Math.random() - 0.3) * 20),
+      threats: Math.round((Math.random() - 0.5) * 25),
+      data: Math.round((Math.random() - 0.2) * 18),
+    });
+  }, [nodes, edges]);
+
+  const protocolTraffic = useMemo(() => generateProtocolTraffic(), []);
+  const traffic24h = useMemo(() => generate24hTraffic(), []);
+  const threatDist = useMemo(() => generateThreatDistribution(), []);
+
+  const totalTraffic = useMemo(() => protocolTraffic.reduce((s, d) => s + d.volume, 0), [protocolTraffic]);
+
+  return (
+    <div className="min-h-[calc(100vh-64px)] p-5" style={{ background: C.bg }}>
+      {/* ── Top stat cards ─────────────────────────────────────────── */}
+      <div className="grid grid-cols-4 gap-4 mb-5">
+        <StatCard
+          label="Total Nodes"
+          value={stats.totalNodes}
+          icon={Server}
+          trend={trends.nodes}
+          color={C.cyan}
+        />
+        <StatCard
+          label="Active Connections"
+          value={stats.activeConns}
+          icon={Activity}
+          trend={trends.conns}
+          color={C.green}
+        />
+        <StatCard
+          label="Threat Nodes"
+          value={stats.threatNodes}
+          icon={ShieldAlert}
+          trend={trends.threats}
+          color={C.red}
+        />
+        <StatCard
+          label="Data Transferred"
+          value={formatBytes(stats.dataTransferred)}
+          icon={HardDrive}
+          trend={trends.data}
+          color={C.orange}
+        />
+      </div>
+
+      {/* ── Network Topology ───────────────────────────────────────── */}
+      <Section title="Network Topology" icon={
+        <span className="text-[10px] px-2 py-0.5 rounded-full animate-pulse"
+          style={{ background: `${C.red}18`, color: C.red, fontFamily: MONO, border: `1px solid ${C.red}30` }}>
+          ● MONITORING
+        </span>
+      } accentColor={C.cyan}>
+        <NetworkTopology nodes={nodes} edges={edges} />
+      </Section>
+
+      {/* ── Traffic + Threat Distribution row ──────────────────────── */}
+      <div className="grid grid-cols-5 gap-4">
+        {/* Traffic Analysis (3/5 width) */}
+        <div className="col-span-3">
+          <Section title="Traffic Analysis" icon={
+            <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>
+              {formatBytes(totalTraffic * 10000)} / 24h
+            </span>
+          } accentColor={C.green}>
+            {/* Bar chart */}
+            <div className="mb-4">
+              <p className="text-[10px] uppercase tracking-wider mb-3" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '1.5px' }}>
+                By Protocol
+              </p>
+              <ProtocolBarChart data={protocolTraffic} />
             </div>
 
-            <div className="flex-1 overflow-y-auto scrollbar-thin p-3">
-              {activeTab === 'stats' && (
-                <div className="space-y-4">
-                  <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3">
-                    <h4 className="text-[10px] uppercase tracking-wider mb-3 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Node Distribution</h4>
-                    {stats && (
-                      <div className="space-y-2">
-                        {[
-                          { label: 'Internal', count: nodesRef.current.filter(n => n.type === 'internal').length, color: '#00d4ff' },
-                          { label: 'External', count: nodesRef.current.filter(n => n.type === 'external').length, color: '#5a7a9a' },
-                          { label: 'Servers', count: nodesRef.current.filter(n => n.type === 'server').length, color: '#00ff41' },
-                          { label: 'Attackers', count: nodesRef.current.filter(n => n.type === 'attacker').length, color: '#ff3355' },
-                        ].map(item => (
-                          <div key={item.label} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                              <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{item.label}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.08)' }}>
-                                <div className="h-full rounded-full" style={{ width: `${(item.count / (stats.total_nodes || 1)) * 100}%`, backgroundColor: item.color }} />
-                              </div>
-                              <span className="text-[11px] font-mono w-6 text-right" style={{ color: item.color }}>{item.count}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+            {/* Divider */}
+            <div style={{ borderTop: `1px solid ${C.border}` }} className="my-4" />
 
-                  <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3">
-                    <h4 className="text-[10px] uppercase tracking-wider mb-3 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Edge Status</h4>
-                    <div className="space-y-2">
-                      {[
-                        { label: 'Normal', count: edgesRef.current.filter(e => e.status === 'normal').length, color: '#5a7a9a' },
-                        { label: 'Suspicious', count: edgesRef.current.filter(e => e.status === 'suspicious').length, color: '#ff8833' },
-                        { label: 'Attack', count: edgesRef.current.filter(e => e.status === 'attack').length, color: '#ff3355' },
-                      ].map(item => (
-                        <div key={item.label} className="flex items-center justify-between">
-                          <span className="text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{item.label}</span>
-                          <span className="text-[11px] font-mono font-bold" style={{ color: item.color }}>{item.count}</span>
-                        </div>
-                      ))}
-                    </div>
+            {/* Line chart */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] uppercase tracking-wider" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '1.5px' }}>
+                  24-Hour Traffic Volume
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-0.5 rounded" style={{ background: C.cyan }} />
+                    <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>Inbound</span>
                   </div>
-
-                  <div style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="rounded-lg p-3">
-                    <h4 className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: '#5a7a9a', fontFamily: 'var(--font-mono)', letterSpacing: '2px' }}>Protocols</h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {Object.entries(
-                        edgesRef.current.reduce((acc, e) => { acc[e.protocol] = (acc[e.protocol] || 0) + 1; return acc; }, {} as Record<string, number>)
-                      ).sort((a, b) => b[1] - a[1]).map(([proto, count]) => (
-                        <span key={proto} className="text-[10px] font-mono px-2 py-1 rounded" style={{ background: 'rgba(10,18,28,0.85)', color: '#c8d6e5', border: '1px solid rgba(0,212,255,0.12)' }}>
-                          {proto} <span style={{ color: '#2d4a6a' }}>({count})</span>
-                        </span>
-                      ))}
-                    </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-0.5 rounded" style={{ background: C.green }} />
+                    <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>Outbound</span>
                   </div>
                 </div>
-              )}
-
-              {activeTab === 'threats' && <ThreatList />}
-              {activeTab === 'paths' && <AttackPathsList />}
-            </div>
-
-            <div style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }} className="p-3">
-              <div className="flex items-center gap-2 text-[10px]" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>
-                <span>◉</span>
-                <span>Simulated threat data · MockBackend</span>
               </div>
+              <TrafficLineChart data={traffic24h} />
             </div>
-          </>
-        )}
+          </Section>
+        </div>
+
+        {/* Threat Distribution (2/5 width) */}
+        <div className="col-span-2">
+          <Section title="Threat Distribution" icon={
+            <Eye size={14} color={C.muted} />
+          } accentColor={C.red}>
+            <ThreatDonutChart data={threatDist} />
+
+            {/* Summary stats */}
+            <div className="mt-4 pt-4 grid grid-cols-2 gap-3" style={{ borderTop: `1px solid ${C.border}` }}>
+              {[
+                { label: 'Critical', value: threatDist.filter(t => t.color === C.red).reduce((s, t) => s + t.count, 0), color: C.red },
+                { label: 'High', value: threatDist.filter(t => t.color === C.orange).reduce((s, t) => s + t.count, 0), color: C.orange },
+                { label: 'Medium', value: threatDist.filter(t => t.color === C.yellow).reduce((s, t) => s + t.count, 0), color: C.yellow },
+                { label: 'Low', value: threatDist.filter(t => t.color === '#06b6d4').reduce((s, t) => s + t.count, 0), color: '#06b6d4' },
+              ].map(stat => (
+                <div key={stat.label} className="flex items-center justify-between">
+                  <span className="text-[11px]" style={{ fontFamily: MONO, color: C.muted }}>{stat.label}</span>
+                  <span className="text-sm font-bold" style={{ fontFamily: MONO, color: stat.color }}>
+                    {stat.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </div>
+      </div>
+
+      {/* ── Footer info ───────────────────────────────────────────── */}
+      <div className="flex items-center justify-between mt-5 px-1">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.green }} />
+          <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>
+            Data refreshed every 5s · {nodes.length} nodes monitored · {edges.length} active flows
+          </span>
+        </div>
+        <span className="text-[10px]" style={{ fontFamily: MONO, color: C.dim }}>
+          WATCHTOWER v2.4.1 · Mock Data Environment
+        </span>
       </div>
     </div>
   );

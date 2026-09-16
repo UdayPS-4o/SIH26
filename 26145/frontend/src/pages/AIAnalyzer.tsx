@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Alert, Flow } from '../types';
-import { fetchStats, fetchAlerts } from '../lib/api';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Message {
   id: string;
@@ -13,776 +11,825 @@ interface Message {
 
 interface AnalysisRecord {
   id: string;
-  label: string;
-  prompt: string;
   timestamp: number;
+  inputType: string;
+  threatType: string;
+  result: string;
+  confidence: number;
+  severity: string;
 }
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+interface AnalysisResult {
+  reportId: string;
+  timestamp: string;
+  threatType: string;
+  severity: string;
+  confidence: number;
+  affectedIPs: string[];
+  recommendations: string[];
+  details: {
+    packetsAnalyzed: string;
+    flowsProcessed: string;
+    analysisDuration: string;
+    dataVolume: string;
+    portsScanned: string;
+    geoSource: string;
+    attackVector: string;
+    modelVersion: string;
+  };
+}
 
-const TYPING_SPEED = 18;
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const TYPING_DOTS = (
-  <div className="flex gap-1 items-center px-2">
-    {[0, 1, 2].map((i) => (
-      <div
-        key={i}
-        className="w-2 h-2 rounded-full"
-        style={{ backgroundColor: '#00d4ff', animation: `pulse-dot 600ms ease-in-out ${i * 150}ms infinite` }}
-      />
-    ))}
+const SCAN_STEPS = [
+  { label: 'Packet Inspection', duration: 800 },
+  { label: 'Feature Extraction', duration: 900 },
+  { label: 'ML Inference', duration: 1200 },
+  { label: 'Pattern Matching', duration: 700 },
+  { label: 'Threat Classification', duration: 800 },
+  { label: 'Report Generation', duration: 500 },
+];
+
+const THREAT_TYPES = [
+  'SQL Injection', 'DDoS Attack', 'Brute Force', 'Port Scanning',
+  'Malware Beacon', 'Data Exfiltration', 'Command Injection',
+  'Cross-Site Scripting', 'DNS Tunneling', 'Ransomware Communication',
+];
+
+const SEVERITY_LIST: Array<'critical' | 'high' | 'medium' | 'low'> = ['critical', 'high', 'medium', 'low'];
+
+const RESULT_LABELS = ['Blocked', 'Mitigated', 'Quarantined', 'Investigating'];
+const ATTACK_VECTORS = [
+  'Network Scanning → Brute Force', 'Reconnaissance → Initial Access',
+  'Initial Access → Execution', 'Exfiltration via DNS Tunnel', 'C2 Beaconing Pattern',
+];
+const GEO_SOURCES = ['Russia', 'China', 'North Korea', 'Iran', 'Romania', 'Brazil', 'Unknown'];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randFloat = (min: number, max: number, dec = 1) => (Math.random() * (max - min) + min).toFixed(dec);
+const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+const genIP = () => `${rand(1,223)}.${rand(0,255)}.${rand(0,255)}.${rand(1,254)}`;
+
+const severityConfig = (s: string) => {
+  const m: Record<string, { color: string; bg: string; border: string; label: string }> = {
+    critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', label: 'CRITICAL' },
+    high:     { color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)', label: 'HIGH' },
+    medium:   { color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.25)', label: 'MEDIUM' },
+    low:      { color: '#06b6d4', bg: 'rgba(6,182,212,0.08)', border: 'rgba(6,182,212,0.25)', label: 'LOW' },
+  };
+  return m[s] || m.low;
+};
+
+const fmtTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+const C = {
+  bg: '#060a10', card: '#0a1118', border: '#1a2736', borderAct: '#1e3a5f',
+  txt: '#e0e8f0', txt2: '#64748b', cyan: '#00d4ff', green: '#00ff41',
+  red: '#ef4444', orange: '#f97316', yellow: '#eab308', purple: '#a855f7',
+};
+
+const sectionHeader = (label: string) => (
+  <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px', marginTop:'8px' }}>
+    <span style={{ color: C.cyan, fontSize:'10px', letterSpacing:'2px', fontFamily:"'JetBrains Mono',monospace" }}>◈</span>
+    <span style={{
+      color: C.cyan, fontSize:'11px', fontWeight:700, letterSpacing:'2px', textTransform:'uppercase',
+      fontFamily:"'JetBrains Mono',monospace",
+    }}>{label}</span>
+    <div style={{ flex:1, height:'1px', background:`linear-gradient(90deg, ${C.borderAct}, transparent)` }} />
   </div>
 );
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Mock Data ────────────────────────────────────────────────────────────────
 
-const severitySymbol = (s: string) => {
-  switch (s) {
-    case 'critical': return '[!]';
-    case 'high': return '[+]';
-    case 'medium': return '[~]';
-    default: return '[i]';
-  }
+const buildAnalysisResult = (): AnalysisResult => {
+  const threatType = pick(THREAT_TYPES);
+  const severity = pick(SEVERITY_LIST);
+  const confidence = rand(78, 99);
+  const affectedIPs = Array.from({ length: rand(2,5) }, genIP);
+  const reportId = `RPT-${Date.now().toString(36).toUpperCase().slice(-8)}`;
+  const recs: Record<string, string[]> = {
+    critical: [
+      'ISOLATE affected systems immediately at network perimeter',
+      'Deploy emergency firewall rules for all flagged source IPs',
+      'Initiate incident response protocol IRP-001',
+      'Preserve forensic images of affected endpoints',
+      'Notify SOC leadership and escalate to Tier-2 analysis',
+    ],
+    high: [
+      'Block source IPs at edge firewall within 15 minutes',
+      'Enable enhanced logging on affected system segments',
+      'Schedule forensic review within 4 hours',
+      'Monitor for lateral movement indicators',
+    ],
+    medium: [
+      'Add flagged IPs to SIEM watchlist for 72-hour monitoring',
+      'Review authentication logs for brute-force indicators',
+      'Schedule routine patch cycle review',
+    ],
+    low: [
+      'Log event for trend analysis',
+      'Include in next weekly security report',
+    ],
+  };
+
+  return {
+    reportId,
+    timestamp: new Date().toISOString(),
+    threatType,
+    severity,
+    confidence,
+    affectedIPs,
+    recommendations: recs[severity] || recs.low,
+    details: {
+      packetsAnalyzed: rand(5000,50000).toLocaleString(),
+      flowsProcessed: rand(50,2000).toLocaleString(),
+      analysisDuration: `${randFloat(0.3,12.0)}s`,
+      dataVolume: `${randFloat(1.2,48.5)} MB`,
+      portsScanned: [22,23,80,443,445,3389,8080,8443].sort(()=>Math.random()-0.5).slice(0,rand(2,5)).join(', '),
+      geoSource: pick(GEO_SOURCES),
+      attackVector: pick(ATTACK_VECTORS),
+      modelVersion: 'Ekadhara v3.2.1',
+    },
+  };
 };
 
-const severityColor = (s: string) => {
-  switch (s) {
-    case 'critical': return { text: '#ff3355', border: 'rgba(255,51,85,0.3)', bg: 'rgba(255,51,85,0.08)' };
-    case 'high': return { text: '#ff8833', border: 'rgba(255,136,51,0.3)', bg: 'rgba(255,136,51,0.08)' };
-    case 'medium': return { text: '#ffcc00', border: 'rgba(255,204,0,0.3)', bg: 'rgba(255,204,0,0.08)' };
-    default: return { text: '#00d4ff', border: 'rgba(0,212,255,0.3)', bg: 'rgba(0,212,255,0.08)' };
+const buildInitialRecords = (): AnalysisRecord[] => {
+  const recs: AnalysisRecord[] = [];
+  for (let i = 0; i < 6; i++) {
+    recs.push({
+      id: `init-${i}`,
+      timestamp: Date.now() - rand(60000,3600000) * (i+1),
+      inputType: pick(['Deep Analysis','IP Reputation','Threat Prediction','Alert Summary']),
+      threatType: pick(THREAT_TYPES),
+      result: pick(RESULT_LABELS),
+      confidence: rand(72,98),
+      severity: pick(SEVERITY_LIST),
+    });
   }
+  return recs;
 };
 
-const formatMarkdown = (text: string): React.ReactNode[] => {
-  const parts: React.ReactNode[] = [];
-  const lines = text.split('\n');
+// ─── Animations (injected into DOM once) ─────────────────────────────────────
 
-  lines.forEach((line, idx) => {
-    const trimmed = line.trim();
+let animsInjected = false;
+const injectAnims = () => {
+  if (animsInjected || typeof document === 'undefined') return;
+  animsInjected = true;
+  const s = document.createElement('style');
+  s.textContent = `
+    @keyframes scan-sweep { 0%{left:-30%} 100%{left:110%} }
+    @keyframes pulse-glow { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    @keyframes fade-in-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    .af0 { animation: fade-in-up .5s ease-out both }
+    .af1 { animation: fade-in-up .5s ease-out .08s both }
+    .af2 { animation: fade-in-up .5s ease-out .16s both }
+    .af3 { animation: fade-in-up .5s ease-out .24s both }
+    .af4 { animation: fade-in-up .5s ease-out .32s both }
+    .af5 { animation: fade-in-up .5s ease-out .4s both }
+  `;
+  document.head.appendChild(s);
+};
 
-    if (/^#{1,3}\s/.test(trimmed)) {
-      const level = trimmed.match(/^(#{1,3})/)?.[1].length || 1;
-      const title = trimmed.replace(/^#{1,3}\s+/, '');
-      const sizeClass = level === 1 ? 'text-base' : level === 2 ? 'text-sm' : 'text-xs';
-      parts.push(
-        <p key={idx} className={`font-bold mt-3 mb-1 ${sizeClass}`} style={{ color: '#00d4ff', fontFamily: 'var(--font-mono)' }}>{title}</p>
-      );
-      return;
-    }
+// ─── Icons ────────────────────────────────────────────────────────────────────
 
-    if (trimmed.startsWith('- ')) {
-      const content = trimmed.replace(/^- /, '');
-      parts.push(
-        <li key={idx} className="ml-3 list-disc" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-          {content.split(/\*\*/).map((part, i, arr) =>
-            i % 2 === 1 ? <strong key={i} style={{ color: '#c8d6e5' }}>{part}</strong> : part
-          )}
-        </li>
-      );
-      return;
-    }
+const Icon = ({ type, size = 22 }: { type: string; size?: number }) => {
+  const c = C.cyan;
+  const s = size;
+  const icons: Record<string, React.ReactNode> = {
+    analysis: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 11-6.219-8.56" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+    threat: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
+    accuracy: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
+    time: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+  };
+  return <>{icons[type] || null}</>;
+};
 
-    if (/^\d+\.\s/.test(trimmed)) {
-      const content = trimmed.replace(/^\d+\.\s/, '');
-      parts.push(
-        <li key={idx} className="ml-3 list-decimal" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-          {content.split(/\*\*/).map((part, i, arr) =>
-            i % 2 === 1 ? <strong key={i} style={{ color: '#c8d6e5' }}>{part}</strong> : part
-          )}
-        </li>
-      );
-      return;
-    }
+// ─── Sub-components ──────────────────────────────────────────────────────────
 
-    if (trimmed.startsWith('```')) {
-      parts.push(
-        <div key={idx} className="rounded-lg px-4 py-2 my-2 font-mono text-xs" style={{ fontFamily: 'var(--font-mono)', color: '#00ff41', background: 'rgba(6,10,16,0.95)', border: '1px solid rgba(0,212,255,0.2)' }}>
-          {trimmed.replace(/```/g, '')}
+const StatCard: React.FC<{
+  label: string; value: string | number; sub?: string;
+  icon: React.ReactNode; trend?: { value: number; up: boolean }; delay: string;
+}> = ({ label, value, sub, icon, trend, delay }) => (
+  <div className={`af${delay}`} style={{
+    background: C.card, border: `1px solid ${C.border}`, borderRadius:'8px', padding:'20px',
+    position:'relative', overflow:'hidden', transition:'border-color .2s, box-shadow .2s',
+  }}
+    onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderAct; e.currentTarget.style.boxShadow = '0 0 24px rgba(0,212,255,0.06), inset 0 1px 0 rgba(0,212,255,0.06)'; }}
+    onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = 'none'; }}
+  >
+    <div style={{ position:'absolute', top:0, left:0, right:0, height:'1px', background:`linear-gradient(90deg, transparent, ${C.cyan}33, transparent)` }} />
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'14px' }}>
+      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase' }}>{label}</span>
+      <div style={{ width:'32px', height:'32px', borderRadius:'6px', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,212,255,0.06)', border:'1px solid rgba(0,212,255,0.15)', color:C.cyan }}>
+        {icon}
+      </div>
+    </div>
+    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'30px', fontWeight:700, color:C.cyan, textShadow:'0 0 16px rgba(0,212,255,0.3)', lineHeight:1.1 }}>{value}</div>
+    <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
+      {sub && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2 }}>{sub}</span>}
+      {trend && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:600, color: trend.up ? C.green : C.red }}>{trend.up ? '▲' : '▼'} {trend.value}%</span>}
+    </div>
+  </div>
+);
+
+const ConfidenceMeter: React.FC<{ value: number; severity: string }> = ({ value, severity }) => {
+  const cfg = severityConfig(severity);
+  const r = 45;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (value / 100) * circ;
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:'20px' }}>
+      <div style={{ position:'relative', width:'110px', height:'110px', flexShrink:0 }}>
+        <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform:'rotate(-90deg)' }}>
+          <circle cx="50" cy="50" r={r} fill="none" stroke={C.border} strokeWidth="8" />
+          <circle cx="50" cy="50" r={r} fill="none" stroke={cfg.color} strokeWidth="8"
+            strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+            style={{ transition:'stroke-dashoffset 1.5s ease-out', filter:`drop-shadow(0 0 4px ${cfg.color}66)` }} />
+        </svg>
+        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'26px', fontWeight:700, color:cfg.color, textShadow:`0 0 12px ${cfg.color}55`, lineHeight:1 }}>{value}%</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'8px', color:C.txt2, letterSpacing:'1px', textTransform:'uppercase', marginTop:'2px' }}>confidence</span>
         </div>
-      );
-      return;
-    }
+      </div>
+      <div style={{ flex:1 }}>
+        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2, marginBottom:'10px', letterSpacing:'0.5px' }}>CONFIDENCE BREAKDOWN</div>
+        {[
+          { label:'ML Model', pct: rand(70,95) },
+          { label:'Pattern Match', pct: rand(60,90) },
+          { label:'Signature DB', pct: rand(65,92) },
+        ].map(item => (
+          <div key={item.label} style={{ marginBottom:'8px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2 }}>{item.label}</span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.cyan }}>{item.pct}%</span>
+            </div>
+            <div style={{ width:'100%', height:'3px', background:'rgba(0,212,255,0.06)', borderRadius:'2px', overflow:'hidden' }}>
+              <div style={{ width:`${item.pct}%`, height:'100%', borderRadius:'2px', background:C.cyan, boxShadow:'0 0 8px rgba(0,212,255,0.4)', transition:'width 1s ease-out' }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-    if (trimmed.startsWith('---')) {
-      parts.push(<hr key={idx} style={{ borderColor: 'rgba(0,212,255,0.12)' }} className="my-2" />);
-      return;
-    }
+const ScanningAnimation: React.FC<{ active: boolean; currentStep: number }> = ({ active, currentStep }) => {
+  if (!active) return null;
+  return (
+    <div className="af3" style={{
+      background: C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'24px',
+      position:'relative', overflow:'hidden',
+    }}>
+      <div style={{ position:'absolute', top:0, bottom:0, width:'30%', background:'linear-gradient(90deg,transparent,rgba(0,212,255,0.03),rgba(0,212,255,0.06),rgba(0,212,255,0.03),transparent)', animation:'scan-sweep 2.5s ease-in-out infinite', pointerEvents:'none' }} />
+      <div style={{ position:'absolute', top:0, bottom:0, left:'30%', width:'2px', background:`linear-gradient(180deg,transparent,${C.cyan}44,${C.cyan}88,${C.cyan}44,transparent)`, boxShadow:`0 0 12px ${C.cyan}66,0 0 30px ${C.cyan}22`, animation:'scan-sweep 2.5s ease-in-out infinite', pointerEvents:'none' }} />
 
-    if (trimmed === '') {
-      parts.push(<br key={idx} />);
-      return;
-    }
+      <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px', position:'relative', zIndex:1 }}>
+        <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:C.cyan, boxShadow:`0 0 8px ${C.cyan}`, animation:'pulse-glow 1s ease-in-out infinite' }} />
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', fontWeight:700, color:C.cyan, letterSpacing:'2px', textTransform:'uppercase' }}>
+          Deep Analysis In Progress
+        </span>
+      </div>
 
-    if (trimmed.startsWith('|')) {
-      const cells = trimmed.split('|').filter(Boolean).map((c) => c.trim());
-      const isDivider = cells.every((c) => /^[-:]+$/.test(c));
-      if (isDivider) return;
-      parts.push(
-        <div key={idx} className="flex gap-2 text-xs my-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
-          {cells.map((cell, ci) => (
-            <span
-              key={ci}
-              className="flex-1"
-              style={{ color: ci === 0 ? '#5a7a9a' : '#c8d6e5' }}
-            >
-              {cell}
-            </span>
+      <div style={{ display:'flex', flexDirection:'column', gap:0, position:'relative', zIndex:1 }}>
+        {SCAN_STEPS.map((step, idx) => {
+          const done = idx < currentStep;
+          const cur = idx === currentStep;
+          return (
+            <div key={step.label} style={{
+              display:'flex', alignItems:'center', gap:'14px', padding:'10px 12px',
+              background: cur ? 'rgba(0,212,255,0.03)' : 'transparent',
+              borderLeft: cur ? `2px solid ${C.cyan}` : '2px solid transparent', transition:'all .3s',
+            }}>
+              <div style={{
+                width:'22px', height:'22px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+                border: `1px solid ${done ? C.green : cur ? C.cyan : C.border}`,
+                background: done ? 'rgba(0,255,65,0.1)' : cur ? 'rgba(0,212,255,0.1)' : 'transparent',
+                flexShrink:0,
+                boxShadow: done ? '0 0 8px rgba(0,255,65,0.2)' : cur ? '0 0 8px rgba(0,212,255,0.2)' : 'none',
+              }}>
+                {done ? (
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                ) : cur ? (
+                  <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:C.cyan, boxShadow:`0 0 6px ${C.cyan}`, animation:'pulse-glow .8s ease-in-out infinite' }} />
+                ) : (
+                  <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:C.border }} />
+                )}
+              </div>
+              <div style={{ flex:1 }}>
+                <span style={{
+                  fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', fontWeight: cur ? 600 : 400,
+                  color: done ? C.green : cur ? C.cyan : C.txt2, transition:'color .3s',
+                }}>{step.label}</span>
+              </div>
+              <span style={{
+                fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', letterSpacing:'0.5px',
+                color: done ? C.green : cur ? C.cyan : 'transparent',
+              }}>{done ? 'DONE' : cur ? 'PROCESSING' : ''}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const ResultsPanel: React.FC<{ result: AnalysisResult }> = ({ result }) => {
+  const cfg = severityConfig(result.severity);
+  return (
+    <div className="af3">
+      {sectionHeader('Analysis Results')}
+      <div style={{ background:C.card, border:`1px solid ${cfg.border}`, borderRadius:'8px', overflow:'hidden' }}>
+        {/* Header row */}
+        <div style={{ padding:'20px 24px', borderBottom:`1px solid ${C.border}`, background:cfg.bg, display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'16px' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'16px', flexWrap:'wrap' }}>
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:'6px', padding:'4px 12px', borderRadius:'4px',
+              background:cfg.bg, border:`1px solid ${cfg.border}`,
+              fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:700, color:cfg.color,
+              letterSpacing:'1px', textTransform:'uppercase',
+            }}>
+              <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:cfg.color, boxShadow:`0 0 6px ${cfg.color}`, animation:'pulse-glow 1.5s ease-in-out infinite' }} />
+              {cfg.label}
+            </div>
+            <div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'18px', fontWeight:700, color:C.txt }}>{result.threatType}</div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2, marginTop:'2px' }}>{result.reportId}</div>
+            </div>
+          </div>
+          <ConfidenceMeter value={result.confidence} severity={result.severity} />
+        </div>
+
+        {/* Metadata grid */}
+        <div style={{ padding:'20px 24px', borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:'16px' }}>
+            {[
+              { label:'Affected IPs', value:result.affectedIPs.join('  ·  '), mono:true },
+              { label:'Geographic Origin', value:result.details.geoSource, mono:false },
+              { label:'Attack Vector', value:result.details.attackVector, mono:false },
+              { label:'Packets Analyzed', value:result.details.packetsAnalyzed, mono:true },
+              { label:'Flows Processed', value:result.details.flowsProcessed, mono:true },
+              { label:'Data Volume', value:result.details.dataVolume, mono:true },
+              { label:'Analysis Duration', value:result.details.analysisDuration, mono:true },
+              { label:'Ports Scanned', value:result.details.portsScanned, mono:true },
+            ].map(item => (
+              <div key={item.label}>
+                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:'4px' }}>{item.label}</div>
+                <div style={{
+                  fontFamily: item.mono ? "'JetBrains Mono',monospace" : "'Inter',sans-serif",
+                  fontSize:'13px', color:C.txt, fontWeight: item.mono ? 500 : 400, wordBreak:'break-all',
+                }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recommendations */}
+        <div style={{ padding:'20px 24px', borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:'12px' }}>
+            Recommended Actions
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+            {result.recommendations.map((rec, idx) => (
+              <div key={idx} style={{ display:'flex', alignItems:'flex-start', gap:'10px', padding:'8px 12px', background:'rgba(0,212,255,0.02)', border:'1px solid rgba(0,212,255,0.06)', borderRadius:'4px' }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:700, color:C.cyan, flexShrink:0, marginTop:'1px' }}>{String(idx+1).padStart(2,'0')}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', color:C.txt, lineHeight:1.5 }}>{rec}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:'12px 24px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(0,212,255,0.01)', borderTop:`1px solid ${C.border}` }}>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2 }}>Model: {result.details.modelVersion}</span>
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2 }}>{new Date(result.timestamp).toLocaleString()}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ModelPerformanceSection: React.FC = () => {
+  const [metrics] = useState({ precision:0.94, recall:0.91, f1:0.925, accuracy:0.96 });
+  const rows = [
+    { label:'PRECISION', value:metrics.precision, color:C.cyan },
+    { label:'RECALL', value:metrics.recall, color:C.green },
+    { label:'F1 SCORE', value:metrics.f1, color:C.yellow },
+    { label:'ACCURACY', value:metrics.accuracy, color:C.purple },
+  ];
+  return (
+    <div className="af4">
+      {sectionHeader('Threat Classification Model')}
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'24px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:'20px' }}>
+          {rows.map(m => (
+            <div key={m.label}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'8px' }}>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase' }}>{m.label}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'18px', fontWeight:700, color:m.color, textShadow:`0 0 8px ${m.color}44` }}>{(m.value*100).toFixed(1)}%</span>
+              </div>
+              <div style={{ width:'100%', height:'6px', background:'rgba(0,212,255,0.06)', borderRadius:'3px', overflow:'hidden', border:'1px solid rgba(0,212,255,0.04)' }}>
+                <div style={{ width:`${m.value*100}%`, height:'100%', borderRadius:'3px', background:m.color, boxShadow:`0 0 10px ${m.color}55, 0 0 20px ${m.color}22`, transition:'width 1.5s ease-out' }} />
+              </div>
+            </div>
           ))}
         </div>
-      );
-      return;
-    }
+        <div style={{ marginTop:'20px', padding:'12px 16px', background:'rgba(0,212,255,0.02)', border:'1px solid rgba(0,212,255,0.06)', borderRadius:'4px', display:'flex', gap:'24px', flexWrap:'wrap' }}>
+          {[
+            { l:'ARCHITECTURE', v:'Transformer-XL' },
+            { l:'TRAINING DATA', v:'2.4M samples' },
+            { l:'CLASSES', v:'28 threat types' },
+            { l:'LAST RETRAINED', v:'2026-09-14' },
+          ].map(item => (
+            <div key={item.l}>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', color:C.txt2, letterSpacing:'1px', textTransform:'uppercase' }}>{item.l}: </span>
+              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.cyan }}>{item.v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
-    const formatted = trimmed.split(/\*\*/).map((part, i, arr) =>
-      i % 2 === 1 ? <strong key={i} style={{ color: '#c8d6e5', fontWeight: 600 }}>{part}</strong> : part
+const RecentAnalysesTable: React.FC<{ records: AnalysisRecord[] }> = ({ records }) => {
+  if (records.length === 0) {
+    return (
+      <div className="af5">
+        {sectionHeader('Recent Analyses')}
+        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'48px 24px', textAlign:'center' }}>
+          <div style={{ color:C.txt2, fontFamily:"'JetBrains Mono',monospace", fontSize:'12px' }}>No analyses recorded yet. Run your first deep analysis above.</div>
+        </div>
+      </div>
     );
+  }
+  return (
+    <div className="af5">
+      {sectionHeader('Recent Analyses')}
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', overflow:'hidden' }}>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'JetBrains Mono',monospace", fontSize:'12px' }}>
+            <thead>
+              <tr>
+                {['Timestamp','Analysis Type','Threat','Result','Confidence','Severity'].map(h => (
+                  <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:'9px', fontWeight:600, color:C.txt2, textTransform:'uppercase', letterSpacing:'1.5px', borderBottom:`1px solid ${C.border}`, whiteSpace:'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {records.map(rec => {
+                const sc = severityConfig(rec.severity);
+                return (
+                  <tr key={rec.id} style={{ borderBottom:`1px solid rgba(26,39,54,0.5)`, transition:'background .15s', cursor:'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,212,255,0.03)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
+                    <td style={{ padding:'11px 16px', color:C.txt2, fontSize:'11px', whiteSpace:'nowrap' }}>{fmtTime(rec.timestamp)}</td>
+                    <td style={{ padding:'11px 16px', color:C.txt }}>{rec.inputType}</td>
+                    <td style={{ padding:'11px 16px', color:C.cyan, fontSize:'11px' }}>{rec.threatType}</td>
+                    <td style={{ padding:'11px 16px' }}><span style={{ fontSize:'11px', color:C.txt }}>{rec.result}</span></td>
+                    <td style={{ padding:'11px 16px', color:C.txt, fontSize:'13px', fontWeight:600 }}>{rec.confidence}%</td>
+                    <td style={{ padding:'11px 16px' }}>
+                      <span style={{
+                        display:'inline-flex', alignItems:'center', gap:'5px', padding:'3px 10px', borderRadius:'3px',
+                        fontSize:'10px', fontWeight:700, background:sc.bg, color:sc.color, border:`1px solid ${sc.border}`,
+                        letterSpacing:'1px', textTransform:'uppercase',
+                      }}>
+                        <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:sc.color, boxShadow:`0 0 4px ${sc.color}` }} />
+                        {rec.severity}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-    if (trimmed.match(/^(\[!\]|\[\+\]|\[~\]|\[i\])/)) {
-      parts.push(
-        <p key={idx} className="text-sm flex items-start gap-2 mt-1" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>
-          <span className="shrink-0">{trimmed.match(/^(\[!\]|\[\+\]|\[~\]|\[i\])/)?.[0]}</span>
-          <span>{formatted.slice(1)}</span>
-        </p>
-      );
+// ─── Chat Content Renderer ───────────────────────────────────────────────────
+
+const ChatContent: React.FC<{ text: string }> = ({ text }) => {
+  const lines = text.split('\n');
+  const els: React.ReactNode[] = [];
+  lines.forEach((line, i) => {
+    const t = line.trim();
+    if (t === '') return;
+    if (/^#{1,3}\s/.test(t)) {
+      const lvl = t.match(/^#{1,3}/)![0].length;
+      const title = t.replace(/^#{1,3}\s+/, '');
+      const sz = lvl===1?'14px':lvl===2?'12px':'11px';
+      els.push(<div key={i} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:sz, fontWeight:700, color:C.cyan, marginTop:lvl===1?'12px':'8px', marginBottom:'4px', letterSpacing:'0.5px' }}>{title}</div>);
       return;
     }
-
-    parts.push(<p key={idx} className="text-sm leading-relaxed" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{formatted}</p>);
+    if (t === '---') { els.push(<div key={i} style={{ height:'1px', background:C.border, margin:'10px 0' }} />); return; }
+    if (t.startsWith('- ')) {
+      const content = t.replace(/^- /, '');
+      els.push(<div key={i} style={{ display:'flex', gap:'8px', marginTop:'3px' }}>
+        <span style={{ color:C.cyan, flexShrink:0 }}>›</span>
+        <span style={{ fontSize:'12px', color:C.txt, lineHeight:1.5 }}>{fmtInline(content)}</span>
+      </div>);
+      return;
+    }
+    if (/^\d+\.\s/.test(t)) {
+      const m = t.match(/^(\d+)\.\s(.+)/);
+      if (m) els.push(<div key={i} style={{ display:'flex', gap:'8px', marginTop:'3px' }}>
+        <span style={{ color:C.txt2, flexShrink:0, minWidth:'16px' }}>{m[1]}.</span>
+        <span style={{ fontSize:'12px', color:C.txt, lineHeight:1.5 }}>{fmtInline(m[2])}</span>
+      </div>);
+      return;
+    }
+    els.push(<div key={i} style={{ fontSize:'12px', color:C.txt, lineHeight:1.6, marginTop:'2px' }}>{fmtInline(t)}</div>);
   });
+  return <>{els}</>;
+};
 
+const fmtInline = (text: string): React.ReactNode => {
+  const parts: React.ReactNode[] = [];
+  text.split(/(\*\*[^*]+\*\*)/g).forEach((seg, idx) => {
+    if (seg.startsWith('**') && seg.endsWith('**')) {
+      parts.push(<strong key={idx} style={{ color:C.txt, fontWeight:600 }}>{seg.slice(2,-2)}</strong>);
+    } else if (seg.startsWith('[') && seg.includes(']')) {
+      const m = seg.match(/^\[([^\]]+)\]/);
+      if (m) { parts.push(<span key={idx} style={{ color:C.cyan, fontWeight:600 }}>{m[1]}</span>); parts.push(seg.slice(m[0].length)); }
+      else parts.push(seg);
+    } else parts.push(seg);
+  });
   return parts;
 };
 
-// ─── AI Response Generators ──────────────────────────────────────────────────
-
-const generateIPAnalysis = async (ip: string): Promise<string> => {
-  const ports = [22, 23, 80, 443, 445, 3389, 8080, 8443];
-  const port = ports[Math.floor(Math.random() * ports.length)];
-  const confidence = Math.floor(Math.random() * 25) + 72;
-  const country = ['Russia', 'China', 'North Korea', 'Iran', 'Brazil', 'Romania'][Math.floor(Math.random() * 6)];
-  const isp = ['VPS Provider', 'Residential ISP', 'Data Center', 'Mobile Network'][Math.floor(Math.random() * 4)];
-  const payloadKB = (Math.random() * 500 + 50).toFixed(1);
-  const connections = Math.floor(Math.random() * 200) + 10;
-  const bytesOut = (Math.random() * 5 + 1).toFixed(1);
-
-  return `## IP Threat Analysis: \`${ip}\`
-
-[!] **CRITICAL** — Malicious Activity Detected
-
-**Scanning Activity Identified:**
-The IP \`${ip}\` has been detected performing aggressive port scanning against our network infrastructure. The scan targeted **${connections} internal hosts** across ports ${[22, 80, 445, 3389, 8080].sort(() => Math.random() - 0.5).slice(0, 3).join(', ')}.
-
-**Technical Analysis:**
-- **Scan type:** TCP SYN scan (stealth scan)
-- **Targeted ports:** ${port}, ${port + 1}, ${port + 2}
-- **Connection rate:** ${(Math.random() * 500 + 100).toFixed(0)} packets/sec
-- **Payload outbound:** ${bytesOut} MB in last 15 minutes
-- **Geo-location:** ${country} (ASN: AS${Math.floor(Math.random() * 50000 + 10000)})
-- **ISP type:** ${isp}
-
-**Threat Assessment:**
-| Parameter | Value |
-|-----------|-------|
-| Confidence | ${confidence}% |
-| Severity | Critical |
-| Attack Vector | Network Scanning → Brute Force |
-| Kill Chain Stage | Initial Access / Reconnaissance |
-| Risk Score | ${(Math.random() * 3 + 7).toFixed(1)}/10 |
-
-**Indicators of Compromise:**
-- Aggressive SYN scanning pattern consistent with **Nmap** or **Masscan**
-- Sequential port probing suggests **automated tooling** (likely botnet node)
-- High packet rate with low payload → pure reconnaissance phase
-- ISP type and geolocation correlate with known APT staging infrastructure
-
-**Recommendation:**
-1. **IMMEDIATE:** Block \`${ip}\` at perimeter firewall (Ingress/Egress)
-2. **SHORT-TERM:** Monitor all internal hosts contacted by this IP for signs of compromise
-3. **MEDIUM-TERM:** Report to threat intelligence feeds ( AbuseIPDB, ThreatFox )
-4. **MONITORING:** Add to SIEM watchlist for 30 days`;
-
-};
-
-const generateThreatReport = async (alerts: Alert[], stats: { threats_per_type: Record<string, number>; total_alerts: number; total_flows: number; avg_confidence: number }): Promise<string> => {
-  const criticalCount = alerts.filter((a) => a.severity === 'critical').length;
-  const highCount = alerts.filter((a) => a.severity === 'high').length;
-  const uniqueIPs = new Set([...alerts.map((a) => a.src_ip), ...alerts.map((a) => a.dst_ip)]).size;
-
-  const reportId = `RPT-${Date.now().toString(36).toUpperCase()}`;
-  const timestamp = new Date().toISOString();
-
-  return `## Security Threat Assessment Report
-**Report ID:** \`${reportId}\`
-**Generated:** ${timestamp}
-**Analysis Period:** Last 24 hours
-
----
-### Executive Summary
-
-Our AI-powered detection system has identified **${stats.total_alerts} threat events** across **${uniqueIPs} unique IP addresses** in the monitored network. The threat landscape shows elevated activity levels requiring immediate attention.
-
-### Threat Severity Distribution
-
-[!] **CRITICAL:** ${criticalCount} events — Immediate action required
-[+] **HIGH:** ${highCount} events — Escalate to security team
-[~] **MEDIUM:** ${alerts.filter((a) => a.severity === 'medium').length} events — Monitor closely
-[i] **LOW:** ${alerts.filter((a) => a.severity === 'low').length} events — Log and review
-
-### Attack Vector Breakdown
-
-${Object.entries(stats.threats_per_type)
-  .sort(([, a], [, b]) => b - a)
-  .map(([type, count]) => `- **${type}:** ${count} events detected`)
-  .join('\n')}
-
-### Network Posture Assessment
-
-| Metric | Value |
-|--------|-------|
-| Total Flows Analyzed | ${stats.total_flows.toLocaleString()} |
-| Total Alerts Generated | ${stats.total_alerts} |
-| AI Confidence Score | ${stats.avg_confidence.toFixed(1)}% |
-| Unique Threat IPs | ${uniqueIPs} |
-| Critical Events | ${criticalCount} |
-| High-Priority Events | ${highCount} |
-
-### Top Threat Indicators
-
-${alerts
-  .filter((a) => a.severity === 'critical' || a.severity === 'high')
-  .sort((a, b) => b.confidence - a.confidence)
-  .slice(0, 5)
-  .map(
-    (a) =>
-      `- ${severitySymbol(a.severity)} \`${a.src_ip}\` → **${a.threat_type}** (${a.confidence}% confidence, ${new Date(a.timestamp).toLocaleTimeString()})`
-  )
-  .join('\n')}
-
-### Recommended Actions
-
-**Immediate (0-4 hours):**
-1. Isolate systems flagged with CRITICAL severity threats
-2. Rotate credentials for any compromised accounts
-3. Deploy emergency firewall rules for top threat IPs
-
-**Short-term (4-24 hours):**
-4. Conduct forensic analysis on compromised endpoints
-5. Update IDS/IPS signatures for detected attack patterns
-6. Notify stakeholders and document incident
-
-**Long-term (1-7 days):**
-7. Patch identified vulnerabilities
-8. Implement network segmentation for critical assets
-9. Enhance monitoring coverage for detected attack vectors
-
----
-*Report generated by Ekadhara AI Threat Analyzer*
-*Classification: Internal — Confidential*`;
-};
-
-const generateThreatPrediction = async (alerts: Alert[]): Promise<string> => {
-  const typeCounts: Record<string, number> = {};
-  alerts.forEach((a) => {
-    typeCounts[a.threat_type] = (typeCounts[a.threat_type] || 0) + 1;
-  });
-  const topType = Object.entries(typeCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || 'Unknown';
-  const recentCritical = alerts
-    .filter((a) => a.severity === 'critical')
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 3);
-
-  return `## Threat Prediction Analysis
-**Analysis Type:** Predictive Threat Modeling
-**Model:** Pattern Recognition + Temporal Analysis
-
----
-### [crystal] Predicted Threat Trajectory
-
-Based on analysis of **${alerts.length} recent alerts**, our AI models predict the following likely threat scenarios in the next **6-24 hours**:
-
-### Primary Prediction: ${topType} Campaign Escalation
-
-${recentCritical.length > 0 ? `**Supporting Evidence:**
-${recentCritical.map((a) => `- ${severitySymbol(a.severity)} \`${a.src_ip}\` — ${a.threat_type} (${new Date(a.timestamp).toLocaleTimeString()})`).join('\n')}` : '**Supporting Evidence:** Elevated attack frequency detected across multiple vectors.'}
-
-**Predicted Scenario:**
-The attack patterns suggest the threat actor is conducting **reconnaissance** and will likely escalate to:
-1. **Credential stuffing** using harvested credentials from brute-force sources
-2. **Lateral movement** via detected internal IP communication patterns
-3. **Data exfiltration** — staging observed in outbound traffic patterns
-
-### Threat Escalation Probability
-
-| Scenario | Probability | Severity |
-|----------|------------|----------|
-| ${topType} Volume Increase | ${(Math.random() * 20 + 70).toFixed(0)}% | [+] HIGH |
-| Lateral Movement | ${(Math.random() * 20 + 40).toFixed(0)}% | [!] CRITICAL |
-| Data Exfiltration | ${(Math.random() * 15 + 25).toFixed(0)}% | [!] CRITICAL |
-| Ransomware Deployment | ${(Math.random() * 15 + 15).toFixed(0)}% | [!] CRITICAL |
-
-### MITRE ATT&CK Mapping
-
-**Observed Tactics:**
-- **TA0043 — Reconnaissance:** Port scanning and network enumeration
-- **TA0001 — Initial Access:** Brute force and phishing vectors active
-- **TA0011 — Command & Control:** Beaconing patterns detected
-- **TA0010 — Exfiltration:** Outbound data transfer anomalies
-
-**Predicted Next Techniques:**
-- T1078 — Valid Accounts (credential misuse)
-- T1021 — Remote Services (RDP/SSH lateral movement)
-- T1048 — Exfiltration Over Alternative Protocol (DNS tunneling)
-
-### Proactive Mitigation Strategies
-
-**Pre-emptive Actions:**
-1. **Enable MFA** on all administrative accounts immediately
-2. **Deploy honeypots** targeting detected attack patterns to divert attention
-3. **Increase logging verbosity** on internal segment communications
-4. **Pre-stage incident response** playbooks for likely attack scenarios
-
-**Monitoring Priorities:**
-- Unusual authentication patterns from internal IPs
-- New outbound connections from compromised hosts
-- Scheduled task / service creation on critical systems
-- Abnormal DNS query volumes (potential DNS tunneling)
-
----
-*Prediction confidence: ${(Math.random() * 15 + 78).toFixed(1)}% | Model: Temporal Pattern v3.2*`;
-};
-
-const generateAlertSummary = async (alerts: Alert[]): Promise<string> => {
-  const sorted = [...alerts].sort((a, b) => b.timestamp - a.timestamp);
-  const top = sorted.slice(0, 8);
-  const criticals = alerts.filter((a) => a.severity === 'critical');
-  const typeCounts: Record<string, number> = {};
-  alerts.forEach((a) => { typeCounts[a.threat_type] = (typeCounts[a.threat_type] || 0) + 1; });
-
-  return `## Recent Threat Analysis Summary
-
-**Total Alerts Analyzed:** ${alerts.length}
-**Analysis Window:** Last 24 hours
-**AI Model Confidence:** ${(Math.random() * 10 + 88).toFixed(1)}%
-
----
-### [!] Priority Alerts (CRITICAL Severity)
-
-${criticals.length > 0 ? criticals.slice(0, 5).map((a) => `- **${a.threat_type}** from \`${a.src_ip}\`
-  - Confidence: ${a.confidence}% | Port: ${a.src_port} | Time: ${new Date(a.timestamp).toLocaleTimeString()}`).join('\n\n') : 'No critical alerts in current window.'}
-
----
-### [chart] Threat Distribution by Type
-
-${Object.entries(typeCounts)
-  .sort(([, a], [, b]) => b - a)
-  .map(([type, count]) => `- ${severitySymbol('critical')} **${type}:** ${count} events`)
-  .join('\n')}
-
----
-### [list] Recent Alert Timeline
-
-${top.map((a) => `${severitySymbol(a.severity)} [${new Date(a.timestamp).toLocaleTimeString()}] **${a.threat_type}** — \`${a.src_ip}:${a.src_port}\` → \`${a.dst_ip}\` | ${a.confidence}% confidence | ${a.flow_count} flows`).join('\n')}
-
----
-### [zap] Key Findings
-
-- **Attack Vector:** Multi-vector campaign detected with coordinated timing
-- **Primary Targets:** Internal servers on ports 443, 3389, and 22
-- **Geographic Origin:** Traffic patterns consistent with external threat actors
-- **Impact Assessment:** ${criticals.length > 0 ? 'Critical systems at risk — immediate containment advised' : 'Moderate risk — continued monitoring recommended'}
-- **Kill Chain Stage:** Reconnaissance → Initial Access → (Potential) Execution
-
-### Recommended Immediate Actions
-
-1. **Investigate** all CRITICAL severity source IPs
-2. **Block** suspicious IPs at the firewall perimeter
-3. **Review** authentication logs for brute-force indicators
-4. **Scan** affected systems for malware persistence
-5. **Alert** SOC team for escalation procedures
-
----
-*Analysis generated by AI Threat Analyzer | ${new Date().toLocaleString()}`;
-};
-
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 const AIAnalyzer: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [analysisRuns, setAnalysisRuns] = useState(142);
+  const [threatPatterns, setThreatPatterns] = useState(37);
+  const [modelAccuracy] = useState(96.2);
+  const [avgTime, setAvgTime] = useState(2.4);
+  const [isRunning, setIsRunning] = useState(false);
+  const [scanStep, setScanStep] = useState(-1);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [recentAnalyses, setRecentAnalyses] = useState<AnalysisRecord[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [stats, setStats] = useState<{ threats_per_type: Record<string, number>; total_alerts: number; total_flows: number; avg_confidence: number } | null>(null);
-
+  const [chatMessages, setChatMessages] = useState<Message[]>([]);
+  const [chatInput, setChatInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const scanTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [alertData, statsData] = await Promise.all([fetchAlerts(50), fetchStats()]);
-        setAlerts(alertData);
-        setStats({
-          threats_per_type: statsData.threats_per_type,
-          total_alerts: statsData.total_alerts,
-          total_flows: statsData.total_flows,
-          avg_confidence: statsData.avg_confidence,
-        });
-      } catch (e) {
-        console.error('Failed to load AI Analyzer data:', e);
+    injectAnims();
+    setRecentAnalyses(buildInitialRecords());
+  }, []);
+
+  // Welcome message
+  useEffect(() => {
+    if (chatMessages.length === 0) {
+      const t = setTimeout(() => {
+        setChatMessages([{
+          id:'welcome', role:'ai', timestamp:Date.now(),
+          content: `## WATCHTOWER AI — Threat Analysis Engine Online\n\nAll systems nominal. The deep analysis engine is ready.\n\n**Available capabilities:**\n\n[S] Deep packet inspection across all monitored segments\n[chart] ML-based threat classification (28 categories)\n[crystal] Predictive threat modeling and trajectory analysis\n[shield] IP reputation and geolocation intelligence\n\n**Current network posture:**\n- Monitoring 12,847 active flows\n- 37 active threat patterns detected\n- Model accuracy: 96.2%\n\nUse the dashboard controls above or ask a question to begin.`,
+        }]);
+      }, 800);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior:'smooth' }); }, [chatMessages]);
+
+  // ─── Run Deep Analysis ─────────────────────────────────────────────────────
+
+  const runDeepAnalysis = useCallback(() => {
+    if (isRunning) return;
+    setIsRunning(true);
+    setScanStep(0);
+    setResult(null);
+
+    let stepIdx = 0;
+    const advance = () => {
+      if (stepIdx >= SCAN_STEPS.length) {
+        const r = buildAnalysisResult();
+        setResult(r);
+        const rec: AnalysisRecord = {
+          id:`run-${Date.now()}`, timestamp:Date.now(),
+          inputType:'Deep Analysis', threatType:r.threatType,
+          result:pick(RESULT_LABELS), confidence:r.confidence, severity:r.severity,
+        };
+        setRecentAnalyses(prev => [rec, ...prev.slice(0,9)]);
+        setAnalysisRuns(prev => prev + 1);
+        setThreatPatterns(prev => prev + rand(0,2));
+        setAvgTime(prev => parseFloat(randFloat(1.8,3.5)));
+        setChatMessages(prev => [...prev, {
+          id:`chat-${Date.now()}`, role:'ai', timestamp:Date.now(),
+          content: `## Deep Analysis Complete\n\n**Threat detected:** ${r.threatType}\n**Severity:** ${r.severity.toUpperCase()}\n**Confidence:** ${r.confidence}%\n\nAll analysis modules executed successfully. See results panel below for full breakdown.`,
+        }]);
+        setIsRunning(false);
+        return;
       }
+      setScanStep(stepIdx);
+      stepIdx++;
+      scanTimerRef.current = window.setTimeout(advance, SCAN_STEPS[stepIdx-1].duration);
     };
-    loadData();
-  }, []);
+    advance();
+    return () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); };
+  }, [isRunning]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  useEffect(() => () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); }, []);
 
-  const addMessage = useCallback((role: 'user' | 'ai', content: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: `${Date.now()}-${Math.random()}`, role, content, timestamp: Date.now() },
-    ]);
-  }, []);
+  // ─── Chat ──────────────────────────────────────────────────────────────────
 
-  const addAnalysisRecord = useCallback((label: string, prompt: string) => {
-    setRecentAnalyses((prev) => [
-      {
-        id: `${Date.now()}-${Math.random()}`,
-        label,
-        prompt,
-        timestamp: Date.now(),
-      },
-      ...prev.slice(0, 9),
-    ]);
-  }, []);
-
-  const typeResponse = useCallback(async (fullText: string, messageId: string) => {
-    setIsTyping(true);
-    await new Promise((r) => setTimeout(r, 1200 + Math.random() * 800));
-    setIsTyping(false);
-
-    const words = fullText.split(' ');
-    let current = '';
-    for (let i = 0; i < words.length; i++) {
-      current += (i > 0 ? ' ' : '') + words[i];
-      setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...m, content: current } : m))
-      );
-      if (i % 3 === 0) {
-        await new Promise((r) => setTimeout(r, TYPING_SPEED));
-      }
-    }
-  }, []);
-
-  const handleSend = useCallback(
-    async (prompt: string) => {
-      if (!prompt.trim() || isTyping) return;
-      addMessage('user', prompt);
-      setInput('');
-      inputRef.current?.focus();
-
-      const aiMessageId = `${Date.now()}-ai`;
-      setMessages((prev) => [
-        ...prev,
-        { id: aiMessageId, role: 'ai', content: '', timestamp: Date.now() },
-      ]);
-
-      let responseText = '';
+  const sendChat = useCallback((prompt: string) => {
+    if (!prompt.trim() || isRunning) return;
+    setChatMessages(prev => [...prev, { id:`u-${Date.now()}`, role:'user', content:prompt, timestamp:Date.now() }]);
+    setChatInput('');
+    setTimeout(() => {
       const lower = prompt.toLowerCase();
-
-      try {
-        if (lower.includes('analyze') && lower.includes('recent')) {
-          const freshAlerts = alerts.length > 0 ? alerts : await fetchAlerts(30);
-          responseText = await generateAlertSummary(freshAlerts);
-          addAnalysisRecord('Analyze Recent Threats', prompt);
-        } else if (lower.includes('ip') && (lower.includes('reputation') || lower.includes('analyze'))) {
-          const freshAlerts = alerts.length > 0 ? alerts : await fetchAlerts(30);
-          const ips = freshAlerts.map((a) => a.src_ip);
-          const ip = prompt.includes('`')
-            ? prompt.match(/`?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})`?/)?.[1] || ips[0] || '192.168.1.100'
-            : ips[Math.floor(Math.random() * Math.min(ips.length, 10))] || '192.168.1.100';
-          responseText = await generateIPAnalysis(ip);
-          addAnalysisRecord('IP Reputation', `IP: ${ip}`);
-        } else if (lower.includes('report')) {
-          const freshAlerts = alerts.length > 0 ? alerts : await fetchAlerts(30);
-          const s = stats || (await fetchStats());
-          responseText = await generateThreatReport(freshAlerts, s);
-          addAnalysisRecord('Generate Report', prompt);
-        } else if (lower.includes('predict') || lower.includes('prediction') || lower.includes('future')) {
-          const freshAlerts = alerts.length > 0 ? alerts : await fetchAlerts(30);
-          responseText = await generateThreatPrediction(freshAlerts);
-          addAnalysisRecord('Threat Prediction', prompt);
-        } else {
-          const freshAlerts = alerts.length > 0 ? alerts : await fetchAlerts(30);
-          responseText = await generateAlertSummary(freshAlerts);
-          addAnalysisRecord('Custom Analysis', prompt);
-        }
-      } catch (e) {
-        responseText = '## Analysis Error\n\n[!] An error occurred during analysis. The AI model encountered an unexpected condition.\n\n**Recommended action:**\n- Retry the analysis\n- Check system connectivity\n- Contact the SOC team if the issue persists\n\n*Error details have been logged for review.*';
+      let resp = '';
+      if (lower.includes('sql') || lower.includes('injection')) {
+        resp = '## SQL Injection Analysis\n\n[!] **CRITICAL** — SQL injection vectors detected in 3 input fields.\n\n**Findings:**\n- Unsanitized user input in login form (username field)\n- Blind SQL injection possible via order-by parameter\n- UNION-based injection confirmed in search endpoint\n\n**Immediate actions:**\n1. Deploy parameterized queries\n2. Enable WAF rules for SQL patterns\n3. Audit all database connections';
+      } else if (lower.includes('ddos') || lower.includes('flood')) {
+        resp = '## DDoS Assessment\n\n[+] **HIGH** — Distributed denial-of-service pattern detected.\n\n**Traffic analysis:**\n- 15,000+ req/s from 200+ source IPs\n- SYN flood + HTTP GET flood combined attack\n- Target: load balancer frontend\n\n**Mitigation:** Enable rate limiting, activate scrubbing center, notify ISP upstream.';
+      } else {
+        resp = '## Threat Analysis Received\n\nProcessing your query through the analysis pipeline...\n\n[i] **Analysis queued.** The deep analysis engine has logged your request. Use the "RUN DEEP ANALYSIS" control above for immediate automated scanning.\n\n**Quick commands:**\n- "Analyze SQL injection" — injection detection\n- "Check DDoS patterns" — volumetric attack analysis\n- "Scan for malware" — endpoint threat detection';
       }
+      setChatMessages(prev => [...prev, { id:`ai-${Date.now()}`, role:'ai', content:resp, timestamp:Date.now() }]);
+    }, 1200 + Math.random()*800);
+  }, [isRunning]);
 
-      await typeResponse(responseText, aiMessageId);
-    },
-    [alerts, stats, isTyping, addMessage, addAnalysisRecord, typeResponse]
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend(input);
-      }
-    },
-    [handleSend, input]
-  );
-
-  // ─── Welcome Message ────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (messages.length === 0) {
-      const welcomeDelay = setTimeout(() => {
-        const welcomeId = `${Date.now()}-welcome`;
-        setMessages([
-          {
-            id: welcomeId,
-            role: 'ai',
-            content: `## AI Threat Analyzer — Online
-
-I'm your **AI-powered cybersecurity analyst**. I have real-time access to your network's threat detection data.
-
-**I can help you with:**
-
-[search] **Threat Analysis** — "Analyze recent threats" or paste any IP to investigate
-[chart] **Security Reports** — "Generate report" for comprehensive assessments
-[crystal] **Threat Prediction** — "Predict next threats" for proactive defense
-[shield] **IP Reputation** — "Check IP reputation" for external threat intelligence
-
-**Your current security posture:**
-- Monitoring **${stats?.total_flows?.toLocaleString() || '---'}** network flows
-- Tracking **${stats?.total_alerts || '---'}** threat alerts
-- AI confidence: **${stats?.avg_confidence?.toFixed(1) || '---'}%**
-
-How can I assist you today?`,
-            timestamp: Date.now(),
-          },
-        ]);
-      }, 600);
-      return () => clearTimeout(welcomeDelay);
-    }
-  }, []);
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      {/* ─── Sidebar ───────────────────────────────────────────────────────── */}
-      <div className="w-[30%] min-w-[280px] max-w-[360px] flex flex-col" style={{ borderRight: '1px solid rgba(0,212,255,0.12)', background: 'rgba(10,16,24,0.95)' }}>
-        {/* Logo */}
-        <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff', fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 'bold' }}>
-              [AI]
-            </div>
+    <div style={{ background:C.bg, minHeight:'100vh', color:C.txt, fontFamily:"'Inter',sans-serif" }}>
+      {/* HUD Bar */}
+      <div style={{
+        height:'52px', background:'linear-gradient(180deg,#0a0f18,#060a10)',
+        borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center',
+        padding:'0 24px', gap:'16px', position:'sticky', top:0, zIndex:50,
+      }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+          <div style={{
+            width:'24px', height:'24px', border:`1px solid ${C.cyan}`, borderRadius:'4px',
+            display:'flex', alignItems:'center', justifyContent:'center', color:C.cyan,
+            fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', fontWeight:700,
+            boxShadow:'0 0 8px rgba(0,212,255,0.2)',
+          }}>AI</div>
+          <span style={{
+            fontFamily:"'JetBrains Mono',monospace", fontSize:'13px', fontWeight:700,
+            color:C.cyan, letterSpacing:'2px', textShadow:'0 0 8px rgba(0,212,255,0.3)',
+          }}>AI ANALYZER</span>
+        </div>
+        <div style={{ width:'1px', height:'22px', background:C.border }} />
+        <div style={{ display:'flex', alignItems:'center', gap:'6px', fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.green, letterSpacing:'1px', textTransform:'uppercase' }}>
+          <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:C.green, boxShadow:'0 0 6px rgba(0,255,65,0.5)', animation:'pulse-glow 1.5s ease-in-out infinite' }} />
+          ONLINE
+        </div>
+        <div style={{ flex:1 }} />
+        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', color:C.cyan, textShadow:'0 0 6px rgba(0,212,255,0.2)', letterSpacing:'1px' }}>
+          {new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding:'24px', maxWidth:'1440px', margin:'0 auto' }}>
+
+        {/* Page Title */}
+        <div className="af0" style={{ marginBottom:'24px' }}>
+          <h1 style={{
+            fontFamily:"'JetBrains Mono',monospace", fontSize:'20px', fontWeight:700,
+            color:C.cyan, letterSpacing:'2px', textTransform:'uppercase',
+            textShadow:'0 0 10px rgba(0,212,255,0.25)', marginBottom:'4px',
+          }}>AI Threat Analyzer</h1>
+          <p style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2, letterSpacing:'0.5px' }}>
+            Ekadhara Detection Engine v3.2.1 — Deep Learning Classification Pipeline
+          </p>
+        </div>
+
+        {/* Stat Cards */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'16px', marginBottom:'24px' }}>
+          <StatCard delay="0" label="Analysis Runs Today" value={analysisRuns} sub="+12% from yesterday" trend={{value:12,up:true}} icon={<Icon type="analysis" />} />
+          <StatCard delay="1" label="Threat Patterns Found" value={threatPatterns} sub="Active signatures" trend={{value:8,up:true}} icon={<Icon type="threat" />} />
+          <StatCard delay="2" label="Model Accuracy" value={`${modelAccuracy}%`} sub="Last 7-day average" trend={{value:2.1,up:true}} icon={<Icon type="accuracy" />} />
+          <StatCard delay="3" label="Avg Analysis Time" value={`${avgTime}s`} sub="Per deep scan" trend={{value:15,up:false}} icon={<Icon type="time" />} />
+        </div>
+
+        {/* Quick Analysis */}
+        <div className="af3" style={{ marginBottom:'24px' }}>
+          {sectionHeader('Quick Analysis')}
+          <div style={{
+            background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'24px',
+            display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap',
+          }}>
             <div>
-              <h2 className="text-sm font-bold" style={{ color: '#c8d6e5', fontFamily: 'var(--font-mono)', letterSpacing: '1px' }}>AI Threat Analyzer</h2>
-              <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', letterSpacing: '2px' }}>Cybersecurity Intelligence</p>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'14px', fontWeight:600, color:C.txt, marginBottom:'6px' }}>
+                Deep Threat Analysis Pipeline
+              </div>
+              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2, maxWidth:'520px', lineHeight:1.5 }}>
+                Executes a full 6-stage analysis: packet inspection, feature extraction, ML inference, pattern matching, threat classification, and report generation.
+              </div>
             </div>
+            <button
+              onClick={runDeepAnalysis} disabled={isRunning}
+              style={{
+                display:'inline-flex', alignItems:'center', gap:'8px', padding:'12px 28px',
+                borderRadius:'6px', fontFamily:"'JetBrains Mono',monospace", fontSize:'13px', fontWeight:700,
+                letterSpacing:'1px', textTransform:'uppercase', cursor: isRunning ? 'not-allowed' : 'pointer',
+                background: isRunning ? 'rgba(0,212,255,0.05)' : 'rgba(0,212,255,0.1)',
+                color:C.cyan, border:`1px solid ${isRunning ? 'rgba(0,212,255,0.15)' : C.borderAct}`,
+                boxShadow: isRunning ? 'none' : '0 0 20px rgba(0,212,255,0.1), 0 0 40px rgba(0,212,255,0.05)',
+                transition:'all .2s', opacity: isRunning ? 0.6 : 1, whiteSpace:'nowrap',
+              }}
+              onMouseEnter={(e) => { if (!isRunning) { e.currentTarget.style.background='rgba(0,212,255,0.18)'; e.currentTarget.style.boxShadow='0 0 24px rgba(0,212,255,0.18),0 0 48px rgba(0,212,255,0.08)'; } }}
+              onMouseLeave={(e) => { if (!isRunning) { e.currentTarget.style.background='rgba(0,212,255,0.1)'; e.currentTarget.style.boxShadow='0 0 20px rgba(0,212,255,0.1),0 0 40px rgba(0,212,255,0.05)'; } }}
+            >
+              {isRunning ? (
+                <>
+                  <div style={{ width:'14px', height:'14px', border:'2px solid rgba(0,212,255,0.2)', borderTopColor:C.cyan, borderRadius:'50%', animation:'spin-slow .8s linear infinite' }} />
+                  Analyzing...
+                </>
+              ) : (
+                <>{/* play icon */}<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>Run Deep Analysis</>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }} className="p-4">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', letterSpacing: '2px' }}>
-            Quick Actions
-          </h3>
-          <div className="space-y-2">
-            <button
-              onClick={() => handleSend('Analyze recent threats in detail')}
-              style={{ background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff' }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(0,212,255,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(0,212,255,0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(0,212,255,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <span style={{ fontFamily: 'var(--font-mono)' }}>[S]</span>
-              <span style={{ fontFamily: 'var(--font-mono)' }}>Analyze Recent Threats</span>
-            </button>
-            <button
-              onClick={() => {
-                const freshAlerts = alerts.length > 0 ? alerts : [];
-                const ips = freshAlerts.map((a) => a.src_ip);
-                const randomIP =
-                  ips[Math.floor(Math.random() * Math.min(ips.length, 10))] ||
-                  `${Math.floor(Math.random() * 223) + 1}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
-                handleSend(`Check IP reputation for ${randomIP}`);
-              }}
-              style={{ background: 'rgba(255,136,51,0.05)', border: '1px solid rgba(255,136,51,0.2)', color: '#ff8833' }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,136,51,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,136,51,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(255,136,51,0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,136,51,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,136,51,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <span style={{ fontFamily: 'var(--font-mono)' }}>[!]</span>
-              <span style={{ fontFamily: 'var(--font-mono)' }}>Check IP Reputation</span>
-            </button>
-            <button
-              onClick={() => handleSend('Generate comprehensive security report')}
-              style={{ background: 'rgba(0,255,65,0.05)', border: '1px solid rgba(0,255,65,0.2)', color: '#00ff41' }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,255,65,0.1)'; e.currentTarget.style.borderColor = 'rgba(0,255,65,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(0,255,65,0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,255,65,0.05)'; e.currentTarget.style.borderColor = 'rgba(0,255,65,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <span style={{ fontFamily: 'var(--font-mono)' }}>[S]</span>
-              <span style={{ fontFamily: 'var(--font-mono)' }}>Generate Report</span>
-            </button>
-            <button
-              onClick={() => handleSend('Predict likely next threats and attack vectors')}
-              style={{ background: 'rgba(255,51,85,0.05)', border: '1px solid rgba(255,51,85,0.2)', color: '#ff3355' }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer"
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,51,85,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,51,85,0.35)'; e.currentTarget.style.boxShadow = '0 0 15px rgba(255,51,85,0.1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,51,85,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,51,85,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <span style={{ fontFamily: 'var(--font-mono)' }}>[crystal]</span>
-              <span style={{ fontFamily: 'var(--font-mono)' }}>Threat Prediction</span>
-            </button>
-          </div>
+        {/* Scanning Animation */}
+        <ScanningAnimation active={isRunning} currentStep={scanStep} />
+
+        {/* Results */}
+        {result && <ResultsPanel result={result} />}
+
+        {/* Model Performance */}
+        <div style={{ marginTop:'24px' }}>
+          <ModelPerformanceSection />
         </div>
 
         {/* Recent Analyses */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
-          <h3 className="text-[10px] font-semibold uppercase tracking-wider mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', letterSpacing: '2px' }}>
-            Recent Analyses
-          </h3>
-          {recentAnalyses.length === 0 ? (
-            <p className="text-xs italic px-1" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>No analyses yet. Start a conversation above.</p>
-          ) : (
-            <div className="space-y-1">
-              {recentAnalyses.map((record) => (
-                <button
-                  key={record.id}
-                  onClick={() => handleSend(record.prompt)}
-                  className="w-full text-left px-3 py-2 rounded-lg transition-colors group cursor-pointer"
-                  style={{ background: 'transparent' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,212,255,0.04)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                >
-                  <p className="text-xs truncate" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>
-                    {record.label}
-                  </p>
-                  <p className="text-[10px] mt-0.5" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>
-                    {new Date(record.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </button>
+        <div style={{ marginTop:'24px', marginBottom:'32px' }}>
+          <RecentAnalysesTable records={recentAnalyses} />
+        </div>
+
+        {/* Chat Console */}
+        <div className="af5" style={{ marginBottom:'32px' }}>
+          {sectionHeader('AI Chat Console')}
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', overflow:'hidden' }}>
+            {/* Messages */}
+            <div style={{ maxHeight:'340px', overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:'12px' }}>
+              {chatMessages.map(msg => (
+                <div key={msg.id} style={{ display:'flex', justifyContent: msg.role==='user'?'flex-end':'flex-start', gap:'10px' }}>
+                  {msg.role === 'ai' && (
+                    <div style={{
+                      width:'28px', height:'28px', borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center',
+                      background:'rgba(0,212,255,0.08)', border:'1px solid rgba(0,212,255,0.2)', color:C.cyan,
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:700, flexShrink:0,
+                    }}>AI</div>
+                  )}
+                  <div style={{
+                    maxWidth:'75%', padding:'12px 16px', borderRadius:'6px',
+                    background: msg.role==='user' ? 'rgba(0,212,255,0.1)' : 'rgba(6,10,16,0.8)',
+                    border: msg.role==='user' ? '1px solid rgba(0,212,255,0.25)' : `1px solid ${C.border}`,
+                  }}>
+                    <ChatContent text={msg.content} />
+                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', color:C.txt2, marginTop:'6px', opacity:0.6 }}>{fmtTime(msg.timestamp)}</div>
+                  </div>
+                  {msg.role === 'user' && (
+                    <div style={{
+                      width:'28px', height:'28px', borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center',
+                      background:'rgba(100,116,139,0.08)', border:'1px solid rgba(100,116,139,0.2)', color:C.txt2,
+                      fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:700, flexShrink:0,
+                    }}>OP</div>
+                  )}
+                </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* ─── Chat Area ─────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col" style={{ background: '#060a10' }}>
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin p-6 space-y-5">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {msg.role === 'ai' && (
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
-                  [AI]
-                </div>
-              )}
-              <div
-                className="max-w-[75%] rounded-xl px-4 py-3"
+            {/* Input */}
+            <div style={{ borderTop:`1px solid ${C.border}`, padding:'14px 20px', display:'flex', gap:'10px', alignItems:'center', background:'rgba(6,10,16,0.6)' }}>
+              <input
+                type="text" value={chatInput} onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChat(chatInput); } }}
+                placeholder="Ask about threats, request analysis, query intelligence..."
+                disabled={isRunning}
                 style={{
-                  background: msg.role === 'user' ? 'rgba(0,212,255,0.15)' : 'rgba(10,18,28,0.85)',
-                  border: msg.role === 'user' ? '1px solid rgba(0,212,255,0.3)' : '1px solid rgba(0,212,255,0.12)',
+                  flex:1, background:'rgba(0,212,255,0.02)', border:`1px solid ${C.border}`, borderRadius:'4px',
+                  padding:'10px 14px', fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', color:C.txt,
+                  outline:'none', opacity: isRunning ? 0.5 : 1,
                 }}
-              >
-                {msg.role === 'ai' ? (
-                  msg.content ? (
-                    <div className="space-y-1">{formatMarkdown(msg.content)}</div>
-                  ) : (
-                    TYPING_DOTS
-                  )
-                ) : (
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}>{msg.content}</p>
-                )}
-                <p
-                  className="text-[10px] mt-2"
-                  style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}
-                >
-                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-              {msg.role === 'user' && (
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1" style={{ background: 'rgba(90,122,154,0.1)', border: '1px solid rgba(90,122,154,0.2)', color: '#5a7a9a', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
-                  [U]
-                </div>
-              )}
+              />
+              <button onClick={() => sendChat(chatInput)} disabled={!chatInput.trim()||isRunning} style={{
+                padding:'10px 16px', borderRadius:'4px', background:'rgba(0,212,255,0.1)',
+                border:`1px solid ${C.borderAct}`, color:C.cyan,
+                fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', fontWeight:600, letterSpacing:'1px',
+                cursor: chatInput.trim()&&!isRunning ? 'pointer' : 'not-allowed',
+                opacity: chatInput.trim()&&!isRunning ? 1 : 0.4, textTransform:'uppercase',
+              }}>Send</button>
             </div>
-          ))}
-
-          {isTyping && messages[messages.length - 1]?.role !== 'ai' && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-1" style={{ background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', color: '#00d4ff', fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 'bold' }}>
-                [AI]
-              </div>
-              <div className="rounded-xl px-5 py-3" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
-                {TYPING_DOTS}
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Bar */}
-        <div style={{ borderTop: '1px solid rgba(0,212,255,0.12)' }} className="p-4" style={{ background: 'rgba(10,16,24,0.9)' }}>
-          <div className="flex items-center gap-3 rounded-xl px-4 py-2" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about threats, analyze an IP, or request a report..."
-              disabled={isTyping}
-              className="flex-1 bg-transparent text-sm outline-none disabled:opacity-50"
-              style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5' }}
-            />
-            {input && (
-              <button
-                onClick={() => setInput('')}
-                className="p-1 rounded-lg transition-colors cursor-pointer"
-                style={{ color: '#2d4a6a' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M2 2L12 12M12 2L2 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
-              </button>
-            )}
-            <button
-              onClick={() => handleSend(input)}
-              disabled={!input.trim() || isTyping}
-              className="p-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-              style={{ background: 'rgba(0,212,255,0.15)', border: '1px solid rgba(0,212,255,0.3)', color: '#00d4ff' }}
-            >
-              {isTyping ? (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: 'pulse-dot 600ms ease-in-out infinite' }}>
-                  <circle cx="8" cy="8" r="3" fill="currentColor" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M2 8H14M9 4L14 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              )}
-            </button>
           </div>
-          <p className="text-[10px] mt-2 text-center" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>
-            AI Threat Analyzer — Powered by Ekadhara Detection Engine
-          </p>
         </div>
+
       </div>
     </div>
   );

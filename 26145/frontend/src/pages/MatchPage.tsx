@@ -1,289 +1,898 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 
-interface MatchCandidate {
+// ─── Types ────────────────────────────────────────────────────────────────
+interface MatchEntry {
   id: string;
-  name: string;
-  similarity: number;
-  threat_class: string;
-  source: string;
-  last_updated: string;
-}
-
-interface MatchResult {
-  id: string;
-  material_name: string;
-  candidates: MatchCandidate[];
+  materialA: string;
+  materialB: string;
+  matchType: 'Exact Match' | 'Partial Match' | 'Similar Match';
+  score: number;
   algorithm: string;
-  threshold: number;
-  processing_ms: number;
-  status: 'searching' | 'complete' | 'error';
+  status: 'verified' | 'pending' | 'rejected';
+  date: string;
+  similarityBreakdown: {
+    structural: number;
+    semantic: number;
+    behavioral: number;
+  };
+  analystNotes?: string;
 }
 
-const ALGORITHMS = [
-  { id: 'lsh', name: 'LSH (Locality-Sensitive Hashing)', desc: 'Fast approximate nearest-neighbor on Jaccard similarity' },
-  { id: 'simhash', name: 'SimHash', desc: 'Hamming distance for near-duplicate detection' },
-  { id: 'embedding', name: 'ML Embedding (15-dim)', desc: 'Feature vector cosine similarity with FAISS index' },
-  { id: 'fuzzy', name: 'Fuzzy Hash (TLSH/ssdeep)', desc: 'Context-triggered piecewise hashing for variant detection' },
+interface AlgorithmMetric {
+  name: string;
+  precision: number;
+  recall: number;
+  f1: number;
+}
+
+// ─── Mock Data Generator ──────────────────────────────────────────────────
+const MATERIAL_PREFIXES = ['MAL', 'C2', 'DDOS', 'DNS', 'EXF', 'RAT', 'KEYL', 'WORM', 'SPM', 'INF'];
+const MATERIAL_IDS = [
+  '2024-0001','2024-0002','2024-0003','2024-0004','2024-0005','2024-0006',
+  '2024-0007','2024-0008','2024-0009','2024-0010','2024-0011','2024-0012',
+  '2024-0013','2024-0014','2024-0015','2024-0016','2024-0017','2024-0018',
+  '2024-0019','2024-0020','2024-0021','2024-0022','2024-0023','2024-0024',
+  '2024-0025',
+];
+const ALGO_NAMES = ['Exact Match', 'Fuzzy Match', 'Similarity Hash', 'ML Embedding'];
+const THREAT_CLASSES = ['APT', 'Ransomware', 'Trojan', 'Rootkit', 'Worm', 'Spyware', 'Adware', 'Backdoor'];
+const ANALYSTS = ['KOWALSKI','CHEN','MUELLER','PATEL','OKAFOR','NAKAMURA','HASSAN','VOLKOV'];
+
+function randomFrom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function randomBetween(min: number, max: number): number { return Math.round((Math.random() * (max - min) + min) * 100) / 100; }
+
+function generateMockMatches(count: number): MatchEntry[] {
+  const matches: MatchEntry[] = [];
+  for (let i = 0; i < count; i++) {
+    const score = randomBetween(0.05, 0.98);
+    const matchType: MatchEntry['matchType'] =
+      score >= 0.85 ? 'Exact Match' : score >= 0.5 ? 'Partial Match' : 'Similar Match';
+    const status: MatchEntry['status'] =
+      i < 8 ? 'verified' : i < 16 ? 'pending' : 'rejected';
+    const dateOffset = Math.floor(Math.random() * 90);
+    const d = new Date(Date.now() - dateOffset * 86400000);
+    matches.push({
+      id: `MATCH-${String(i + 1).padStart(4, '0')}`,
+      materialA: `${randomFrom(MATERIAL_PREFIXES)}-${randomFrom(MATERIAL_IDS)}`,
+      materialB: `${randomFrom(MATERIAL_PREFIXES)}-${randomFrom(MATERIAL_IDS)}`,
+      matchType,
+      score,
+      algorithm: randomFrom(ALGO_NAMES),
+      status,
+      date: d.toISOString().split('T')[0],
+      similarityBreakdown: {
+        structural: randomBetween(score - 0.15, Math.min(1, score + 0.1)),
+        semantic: randomBetween(score - 0.2, Math.min(1, score + 0.05)),
+        behavioral: randomBetween(score - 0.25, Math.min(1, score + 0.05)),
+      },
+      analystNotes: Math.random() > 0.5 ? `Review by ${randomFrom(ANALYSTS)} – ${randomFrom(['family attribution confirmed','false positive suspected','variant analysis pending','cross-ref needed'])}` : undefined,
+    });
+  }
+  return matches.sort((a, b) => b.score - a.score);
+}
+
+const MOCK_MATCHES = generateMockMatches(24);
+
+const ALGORITHM_METRICS: AlgorithmMetric[] = [
+  { name: 'Exact Match', precision: 0.97, recall: 0.82, f1: 0.89 },
+  { name: 'Fuzzy Match', precision: 0.88, recall: 0.91, f1: 0.89 },
+  { name: 'Similarity Hash', precision: 0.79, recall: 0.94, f1: 0.86 },
+  { name: 'ML Embedding', precision: 0.93, recall: 0.87, f1: 0.90 },
 ];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function scoreColor(s: number): string {
+  if (s >= 0.8) return '#22c55e';
+  if (s >= 0.6) return '#84cc16';
+  if (s >= 0.4) return '#eab308';
+  if (s >= 0.2) return '#f97316';
+  return '#ef4444';
+}
+
+function scoreGradient(s: number): string {
+  if (s >= 0.8) return 'linear-gradient(90deg, #16a34a, #22c55e)';
+  if (s >= 0.6) return 'linear-gradient(90deg, #65a30d, #84cc16)';
+  if (s >= 0.4) return 'linear-gradient(90deg, #ca8a04, #eab308)';
+  if (s >= 0.2) return 'linear-gradient(90deg, #ea580c, #f97316)';
+  return 'linear-gradient(90deg, #dc2626, #ef4444)';
+}
+
+const MATCH_TYPE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  'Exact Match':   { bg: 'rgba(34,197,94,0.1)',   color: '#22c55e', border: 'rgba(34,197,94,0.35)' },
+  'Partial Match': { bg: 'rgba(234,179,8,0.1)',   color: '#eab308', border: 'rgba(234,179,8,0.35)' },
+  'Similar Match': { bg: 'rgba(6,182,212,0.1)',   color: '#06b6d4', border: 'rgba(6,182,212,0.35)' },
+};
+
+const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  verified: { bg: 'rgba(34,197,94,0.1)',  color: '#22c55e', border: 'rgba(34,197,94,0.35)' },
+  pending:  { bg: 'rgba(234,179,8,0.1)',  color: '#eab308', border: 'rgba(234,179,8,0.35)' },
+  rejected: { bg: 'rgba(239,68,68,0.1)',  color: '#ef4444', border: 'rgba(239,68,68,0.35)' },
+};
+
+// ─── Distribution buckets ─────────────────────────────────────────────────
+function useScoreDistribution(matches: MatchEntry[]) {
+  return useMemo(() => {
+    const buckets = [
+      { label: '0 – 20%', min: 0, max: 0.2, count: 0 },
+      { label: '21 – 40%', min: 0.21, max: 0.4, count: 0 },
+      { label: '41 – 60%', min: 0.41, max: 0.6, count: 0 },
+      { label: '61 – 80%', min: 0.61, max: 0.8, count: 0 },
+      { label: '81 – 100%', min: 0.81, max: 1.0, count: 0 },
+    ];
+    matches.forEach(m => {
+      const b = buckets.find(b => m.score >= b.min && m.score <= b.max);
+      if (b) b.count++;
+    });
+    return buckets;
+  }, [matches]);
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────
+function StatCard({ label, value, subtext, color }: { label: string; value: number | string; subtext?: string; color: string }) {
+  return (
+    <div style={{
+      background: '#0a1118',
+      border: '1px solid #1a2736',
+      borderRadius: '8px',
+      padding: '20px 24px',
+      minWidth: '180px',
+      flex: '1 1 0',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+        background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+      }} />
+      <div style={{
+        fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+        fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px',
+        color: '#64748b', marginBottom: '8px',
+      }}>{label}</div>
+      <div style={{
+        fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+        fontSize: '36px', fontWeight: 700, color,
+        lineHeight: 1.1,
+      }}>{value}</div>
+      {subtext && (
+        <div style={{
+          fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+          fontSize: '11px', color: '#64748b', marginTop: '6px',
+        }}>{subtext}</div>
+      )}
+    </div>
+  );
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div style={{
+      fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+      color: '#00d4ff',
+      fontSize: '12px',
+      fontWeight: 700,
+      letterSpacing: '3px',
+      textTransform: 'uppercase',
+      marginBottom: '16px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+    }}>
+      <span style={{ fontSize: '14px' }}>◈</span>
+      <span>{title}</span>
+      <span style={{
+        flex: 1, height: '1px',
+        background: 'linear-gradient(90deg, rgba(0,212,255,0.35), transparent)',
+      }} />
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────
 function MatchPage() {
-  const [selectedMaterial, setSelectedMaterial] = useState<string>('');
-  const [algorithm, setAlgorithm] = useState<string>('lsh');
-  const [threshold, setThreshold] = useState<number>(0.7);
-  const [running, setRunning] = useState(false);
-  const [results, setResults] = useState<MatchResult[]>([]);
-  const [searchHistory, setSearchHistory] = useState<MatchResult[]>([]);
-  const [activeQueries, setActiveQueries] = useState<number>(0);
-  const logsRef = useRef<HTMLDivElement>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [modalOpen, setModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const sampleMaterials = [
-    'MAL-2024-0001', 'MAL-2024-0002', 'MAL-2024-0003', 'MAL-2024-0005',
-    'C2-2024-0001', 'C2-2024-0003', 'DDOS-2024-0002',
-    'DNS-2024-0001', 'EXF-2024-0001',
-  ];
+  const matches = MOCK_MATCHES;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (running) {
-        setResults(prev => prev.map(r => {
-          if (r.status === 'searching') {
-            const updated = {
-              ...r,
-              candidates: r.candidates.map(c => ({
-                ...c,
-                similarity: Math.min(0.99, c.similarity + (Math.random() * 0.15)),
-              })),
-              processing_ms: r.processing_ms + Math.floor(Math.random() * 50),
-            };
-            if (updated.processing_ms > 1200) {
-              return { ...updated, status: 'complete' as const };
-            }
-            return updated;
-          }
-          return r;
-        }));
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [running]);
+  const stats = useMemo(() => {
+    const total = matches.length;
+    const highConf = matches.filter(m => m.score >= 0.8).length;
+    const pending = matches.filter(m => m.status === 'pending').length;
+    const verified = matches.filter(m => m.status === 'verified').length;
+    return { total, highConf, pending, verified };
+  }, [matches]);
 
-  useEffect(() => {
-    if (logsRef.current && running) {
-      logsRef.current.scrollTop = logsRef.current.scrollHeight;
-    }
-  }, [results, running]);
+  const distribution = useScoreDistribution(matches);
 
-  const handleRunMatch = () => {
-    if (!selectedMaterial) return;
-    setRunning(true);
-    setActiveQueries(prev => prev + 1);
-    const candidates: MatchCandidate[] = [];
-    const numCandidates = Math.floor(Math.random() * 5) + 3;
-    for (let i = 0; i < numCandidates; i++) {
-      candidates.push({
-        id: `CAND-${Math.floor(Math.random() * 9000 + 1000)}`,
-        name: `${['Sality','TrickBot','Emotet','QakBot','CobaltStrike','Mirai','Mozi','Spora','Phorphiex','Gozi'][Math.floor(Math.random() * 10)]}-v${Math.floor(Math.random() * 5) + 1}`,
-        similarity: Math.random() * 0.3,
-        threat_class: ['Malware','C2','DDoS','Recon','Exfiltration'][Math.floor(Math.random() * 5)],
-        source: ['DNS-Detect','Hybrid-Analysis','VirusTotal','Custom'][Math.floor(Math.random() * 4)],
-        last_updated: new Date(Date.now() - Math.floor(Math.random() * 86400000)).toISOString().split('T')[0],
-      });
-    }
-    const newResult: MatchResult = {
-      id: `MATCH-${Date.now()}`,
-      material_name: selectedMaterial,
-      candidates,
-      algorithm: ALGORITHMS.find(a => a.id === algorithm)?.name || algorithm,
-      threshold,
-      processing_ms: 0,
-      status: 'searching',
-    };
-    setResults(prev => [newResult, ...prev.slice(0, 4)]);
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return matches;
+    const q = searchQuery.toLowerCase();
+    return matches.filter(m =>
+      m.id.toLowerCase().includes(q) ||
+      m.materialA.toLowerCase().includes(q) ||
+      m.materialB.toLowerCase().includes(q) ||
+      m.algorithm.toLowerCase().includes(q) ||
+      m.matchType.toLowerCase().includes(q),
+    );
+  }, [matches, searchQuery]);
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
-  const getSimilarityColor = (sim: number) => {
-    if (sim >= 0.9) return '#00ff41';
-    if (sim >= 0.75) return '#ff8833';
-    if (sim >= threshold) return '#00d4ff';
-    return '#2d4a6a';
+  const toggleExpand = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
-  const renderResults = () => {
-    if (results.length === 0) {
-      return (
-        <div className="empty-state">
-          <div className="empty-icon" style={{ color: '#2d4a6a', fontFamily: 'var(--font-mono)', fontSize: '32px' }}>◈</div>
-          <p style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a' }}>Select a material and run matching to see results</p>
+  const handleBulkAction = (action: 'verify' | 'reject') => {
+    console.log(`[WATCHTOWER] Bulk ${action} for:`, Array.from(selected));
+    setSelected(new Set());
+  };
+
+  const maxBucketCount = Math.max(...distribution.map(b => b.count), 1);
+
+  return (
+    <div style={{
+      background: '#060a10',
+      minHeight: '100vh',
+      padding: '24px 32px',
+      fontFamily: 'var(--font-body, "Inter", sans-serif)',
+      color: '#e0e8f0',
+    }}>
+      {/* ─── Header ─────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: '32px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+          <span style={{
+            fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+            color: '#00ff41', fontSize: '10px', letterSpacing: '1px',
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            animation: 'pulse-dot 2s ease-in-out infinite',
+          }}>
+            <span style={{
+              width: '6px', height: '6px', borderRadius: '50%',
+              backgroundColor: '#00ff41', display: 'inline-block',
+            }} />
+            LIVE
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+            color: '#64748b', fontSize: '11px',
+          }}>THREAT INTELLIGENCE MATCHING SYSTEM</span>
         </div>
-      );
-    }
-    return results.map(result => (
-      <div key={result.id} style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }} className="match-card rounded-lg p-4">
-        <div className="match-card-header flex items-center justify-between mb-3">
-          <div>
-            <span className="match-material" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{result.material_name}</span>
-            <span className="match-algo block" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '11px' }}>{result.algorithm}</span>
+        <h1 style={{
+          fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+          color: '#00d4ff',
+          fontSize: '28px',
+          fontWeight: 700,
+          letterSpacing: '4px',
+          textTransform: 'uppercase',
+          margin: 0,
+          lineHeight: 1.2,
+        }}>
+          ◈ Match Analysis
+        </h1>
+        <p style={{
+          fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+          color: '#64748b',
+          fontSize: '12px',
+          marginTop: '4px',
+        }}>
+          Cross-material pattern matching · {stats.total} entries indexed · Real-time correlation engine
+        </p>
+      </div>
+
+      {/* ─── Stat Cards ────────────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '28px', flexWrap: 'wrap' }}>
+        <StatCard label="Total Matches" value={stats.total} subtext="All time" color="#00d4ff" />
+        <StatCard label="High Confidence" value={stats.highConf} subtext={`${Math.round((stats.highConf / stats.total) * 100)}% of total`} color="#22c55e" />
+        <StatCard label="Pending Review" value={stats.pending} subtext="Awaiting analyst input" color="#eab308" />
+        <StatCard label="Verified" value={stats.verified} subtext="Threat confirmed" color="#22c55e" />
+      </div>
+
+      {/* ─── Score Distribution ────────────────────────────────────── */}
+      <div style={{
+        background: '#0a1118',
+        border: '1px solid #1a2736',
+        borderRadius: '8px',
+        padding: '20px 24px',
+        marginBottom: '24px',
+      }}>
+        <SectionHeader title="Match Score Distribution" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {distribution.map(bucket => {
+            const pct = (bucket.count / maxBucketCount) * 100;
+            return (
+              <div key={bucket.label} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '11px',
+                  color: '#64748b',
+                  width: '70px',
+                  textAlign: 'right',
+                  flexShrink: 0,
+                }}>{bucket.label}</div>
+                <div style={{
+                  flex: 1, height: '18px',
+                  background: '#1a2736',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${pct}%`,
+                    background: scoreGradient((bucket.min + bucket.max) / 2),
+                    borderRadius: '4px',
+                    transition: 'width 0.6s ease',
+                    minWidth: bucket.count > 0 ? '4px' : '0',
+                  }} />
+                </div>
+                <div style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: scoreColor((bucket.min + bucket.max) / 2),
+                  width: '28px',
+                  textAlign: 'right',
+                  flexShrink: 0,
+                }}>{bucket.count}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── Algorithms Performance ────────────────────────────────── */}
+      <div style={{
+        background: '#0a1118',
+        border: '1px solid #1a2736',
+        borderRadius: '8px',
+        padding: '20px 24px',
+        marginBottom: '24px',
+      }}>
+        <SectionHeader title="Match Algorithms" />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+          {ALGORITHM_METRICS.map(algo => {
+            const col = '#00d4ff';
+            return (
+              <div key={algo.name} style={{
+                background: 'rgba(6,10,16,0.6)',
+                border: '1px solid rgba(0,212,255,0.12)',
+                borderRadius: '6px',
+                padding: '14px 16px',
+              }}>
+                <div style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#e0e8f0',
+                  marginBottom: '10px',
+                }}>{algo.name}</div>
+                {(['precision', 'recall', 'f1'] as const).map(metric => {
+                  const val = algo[metric];
+                  return (
+                    <div key={metric} style={{ marginBottom: '6px' }}>
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between',
+                        fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                        fontSize: '10px',
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px',
+                        marginBottom: '3px',
+                      }}>
+                        <span>{metric}</span>
+                        <span style={{ color: col }}>{(val * 100).toFixed(1)}%</span>
+                      </div>
+                      <div style={{
+                        height: '5px',
+                        background: '#1a2736',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${val * 100}%`,
+                          background: `linear-gradient(90deg, rgba(0,212,255,0.4), ${col})`,
+                          borderRadius: '3px',
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ─── Main Table ────────────────────────────────────────────── */}
+      <div style={{
+        background: '#0a1118',
+        border: '1px solid #1a2736',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        marginBottom: '24px',
+      }}>
+        {/* Table toolbar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 20px',
+          borderBottom: '1px solid #1a2736',
+          flexWrap: 'wrap',
+          gap: '10px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <SectionHeader title="Match Registry" />
+            {selected.size > 0 && (
+              <span style={{
+                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                fontSize: '11px',
+                color: '#00d4ff',
+                background: 'rgba(0,212,255,0.08)',
+                border: '1px solid rgba(0,212,255,0.25)',
+                padding: '3px 10px',
+                borderRadius: '4px',
+              }}>{selected.size} selected</span>
+            )}
           </div>
-          <div className="match-meta flex items-center gap-3">
-            <span className={`match-status px-2 py-1 rounded text-[10px] uppercase tracking-wider`} style={{
-              fontFamily: 'var(--font-mono)',
-              color: result.status === 'searching' ? '#00d4ff' : result.status === 'complete' ? '#00ff41' : '#ff3355',
-              border: `1px solid ${result.status === 'searching' ? 'rgba(0,212,255,0.3)' : result.status === 'complete' ? 'rgba(0,255,65,0.3)' : 'rgba(255,51,85,0.3)'}`,
-              background: result.status === 'searching' ? 'rgba(0,212,255,0.08)' : result.status === 'complete' ? 'rgba(0,255,65,0.08)' : 'rgba(255,51,85,0.08)',
-            }}>
-              {result.status === 'searching' && '⟳ Searching'}
-              {result.status === 'complete' && '✓ Complete'}
-              {result.status === 'error' && '✕ Error'}
-            </span>
-            <span className="match-time" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px' }}>{result.processing_ms}ms</span>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {selected.size > 0 && (
+              <>
+                <button onClick={() => handleBulkAction('verify')} style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  background: 'rgba(34,197,94,0.1)',
+                  border: '1px solid rgba(34,197,94,0.35)',
+                  color: '#22c55e',
+                  padding: '5px 14px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                }}>Verify Selected</button>
+                <button onClick={() => handleBulkAction('reject')} style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.35)',
+                  color: '#ef4444',
+                  padding: '5px 14px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                }}>Reject Selected</button>
+              </>
+            )}
+            <button onClick={() => setModalOpen(true)} style={{
+              fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+              background: 'rgba(0,212,255,0.1)',
+              border: '1px solid rgba(0,212,255,0.35)',
+              color: '#00d4ff',
+              padding: '5px 14px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '11px',
+              letterSpacing: '1px',
+              textTransform: 'uppercase',
+            }}>+ Run New Match</button>
           </div>
         </div>
-        {result.candidates.length === 0 ? (
-          <div className="match-no-candidates" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px' }}>No matches above threshold ({result.threshold})</div>
-        ) : (
-          <table className="match-table w-full">
+
+        {/* Search */}
+        <div style={{ padding: '12px 20px', borderBottom: '1px solid #1a2736' }}>
+          <input
+            type="text"
+            placeholder="Search by ID, material, algorithm, or type…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              background: 'rgba(6,10,16,0.7)',
+              border: '1px solid #1a2736',
+              borderRadius: '4px',
+              padding: '8px 12px',
+              color: '#e0e8f0',
+              fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+              fontSize: '12px',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+        </div>
+
+        {/* Table */}
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+            fontSize: '12px',
+          }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(0,212,255,0.12)' }}>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Candidate</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Similarity</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Threat Class</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Source</th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', padding: '8px 12px', textAlign: 'left' }}>Updated</th>
+              <tr style={{
+                borderBottom: '1px solid #1a2736',
+                background: 'rgba(6,10,16,0.4)',
+              }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, width: '36px' }}>
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selected.size === filtered.length}
+                    onChange={e => {
+                      if (e.target.checked) setSelected(new Set(filtered.map(m => m.id)));
+                      else setSelected(new Set());
+                    }}
+                    style={{ accentColor: '#00d4ff', cursor: 'pointer' }}
+                  />
+                </th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Match ID</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Material A</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Material B</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Type</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Score</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Algorithm</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Status</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Date</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, width: '30px' }}></th>
               </tr>
             </thead>
             <tbody>
-              {result.candidates.map((c, i) => (
-                <tr key={c.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
-                  <td style={{ padding: '10px 12px' }}>
-                    <span className="candidate-rank mr-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px' }}>#{i + 1}</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{c.name}</span>
+              {filtered.map(m => {
+                const expanded = expandedRows.has(m.id);
+                const checked = selected.has(m.id);
+                return (
+                  <React.Fragment key={m.id}>
+                    <tr style={{
+                      borderBottom: expanded ? 'none' : '1px solid rgba(26,39,54,0.6)',
+                      background: checked ? 'rgba(0,212,255,0.04)' : 'transparent',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s',
+                    }}
+                      onMouseEnter={e => { if (!checked) (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(0,212,255,0.03)'; }}
+                      onMouseLeave={e => { if (!checked) (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}
+                    >
+                      <td style={{ padding: '10px 14px' }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSelect(m.id)}
+                          style={{ accentColor: '#00d4ff', cursor: 'pointer' }}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#00d4ff', fontWeight: 600, fontSize: '12px' }}>{m.id}</td>
+                      <td style={{ padding: '10px 14px', color: '#c8d6e5' }}>{m.materialA}</td>
+                      <td style={{ padding: '10px 14px', color: '#c8d6e5' }}>{m.materialB}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '3px 10px',
+                          borderRadius: '3px',
+                          background: MATCH_TYPE_STYLES[m.matchType].bg,
+                          color: MATCH_TYPE_STYLES[m.matchType].color,
+                          border: `1px solid ${MATCH_TYPE_STYLES[m.matchType].border}`,
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          fontWeight: 600,
+                        }}>{m.matchType}</span>
+                      </td>
+                      <td style={{ padding: '10px 14px', minWidth: '130px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{
+                            flex: 1, height: '6px', background: '#1a2736',
+                            borderRadius: '3px', overflow: 'hidden',
+                          }}>
+                            <div style={{
+                              height: '100%',
+                              width: `${m.score * 100}%`,
+                              background: scoreGradient(m.score),
+                              borderRadius: '3px',
+                            }} />
+                          </div>
+                          <span style={{
+                            color: scoreColor(m.score),
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            width: '38px',
+                            textAlign: 'right',
+                          }}>{(m.score * 100).toFixed(1)}%</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{m.algorithm}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '3px 10px',
+                          borderRadius: '3px',
+                          background: STATUS_STYLES[m.status].bg,
+                          color: STATUS_STYLES[m.status].color,
+                          border: `1px solid ${STATUS_STYLES[m.status].border}`,
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1px',
+                          fontWeight: 600,
+                        }}>{m.status}</span>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#64748b', fontSize: '11px' }}>{m.date}</td>
+                      <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => toggleExpand(m.id)}
+                          style={{
+                            background: 'transparent',
+                            border: '1px solid #1a2736',
+                            color: '#64748b',
+                            cursor: 'pointer',
+                            borderRadius: '3px',
+                            padding: '2px 6px',
+                            fontSize: '10px',
+                            fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                          }}
+                        >{expanded ? '▲' : '▼'}</button>
+                      </td>
+                    </tr>
+                    {expanded && (
+                      <tr style={{ borderBottom: '1px solid #1a2736' }}>
+                        <td colSpan={10} style={{
+                          padding: '14px 20px 18px 56px',
+                          background: 'rgba(6,10,16,0.5)',
+                        }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            {/* Similarity breakdown */}
+                            <div>
+                              <div style={{
+                                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                                fontSize: '10px',
+                                color: '#64748b',
+                                textTransform: 'uppercase',
+                                letterSpacing: '2px',
+                                marginBottom: '8px',
+                              }}>Similarity Breakdown</div>
+                              {Object.entries(m.similarityBreakdown).map(([key, val]) => (
+                                <div key={key} style={{ marginBottom: '6px' }}>
+                                  <div style={{
+                                    display: 'flex', justifyContent: 'space-between',
+                                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                                    fontSize: '10px',
+                                    color: '#64748b',
+                                    textTransform: 'capitalize',
+                                    marginBottom: '2px',
+                                  }}>
+                                    <span>{key}</span>
+                                    <span style={{ color: '#00d4ff' }}>{(val * 100).toFixed(1)}%</span>
+                                  </div>
+                                  <div style={{
+                                    height: '4px',
+                                    background: '#1a2736',
+                                    borderRadius: '2px',
+                                    overflow: 'hidden',
+                                  }}>
+                                    <div style={{
+                                      height: '100%',
+                                      width: `${val * 100}%`,
+                                      background: 'linear-gradient(90deg, rgba(0,212,255,0.35), #00d4ff)',
+                                      borderRadius: '2px',
+                                    }} />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {/* Notes */}
+                            <div>
+                              <div style={{
+                                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                                fontSize: '10px',
+                                color: '#64748b',
+                                textTransform: 'uppercase',
+                                letterSpacing: '2px',
+                                marginBottom: '8px',
+                              }}>Analyst Notes</div>
+                              <div style={{
+                                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                                fontSize: '11px',
+                                color: '#94a3b8',
+                                background: 'rgba(6,10,16,0.6)',
+                                border: '1px solid #1a2736',
+                                borderRadius: '4px',
+                                padding: '8px 12px',
+                                lineHeight: 1.5,
+                              }}>
+                                {m.analystNotes || (
+                                  <span style={{ color: '#475569', fontStyle: 'italic' }}>No analyst notes on record.</span>
+                                )}
+                              </div>
+                              <div style={{
+                                marginTop: '8px',
+                                display: 'flex',
+                                gap: '6px',
+                                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                                fontSize: '10px',
+                                color: '#475569',
+                                textTransform: 'uppercase',
+                                letterSpacing: '1px',
+                              }}>
+                                <span>Algorithm: <span style={{ color: '#00d4ff' }}>{m.algorithm}</span></span>
+                                <span>·</span>
+                                <span>Type: <span style={{ color: MATCH_TYPE_STYLES[m.matchType].color }}>{m.matchType}</span></span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={10} style={{
+                    padding: '40px',
+                    textAlign: 'center',
+                    color: '#475569',
+                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                    fontSize: '12px',
+                  }}>
+                    No matches found for query "{searchQuery}"
                   </td>
-                  <td style={{ padding: '10px 12px' }}>
-                    <div className="similarity-bar-wrap flex items-center gap-2">
-                      <div className="similarity-bar w-16 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.08)' }}>
-                        <div className="similarity-fill h-full rounded-full transition-all" style={{ width: `${c.similarity * 100}%`, backgroundColor: getSimilarityColor(c.similarity) }} />
-                      </div>
-                      <span className="similarity-val" style={{ color: getSimilarityColor(c.similarity), fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
-                        {(c.similarity * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '10px 12px' }}>
-                    <span className="threat-badge px-2 py-1 rounded text-[10px] uppercase tracking-wider" style={{ background: 'rgba(255,51,85,0.08)', color: '#ff3355', border: '1px solid rgba(255,51,85,0.25)', fontFamily: 'var(--font-mono)', fontWeight: 600, letterSpacing: '1px' }}>{c.threat_class}</span>
-                  </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px', padding: '10px 12px' }}>{c.source}</td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px', padding: '10px 12px' }}>{c.last_updated}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
-    ));
-  };
 
-  return (
-    <div className="page">
-      <header className="page-header">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span style={{ color: '#00ff41', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
-          </div>
-          <h1 className="page-title" style={{ color: '#00d4ff', letterSpacing: '3px' }}>
-            {''} Pattern Matching Engine
-          </h1>
-          <p className="page-subtitle" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a' }}>LSH, SimHash, ML Embedding, Fuzzy Hash — registry similarity search</p>
-        </div>
-        <div className="header-actions">
-          <div className="active-indicator flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '12px' }}>
-            {activeQueries > 0 && <><span className="pulse-dot" style={{ backgroundColor: '#00d4ff', width: '6px', height: '6px', borderRadius: '50%', display: 'inline-block', animation: 'pulse-dot 2s ease-in-out infinite' }} /> {activeQueries} active</>}
-          </div>
-        </div>
-      </header>
-
-      <div className="match-layout grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Controls */}
-        <div className="match-controls lg:col-span-1 space-y-4">
-          <div className="control-group">
-            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Material</label>
-            <select
-              className="cyber-select w-full rounded-lg px-3 py-2 outline-none cursor-pointer"
-              style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)', color: '#c8d6e5', fontFamily: 'var(--font-mono)', fontSize: '12px' }}
-              value={selectedMaterial}
-              onChange={e => setSelectedMaterial(e.target.value)}
-            >
-              <option value="">Select material...</option>
-              {sampleMaterials.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-
-          <div className="control-group">
-            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Algorithm</label>
-            <div className="algo-list space-y-2">
-              {ALGORITHMS.map(algo => (
-                <button
-                  key={algo.id}
-                  style={{
-                    background: algorithm === algo.id ? 'rgba(0,212,255,0.08)' : 'transparent',
-                    border: `1px solid ${algorithm === algo.id ? 'rgba(0,212,255,0.3)' : 'rgba(0,212,255,0.12)'}`,
-                  }}
-                  className="algo-card w-full text-left rounded-lg p-3 transition-all cursor-pointer"
-                  onClick={() => setAlgorithm(algo.id)}
-                >
-                  <div className="algo-name" style={{ fontFamily: 'var(--font-mono)', color: algorithm === algo.id ? '#00d4ff' : '#c8d6e5', fontSize: '12px', fontWeight: 600 }}>{algo.name}</div>
-                  <div className="algo-desc" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', marginTop: '2px' }}>{algo.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="control-group">
-            <label className="control-label block mb-2" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px' }}>Similarity Threshold: {threshold.toFixed(2)}</label>
-            <input
-              type="range"
-              min="0.3"
-              max="0.99"
-              step="0.01"
-              value={threshold}
-              onChange={e => setThreshold(parseFloat(e.target.value))}
-              className="cyber-slider w-full"
-              style={{ accentColor: '#00d4ff' }}
-            />
-            <div className="threshold-marks flex justify-between mt-1" style={{ fontFamily: 'var(--font-mono)', color: '#2d4a6a', fontSize: '10px' }}>
-              <span>0.3 (loose)</span>
-              <span>0.7 (balanced)</span>
-              <span>0.99 (strict)</span>
-            </div>
-          </div>
-
-          <button
-            className="btn btn-primary btn-full cursor-pointer"
-            onClick={handleRunMatch}
-            disabled={!selectedMaterial || running}
-            style={{ fontFamily: 'var(--font-mono)' }}
+      {/* ─── Modal ─────────────────────────────────────────────────── */}
+      {modalOpen && (
+        <div
+          onClick={() => setModalOpen(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.75)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#0a1118',
+              border: '1px solid #1a2736',
+              borderRadius: '8px',
+              padding: '24px',
+              width: '100%',
+              maxWidth: '520px',
+              boxShadow: '0 0 60px rgba(0,212,255,0.08)',
+            }}
           >
-            {running ? '⟳ Scanning Registry...' : '▶ Run Matching'}
-          </button>
-        </div>
-
-        {/* Results area */}
-        <div className="match-results lg:col-span-2">
-          <h3 className="results-header mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Matches</h3>
-          {renderResults()}
-        </div>
-      </div>
-
-      {/* History section */}
-      {searchHistory.length > 0 && (
-        <div className="match-history mt-6 rounded-lg p-4" style={{ background: 'rgba(10,18,28,0.85)', border: '1px solid rgba(0,212,255,0.12)' }}>
-          <h3 className="section-title mb-3" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Recent Searches</h3>
-          <div className="history-list space-y-2">
-            {searchHistory.slice(0, 5).map(h => (
-              <div key={h.id} className="history-item flex items-center justify-between p-2 rounded" style={{ background: 'rgba(6,10,16,0.6)', border: '1px solid rgba(0,212,255,0.08)' }}>
-                <span className="history-material" style={{ fontFamily: 'var(--font-mono)', color: '#c8d6e5', fontSize: '12px' }}>{h.material_name}</span>
-                <span className="history-meta" style={{ fontFamily: 'var(--font-mono)', color: '#5a7a9a', fontSize: '11px' }}>{h.candidates.length} matches · {h.algorithm} · {h.processing_ms}ms</span>
+            <div style={{
+              fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+              fontSize: '14px',
+              color: '#00d4ff',
+              letterSpacing: '2px',
+              marginBottom: '20px',
+            }}>◈ Run New Match</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '10px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  marginBottom: '6px',
+                  display: 'block',
+                }}>Material A</label>
+                <input
+                  type="text"
+                  placeholder="e.g. MAL-2024-0001"
+                  style={{
+                    width: '100%',
+                    background: 'rgba(6,10,16,0.7)',
+                    border: '1px solid #1a2736',
+                    borderRadius: '4px',
+                    padding: '8px 12px',
+                    color: '#e0e8f0',
+                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                    fontSize: '12px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
               </div>
-            ))}
+              <div>
+                <label style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '10px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  marginBottom: '6px',
+                  display: 'block',
+                }}>Material B</label>
+                <input
+                  type="text"
+                  placeholder="e.g. C2-2024-0001"
+                  style={{
+                    width: '100%',
+                    background: 'rgba(6,10,16,0.7)',
+                    border: '1px solid #1a2736',
+                    borderRadius: '4px',
+                    padding: '8px 12px',
+                    color: '#e0e8f0',
+                    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                    fontSize: '12px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '10px',
+                  color: '#64748b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                  marginBottom: '6px',
+                  display: 'block',
+                }}>Algorithm</label>
+                <select style={{
+                  width: '100%',
+                  background: 'rgba(6,10,16,0.7)',
+                  border: '1px solid #1a2736',
+                  borderRadius: '4px',
+                  padding: '8px 12px',
+                  color: '#e0e8f0',
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  fontSize: '12px',
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}>
+                  {ALGO_NAMES.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '8px', justifyContent: 'flex-end' }}>
+                <button onClick={() => setModalOpen(false)} style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  background: 'transparent',
+                  border: '1px solid #1a2736',
+                  color: '#64748b',
+                  padding: '7px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                }}>Cancel</button>
+                <button onClick={() => { setModalOpen(false); console.log('[WATCHTOWER] Run match'); }} style={{
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                  background: 'rgba(0,212,255,0.12)',
+                  border: '1px solid rgba(0,212,255,0.4)',
+                  color: '#00d4ff',
+                  padding: '7px 16px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                }}>Execute</button>
+              </div>
+            </div>
           </div>
         </div>
       )}
