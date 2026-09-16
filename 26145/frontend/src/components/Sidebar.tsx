@@ -106,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 fontFamily: "'JetBrains Mono', monospace",
                 lineHeight: 1.2,
               }}>
-                EKADHARA
+                WATCHTOWER
               </div>
               <div style={{
                 fontSize: 10,
@@ -115,7 +115,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 fontFamily: "'JetBrains Mono', monospace",
                 marginTop: 1,
               }}>
-                v2.1.0 — SIH26
+                WATCHTOWER v2.4 — SIH26
               </div>
             </div>
           </div>
