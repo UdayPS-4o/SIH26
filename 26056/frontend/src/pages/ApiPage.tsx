@@ -544,6 +544,34 @@ const MOCK_RESPONSES: Record<string, unknown> = {
     nextStage: 'daily_collection',
     estimatedDuration: '~15 minutes',
   },
+  'POST /api/v1/scraper/live-scrape': {
+    status: 'ok',
+    requestedBy: 'admin',
+    parameters: { sector: 'DEL-BOM', leadDays: 15, sourcesRequested: ['cleartrip', 'makemytrip'], maxQuotes: 5 },
+    compliance: { stealthActive: true, robotsChecked: true, rateLimitDelayS: 4.0, killSwitch: 'ARMED' },
+    sourcesUsed: [
+      { name: 'Cleartrip', type: 'OTA', quotes: 3 },
+      { name: 'MakeMyTrip', type: 'OTA', quotes: 2 },
+    ],
+    results: [
+      { source: 'Cleartrip', sector: 'DEL-BOM', carrier: '6E', flightNo: '6E 428', leadDays: 15, cabin: 'Economy', baseFare: 3550, taxes: 1250, udf: 186, convenienceFee: 0, totalFare: 4986, method: 'response-interception', stealth: true },
+      { source: 'Cleartrip', sector: 'DEL-BOM', carrier: 'AI', flightNo: 'AI 805', leadDays: 15, cabin: 'Economy', baseFare: 3810, taxes: 1350, udf: 186, convenienceFee: 0, totalFare: 5346, method: 'response-interception', stealth: true },
+      { source: 'MakeMyTrip', sector: 'DEL-BOM', carrier: '6E', flightNo: '6E 611', leadDays: 15, cabin: 'Economy', baseFare: 3420, taxes: 1190, udf: 186, convenienceFee: 120, totalFare: 4916, method: 'dom-scraping', stealth: true },
+      { source: 'MakeMyTrip', sector: 'DEL-BOM', carrier: 'SG', flightNo: 'SG 115', leadDays: 15, cabin: 'Economy', baseFare: 3680, taxes: 1280, udf: 186, convenienceFee: 100, totalFare: 5246, method: 'dom-scraping', stealth: true },
+      { source: 'MakeMyTrip', sector: 'DEL-BOM', carrier: 'QP', flightNo: 'QP 210', leadDays: 15, cabin: 'Economy', baseFare: 3550, taxes: 1240, udf: 186, convenienceFee: 110, totalFare: 5086, method: 'dom-scraping', stealth: true },
+    ],
+    errors: [],
+    timing: { startedAt: new Date().toISOString(), finishedAt: new Date(Date.now() + 48000).toISOString(), elapsedMs: 48000 },
+  },
+  'GET /api/v1/scraper/live-scrape/test': {
+    status: 'ok',
+    stealthActive: true,
+    quotesReturned: 2,
+    sample: [
+      { source: 'Cleartrip', carrier: '6E', flightNo: '6E 428', totalFare: 4520, baseFare: 3550, leadDays: 15 },
+      { source: 'Cleartrip', carrier: 'AI', flightNo: 'AI 805', totalFare: 4890, baseFare: 3810, leadDays: 15 },
+    ],
+  },
   'GET /api/v1/health/scrapers': {
     scrapers: [
       { source: 'cleartrip', yield: 94.2, blockRate: 0.3, p95Latency: 1.2, status: 'healthy' },

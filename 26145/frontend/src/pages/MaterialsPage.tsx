@@ -310,7 +310,7 @@ function MaterialsPage() {
     setNormalizeProgress(0);
     const steps = [
       { text: 'Parsing raw source fields...', progress: 20 },
-      { text: 'Mapping to EKADHARA canonical schema...', progress: 40 },
+      { text: 'Mapping to WATCHTOWER canonical schema...', progress: 40 },
       { text: 'Generating SHA-256 content hash...', progress: 55 },
       { text: 'Computing fuzzy similarity to known samples...', progress: 70 },
       { text: 'Embedding ML feature vector (15-dim)...', progress: 85 },
