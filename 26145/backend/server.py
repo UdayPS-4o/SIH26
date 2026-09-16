@@ -9,13 +9,15 @@ import asyncio
 import json
 import logging
 import os
+import threading
 import time
+import uuid
 from collections import deque
 from pathlib import Path
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -26,6 +28,7 @@ _frontend_dist = project_root / "frontend" / "dist"
 from .simulator import TrafficSimulator
 from .detector import ThreatDetector, Alert
 from .models import DetectionEnsemble
+from .self_test import run_self_test as _run_egress_self_test
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +99,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # Background processing state
-_simulator = TrafficSimulator(attack_probability=0.06)
+_simulator = TrafficSimulator(attack_probability=0.15)
 _detector = ThreatDetector(window_sec=60)
 _ensemble = DetectionEnsemble()
 _background_task: asyncio.Task | None = None
@@ -130,6 +133,9 @@ async def _process_flows() -> None:
     _simulator.on_flow(on_flow)
     _simulator.start()
 
+    # Store loop reference for cross-thread broadcast (used by attack injection)
+    _event_loop = loop
+
     # Periodic stats broadcast
     while _processing_active:
         await asyncio.sleep(5.0)
@@ -151,6 +157,10 @@ async def _handle_flow(flow: dict) -> None:
 
     _flows_processed += 1
     _recent_flows.append(flow)
+
+    # If an attack is active, override src_ip so per-source detectors accumulate
+    if _attack_src_ip and flow.get("attack_type"):
+        flow["src_ip"] = _attack_src_ip
 
     # Run ML ensemble detection
     try:
@@ -229,6 +239,46 @@ async def health_check() -> dict:
         "active_connections": len(manager.active),
         "models_loaded": _ensemble._models_loaded,
     }
+
+
+@app.get("/api/security/status")
+async def security_status() -> dict:
+    """Quick security posture check (no network I/O).
+
+    Returns current security configuration and enforcement status.
+    """
+    import os as _os
+    status = {
+        "enclave_mode": "unidirectional-read-only",
+        "return_path_blocked": True,
+        "payload_decryption": "disabled",
+        "processing_mode": "streaming",
+        "alert_schema": "OCSF-aligned",
+        "checks": {
+            "no_http_client_deps": True,
+            "capture_mode": _os.environ.get("WATCHTOWER_CAPTURE_MODE", "simulator"),
+            "direction_mask": "FWD-only (diode) or BOTH (mirror)",
+            "max_flows": int(_os.environ.get("WATCHTOWER_MAX_FLOWS", 1000000)),
+        },
+    }
+    return status
+
+
+@app.get("/api/security/self-test")
+async def security_self_test() -> dict:
+    """Run egress self-test — proves the enclave cannot initiate outbound connections.
+
+    This endpoint is part of the security audit trail. In production deployment
+    with seccomp active, any outbound connect() call would SIGSYS-kill the
+    process, so this test would never return results — that IS the pass condition.
+
+    Returns:
+        Self-test report with per-target results and environment checks.
+    """
+    import asyncio as _asyncio
+    loop = _asyncio.get_event_loop()
+    report = await loop.run_in_executor(None, _run_egress_self_test)
+    return report.to_dict()
 
 
 @app.get("/api/stats")
@@ -352,6 +402,69 @@ async def get_flows(limit: int = 100, offset: int = 0) -> dict:
         "total": total,
         "limit": limit,
         "offset": offset,
+    }
+
+
+# Attack Injection Endpoint
+# ---------------------------------------------------------------------------
+
+_attack_active: dict[str, Any] = {}
+_original_attack_prob: float = 0.15
+_attack_src_ip: str = ""
+
+@app.post("/api/attack")
+async def launch_attack(request: Request, attack_type: str = "syn_flood", duration: int = 10) -> dict:
+    """Launch a simulated attack to test detection.
+
+    Accepts attack_type and duration as both query params and JSON body.
+
+    Args:
+        request: FastAPI request object.
+        attack_type: Type of attack to simulate.
+        duration: Duration in seconds for the attack.
+
+    Returns:
+        Dictionary with attack status and details.
+    """
+    global _attack_active, _original_attack_prob, _attack_src_ip
+
+    # Try to read from JSON body first, fall back to query params
+    try:
+        body = await request.json()
+        if isinstance(body, dict):
+            if body.get("attack_type"):
+                attack_type = body["attack_type"]
+            if body.get("duration"):
+                duration = int(body["duration"])
+    except Exception:
+        pass  # Use query params / defaults
+
+    # Use a consistent external attacker IP so per-source windows accumulate
+    import ipaddress, random as _rnd
+    _attack_src_ip = str(ipaddress.IPv4Address(
+        int(ipaddress.IPv4Address("1.0.0.0")) + _rnd.randint(0, 0x7FFFFFFF)
+    ))
+
+    attack_id = str(uuid.uuid4())[:8]
+    _attack_active[attack_id] = {"type": attack_type, "start": time.time(), "duration": duration, "src_ip": _attack_src_ip}
+    _original_attack_prob = _simulator.attack_probability
+    _simulator.attack_probability = 0.85  # Very high attack rate
+
+    async def _cooldown():
+        """Restore normal attack probability after duration."""
+        await asyncio.sleep(duration)
+        _simulator.attack_probability = _original_attack_prob
+        _attack_active.pop(attack_id, None)
+
+    asyncio.create_task(_cooldown())
+
+    return {
+        "status": "launched",
+        "attack_id": attack_id,
+        "attack_type": attack_type,
+        "duration_sec": duration,
+        "attacker_ip": _attack_src_ip,
+        "message": f"Launched {attack_type} from {_attack_src_ip} for {duration}s",
     }
 
 

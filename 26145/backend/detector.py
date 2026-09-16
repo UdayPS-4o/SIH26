@@ -122,17 +122,17 @@ class ThreatDetector:
         self._all_flows: list[dict] = []
         self._alerts: list[Alert] = []
 
-        # Thresholds
+        # Thresholds (lowered for demo visibility with simulated traffic)
         self._thresholds = {
-            "ddos_packet_rate": 1000,
-            "ddos_flows_per_sec": 100,
-            "beaconing_min_flows": 3,
-            "beaconing_interval_std": 0.5,
-            "dga_entropy_threshold": 3.5,
-            "dns_tunnel_length": 100,
-            "port_scan_unique_ports": 20,
-            "port_scan_fan_ratio": 0.8,
-            "exfil_ratio": 5.0,
+            "ddos_packet_rate": 100,
+            "ddos_flows_per_sec": 5,
+            "beaconing_min_flows": 2,
+            "beaconing_interval_std": 2.0,
+            "dga_entropy_threshold": 3.0,
+            "dns_tunnel_length": 50,
+            "port_scan_unique_ports": 5,
+            "port_scan_fan_ratio": 0.3,
+            "exfil_ratio": 2.0,
         }
 
         # Statistics

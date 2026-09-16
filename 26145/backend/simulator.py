@@ -226,7 +226,7 @@ class TrafficSimulator:
                         self._emit(flow)
                         self._flows_generated += 1
 
-                time.sleep(random.uniform(0.01, 0.1))
+                time.sleep(random.uniform(0.001, 0.01))
             except Exception as e:
                 logger.debug(f"Generation loop error: {e}")
                 time.sleep(0.1)
