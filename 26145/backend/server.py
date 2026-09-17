@@ -521,6 +521,11 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 # ---------------------------------------------------------------------------
 
 # Catch-all route for SPA fallback (serves frontend for any non-API path)
+# Catch-all route for SPA fallback — explicitly excludes API/WS paths
+@app.get("/api/attack", include_in_schema=False)
+async def attack_get_fallback() -> dict:
+    return {"error": "Method Not Allowed. Use POST."}
+
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str) -> Any:
     """Serve frontend files or index.html for SPA routing."""
