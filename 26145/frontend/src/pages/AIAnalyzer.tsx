@@ -1,836 +1,733 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Cpu, Crosshair, Activity, Zap } from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Message {
-  id: string;
-  role: 'user' | 'ai';
-  content: string;
-  timestamp: number;
-}
-
-interface AnalysisRecord {
-  id: string;
-  timestamp: number;
-  inputType: string;
-  threatType: string;
-  result: string;
-  confidence: number;
-  severity: string;
-}
-
-interface AnalysisResult {
-  reportId: string;
-  timestamp: string;
-  threatType: string;
-  severity: string;
-  confidence: number;
-  affectedIPs: string[];
-  recommendations: string[];
-  details: {
-    packetsAnalyzed: string;
-    flowsProcessed: string;
-    analysisDuration: string;
-    dataVolume: string;
-    portsScanned: string;
-    geoSource: string;
-    attackVector: string;
-    modelVersion: string;
-  };
-}
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const SCAN_STEPS = [
-  { label: 'Packet Inspection', duration: 800 },
-  { label: 'Feature Extraction', duration: 900 },
-  { label: 'ML Inference', duration: 1200 },
-  { label: 'Pattern Matching', duration: 700 },
-  { label: 'Threat Classification', duration: 800 },
-  { label: 'Report Generation', duration: 500 },
-];
-
-const THREAT_TYPES = [
-  'SQL Injection', 'DDoS Attack', 'Brute Force', 'Port Scanning',
-  'Malware Beacon', 'Data Exfiltration', 'Command Injection',
-  'Cross-Site Scripting', 'DNS Tunneling', 'Ransomware Communication',
-];
-
-const SEVERITY_LIST: Array<'critical' | 'high' | 'medium' | 'low'> = ['critical', 'high', 'medium', 'low'];
-
-const RESULT_LABELS = ['Blocked', 'Mitigated', 'Quarantined', 'Investigating'];
-const ATTACK_VECTORS = [
-  'Network Scanning → Brute Force', 'Reconnaissance → Initial Access',
-  'Initial Access → Execution', 'Exfiltration via DNS Tunnel', 'C2 Beaconing Pattern',
-];
-const GEO_SOURCES = ['Russia', 'China', 'North Korea', 'Iran', 'Romania', 'Brazil', 'Unknown'];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const rand = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-const randFloat = (min: number, max: number, dec = 1) => (Math.random() * (max - min) + min).toFixed(dec);
-const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-const genIP = () => `${rand(1,223)}.${rand(0,255)}.${rand(0,255)}.${rand(1,254)}`;
-
-const severityConfig = (s: string) => {
-  const m: Record<string, { color: string; bg: string; border: string; label: string }> = {
-    critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)', border: 'rgba(239,68,68,0.25)', label: 'CRITICAL' },
-    high:     { color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)', label: 'HIGH' },
-    medium:   { color: '#eab308', bg: 'rgba(234,179,8,0.08)', border: 'rgba(234,179,8,0.25)', label: 'MEDIUM' },
-    low:      { color: '#06b6d4', bg: 'rgba(6,182,212,0.08)', border: 'rgba(6,182,212,0.25)', label: 'LOW' },
-  };
-  return m[s] || m.low;
-};
-
-const fmtTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   WATCHTOWER — AI Analyzer
+   ML Pipeline performance dashboard. Exact theme match with Dashboard.tsx.
+   ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg: '#060a10', card: '#0a1118', border: '#1a2736', borderAct: '#1e3a5f',
-  txt: '#e0e8f0', txt2: '#64748b', cyan: '#00d4ff', green: '#00ff41',
-  red: '#ef4444', orange: '#f97316', yellow: '#eab308', purple: '#a855f7',
+  bg:        '#05080d',
+  surface:   '#080d14',
+  surfaceHi: '#0c1219',
+  border:    '#111c2b',
+  borderHi:  '#182a3d',
+  text:      '#dce4ec',
+  textSec:   '#556677',
+  textDim:   '#2a3a4a',
+  accent:    '#00d4ff',
+  red:       '#ef4444',
+  orange:    '#f97316',
+  amber:     '#eab308',
+  green:     '#22c55e',
+  purple:    '#a855f7',
+  pink:      '#ec4899',
+  teal:      '#14b8a6',
 };
+const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const MONO = '"JetBrains Mono","Fira Code",monospace';
 
-const sectionHeader = (label: string) => (
-  <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'16px', marginTop:'8px' }}>
-    <span style={{ color: C.cyan, fontSize:'10px', letterSpacing:'2px', fontFamily:"'JetBrains Mono',monospace" }}>◈</span>
+/* ── Helpers ──────────────────────────────────────────────────────────── */
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+const fmtTime = (ts: number) =>
+  new Date(ts).toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+const now = () => new Date().toLocaleTimeString('en-US', { hour12:false });
+
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   ATOMIC COMPONENTS (identical to Dashboard.tsx)
+   ═══════════════════════════════════════════════════════════════════════════════════ */
+
+const Dot: React.FC<{ color?: string; size?: number }> = ({ color = C.green, size = 6 }) => (
+  <span style={{
+    width:size, height:size, borderRadius:'50%', background:color,
+    boxShadow:`0 0 ${size}px ${color}60`,
+    animation:`wt-pulse 1.6s ease-in-out infinite`,
+    display:'inline-block', flexShrink:0,
+  }} />
+);
+
+const SH: React.FC<{ label:string; right?: React.ReactNode }> = ({ label, right }) => (
+  <div style={{
+    display:'flex', alignItems:'baseline', justifyContent:'space-between',
+    paddingBottom:10, marginBottom:14, borderBottom:`1px solid ${C.border}`,
+  }}>
     <span style={{
-      color: C.cyan, fontSize:'11px', fontWeight:700, letterSpacing:'2px', textTransform:'uppercase',
-      fontFamily:"'JetBrains Mono',monospace",
+      fontFamily:MONO, fontSize:10, fontWeight:700,
+      letterSpacing:'2.5px', color:C.accent, textTransform:'uppercase',
     }}>{label}</span>
-    <div style={{ flex:1, height:'1px', background:`linear-gradient(90deg, ${C.borderAct}, transparent)` }} />
+    {right}
   </div>
 );
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const buildAnalysisResult = (): AnalysisResult => {
-  const threatType = pick(THREAT_TYPES);
-  const severity = pick(SEVERITY_LIST);
-  const confidence = rand(78, 99);
-  const affectedIPs = Array.from({ length: rand(2,5) }, genIP);
-  const reportId = `RPT-${Date.now().toString(36).toUpperCase().slice(-8)}`;
-  const recs: Record<string, string[]> = {
-    critical: [
-      'ISOLATE affected systems immediately at network perimeter',
-      'Deploy emergency firewall rules for all flagged source IPs',
-      'Initiate incident response protocol IRP-001',
-      'Preserve forensic images of affected endpoints',
-      'Notify SOC leadership and escalate to Tier-2 analysis',
-    ],
-    high: [
-      'Block source IPs at edge firewall within 15 minutes',
-      'Enable enhanced logging on affected system segments',
-      'Schedule forensic review within 4 hours',
-      'Monitor for lateral movement indicators',
-    ],
-    medium: [
-      'Add flagged IPs to SIEM watchlist for 72-hour monitoring',
-      'Review authentication logs for brute-force indicators',
-      'Schedule routine patch cycle review',
-    ],
-    low: [
-      'Log event for trend analysis',
-      'Include in next weekly security report',
-    ],
-  };
-
-  return {
-    reportId,
-    timestamp: new Date().toISOString(),
-    threatType,
-    severity,
-    confidence,
-    affectedIPs,
-    recommendations: recs[severity] || recs.low,
-    details: {
-      packetsAnalyzed: rand(5000,50000).toLocaleString(),
-      flowsProcessed: rand(50,2000).toLocaleString(),
-      analysisDuration: `${randFloat(0.3,12.0)}s`,
-      dataVolume: `${randFloat(1.2,48.5)} MB`,
-      portsScanned: [22,23,80,443,445,3389,8080,8443].sort(()=>Math.random()-0.5).slice(0,rand(2,5)).join(', '),
-      geoSource: pick(GEO_SOURCES),
-      attackVector: pick(ATTACK_VECTORS),
-      modelVersion: 'Ekadhara v3.2.1',
-    },
-  };
-};
-
-const buildInitialRecords = (): AnalysisRecord[] => {
-  const recs: AnalysisRecord[] = [];
-  for (let i = 0; i < 6; i++) {
-    recs.push({
-      id: `init-${i}`,
-      timestamp: Date.now() - rand(60000,3600000) * (i+1),
-      inputType: pick(['Deep Analysis','IP Reputation','Threat Prediction','Alert Summary']),
-      threatType: pick(THREAT_TYPES),
-      result: pick(RESULT_LABELS),
-      confidence: rand(72,98),
-      severity: pick(SEVERITY_LIST),
-    });
-  }
-  return recs;
-};
-
-// ─── Animations (injected into DOM once) ─────────────────────────────────────
-
-let animsInjected = false;
-const injectAnims = () => {
-  if (animsInjected || typeof document === 'undefined') return;
-  animsInjected = true;
-  const s = document.createElement('style');
-  s.textContent = `
-    @keyframes scan-sweep { 0%{left:-30%} 100%{left:110%} }
-    @keyframes pulse-glow { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    @keyframes fade-in-up { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    .af0 { animation: fade-in-up .5s ease-out both }
-    .af1 { animation: fade-in-up .5s ease-out .08s both }
-    .af2 { animation: fade-in-up .5s ease-out .16s both }
-    .af3 { animation: fade-in-up .5s ease-out .24s both }
-    .af4 { animation: fade-in-up .5s ease-out .32s both }
-    .af5 { animation: fade-in-up .5s ease-out .4s both }
-  `;
-  document.head.appendChild(s);
-};
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-const Icon = ({ type, size = 22 }: { type: string; size?: number }) => {
-  const c = C.cyan;
-  const s = size;
-  const icons: Record<string, React.ReactNode> = {
-    analysis: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 11-6.219-8.56" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
-    threat: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
-    accuracy: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
-    time: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
-  };
-  return <>{icons[type] || null}</>;
-};
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-const StatCard: React.FC<{
-  label: string; value: string | number; sub?: string;
-  icon: React.ReactNode; trend?: { value: number; up: boolean }; delay: string;
-}> = ({ label, value, sub, icon, trend, delay }) => (
-  <div className={`af${delay}`} style={{
-    background: C.card, border: `1px solid ${C.border}`, borderRadius:'8px', padding:'20px',
-    position:'relative', overflow:'hidden', transition:'border-color .2s, box-shadow .2s',
-  }}
-    onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.borderAct; e.currentTarget.style.boxShadow = '0 0 24px rgba(0,212,255,0.06), inset 0 1px 0 rgba(0,212,255,0.06)'; }}
-    onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = 'none'; }}
-  >
-    <div style={{ position:'absolute', top:0, left:0, right:0, height:'1px', background:`linear-gradient(90deg, transparent, ${C.cyan}33, transparent)` }} />
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'14px' }}>
-      <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase' }}>{label}</span>
-      <div style={{ width:'32px', height:'32px', borderRadius:'6px', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,212,255,0.06)', border:'1px solid rgba(0,212,255,0.15)', color:C.cyan }}>
-        {icon}
-      </div>
-    </div>
-    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'30px', fontWeight:700, color:C.cyan, textShadow:'0 0 16px rgba(0,212,255,0.3)', lineHeight:1.1 }}>{value}</div>
-    <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
-      {sub && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2 }}>{sub}</span>}
-      {trend && <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:600, color: trend.up ? C.green : C.red }}>{trend.up ? '▲' : '▼'} {trend.value}%</span>}
-    </div>
-  </div>
-);
-
-const ConfidenceMeter: React.FC<{ value: number; severity: string }> = ({ value, severity }) => {
-  const cfg = severityConfig(severity);
-  const r = 45;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (value / 100) * circ;
+const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:React.ReactNode }> = ({ delay=0, style, children }) => {
+  const [ready, setReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
 
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:'20px' }}>
-      <div style={{ position:'relative', width:'110px', height:'110px', flexShrink:0 }}>
-        <svg width="110" height="110" viewBox="0 0 100 100" style={{ transform:'rotate(-90deg)' }}>
-          <circle cx="50" cy="50" r={r} fill="none" stroke={C.border} strokeWidth="8" />
-          <circle cx="50" cy="50" r={r} fill="none" stroke={cfg.color} strokeWidth="8"
-            strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-            style={{ transition:'stroke-dashoffset 1.5s ease-out', filter:`drop-shadow(0 0 4px ${cfg.color}66)` }} />
-        </svg>
-        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'26px', fontWeight:700, color:cfg.color, textShadow:`0 0 12px ${cfg.color}55`, lineHeight:1 }}>{value}%</span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'8px', color:C.txt2, letterSpacing:'1px', textTransform:'uppercase', marginTop:'2px' }}>confidence</span>
+    <div style={{
+      background:C.surface, border:`1px solid ${C.border}`, borderRadius:8,
+      position:'relative', overflow:'hidden',
+      opacity:ready?1:0, transform:ready?'translateY(0)':'translateY(12px)',
+      transition:`opacity 0.5s ${EASE} ${delay}s, transform 0.5s ${EASE} ${delay}s`,
+      ...style,
+    }}>
+      <div style={{ position:'absolute',top:0,left:0,right:0,height:1,
+        background:`linear-gradient(90deg,transparent,${C.accent}30,transparent)` }} />
+      <div style={{ padding:'20px 22px', position:'relative', zIndex:1 }}>{children}</div>
+    </div>
+  );
+};
+
+const Progress: React.FC<{ value:number; max?:number; color?:string }> = ({ value, max=100, color=C.accent }) => {
+  const pct = Math.min((value/max)*100, 100);
+  return (
+    <div style={{ height:4, background:'#0a1018', borderRadius:2, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+      <div style={{
+        height:'100%', width:`${pct}%`, background:color, opacity:0.65,
+        borderRadius:1, transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
+      }} />
+    </div>
+  );
+};
+
+const Sev: React.FC<{ sev:string }> = ({ sev }) => {
+  const M: Record<string,{c:string;bg:string}> = {
+    critical:{c:C.red,bg:'rgba(239,68,68,0.10)'},
+    high:{c:C.orange,bg:'rgba(249,115,22,0.10)'},
+    medium:{c:C.amber,bg:'rgba(234,179,8,0.10)'},
+    low:{c:'#06b6d4',bg:'rgba(6,182,212,0.10)'},
+  };
+  const s = M[sev] || M.low;
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:5,
+      padding:'2px 8px', borderRadius:3, fontSize:9, fontWeight:700,
+      letterSpacing:'1px', color:s.c, background:s.bg, border:`1px solid ${s.c}25`,
+      fontFamily:MONO, textTransform:'uppercase',
+    }}>
+      <span style={{width:4,height:4,borderRadius:'50%',background:s.c}} />
+      {sev}
+    </span>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   MOCK DATA — ML Pipeline
+   ═══════════════════════════════════════════════════════════════════════════════════ */
+
+interface ThreatModel {
+  category: string;
+  modelType: string;
+  rationale: string;
+  accuracy: number;
+  precision: number;
+  recall: number;
+  f1: number;
+  status: 'active' | 'training' | 'deprecated';
+  samples: number;
+}
+
+const THREAT_MODELS: ThreatModel[] = [
+  { category:'DDoS Detection', modelType:'Random Forest (100 trees)',
+    rationale:'High-dimensional feature space with non-linear interactions. RF handles class imbalance via balanced subsampling.',
+    accuracy:96.8, precision:94.2, recall:97.1, f1:95.6, status:'active', samples:482000 },
+  { category:'C2 Beaconing', modelType:'Isolation Forest + LSTM',
+    rationale:'Beaconing exhibits temporal periodicity. LSTM captures timing patterns; Isolation Forest flags outliers in periodicity space.',
+    accuracy:93.4, precision:91.8, recall:92.5, f1:92.1, status:'active', samples:128000 },
+  { category:'DGA Domains', modelType:'Character-level CNN + RNN',
+    rationale:'Domain names generated by DGAs have statistical signatures. Character CNN extracts n-gram features without lexicon lookup.',
+    accuracy:95.1, precision:93.7, recall:94.3, f1:94.0, status:'active', samples:356000 },
+  { category:'DNS Tunneling', modelType:'XGBoost + Statistical Features',
+    rationale:'Tunneling creates entropy spikes in DNS queries. XGBoost ensemble on hand-crafted entropy + length + frequency features.',
+    accuracy:91.2, precision:88.9, recall:93.4, f1:91.1, status:'active', samples:94000 },
+  { category:'Port Scanning', modelType:'K-means Clustering + SVM',
+    rationale:'Scanning produces distinctive fan-out patterns. Clustering identifies scan signatures; SVM classifies scan vs legitimate discovery.',
+    accuracy:89.7, precision:86.3, recall:91.8, f1:89.0, status:'training', samples:210000 },
+  { category:'Data Exfiltration', modelType:'Transformer Encoder',
+    rationale:'Exfiltration shows asymmetric volume patterns. Transformer captures long-range dependencies in byte-volume sequences.',
+    accuracy:94.5, precision:92.8, recall:93.9, f1:93.3, status:'active', samples:156000 },
+  { category:'TLS Anomaly', modelType:'Isolation Forest (JA3)',
+    rationale:'JA3 fingerprints are categorical. Isolation Forest detects anomalous fingerprint clusters without requiring labeled normal data.',
+    accuracy:87.3, precision:85.1, recall:88.9, f1:87.0, status:'active', samples:640000 },
+  { category:'Malware Detection', modelType:'Gradient Boosted Trees',
+    rationale:'Multi-modal features (flow stats + timing + TLS). GBT handles mixed numeric/categorical features with SHAP explainability built in.',
+    accuracy:95.8, precision:94.5, recall:96.2, f1:95.3, status:'active', samples:520000 },
+];
+
+const FEATURE_IMPORTANCE = [
+  { name:'JA3 hash entropy',       importance:0.94 },
+  { name:'Flow byte ratio',        importance:0.87 },
+  { name:'Inter-arrival variance', importance:0.82 },
+  { name:'DNS query length',       importance:0.78 },
+  { name:'Port fan-out',           importance:0.74 },
+  { name:'Packet size std dev',    importance:0.69 },
+  { name:'TCP window ratio',       importance:0.63 },
+  { name:'DNS TTL variance',       importance:0.58 },
+  { name:'Flow duration',          importance:0.52 },
+  { name:'Response byte ratio',    importance:0.47 },
+];
+
+const PIPELINE_STAGES = [
+  { label:'INGEST',    sub:'PCAP / NetFlow / sFlow',     color:C.accent,  icon:Cpu,
+    detail:'10K flows/sec · Zero-copy ring buffer · 12ms p99 latency' },
+  { label:'FEATURES',  sub:'JA3 / DNS / Flow metadata',   color:C.purple,  icon:Crosshair,
+    detail:'487 features per flow · Real-time enrichment · Feature store v2' },
+  { label:'INFERENCE', sub:'Ensemble classifier',          color:C.green,   icon:Activity,
+    detail:'8 models · Weighted ensemble · GPU-accelerated inference' },
+  { label:'OUTPUT',    sub:'WebSocket + REST alerts',      color:C.amber,   icon:Zap,
+    detail:'< 5ms alert dispatch · RFC 8071 JSON · Enclave-formatted' },
+];
+
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   SUB-COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════════════ */
+
+function PipelineStages() {
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+      {PIPELINE_STAGES.map((stage, i) => (
+        <div key={i} className="wt-interactive" style={{
+          padding:'14px 16px', background:'rgba(255,255,255,0.008)',
+          border:`1px solid ${C.border}`, borderRadius:5, cursor:'default',
+          display:'flex', flexDirection:'column', gap:6,
+          transition:`border-color 0.2s ${EASE}`,
+        }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = `${stage.color}40`; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
+        >
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <Dot color={stage.color} size={4} />
+            <span style={{ fontSize:10, fontWeight:700, letterSpacing:'1.2px', color:stage.color, fontFamily:MONO }}>{stage.label}</span>
+          </div>
+          <span style={{ fontSize:9, color:C.textSec, lineHeight:1.4 }}>{stage.sub}</span>
+          <span style={{ fontSize:8, color:C.textDim, lineHeight:1.4, marginTop:2 }}>{stage.detail}</span>
         </div>
-      </div>
-      <div style={{ flex:1 }}>
-        <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2, marginBottom:'10px', letterSpacing:'0.5px' }}>CONFIDENCE BREAKDOWN</div>
-        {[
-          { label:'ML Model', pct: rand(70,95) },
-          { label:'Pattern Match', pct: rand(60,90) },
-          { label:'Signature DB', pct: rand(65,92) },
-        ].map(item => (
-          <div key={item.label} style={{ marginBottom:'8px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'3px' }}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2 }}>{item.label}</span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.cyan }}>{item.pct}%</span>
+      ))}
+    </div>
+  );
+}
+
+function ThreatModelTable({ models }: { models: ThreatModel[] }) {
+  return (
+    <div style={{ overflowX:'auto' }}>
+      <table style={{ width:'100%', borderCollapse:'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom:`1px solid ${C.border}`, background:'rgba(0,212,255,0.015)' }}>
+            {['Category','Model','Accuracy','Precision','Recall','F1','Samples','Status'].map(h => (
+              <th key={h} style={{
+                padding:'9px 14px', textAlign:'left', fontSize:9, fontWeight:700,
+                letterSpacing:'1.2px', color:C.textSec, fontFamily:MONO,
+                textTransform:'uppercase', whiteSpace:'nowrap',
+              }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {models.map((m) => {
+            const sc = m.status==='active' ? C.green : m.status==='training' ? C.amber : C.red;
+            const f1Color = m.f1 >= 93 ? C.green : m.f1 >= 89 ? C.amber : C.red;
+            return (
+              <tr key={m.category} style={{
+                borderBottom:`1px solid ${C.border}`,
+                background: m.status==='training' ? 'rgba(234,179,8,0.02)' : 'transparent',
+                transition:`background 0.15s ${EASE}`,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}04`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = m.status==='training' ? 'rgba(234,179,8,0.02)' : 'transparent'; }}
+              >
+                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:11, fontWeight:600, color:C.text, letterSpacing:'0.3px', textTransform:'uppercase' }}>
+                  {m.category}
+                </td>
+                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:10, color:C.textSec, maxWidth:220, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
+                  title={m.modelType}>
+                  {m.modelType}
+                </td>
+                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:11, fontWeight:700, color:C.accent, fontVariantNumeric:'tabular-nums' }}>
+                  {m.accuracy.toFixed(1)}%
+                </td>
+                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:11, fontWeight:700, color:C.green, fontVariantNumeric:'tabular-nums' }}>
+                  {m.precision.toFixed(1)}%
+                </td>
+                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:11, fontWeight:700, color:C.purple, fontVariantNumeric:'tabular-nums' }}>
+                  {m.recall.toFixed(1)}%
+                </td>
+                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:11, fontWeight:700, color:f1Color, fontVariantNumeric:'tabular-nums' }}>
+                  {m.f1.toFixed(1)}%
+                </td>
+                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:10, color:C.textSec, fontVariantNumeric:'tabular-nums' }}>
+                  {fmt(m.samples)}
+                </td>
+                <td style={{ padding:'9px 14px' }}>
+                  <span style={{
+                    display:'inline-flex', alignItems:'center', gap:4,
+                    padding:'2px 8px', borderRadius:3, fontSize:9, fontWeight:700,
+                    letterSpacing:'1px', color:sc, background:`${sc}10`,
+                    border:`1px solid ${sc}25`, fontFamily:MONO, textTransform:'uppercase',
+                  }}>
+                    <span style={{ width:4, height:4, borderRadius:'50%', background:sc }} />
+                    {m.status}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function FeatureImportanceChart({ data }: { data: { name:string; importance:number }[] }) {
+  const max = Math.max(...data.map(d => d.importance));
+  const palette = [C.accent, C.purple, C.green, C.amber, C.accent, C.teal, C.pink, C.orange, C.red, '#6366f1'];
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+      {data.map((d, i) => {
+        const pct = (d.importance / max) * 100;
+        const color = palette[i];
+        return (
+          <div key={d.name} style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{
+              fontSize:10, color:C.textSec, width:140, flexShrink:0,
+              letterSpacing:'0.3px', textTransform:'uppercase',
+              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+              fontFamily:MONO,
+            }}>{d.name}</span>
+            <div style={{
+              flex:1, height:16, background:'#0a1018', borderRadius:2,
+              border:`1px solid ${C.border}`, overflow:'hidden',
+            }}>
+              <div style={{
+                height:'100%', width:`${Math.max(pct, 0.5)}%`,
+                background: color, opacity:0.75, borderRadius:1,
+                transition:'width 1.2s cubic-bezier(0.22,1,0.36,1)',
+              }} />
             </div>
-            <div style={{ width:'100%', height:'3px', background:'rgba(0,212,255,0.06)', borderRadius:'2px', overflow:'hidden' }}>
-              <div style={{ width:`${item.pct}%`, height:'100%', borderRadius:'2px', background:C.cyan, boxShadow:'0 0 8px rgba(0,212,255,0.4)', transition:'width 1s ease-out' }} />
+            <span style={{
+              fontSize:10, fontWeight:700, color, width:38, textAlign:'right',
+              fontVariantNumeric:'tabular-nums', fontFamily:MONO,
+            }}>{(d.importance * 100).toFixed(0)}%</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ConfidenceHistogram() {
+  const dist = [0, 0, 1, 1, 2, 4, 8, 18, 35, 62, 89];
+  const labels = ['0–50','50–55','55–60','60–65','65–70','70–75','75–80','80–85','85–90','90–95','95–100'];
+  const maxCount = Math.max(...dist);
+  const chartW = 520;
+  const chartH = 160;
+  const pad = { top:16, right:10, bottom:28, left:36 };
+  const iW = chartW - pad.left - pad.right;
+  const iH = chartH - pad.top - pad.bottom;
+  const barW = iW / dist.length;
+
+  return (
+    <svg width={chartW} height={chartH + 20} style={{ display:'block' }}>
+      {[0, 0.25, 0.5, 0.75, 1].map(pct => (
+        <line key={pct} x1={pad.left} y1={pad.top + (1-pct)*iH}
+          x2={pad.left+iW} y2={pad.top+(1-pct)*iH}
+          stroke={C.border} strokeWidth={0.5} opacity={0.5} />
+      ))}
+      {[0, 0.25, 0.5, 0.75, 1].map(pct => {
+        const val = Math.round(maxCount * pct);
+        return (
+          <text key={pct} x={pad.left-5} y={pad.top+(1-pct)*iH+3}
+            textAnchor="end" fill={C.textSec} fontSize="8" fontFamily={MONO}>{val}</text>
+        );
+      })}
+      {dist.map((count, i) => {
+        const barH = (count / maxCount) * iH;
+        const x = pad.left + i * barW + 1;
+        const y = pad.top + iH - barH;
+        const barColor = count/maxCount > 0.7 ? C.accent : count/maxCount > 0.4 ? C.green : C.amber;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW-2} height={barH} rx={2} fill={barColor} opacity={0.75}>
+              <animate attributeName="height" from="0" to={barH} dur="0.6s" fill="freeze" />
+              <animate attributeName="y" from={pad.top+iH} to={y} dur="0.6s" fill="freeze" />
+            </rect>
+            <text x={x + (barW-2)/2} y={pad.top+iH+14}
+              textAnchor="middle" fill={C.textSec} fontSize="7" fontFamily={MONO}>{labels[i]}</text>
+          </g>
+        );
+      })}
+      <text x={pad.left+iW/2} y={pad.top+iH+28}
+        textAnchor="middle" fill={C.textDim} fontSize="8" fontFamily={MONO} letterSpacing="1">
+        CONFIDENCE (%)
+      </text>
+    </svg>
+  );
+}
+
+function ModelRationaleCard({ model }: { model: ThreatModel }) {
+  const [expanded, setExpanded] = useState(false);
+  const sc = model.status==='active' ? C.green : model.status==='training' ? C.amber : C.red;
+
+  return (
+    <div className="wt-interactive" style={{
+      padding:'14px 16px', border:`1px solid ${C.border}`, borderRadius:4,
+      background:'rgba(255,255,255,0.008)', cursor:'pointer',
+      transition:`border-color 0.2s ${EASE}, background 0.2s ${EASE}`,
+    }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderHi; e.currentTarget.style.background = `${C.accent}03`; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = 'rgba(255,255,255,0.008)'; }}
+      onClick={() => setExpanded(!expanded)}
+    >
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:600, color:C.text, fontFamily:MONO, textTransform:'uppercase', letterSpacing:'0.3px' }}>
+            {model.category}
+          </span>
+          <Sev sev={model.status} />
+        </div>
+        <span style={{ fontFamily:MONO, fontSize:9, color:C.textDim, letterSpacing:'0.5px' }}>
+          {expanded ? '▲ HIDE' : '▼ RATIONALE'}
+        </span>
+      </div>
+      <div style={{ fontFamily:MONO, fontSize:10, color:C.textSec, marginTop:5, lineHeight:1.5 }}>{model.modelType}</div>
+      {expanded && (
+        <div style={{
+          marginTop:10, padding:'10px 12px', background:`${C.accent}04`,
+          border:`1px solid ${C.border}`, borderRadius:3,
+          fontSize:10, color:C.textSec, lineHeight:1.65, fontFamily:MONO,
+        }}>
+          <span style={{ color:C.accent, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px', fontSize:9 }}>
+            Rationale: </span>
+          {model.rationale}
+          <div style={{ display:'flex', gap:16, marginTop:8, fontSize:9 }}>
+            <span style={{ color:C.green }}>Accuracy: {model.accuracy.toFixed(1)}%</span>
+            <span style={{ color:C.purple }}>F1: {model.f1.toFixed(1)}%</span>
+            <span style={{ color:C.textDim }}>Samples: {fmt(model.samples)}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LiveInferenceStats() {
+  const [stats, setStats] = useState({ pps:0, latency:0, queue:0, gpu:0 });
+  const [history, setHistory] = useState<number[]>([]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const pps = 8200 + Math.floor(Math.random() * 2000);
+      const lat = +(12 + Math.random() * 8).toFixed(1);
+      const qd = 50 + Math.floor(Math.random() * 150);
+      const gpu = 60 + Math.floor(Math.random() * 25);
+      setStats({ pps, latency:lat, queue:qd, gpu });
+      setHistory(prev => { const next = [...prev, pps]; return next.length > 30 ? next.slice(-30) : next; });
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10 }}>
+        {[
+          { label:'Predictions/sec', value:stats.pps.toLocaleString('en-US'), unit:'/s', color:C.accent },
+          { label:'Avg Latency', value:stats.latency.toFixed(1), unit:'ms', color:C.green },
+          { label:'Queue Depth', value:String(stats.queue), unit:'flows', color:C.amber },
+          { label:'GPU Utilization', value:`${stats.gpu}%`, unit:'', color:C.purple },
+        ].map(s => (
+          <div key={s.label} style={{
+            padding:'12px 14px', border:`1px solid ${C.border}`, borderRadius:4,
+            background:'rgba(255,255,255,0.008)',
+          }}>
+            <div style={{ fontSize:9, fontWeight:700, letterSpacing:'1px', color:C.textSec, marginBottom:4, textTransform:'uppercase' }}>
+              {s.label}
+            </div>
+            <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+              <span style={{
+                fontSize:24, fontWeight:800, color:s.color,
+                fontFamily:MONO, letterSpacing:'-0.5px', fontVariantNumeric:'tabular-nums',
+              }}>{s.value}</span>
+              <span style={{ fontSize:9, color:C.textDim, fontFamily:MONO }}>{s.unit}</span>
             </div>
           </div>
         ))}
       </div>
-    </div>
-  );
-};
 
-const ScanningAnimation: React.FC<{ active: boolean; currentStep: number }> = ({ active, currentStep }) => {
-  if (!active) return null;
-  return (
-    <div className="af3" style={{
-      background: C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'24px',
-      position:'relative', overflow:'hidden',
-    }}>
-      <div style={{ position:'absolute', top:0, bottom:0, width:'30%', background:'linear-gradient(90deg,transparent,rgba(0,212,255,0.03),rgba(0,212,255,0.06),rgba(0,212,255,0.03),transparent)', animation:'scan-sweep 2.5s ease-in-out infinite', pointerEvents:'none' }} />
-      <div style={{ position:'absolute', top:0, bottom:0, left:'30%', width:'2px', background:`linear-gradient(180deg,transparent,${C.cyan}44,${C.cyan}88,${C.cyan}44,transparent)`, boxShadow:`0 0 12px ${C.cyan}66,0 0 30px ${C.cyan}22`, animation:'scan-sweep 2.5s ease-in-out infinite', pointerEvents:'none' }} />
-
-      <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'20px', position:'relative', zIndex:1 }}>
-        <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:C.cyan, boxShadow:`0 0 8px ${C.cyan}`, animation:'pulse-glow 1s ease-in-out infinite' }} />
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', fontWeight:700, color:C.cyan, letterSpacing:'2px', textTransform:'uppercase' }}>
-          Deep Analysis In Progress
-        </span>
-      </div>
-
-      <div style={{ display:'flex', flexDirection:'column', gap:0, position:'relative', zIndex:1 }}>
-        {SCAN_STEPS.map((step, idx) => {
-          const done = idx < currentStep;
-          const cur = idx === currentStep;
-          return (
-            <div key={step.label} style={{
-              display:'flex', alignItems:'center', gap:'14px', padding:'10px 12px',
-              background: cur ? 'rgba(0,212,255,0.03)' : 'transparent',
-              borderLeft: cur ? `2px solid ${C.cyan}` : '2px solid transparent', transition:'all .3s',
-            }}>
-              <div style={{
-                width:'22px', height:'22px', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
-                border: `1px solid ${done ? C.green : cur ? C.cyan : C.border}`,
-                background: done ? 'rgba(0,255,65,0.1)' : cur ? 'rgba(0,212,255,0.1)' : 'transparent',
-                flexShrink:0,
-                boxShadow: done ? '0 0 8px rgba(0,255,65,0.2)' : cur ? '0 0 8px rgba(0,212,255,0.2)' : 'none',
-              }}>
-                {done ? (
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                ) : cur ? (
-                  <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:C.cyan, boxShadow:`0 0 6px ${C.cyan}`, animation:'pulse-glow .8s ease-in-out infinite' }} />
-                ) : (
-                  <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:C.border }} />
-                )}
-              </div>
-              <div style={{ flex:1 }}>
-                <span style={{
-                  fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', fontWeight: cur ? 600 : 400,
-                  color: done ? C.green : cur ? C.cyan : C.txt2, transition:'color .3s',
-                }}>{step.label}</span>
-              </div>
-              <span style={{
-                fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', letterSpacing:'0.5px',
-                color: done ? C.green : cur ? C.cyan : 'transparent',
-              }}>{done ? 'DONE' : cur ? 'PROCESSING' : ''}</span>
-            </div>
-          );
-        })}
+      {/* Sparkline */}
+      <div style={{
+        padding:'10px 14px', border:`1px solid ${C.border}`, borderRadius:4,
+        background:'rgba(255,255,255,0.008)',
+      }}>
+        <div style={{ fontSize:9, fontWeight:700, letterSpacing:'1px', color:C.textSec, marginBottom:8, textTransform:'uppercase' }}>
+          Inference Throughput (30s)
+        </div>
+        <svg width="100%" height="48" viewBox={`0 0 ${30*8} 48`} preserveAspectRatio="none" style={{ display:'block' }}>
+          {history.length > 1 && (() => {
+            const max = Math.max(...history), min = Math.min(...history), range = max - min || 1;
+            const pts = history.map((v,i) => `${i*8},${46 - ((v-min)/range)*40}`).join(' ');
+            const area = `${pts} ${(history.length-1)*8},48 0,48`;
+            return (
+              <>
+                <polyline points={area} fill={`${C.accent}15`} stroke="none" />
+                <polyline points={pts} fill="none" stroke={C.accent} strokeWidth="1.5" opacity="0.7" />
+              </>
+            );
+          })()}
+        </svg>
       </div>
     </div>
   );
-};
+}
 
-const ResultsPanel: React.FC<{ result: AnalysisResult }> = ({ result }) => {
-  const cfg = severityConfig(result.severity);
-  return (
-    <div className="af3">
-      {sectionHeader('Analysis Results')}
-      <div style={{ background:C.card, border:`1px solid ${cfg.border}`, borderRadius:'8px', overflow:'hidden' }}>
-        {/* Header row */}
-        <div style={{ padding:'20px 24px', borderBottom:`1px solid ${C.border}`, background:cfg.bg, display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:'16px' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'16px', flexWrap:'wrap' }}>
-            <div style={{
-              display:'inline-flex', alignItems:'center', gap:'6px', padding:'4px 12px', borderRadius:'4px',
-              background:cfg.bg, border:`1px solid ${cfg.border}`,
-              fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:700, color:cfg.color,
-              letterSpacing:'1px', textTransform:'uppercase',
-            }}>
-              <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:cfg.color, boxShadow:`0 0 6px ${cfg.color}`, animation:'pulse-glow 1.5s ease-in-out infinite' }} />
-              {cfg.label}
-            </div>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'18px', fontWeight:700, color:C.txt }}>{result.threatType}</div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2, marginTop:'2px' }}>{result.reportId}</div>
-            </div>
-          </div>
-          <ConfidenceMeter value={result.confidence} severity={result.severity} />
-        </div>
-
-        {/* Metadata grid */}
-        <div style={{ padding:'20px 24px', borderBottom:`1px solid ${C.border}` }}>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:'16px' }}>
-            {[
-              { label:'Affected IPs', value:result.affectedIPs.join('  ·  '), mono:true },
-              { label:'Geographic Origin', value:result.details.geoSource, mono:false },
-              { label:'Attack Vector', value:result.details.attackVector, mono:false },
-              { label:'Packets Analyzed', value:result.details.packetsAnalyzed, mono:true },
-              { label:'Flows Processed', value:result.details.flowsProcessed, mono:true },
-              { label:'Data Volume', value:result.details.dataVolume, mono:true },
-              { label:'Analysis Duration', value:result.details.analysisDuration, mono:true },
-              { label:'Ports Scanned', value:result.details.portsScanned, mono:true },
-            ].map(item => (
-              <div key={item.label}>
-                <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:'4px' }}>{item.label}</div>
-                <div style={{
-                  fontFamily: item.mono ? "'JetBrains Mono',monospace" : "'Inter',sans-serif",
-                  fontSize:'13px', color:C.txt, fontWeight: item.mono ? 500 : 400, wordBreak:'break-all',
-                }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recommendations */}
-        <div style={{ padding:'20px 24px', borderBottom:`1px solid ${C.border}` }}>
-          <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase', marginBottom:'12px' }}>
-            Recommended Actions
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
-            {result.recommendations.map((rec, idx) => (
-              <div key={idx} style={{ display:'flex', alignItems:'flex-start', gap:'10px', padding:'8px 12px', background:'rgba(0,212,255,0.02)', border:'1px solid rgba(0,212,255,0.06)', borderRadius:'4px' }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', fontWeight:700, color:C.cyan, flexShrink:0, marginTop:'1px' }}>{String(idx+1).padStart(2,'0')}</span>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', color:C.txt, lineHeight:1.5 }}>{rec}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding:'12px 24px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'rgba(0,212,255,0.01)', borderTop:`1px solid ${C.border}` }}>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2 }}>Model: {result.details.modelVersion}</span>
-          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.txt2 }}>{new Date(result.timestamp).toLocaleString()}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ModelPerformanceSection: React.FC = () => {
-  const [metrics] = useState({ precision:0.94, recall:0.91, f1:0.925, accuracy:0.96 });
-  const rows = [
-    { label:'PRECISION', value:metrics.precision, color:C.cyan },
-    { label:'RECALL', value:metrics.recall, color:C.green },
-    { label:'F1 SCORE', value:metrics.f1, color:C.yellow },
-    { label:'ACCURACY', value:metrics.accuracy, color:C.purple },
-  ];
-  return (
-    <div className="af4">
-      {sectionHeader('Threat Classification Model')}
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'24px' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:'20px' }}>
-          {rows.map(m => (
-            <div key={m.label}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'8px' }}>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:600, color:C.txt2, letterSpacing:'1.5px', textTransform:'uppercase' }}>{m.label}</span>
-                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'18px', fontWeight:700, color:m.color, textShadow:`0 0 8px ${m.color}44` }}>{(m.value*100).toFixed(1)}%</span>
-              </div>
-              <div style={{ width:'100%', height:'6px', background:'rgba(0,212,255,0.06)', borderRadius:'3px', overflow:'hidden', border:'1px solid rgba(0,212,255,0.04)' }}>
-                <div style={{ width:`${m.value*100}%`, height:'100%', borderRadius:'3px', background:m.color, boxShadow:`0 0 10px ${m.color}55, 0 0 20px ${m.color}22`, transition:'width 1.5s ease-out' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop:'20px', padding:'12px 16px', background:'rgba(0,212,255,0.02)', border:'1px solid rgba(0,212,255,0.06)', borderRadius:'4px', display:'flex', gap:'24px', flexWrap:'wrap' }}>
-          {[
-            { l:'ARCHITECTURE', v:'Transformer-XL' },
-            { l:'TRAINING DATA', v:'2.4M samples' },
-            { l:'CLASSES', v:'28 threat types' },
-            { l:'LAST RETRAINED', v:'2026-09-14' },
-          ].map(item => (
-            <div key={item.l}>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', color:C.txt2, letterSpacing:'1px', textTransform:'uppercase' }}>{item.l}: </span>
-              <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.cyan }}>{item.v}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const RecentAnalysesTable: React.FC<{ records: AnalysisRecord[] }> = ({ records }) => {
-  if (records.length === 0) {
-    return (
-      <div className="af5">
-        {sectionHeader('Recent Analyses')}
-        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'48px 24px', textAlign:'center' }}>
-          <div style={{ color:C.txt2, fontFamily:"'JetBrains Mono',monospace", fontSize:'12px' }}>No analyses recorded yet. Run your first deep analysis above.</div>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="af5">
-      {sectionHeader('Recent Analyses')}
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', overflow:'hidden' }}>
-        <div style={{ overflowX:'auto' }}>
-          <table style={{ width:'100%', borderCollapse:'collapse', fontFamily:"'JetBrains Mono',monospace", fontSize:'12px' }}>
-            <thead>
-              <tr>
-                {['Timestamp','Analysis Type','Threat','Result','Confidence','Severity'].map(h => (
-                  <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontSize:'9px', fontWeight:600, color:C.txt2, textTransform:'uppercase', letterSpacing:'1.5px', borderBottom:`1px solid ${C.border}`, whiteSpace:'nowrap' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {records.map(rec => {
-                const sc = severityConfig(rec.severity);
-                return (
-                  <tr key={rec.id} style={{ borderBottom:`1px solid rgba(26,39,54,0.5)`, transition:'background .15s', cursor:'pointer' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,212,255,0.03)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={{ padding:'11px 16px', color:C.txt2, fontSize:'11px', whiteSpace:'nowrap' }}>{fmtTime(rec.timestamp)}</td>
-                    <td style={{ padding:'11px 16px', color:C.txt }}>{rec.inputType}</td>
-                    <td style={{ padding:'11px 16px', color:C.cyan, fontSize:'11px' }}>{rec.threatType}</td>
-                    <td style={{ padding:'11px 16px' }}><span style={{ fontSize:'11px', color:C.txt }}>{rec.result}</span></td>
-                    <td style={{ padding:'11px 16px', color:C.txt, fontSize:'13px', fontWeight:600 }}>{rec.confidence}%</td>
-                    <td style={{ padding:'11px 16px' }}>
-                      <span style={{
-                        display:'inline-flex', alignItems:'center', gap:'5px', padding:'3px 10px', borderRadius:'3px',
-                        fontSize:'10px', fontWeight:700, background:sc.bg, color:sc.color, border:`1px solid ${sc.border}`,
-                        letterSpacing:'1px', textTransform:'uppercase',
-                      }}>
-                        <div style={{ width:'5px', height:'5px', borderRadius:'50%', background:sc.color, boxShadow:`0 0 4px ${sc.color}` }} />
-                        {rec.severity}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─── Chat Content Renderer ───────────────────────────────────────────────────
-
-const ChatContent: React.FC<{ text: string }> = ({ text }) => {
-  const lines = text.split('\n');
-  const els: React.ReactNode[] = [];
-  lines.forEach((line, i) => {
-    const t = line.trim();
-    if (t === '') return;
-    if (/^#{1,3}\s/.test(t)) {
-      const lvl = t.match(/^#{1,3}/)![0].length;
-      const title = t.replace(/^#{1,3}\s+/, '');
-      const sz = lvl===1?'14px':lvl===2?'12px':'11px';
-      els.push(<div key={i} style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:sz, fontWeight:700, color:C.cyan, marginTop:lvl===1?'12px':'8px', marginBottom:'4px', letterSpacing:'0.5px' }}>{title}</div>);
-      return;
-    }
-    if (t === '---') { els.push(<div key={i} style={{ height:'1px', background:C.border, margin:'10px 0' }} />); return; }
-    if (t.startsWith('- ')) {
-      const content = t.replace(/^- /, '');
-      els.push(<div key={i} style={{ display:'flex', gap:'8px', marginTop:'3px' }}>
-        <span style={{ color:C.cyan, flexShrink:0 }}>›</span>
-        <span style={{ fontSize:'12px', color:C.txt, lineHeight:1.5 }}>{fmtInline(content)}</span>
-      </div>);
-      return;
-    }
-    if (/^\d+\.\s/.test(t)) {
-      const m = t.match(/^(\d+)\.\s(.+)/);
-      if (m) els.push(<div key={i} style={{ display:'flex', gap:'8px', marginTop:'3px' }}>
-        <span style={{ color:C.txt2, flexShrink:0, minWidth:'16px' }}>{m[1]}.</span>
-        <span style={{ fontSize:'12px', color:C.txt, lineHeight:1.5 }}>{fmtInline(m[2])}</span>
-      </div>);
-      return;
-    }
-    els.push(<div key={i} style={{ fontSize:'12px', color:C.txt, lineHeight:1.6, marginTop:'2px' }}>{fmtInline(t)}</div>);
-  });
-  return <>{els}</>;
-};
-
-const fmtInline = (text: string): React.ReactNode => {
-  const parts: React.ReactNode[] = [];
-  text.split(/(\*\*[^*]+\*\*)/g).forEach((seg, idx) => {
-    if (seg.startsWith('**') && seg.endsWith('**')) {
-      parts.push(<strong key={idx} style={{ color:C.txt, fontWeight:600 }}>{seg.slice(2,-2)}</strong>);
-    } else if (seg.startsWith('[') && seg.includes(']')) {
-      const m = seg.match(/^\[([^\]]+)\]/);
-      if (m) { parts.push(<span key={idx} style={{ color:C.cyan, fontWeight:600 }}>{m[1]}</span>); parts.push(seg.slice(m[0].length)); }
-      else parts.push(seg);
-    } else parts.push(seg);
-  });
-  return parts;
-};
-
-// ─── Main Component ──────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   MAIN AIAnalyzer COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const AIAnalyzer: React.FC = () => {
-  const [analysisRuns, setAnalysisRuns] = useState(142);
-  const [threatPatterns, setThreatPatterns] = useState(37);
-  const [modelAccuracy] = useState(96.2);
-  const [avgTime, setAvgTime] = useState(2.4);
-  const [isRunning, setIsRunning] = useState(false);
-  const [scanStep, setScanStep] = useState(-1);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [recentAnalyses, setRecentAnalyses] = useState<AnalysisRecord[]>([]);
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scanTimerRef = useRef<number | null>(null);
+  const [clock, setClock] = useState(now());
 
   useEffect(() => {
-    injectAnims();
-    setRecentAnalyses(buildInitialRecords());
+    const t = setInterval(() => setClock(now()), 1000);
+    return () => clearInterval(t);
   }, []);
 
-  // Welcome message
-  useEffect(() => {
-    if (chatMessages.length === 0) {
-      const t = setTimeout(() => {
-        setChatMessages([{
-          id:'welcome', role:'ai', timestamp:Date.now(),
-          content: `## WATCHTOWER AI — Threat Analysis Engine Online\n\nAll systems nominal. The deep analysis engine is ready.\n\n**Available capabilities:**\n\n[S] Deep packet inspection across all monitored segments\n[chart] ML-based threat classification (28 categories)\n[crystal] Predictive threat modeling and trajectory analysis\n[shield] IP reputation and geolocation intelligence\n\n**Current network posture:**\n- Monitoring 12,847 active flows\n- 37 active threat patterns detected\n- Model accuracy: 96.2%\n\nUse the dashboard controls above or ask a question to begin.`,
-        }]);
-      }, 800);
-      return () => clearTimeout(t);
-    }
+  const activeModels = useMemo(() => THREAT_MODELS.filter(m => m.status === 'active').length, []);
+  const avgAccuracy = useMemo(() => {
+    const a = THREAT_MODELS.filter(m => m.status === 'active');
+    return a.reduce((s, m) => s + m.accuracy, 0) / a.length;
   }, []);
-
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior:'smooth' }); }, [chatMessages]);
-
-  // ─── Run Deep Analysis ─────────────────────────────────────────────────────
-
-  const runDeepAnalysis = useCallback(() => {
-    if (isRunning) return;
-    setIsRunning(true);
-    setScanStep(0);
-    setResult(null);
-
-    let stepIdx = 0;
-    const advance = () => {
-      if (stepIdx >= SCAN_STEPS.length) {
-        const r = buildAnalysisResult();
-        setResult(r);
-        const rec: AnalysisRecord = {
-          id:`run-${Date.now()}`, timestamp:Date.now(),
-          inputType:'Deep Analysis', threatType:r.threatType,
-          result:pick(RESULT_LABELS), confidence:r.confidence, severity:r.severity,
-        };
-        setRecentAnalyses(prev => [rec, ...prev.slice(0,9)]);
-        setAnalysisRuns(prev => prev + 1);
-        setThreatPatterns(prev => prev + rand(0,2));
-        setAvgTime(prev => parseFloat(randFloat(1.8,3.5)));
-        setChatMessages(prev => [...prev, {
-          id:`chat-${Date.now()}`, role:'ai', timestamp:Date.now(),
-          content: `## Deep Analysis Complete\n\n**Threat detected:** ${r.threatType}\n**Severity:** ${r.severity.toUpperCase()}\n**Confidence:** ${r.confidence}%\n\nAll analysis modules executed successfully. See results panel below for full breakdown.`,
-        }]);
-        setIsRunning(false);
-        return;
-      }
-      setScanStep(stepIdx);
-      stepIdx++;
-      scanTimerRef.current = window.setTimeout(advance, SCAN_STEPS[stepIdx-1].duration);
-    };
-    advance();
-    return () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); };
-  }, [isRunning]);
-
-  useEffect(() => () => { if (scanTimerRef.current) clearTimeout(scanTimerRef.current); }, []);
-
-  // ─── Chat ──────────────────────────────────────────────────────────────────
-
-  const sendChat = useCallback((prompt: string) => {
-    if (!prompt.trim() || isRunning) return;
-    setChatMessages(prev => [...prev, { id:`u-${Date.now()}`, role:'user', content:prompt, timestamp:Date.now() }]);
-    setChatInput('');
-    setTimeout(() => {
-      const lower = prompt.toLowerCase();
-      let resp = '';
-      if (lower.includes('sql') || lower.includes('injection')) {
-        resp = '## SQL Injection Analysis\n\n[!] **CRITICAL** — SQL injection vectors detected in 3 input fields.\n\n**Findings:**\n- Unsanitized user input in login form (username field)\n- Blind SQL injection possible via order-by parameter\n- UNION-based injection confirmed in search endpoint\n\n**Immediate actions:**\n1. Deploy parameterized queries\n2. Enable WAF rules for SQL patterns\n3. Audit all database connections';
-      } else if (lower.includes('ddos') || lower.includes('flood')) {
-        resp = '## DDoS Assessment\n\n[+] **HIGH** — Distributed denial-of-service pattern detected.\n\n**Traffic analysis:**\n- 15,000+ req/s from 200+ source IPs\n- SYN flood + HTTP GET flood combined attack\n- Target: load balancer frontend\n\n**Mitigation:** Enable rate limiting, activate scrubbing center, notify ISP upstream.';
-      } else {
-        resp = '## Threat Analysis Received\n\nProcessing your query through the analysis pipeline...\n\n[i] **Analysis queued.** The deep analysis engine has logged your request. Use the "RUN DEEP ANALYSIS" control above for immediate automated scanning.\n\n**Quick commands:**\n- "Analyze SQL injection" — injection detection\n- "Check DDoS patterns" — volumetric attack analysis\n- "Scan for malware" — endpoint threat detection';
-      }
-      setChatMessages(prev => [...prev, { id:`ai-${Date.now()}`, role:'ai', content:resp, timestamp:Date.now() }]);
-    }, 1200 + Math.random()*800);
-  }, [isRunning]);
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+  const avgF1 = useMemo(() => {
+    const a = THREAT_MODELS.filter(m => m.status === 'active');
+    return a.reduce((s, m) => s + m.f1, 0) / a.length;
+  }, []);
+  const totalSamples = useMemo(() => THREAT_MODELS.reduce((s, m) => s + m.samples, 0), []);
 
   return (
-    <div style={{ background:C.bg, minHeight:'100vh', color:C.txt, fontFamily:"'Inter',sans-serif" }}>
-      {/* HUD Bar */}
-      <div style={{
-        height:'52px', background:'linear-gradient(180deg,#0a0f18,#060a10)',
-        borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center',
-        padding:'0 24px', gap:'16px', position:'sticky', top:0, zIndex:50,
+    <div style={{
+      minHeight:'100vh', background:C.bg, color:C.text,
+      fontFamily:MONO, fontSize:12, lineHeight:1.5,
+    }}>
+      <style>{`
+        @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+        @keyframes wt-row-in { from{opacity:0;transform:translateX(-6px);} to{opacity:1;transform:translateX(0);} }
+        ::selection { background:rgba(0,212,255,0.15);color:${C.text}; }
+        :focus-visible { outline:1.5px solid rgba(0,212,255,0.5);outline-offset:2px;border-radius:2px; }
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:${C.border};border-radius:3px; }
+        .wt-interactive { transition:transform 160ms cubic-bezier(0.22,1,0.36,1), background 0.2s; }
+        .wt-interactive:active { transform:scale(0.98); }
+        a { color:inherit;text-decoration:none; }
+        @media (max-width:1024px) { .wt-grid-aside { grid-template-columns:1fr !important; } .wt-pipeline-grid { grid-template-columns:repeat(2,1fr) !important; } }
+        @media (max-width:768px) { .wt-grid-aside { grid-template-columns:1fr !important; } .wt-pipeline-grid { grid-template-columns:repeat(2,1fr) !important; } }
+        @media (max-width:480px) { .wt-pipeline-grid { grid-template-columns:1fr !important; } header>div { padding:0 14px !important; } main { padding:20px 14px 60px !important; } }
+      `}</style>
+
+      {/* ── STICKY HUD BAR ─────────────────────────────────────────────── */}
+      <header style={{
+        position:'sticky',top:0,zIndex:40,
+        background:'rgba(5,8,13,0.94)',backdropFilter:'blur(14px) saturate(1.2)',
+        borderBottom:`1px solid ${C.border}`,
       }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-          <div style={{
-            width:'24px', height:'24px', border:`1px solid ${C.cyan}`, borderRadius:'4px',
-            display:'flex', alignItems:'center', justifyContent:'center', color:C.cyan,
-            fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', fontWeight:700,
-            boxShadow:'0 0 8px rgba(0,212,255,0.2)',
-          }}>AI</div>
-          <span style={{
-            fontFamily:"'JetBrains Mono',monospace", fontSize:'13px', fontWeight:700,
-            color:C.cyan, letterSpacing:'2px', textShadow:'0 0 8px rgba(0,212,255,0.3)',
-          }}>AI ANALYZER</span>
-        </div>
-        <div style={{ width:'1px', height:'22px', background:C.border }} />
-        <div style={{ display:'flex', alignItems:'center', gap:'6px', fontFamily:"'JetBrains Mono',monospace", fontSize:'10px', color:C.green, letterSpacing:'1px', textTransform:'uppercase' }}>
-          <div style={{ width:'7px', height:'7px', borderRadius:'50%', background:C.green, boxShadow:'0 0 6px rgba(0,255,65,0.5)', animation:'pulse-glow 1.5s ease-in-out infinite' }} />
-          ONLINE
-        </div>
-        <div style={{ flex:1 }} />
-        <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', color:C.cyan, textShadow:'0 0 6px rgba(0,212,255,0.2)', letterSpacing:'1px' }}>
-          {new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
-        </span>
-      </div>
-
-      {/* Content */}
-      <div style={{ padding:'24px', maxWidth:'1440px', margin:'0 auto' }}>
-
-        {/* Page Title */}
-        <div className="af0" style={{ marginBottom:'24px' }}>
-          <h1 style={{
-            fontFamily:"'JetBrains Mono',monospace", fontSize:'20px', fontWeight:700,
-            color:C.cyan, letterSpacing:'2px', textTransform:'uppercase',
-            textShadow:'0 0 10px rgba(0,212,255,0.25)', marginBottom:'4px',
-          }}>AI Threat Analyzer</h1>
-          <p style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2, letterSpacing:'0.5px' }}>
-            Ekadhara Detection Engine v3.2.1 — Deep Learning Classification Pipeline
-          </p>
-        </div>
-
-        {/* Stat Cards */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'16px', marginBottom:'24px' }}>
-          <StatCard delay="0" label="Analysis Runs Today" value={analysisRuns} sub="+12% from yesterday" trend={{value:12,up:true}} icon={<Icon type="analysis" />} />
-          <StatCard delay="1" label="Threat Patterns Found" value={threatPatterns} sub="Active signatures" trend={{value:8,up:true}} icon={<Icon type="threat" />} />
-          <StatCard delay="2" label="Model Accuracy" value={`${modelAccuracy}%`} sub="Last 7-day average" trend={{value:2.1,up:true}} icon={<Icon type="accuracy" />} />
-          <StatCard delay="3" label="Avg Analysis Time" value={`${avgTime}s`} sub="Per deep scan" trend={{value:15,up:false}} icon={<Icon type="time" />} />
-        </div>
-
-        {/* Quick Analysis */}
-        <div className="af3" style={{ marginBottom:'24px' }}>
-          {sectionHeader('Quick Analysis')}
-          <div style={{
-            background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'24px',
-            display:'flex', alignItems:'center', justifyContent:'space-between', gap:'20px', flexWrap:'wrap',
-          }}>
-            <div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'14px', fontWeight:600, color:C.txt, marginBottom:'6px' }}>
-                Deep Threat Analysis Pipeline
-              </div>
-              <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', color:C.txt2, maxWidth:'520px', lineHeight:1.5 }}>
-                Executes a full 6-stage analysis: packet inspection, feature extraction, ML inference, pattern matching, threat classification, and report generation.
-              </div>
+        <div style={{
+          maxWidth:1480,margin:'0 auto',padding:'0 28px',
+          display:'flex',alignItems:'center',height:48,gap:14,
+        }}>
+          <div style={{ display:'flex',alignItems:'center',gap:9,flexShrink:0 }}>
+            <div style={{
+              width:26,height:26,borderRadius:5,
+              background:`linear-gradient(135deg,${C.accent}18,${C.accent}06)`,
+              border:`1px solid ${C.accent}30`,
+              display:'flex',alignItems:'center',justifyContent:'center',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2">
+                <path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93"/><path d="M12 2a4 4 0 0 0-4 4c0 1.95 1.4 3.58 3.25 3.93"/>
+                <path d="M12 10v4"/><path d="M8 18h8"/><circle cx="12" cy="18" r="2"/>
+              </svg>
             </div>
-            <button
-              onClick={runDeepAnalysis} disabled={isRunning}
-              style={{
-                display:'inline-flex', alignItems:'center', gap:'8px', padding:'12px 28px',
-                borderRadius:'6px', fontFamily:"'JetBrains Mono',monospace", fontSize:'13px', fontWeight:700,
-                letterSpacing:'1px', textTransform:'uppercase', cursor: isRunning ? 'not-allowed' : 'pointer',
-                background: isRunning ? 'rgba(0,212,255,0.05)' : 'rgba(0,212,255,0.1)',
-                color:C.cyan, border:`1px solid ${isRunning ? 'rgba(0,212,255,0.15)' : C.borderAct}`,
-                boxShadow: isRunning ? 'none' : '0 0 20px rgba(0,212,255,0.1), 0 0 40px rgba(0,212,255,0.05)',
-                transition:'all .2s', opacity: isRunning ? 0.6 : 1, whiteSpace:'nowrap',
-              }}
-              onMouseEnter={(e) => { if (!isRunning) { e.currentTarget.style.background='rgba(0,212,255,0.18)'; e.currentTarget.style.boxShadow='0 0 24px rgba(0,212,255,0.18),0 0 48px rgba(0,212,255,0.08)'; } }}
-              onMouseLeave={(e) => { if (!isRunning) { e.currentTarget.style.background='rgba(0,212,255,0.1)'; e.currentTarget.style.boxShadow='0 0 20px rgba(0,212,255,0.1),0 0 40px rgba(0,212,255,0.05)'; } }}
-            >
-              {isRunning ? (
-                <>
-                  <div style={{ width:'14px', height:'14px', border:'2px solid rgba(0,212,255,0.2)', borderTopColor:C.cyan, borderRadius:'50%', animation:'spin-slow .8s linear infinite' }} />
-                  Analyzing...
-                </>
-              ) : (
-                <>{/* play icon */}<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>Run Deep Analysis</>
-              )}
-            </button>
+            <span style={{ fontSize:13,fontWeight:800,letterSpacing:'4px',color:C.text,fontVariantNumeric:'tabular-nums' }}>
+              WATCHTOWER
+            </span>
           </div>
+          <div style={{ width:1,height:18,background:C.border,flexShrink:0 }} />
+          <span style={{ fontSize:10,color:C.textSec,letterSpacing:'0.8px',flexShrink:0 }}>
+            PS-26145 · AI ANALYZER
+          </span>
+          <div style={{ flex:1 }} />
+          <div style={{ display:'flex',alignItems:'center',gap:4 }}>
+            <Dot color={C.green} size={5} />
+            <span style={{ fontSize:9,fontWeight:700,letterSpacing:'1.5px',color:C.green }}>STREAMING</span>
+          </div>
+          <span style={{ fontSize:11,color:C.textSec,letterSpacing:'0.8px',fontVariantNumeric:'tabular-nums' }}>{clock}</span>
         </div>
+      </header>
 
-        {/* Scanning Animation */}
-        <ScanningAnimation active={isRunning} currentStep={scanStep} />
+      {/* ── SCROLLABLE MAIN ────────────────────────────────────────────── */}
+      <main style={{ maxWidth:1480,margin:'0 auto',padding:'28px 28px 80px' }}>
 
-        {/* Results */}
-        {result && <ResultsPanel result={result} />}
+        {/* Hero context */}
+        <section style={{ marginBottom:36 }}>
+          <h1 style={{ fontSize:13,fontWeight:700,letterSpacing:'2.5px',color:C.accent,marginBottom:8 }}>
+            AI Threat Analyzer — ML Pipeline
+          </h1>
+          <p style={{ fontSize:13,color:C.textSec,maxWidth:720,lineHeight:1.75,margin:0 }}>
+            Ekadhara Detection Engine v3.2.1 — Deep learning classification pipeline with {THREAT_MODELS.length} threat-specific models.
+            Streaming inference on 487 features per flow at 10K flows/sec sustained throughput.
+            Each model is selected for its specific threat pattern characteristics.
+          </p>
+        </section>
 
-        {/* Model Performance */}
-        <div style={{ marginTop:'24px' }}>
-          <ModelPerformanceSection />
-        </div>
+        {/* Section 1: Pipeline + Inference Stats */}
+        <section style={{ display:'grid',gridTemplateColumns:'3fr 2fr',gap:16,marginBottom:20 }} className="wt-grid-aside">
 
-        {/* Recent Analyses */}
-        <div style={{ marginTop:'24px', marginBottom:'32px' }}>
-          <RecentAnalysesTable records={recentAnalyses} />
-        </div>
-
-        {/* Chat Console */}
-        <div className="af5" style={{ marginBottom:'32px' }}>
-          {sectionHeader('AI Chat Console')}
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', overflow:'hidden' }}>
-            {/* Messages */}
-            <div style={{ maxHeight:'340px', overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:'12px' }}>
-              {chatMessages.map(msg => (
-                <div key={msg.id} style={{ display:'flex', justifyContent: msg.role==='user'?'flex-end':'flex-start', gap:'10px' }}>
-                  {msg.role === 'ai' && (
-                    <div style={{
-                      width:'28px', height:'28px', borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center',
-                      background:'rgba(0,212,255,0.08)', border:'1px solid rgba(0,212,255,0.2)', color:C.cyan,
-                      fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:700, flexShrink:0,
-                    }}>AI</div>
-                  )}
-                  <div style={{
-                    maxWidth:'75%', padding:'12px 16px', borderRadius:'6px',
-                    background: msg.role==='user' ? 'rgba(0,212,255,0.1)' : 'rgba(6,10,16,0.8)',
-                    border: msg.role==='user' ? '1px solid rgba(0,212,255,0.25)' : `1px solid ${C.border}`,
-                  }}>
-                    <ChatContent text={msg.content} />
-                    <div style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', color:C.txt2, marginTop:'6px', opacity:0.6 }}>{fmtTime(msg.timestamp)}</div>
+          {/* Pipeline */}
+          <Panel delay={0.05}>
+            <SH label="ML Pipeline" right={
+              <span style={{ fontSize:9,color:C.textSec,fontVariantNumeric:'tabular-nums' }}>
+                {activeModels} MODELS ACTIVE · {fmt(totalSamples)} SAMPLES
+              </span>
+            } />
+            <div className="wt-pipeline-grid" style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8 }}>
+              {PIPELINE_STAGES.map((stage, i) => (
+                <div key={i} className="wt-interactive" style={{
+                  padding:'14px 16px', background:'rgba(255,255,255,0.008)',
+                  border:`1px solid ${C.border}`, borderRadius:5, cursor:'default',
+                  display:'flex', flexDirection:'column', gap:6,
+                  transition:`border-color 0.2s ${EASE}`,
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = `${stage.color}40`; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
+                >
+                  <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <Dot color={stage.color} size={4} />
+                    <span style={{ fontSize:10,fontWeight:700,letterSpacing:'1.2px',color:stage.color,fontFamily:MONO }}>{stage.label}</span>
                   </div>
-                  {msg.role === 'user' && (
-                    <div style={{
-                      width:'28px', height:'28px', borderRadius:'4px', display:'flex', alignItems:'center', justifyContent:'center',
-                      background:'rgba(100,116,139,0.08)', border:'1px solid rgba(100,116,139,0.2)', color:C.txt2,
-                      fontFamily:"'JetBrains Mono',monospace", fontSize:'9px', fontWeight:700, flexShrink:0,
-                    }}>OP</div>
-                  )}
+                  <span style={{ fontSize:9,color:C.textSec,lineHeight:1.4 }}>{stage.sub}</span>
+                  <span style={{ fontSize:8,color:C.textDim,lineHeight:1.4,marginTop:2 }}>{stage.detail}</span>
                 </div>
               ))}
-              <div ref={messagesEndRef} />
             </div>
+          </Panel>
 
-            {/* Input */}
-            <div style={{ borderTop:`1px solid ${C.border}`, padding:'14px 20px', display:'flex', gap:'10px', alignItems:'center', background:'rgba(6,10,16,0.6)' }}>
-              <input
-                type="text" value={chatInput} onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChat(chatInput); } }}
-                placeholder="Ask about threats, request analysis, query intelligence..."
-                disabled={isRunning}
-                style={{
-                  flex:1, background:'rgba(0,212,255,0.02)', border:`1px solid ${C.border}`, borderRadius:'4px',
-                  padding:'10px 14px', fontFamily:"'JetBrains Mono',monospace", fontSize:'12px', color:C.txt,
-                  outline:'none', opacity: isRunning ? 0.5 : 1,
-                }}
-              />
-              <button onClick={() => sendChat(chatInput)} disabled={!chatInput.trim()||isRunning} style={{
-                padding:'10px 16px', borderRadius:'4px', background:'rgba(0,212,255,0.1)',
-                border:`1px solid ${C.borderAct}`, color:C.cyan,
-                fontFamily:"'JetBrains Mono',monospace", fontSize:'11px', fontWeight:600, letterSpacing:'1px',
-                cursor: chatInput.trim()&&!isRunning ? 'pointer' : 'not-allowed',
-                opacity: chatInput.trim()&&!isRunning ? 1 : 0.4, textTransform:'uppercase',
-              }}>Send</button>
-            </div>
+          {/* Inference Stats */}
+          <Panel delay={0.1}>
+            <SH label="Inference Engine" right={
+              <span style={{ display:'flex',alignItems:'center',gap:4 }}>
+                <Dot color={C.green} size={4} />
+                <span style={{ fontSize:9,color:C.green,fontWeight:700,letterSpacing:'0.5px' }}>STREAMING</span>
+              </span>
+            } />
+            <LiveInferenceStats />
+          </Panel>
+        </section>
+
+        {/* Section 2: KPI Strip */}
+        <Panel delay={0.15} style={{ marginBottom:20 }}>
+          <div style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:0 }}>
+            {[
+              { label:'Avg Accuracy',   value:`${avgAccuracy.toFixed(1)}%`,  sub:'across all models',  color:C.accent,  trend:{ value:1.2, up:true } },
+              { label:'Avg F1 Score',   value:`${avgF1.toFixed(1)}%`,       sub:'harmonic mean',      color:C.green,   trend:{ value:0.8, up:true } },
+              { label:'Active Models',  value:String(activeModels),        sub:'of 8 total',          color:C.purple },
+              { label:'Training Samples',value:`${(totalSamples/1e6).toFixed(1)}M`, sub:'total corpus',     color:C.amber },
+              { label:'Inference Latency',value:'12ms',                     sub:'p99 latency',         color:C.teal,   trend:{ value:3.5, up:false } },
+            ].map((m, i) => (
+              <div key={i} className="wt-interactive" style={{
+                padding:'16px 20px',
+                borderRight: i < 4 ? `1px solid ${C.border}` : 'none',
+                cursor:'default',
+                transition:`background 0.2s ${EASE}`,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${m.color}04`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <div style={{ fontSize:9,fontWeight:700,letterSpacing:'1.2px',color:C.textSec,marginBottom:6,textTransform:'uppercase' }}>
+                  {m.label}
+                </div>
+                <div style={{
+                  fontSize:28,fontWeight:800,color:m.color,
+                  fontFamily:MONO,letterSpacing:'-0.5px',lineHeight:1.1,
+                  fontVariantNumeric:'tabular-nums',
+                }}>{m.value}</div>
+                <div style={{ display:'flex',alignItems:'center',gap:5,marginTop:5 }}>
+                  <span style={{ fontSize:9,color:C.textDim }}>{m.sub}</span>
+                  {m.trend && (
+                    <span style={{ fontSize:9,fontWeight:600,color:m.trend.up?C.green:C.red,fontFamily:MONO }}>
+                      {m.trend.up?'▲':'▼'} {m.trend.value}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </Panel>
 
-      </div>
+        {/* Section 3: Threat Model Performance */}
+        <Panel delay={0.2} style={{ marginBottom:20 }}>
+          <SH label="Threat Model Performance" right={
+            <span style={{ fontSize:9,color:C.textSec }}>
+              {THREAT_MODELS.length} MODELS · {activeModels} ACTIVE
+            </span>
+          } />
+          <ThreatModelTable models={THREAT_MODELS} />
+        </Panel>
+
+        {/* Section 4: Feature Importance + Confidence Histogram */}
+        <section style={{ display:'grid',gridTemplateColumns:'5fr 4fr',gap:16,marginBottom:20 }} className="wt-grid-aside">
+
+          {/* Feature importance */}
+          <Panel delay={0.25}>
+            <SH label="Top 10 Feature Importance" right={
+              <span style={{ fontSize:9,color:C.textSec }}>
+                487 total features · SHAP-weighted
+              </span>
+            } />
+            <FeatureImportanceChart data={FEATURE_IMPORTANCE} />
+          </Panel>
+
+          {/* Confidence histogram */}
+          <Panel delay={0.3}>
+            <SH label="Confidence Distribution" right={
+              <span style={{ fontSize:9,color:C.textSec }}>
+                Last 24 hours
+              </span>
+            } />
+            <ConfidenceHistogram />
+            <div style={{ display:'flex',justifyContent:'space-between',marginTop:8,fontSize:9,color:C.textDim,fontFamily:MONO }}>
+              <span>0%</span>
+              <span style={{ color:C.green }}>Peak at 95–100%</span>
+              <span>100%</span>
+            </div>
+          </Panel>
+        </section>
+
+        {/* Section 5: Model Selection Rationale */}
+        <Panel delay={0.35} style={{ marginBottom:20 }}>
+          <SH label="Model Selection Rationale" right={
+            <span style={{ fontSize:9,color:C.textSec }}>
+              Click any card to expand rationale
+            </span>
+          } />
+          <div style={{ display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8 }}>
+            {THREAT_MODELS.map((model) => (
+              <ModelRationaleCard key={model.category} model={model} />
+            ))}
+          </div>
+        </Panel>
+
+        {/* Footer */}
+        <footer style={{
+          padding:'24px 0',borderTop:`1px solid ${C.border}`,
+          display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,
+        }}>
+          <span style={{ fontSize:9,color:C.textDim,letterSpacing:'1px' }}>
+            WATCHTOWER v3.2.1 · EKADHARA · NTRO SIH26
+          </span>
+          <span style={{ fontSize:9,color:C.textDim,letterSpacing:'0.5px',fontVariantNumeric:'tabular-nums' }}>
+            {activeModels} MODELS · {fmt(totalSamples)} SAMPLES · {clock} LOCAL
+          </span>
+        </footer>
+      </main>
     </div>
   );
 };

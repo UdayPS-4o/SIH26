@@ -29,12 +29,14 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [flowsPerSec, setFlowsPerSec] = useState(0);
   const [alertCount, setAlertCount] = useState(0);
 
-  const handleMessage = useCallback((data: { type: string; payload: any }) => {
-    if (data.type === 'alert') {
-      setAlerts((prev) => [data.payload, ...prev].slice(0, 100));
+  const handleMessage = useCallback((msg: { type: string; data?: any; payload?: any }) => {
+    const item = msg.data || msg.payload;
+    if (!item) return;
+    if (msg.type === 'alert') {
+      setAlerts((prev) => [item, ...prev].slice(0, 100));
       setAlertCount((prev) => prev + 1);
-    } else if (data.type === 'flow') {
-      setFlows((prev) => [data.payload, ...prev].slice(0, 100));
+    } else if (msg.type === 'flow') {
+      setFlows((prev) => [item, ...prev].slice(0, 100));
       setFlowsPerSec((prev) => Math.max(0, prev + Math.floor(Math.random() * 20) - 10));
     }
   }, []);

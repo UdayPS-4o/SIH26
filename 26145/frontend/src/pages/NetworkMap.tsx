@@ -1,1263 +1,740 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Server, Activity, ShieldAlert, HardDrive, TrendingUp, TrendingDown, Minus, Eye } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
-// ── Theme tokens ─────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   WATCHTOWER — Network Map
+   Dark ops center. Exact theme match with Dashboard.tsx.
+   ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg:         '#060a10',
-  card:       '#0a1118',
-  cardHover:  '#0d1620',
-  border:     '#1a2736',
-  borderHi:   '#00d4ff33',
-  text:       '#e0e8f0',
-  muted:      '#64748b',
-  dim:        '#2d4a6a',
-  cyan:       '#00d4ff',
-  cyanDim:    '#00d4ff22',
-  green:      '#00ff41',
-  orange:     '#f97316',
-  yellow:     '#eab308',
-  red:        '#ef4444',
-  gridLine:   '#1a2736',
-  gridLineHi: '#1e2d40',
+  bg:        '#05080d',
+  surface:   '#080d14',
+  surfaceHi: '#0c1219',
+  border:    '#111c2b',
+  borderHi:  '#182a3d',
+  text:      '#dce4ec',
+  textSec:   '#556677',
+  textDim:   '#2a3a4a',
+  accent:    '#00d4ff',
+  red:       '#ef4444',
+  orange:    '#f97316',
+  amber:     '#eab308',
+  green:     '#22c55e',
+  purple:    '#a855f7',
+  pink:      '#ec4899',
+  teal:      '#14b8a6',
+};
+const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const MONO = '"JetBrains Mono","Fira Code",monospace';
+
+/* ── Helpers ──────────────────────────────────────────────────────────── */
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+const fmtBytes = (b: number) => {
+  if (b >= 1e9) return `${(b/1e9).toFixed(1)} GB`;
+  if (b >= 1e6) return `${(b/1e6).toFixed(1)} MB`;
+  if (b >= 1e3) return `${(b/1e3).toFixed(0)} KB`;
+  return `${b} B`;
+};
+const fmtTime = (ts: number) =>
+  new Date(ts).toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+const now = () => new Date().toLocaleTimeString('en-US', { hour12:false });
+
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   ATOMIC COMPONENTS (identical to Dashboard.tsx)
+   ═══════════════════════════════════════════════════════════════════════════════════ */
+
+const Dot: React.FC<{ color?: string; size?: number }> = ({ color = C.green, size = 6 }) => (
+  <span style={{
+    width:size, height:size, borderRadius:'50%', background:color,
+    boxShadow:`0 0 ${size}px ${color}60`,
+    animation:`wt-pulse 1.6s ease-in-out infinite`,
+    display:'inline-block', flexShrink:0,
+  }} />
+);
+
+const SH: React.FC<{ label:string; right?: React.ReactNode }> = ({ label, right }) => (
+  <div style={{
+    display:'flex', alignItems:'baseline', justifyContent:'space-between',
+    paddingBottom:10, marginBottom:14, borderBottom:`1px solid ${C.border}`,
+  }}>
+    <span style={{
+      fontFamily:MONO, fontSize:10, fontWeight:700,
+      letterSpacing:'2.5px', color:C.accent, textTransform:'uppercase',
+    }}>{label}</span>
+    {right}
+  </div>
+);
+
+const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:React.ReactNode }> = ({ delay=0, style, children }) => {
+  const [ready, setReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
+
+  return (
+    <div style={{
+      background:C.surface, border:`1px solid ${C.border}`, borderRadius:8,
+      position:'relative', overflow:'hidden',
+      opacity:ready?1:0, transform:ready?'translateY(0)':'translateY(12px)',
+      transition:`opacity 0.5s ${EASE} ${delay}s, transform 0.5s ${EASE} ${delay}s`,
+      ...style,
+    }}>
+      <div style={{ position:'absolute',top:0,left:0,right:0,height:1,
+        background:`linear-gradient(90deg,transparent,${C.accent}30,transparent)` }} />
+      <div style={{ padding:'20px 22px', position:'relative', zIndex:1 }}>{children}</div>
+    </div>
+  );
 };
 
-// ── Mock data generators ──────────────────────────────────────────────────────
+const Progress: React.FC<{ value:number; max?:number; color?:string }> = ({ value, max=100, color=C.accent }) => {
+  const pct = Math.min((value/max)*100, 100);
+  return (
+    <div style={{ height:4, background:'#0a1018', borderRadius:2, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+      <div style={{
+        height:'100%', width:`${pct}%`, background:color, opacity:0.65,
+        borderRadius:1, transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
+      }} />
+    </div>
+  );
+};
 
-const SUBNETS = ['10.0.1', '10.0.2', '10.0.3', '10.0.5', '10.0.10', '172.16.0', '192.168.1', '192.168.2'];
-const HOST_NAMES = ['web-prod', 'db-primary', 'db-replica', 'api-gw', 'auth-svc', 'cache-redis', 'mq-broker', 'storage-nas', 'vpn-gw', 'fw-edge', 'dns-resolver', 'monitor', 'backup-srv', 'mail-srv', 'file-srv', 'ci-cd', 'jump-host', 'fw-internal'];
-const THREAT_CLASSES = ['RECONNAISSANCE', 'BRUTE_FORCE', 'SQL_INJECTION', 'XSS', 'DDoS', 'EXFILTRATION', 'MALWARE', 'PHISHING', 'MITM', 'RANSOMWARE'];
-
-interface MockNode {
-  id: string;
-  ip: string;
-  label: string;
-  type: 'internal' | 'external' | 'server' | 'attacker';
-  threatScore: number;
-  port?: number;
-  protocol?: string;
-  connections: string[];
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-}
-
-interface MockEdge {
-  source: string;
-  target: string;
-  status: 'normal' | 'suspicious' | 'attack';
-  protocol: string;
-  packets: number;
-  bytes: number;
-}
-
-function seededRand(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
+const Sev: React.FC<{ sev:string }> = ({ sev }) => {
+  const M: Record<string,{c:string;bg:string}> = {
+    critical:{c:C.red,bg:'rgba(239,68,68,0.10)'},
+    high:{c:C.orange,bg:'rgba(249,115,22,0.10)'},
+    medium:{c:C.amber,bg:'rgba(234,179,8,0.10)'},
+    low:{c:'#06b6d4',bg:'rgba(6,182,212,0.10)'},
   };
+  const s = M[sev] || M.low;
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:5,
+      padding:'2px 8px', borderRadius:3, fontSize:9, fontWeight:700,
+      letterSpacing:'1px', color:s.c, background:s.bg, border:`1px solid ${s.c}25`,
+      fontFamily:MONO, textTransform:'uppercase',
+    }}>
+      <span style={{width:4,height:4,borderRadius:'50%',background:s.c}} />
+      {sev}
+    </span>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   MOCK DATA
+   ═══════════════════════════════════════════════════════════════════════════════════ */
+
+interface NetNode {
+  id: string; label: string; ip: string;
+  type: 'enclave'|'source'|'dest'; status: 'benign'|'suspicious'|'threat';
+  x: number; y: number;
 }
 
-function generateMockData() {
-  const rand = seededRand(42);
-  const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
-  const nodes: MockNode[] = [];
-  const edges: MockEdge[] = [];
-  const usedIPs = new Set<string>();
+interface NetEdge {
+  id: string; source: string; target: string;
+  status: 'normal'|'suspicious'|'attack';
+  packets: number; bytes: number;
+}
 
-  function genIP(): string {
-    let ip: string;
-    do {
-      const subnet = pick(SUBNETS);
-      const octet3 = Math.floor(rand() * 254) + 1;
-      const octet4 = Math.floor(rand() * 254) + 1;
-      ip = `${subnet}.${octet3}.${octet4}`;
-    } while (usedIPs.has(ip));
-    usedIPs.add(ip);
-    return ip;
-  }
+function buildTopology(W: number, H: number) {
+  const nodes: NetNode[] = [];
+  const edges: NetEdge[] = [];
 
-  // Generate attackers first (smaller count)
-  const attackerCount = 5;
-  for (let i = 0; i < attackerCount; i++) {
-    const ip = genIP();
+  // Enclave — center
+  nodes.push({ id:'enclave', label:'ENCLAVE', ip:'10.0.0.1', type:'enclave', status:'benign', x:W/2, y:H/2 });
+
+  // 15 source IPs — left side, arranged 3 rows x 5 cols
+  const srcStatuses: Array<'benign'|'suspicious'|'threat'> = [
+    'benign','benign','benign','benign','benign',
+    'benign','benign','benign','benign','benign',
+    'threat','threat','threat','suspicious','suspicious',
+  ];
+  const srcLabels = [
+    '192.168.1.10','192.168.1.20','192.168.1.30','192.168.1.40','192.168.1.50',
+    '10.0.1.10','10.0.1.20','10.0.1.30','10.0.1.40','10.0.1.50',
+    '172.16.0.10','172.16.0.20','172.16.0.30','192.168.2.10','192.168.2.20',
+  ];
+  for (let i = 0; i < 15; i++) {
+    const col = i % 5, row = Math.floor(i / 5);
     nodes.push({
-      id: `attacker-${i}`,
-      ip,
-      label: pick(['APT-KNIGHT', 'BruteBot', 'ScanHunter', 'DataLeech', 'ZeroDayX']),
-      type: 'attacker',
-      threatScore: 70 + Math.floor(rand() * 30),
-      port: pick([22, 23, 3389, 445, 8080]),
-      protocol: pick(['TCP', 'HTTP']),
-      connections: [],
-      x: rand() * 900 + 50,
-      y: rand() * 500 + 50,
-      vx: 0,
-      vy: 0,
+      id:`src-${i}`, label:srcLabels[i], ip:srcLabels[i], type:'source',
+      status:srcStatuses[i],
+      x: 80 + col * ((W - 300) / 4),
+      y: 70 + row * ((H - 100) / 2),
     });
   }
 
-  // Generate servers
-  const serverCount = 7;
-  for (let i = 0; i < serverCount; i++) {
-    const ip = genIP();
+  // 5 destination clusters — right side
+  const destDefs: Array<{ label:string; ip:string; status:'benign'|'suspicious'|'threat' }> = [
+    { label:'DB CLUSTER', ip:'10.0.5.10', status:'benign' },
+    { label:'API GW',     ip:'10.0.5.20', status:'benign' },
+    { label:'WEB FARM',   ip:'10.0.5.30', status:'suspicious' },
+    { label:'AUTH SVC',   ip:'10.0.5.40', status:'benign' },
+    { label:'STORAGE',    ip:'10.0.5.50', status:'benign' },
+  ];
+  destDefs.forEach((d, i) => {
     nodes.push({
-      id: `server-${i}`,
-      ip,
-      label: pick(HOST_NAMES.filter(h => !['jump-host', 'fw-edge', 'fw-internal'].includes(h))),
-      type: 'server',
-      threatScore: Math.floor(rand() * 40),
-      port: pick([22, 80, 443, 3306, 5432, 6379, 5672, 445, 53, 25, 21, 8080, 8443]),
-      protocol: pick(['TCP', 'TLS', 'HTTP', 'DNS']),
-      connections: [],
-      x: rand() * 900 + 50,
-      y: rand() * 500 + 50,
-      vx: 0,
-      vy: 0,
+      id:`dst-${i}`, label:d.label, ip:d.ip, type:'dest',
+      status:d.status,
+      x: W - 130,
+      y: 60 + i * ((H - 120) / 4),
     });
-  }
-
-  // Generate internal nodes
-  const internalCount = 12;
-  for (let i = 0; i < internalCount; i++) {
-    const ip = genIP();
-    nodes.push({
-      id: `internal-${i}`,
-      ip,
-      label: pick(HOST_NAMES),
-      type: 'internal',
-      threatScore: Math.floor(rand() * 25),
-      connections: [],
-      x: rand() * 900 + 50,
-      y: rand() * 500 + 50,
-      vx: 0,
-      vy: 0,
-    });
-  }
-
-  // Generate external nodes
-  const externalCount = 12;
-  for (let i = 0; i < externalCount; i++) {
-    const ip = genIP();
-    nodes.push({
-      id: `external-${i}`,
-      ip,
-      label: pick(['ext-proxy', 'cdn-node', 'vendor-api', 'partner-srv', 'cloud-svc', 'remote-emp', 'iot-device', 'mobile-gw']),
-      type: 'external',
-      threatScore: Math.floor(rand() * 50),
-      connections: [],
-      x: rand() * 900 + 50,
-      y: rand() * 500 + 50,
-      vx: 0,
-      vy: 0,
-    });
-  }
-
-  // Build edges — ensure good connectivity
-  const nodeMap = new Map(nodes.map(n => [n.id, n]));
-  const attackers = nodes.filter(n => n.type === 'attacker');
-  const servers = nodes.filter(n => n.type === 'server');
-  const internals = nodes.filter(n => n.type === 'internal');
-  const externals = nodes.filter(n => n.type === 'external');
-
-  // Attackers connect to random internals and servers
-  attackers.forEach(a => {
-    const targets = [...internals.slice(0, 6), ...servers.slice(0, 3)];
-    const numConns = 2 + Math.floor(rand() * 3);
-    for (let i = 0; i < numConns && targets.length > 0; i++) {
-      const t = targets.splice(Math.floor(rand() * targets.length), 1)[0];
-      if (t && !a.connections.includes(t.id)) {
-        a.connections.push(t.id);
-        edges.push({
-          source: a.id,
-          target: t.id,
-          status: rand() < 0.6 ? 'attack' : 'suspicious',
-          protocol: pick(['TCP', 'HTTP', 'UDP', 'TLS']),
-          packets: Math.floor(rand() * 50000) + 100,
-          bytes: Math.floor(rand() * 50000000) + 10000,
-        });
-      }
-    }
   });
 
-  // Internals connect to servers
-  internals.forEach(internal => {
-    const numConns = 1 + Math.floor(rand() * 3);
-    for (let i = 0; i < numConns; i++) {
-      const t = servers[Math.floor(rand() * servers.length)];
-      if (t && !internal.connections.includes(t.id) && internal.id !== t.id) {
-        internal.connections.push(t.id);
-        edges.push({
-          source: internal.id,
-          target: t.id,
-          status: rand() < 0.08 ? 'suspicious' : 'normal',
-          protocol: pick(['TCP', 'TLS', 'HTTP', 'DNS', 'UDP']),
-          packets: Math.floor(rand() * 20000) + 50,
-          bytes: Math.floor(rand() * 20000000) + 5000,
-        });
-      }
-    }
+  // 3 active attack paths: sources 10,11,12 → destinations 2,3,0
+  const attackPaths: [number, number][] = [[10,2],[11,3],[12,0]];
+  attackPaths.forEach(([si, di], idx) => {
+    edges.push({
+      id:`attack-${idx}`, source:`src-${si}`, target:`dst-${di}`,
+      status:'attack', packets:45_000+idx*15_000, bytes:2_400_000+idx*800_000,
+    });
   });
 
-  // External connects to servers/internals
-  externals.forEach(external => {
-    const numConns = 1 + Math.floor(rand() * 2);
-    for (let i = 0; i < numConns; i++) {
-      const pool = rand() < 0.5 ? servers : internals;
-      const t = pool[Math.floor(rand() * pool.length)];
-      if (t && !external.connections.includes(t.id) && external.id !== t.id) {
-        external.connections.push(t.id);
-        edges.push({
-          source: external.id,
-          target: t.id,
-          status: rand() < 0.15 ? 'suspicious' : 'normal',
-          protocol: pick(['TCP', 'TLS', 'HTTP', 'DNS', 'UDP']),
-          packets: Math.floor(rand() * 15000) + 50,
-          bytes: Math.floor(rand() * 10000000) + 5000,
-        });
-      }
-    }
-  });
+  // Normal/suspicious flows from remaining sources
+  for (let i = 0; i < 15; i++) {
+    if (attackPaths.some(([s]) => s === i)) continue;
+    const di = (i + 1) % 5;
+    edges.push({
+      id:`norm-s${i}`, source:`src-${i}`, target:`dst-${di}`,
+      status: srcStatuses[i] === 'suspicious' ? 'suspicious' : 'normal',
+      packets: 2000 + Math.floor(Math.random()*8000),
+      bytes: 100_000 + Math.floor(Math.random()*500_000),
+    });
+  }
 
-  // Inter-server connections
-  for (let i = 0; i < servers.length; i++) {
-    for (let j = i + 1; j < servers.length; j++) {
-      if (rand() < 0.4) {
-        servers[i].connections.push(servers[j].id);
-        servers[j].connections.push(servers[i].id);
-        edges.push({
-          source: servers[i].id,
-          target: servers[j].id,
-          status: rand() < 0.05 ? 'suspicious' : 'normal',
-          protocol: pick(['TCP', 'TLS']),
-          packets: Math.floor(rand() * 30000) + 100,
-          bytes: Math.floor(rand() * 30000000) + 10000,
-        });
-      }
-    }
+  // Enclave → all destinations
+  for (let i = 0; i < 5; i++) {
+    edges.push({
+      id:`enclave-d${i}`, source:'enclave', target:`dst-${i}`,
+      status:'normal', packets:8000+i*2000, bytes:400_000+i*100_000,
+    });
   }
 
   return { nodes, edges };
 }
 
-// ── Chart data generators ─────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   SVG NETWORK TOPOLOGY
+   ═══════════════════════════════════════════════════════════════════════════════════ */
 
-function generateProtocolTraffic() {
-  const protocols = ['TCP', 'UDP', 'ICMP', 'HTTP', 'DNS', 'TLS'];
-  const baseVolumes = [4200, 1800, 340, 2100, 890, 3200];
-  const variance = 0.3;
-  const rand = seededRand(77);
-  return protocols.map((proto, i) => ({
-    protocol: proto,
-    volume: Math.round(baseVolumes[i] * (1 + (rand() - 0.5) * variance * 2)),
-    color: proto === 'TCP' ? C.cyan :
-           proto === 'TLS' ? '#6366f1' :
-           proto === 'HTTP' ? C.yellow :
-           proto === 'DNS' ? '#22c55e' :
-           proto === 'UDP' ? C.orange :
-           '#a855f7',
-  }));
-}
-
-function generate24hTraffic() {
-  const buckets: { hour: string; inbound: number; outbound: number }[] = [];
-  const rand = seededRand(123);
-  const basePattern = [
-    120, 85, 60, 45, 40, 55, 130, 380, 650, 820, 910, 950,
-    880, 920, 870, 810, 780, 820, 890, 760, 550, 380, 250, 160
-  ];
-  for (let h = 0; h < 24; h++) {
-    const noise = 1 + (rand() - 0.5) * 0.25;
-    const base = basePattern[h] * noise;
-    buckets.push({
-      hour: `${String(h).padStart(2, '0')}:00`,
-      inbound: Math.round(base * (0.55 + rand() * 0.2)),
-      outbound: Math.round(base * (0.35 + rand() * 0.15)),
-    });
-  }
-  return buckets;
-}
-
-function generateThreatDistribution() {
-  const rand = seededRand(256);
-  const types = [
-    { name: 'DDoS', count: Math.floor(rand() * 40) + 20, color: C.red },
-    { name: 'Brute Force', count: Math.floor(rand() * 35) + 15, color: C.orange },
-    { name: 'SQL Injection', count: Math.floor(rand() * 25) + 10, color: C.yellow },
-    { name: 'XSS', count: Math.floor(rand() * 20) + 8, color: '#a855f7' },
-    { name: 'Malware', count: Math.floor(rand() * 15) + 5, color: '#ec4899' },
-    { name: 'Phishing', count: Math.floor(rand() * 12) + 3, color: '#14b8a6' },
-    { name: 'MITM', count: Math.floor(rand() * 10) + 2, color: '#f43f5e' },
-  ];
-  const total = types.reduce((s, t) => s + t.count, 0);
-  return types.map(t => ({ ...t, pct: Math.round((t.count / total) * 100) }));
-}
-
-// ── Force simulation ──────────────────────────────────────────────────────────
-
-function simulateForces(nodes: MockNode[], width: number, height: number, iterations = 40) {
-  const { nodes: simulated } = nodes.reduce(
-    (acc, n) => {
-      acc.nodes.push({ ...n, vx: 0, vy: 0 });
-      return acc;
-    },
-    { nodes: [] as MockNode[] }
-  );
-  const sim = simulated;
-  const nodeMap = new Map(sim.map(n => [n.id, n]));
-
-  for (let iter = 0; iter < iterations; iter++) {
-    const alpha = 1 - iter / iterations;
-
-    // Repulsion
-    for (let i = 0; i < sim.length; i++) {
-      for (let j = i + 1; j < sim.length; j++) {
-        let dx = sim[j].x - sim[i].x;
-        let dy = sim[j].y - sim[i].y;
-        let dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const force = 5000 / (dist * dist) * alpha;
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        sim[i].vx -= fx; sim[i].vy -= fy;
-        sim[j].vx += fx; sim[j].vy += fy;
-      }
-    }
-
-    // Attraction along edges
-    const seenEdges = new Set<string>();
-    nodes.forEach(node => {
-      node.connections.forEach(targetId => {
-        const key = [node.id, targetId].sort().join('|');
-        if (seenEdges.has(key)) return;
-        seenEdges.add(key);
-        const src = nodeMap.get(node.id);
-        const tgt = nodeMap.get(targetId);
-        if (!src || !tgt) return;
-        const dx = tgt.x - src.x;
-        const dy = tgt.y - src.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const force = (dist - 140) * 0.004 * alpha;
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-        src.vx += fx; src.vy += fy;
-        tgt.vx -= fx; tgt.vy -= fy;
-      });
-    });
-
-    // Center gravity
-    const cx = width / 2, cy = height / 2;
-    sim.forEach(n => {
-      n.vx += (cx - n.x) * 0.005 * alpha;
-      n.vy += (cy - n.y) * 0.005 * alpha;
-    });
-
-    // Apply
-    const damping = 0.85;
-    sim.forEach(n => {
-      n.vx *= damping; n.vy *= damping;
-      n.x += n.vx; n.y += n.vy;
-      n.x = Math.max(40, Math.min(width - 40, n.x));
-      n.y = Math.max(40, Math.min(height - 40, n.y));
-    });
-  }
-
-  return sim;
-}
-
-// ── SVG chart helpers ─────────────────────────────────────────────────────────
-
-const MONO = '"JetBrains Mono", "Fira Code", "SF Mono", monospace';
-const SANS = '"Inter", "Segoe UI", system-ui, sans-serif';
-
-function formatBytes(b: number): string {
-  if (b >= 1e9) return `${(b / 1e9).toFixed(1)} GB`;
-  if (b >= 1e6) return `${(b / 1e6).toFixed(1)} MB`;
-  if (b >= 1e3) return `${(b / 1e3).toFixed(0)} KB`;
-  return `${b} B`;
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString();
-}
-
-function TrendArrow({ value }: { value: number }) {
-  if (value > 0) return <TrendingUp size={14} color="#22c55e" />;
-  if (value < 0) return <TrendingDown size={14} color={C.red} />;
-  return <Minus size={14} color={C.muted} />;
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function StatCard({
-  label, value, icon: Icon, trend, color, suffix = '',
-}: {
-  label: string; value: number | string; icon: React.ElementType; trend: number; color: string; suffix?: string;
-}) {
-  return (
-    <div
-      className="relative overflow-hidden"
-      style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderRadius: 8,
-        padding: '18px 20px',
-      }}
-    >
-      <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-[0.03]"
-        style={{ background: `radial-gradient(circle, ${color}, transparent 70%)`, transform: 'translate(30%, -30%)' }}
-      />
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '2.5px' }}>
-            {label}
-          </p>
-          <p className="text-3xl font-bold leading-none" style={{ color: C.text, fontFamily: MONO, fontWeight: 700 }}>
-            {typeof value === 'number' ? formatNumber(value) : value}
-            {suffix && <span className="text-lg ml-0.5" style={{ color: C.muted }}>{suffix}</span>}
-          </p>
-          <div className="flex items-center gap-1.5 mt-2.5">
-            <TrendArrow value={trend} />
-            <span className="text-[11px] font-medium" style={{
-              color: trend > 0 ? '#22c55e' : trend < 0 ? C.red : C.muted,
-              fontFamily: MONO,
-            }}>
-              {trend > 0 ? '+' : ''}{trend}%
-            </span>
-            <span className="text-[10px]" style={{ color: C.muted }}>vs last hour</span>
-          </div>
-        </div>
-        <div className="p-2.5 rounded-lg" style={{ background: `${color}15`, border: `1px solid ${color}25` }}>
-          <Icon size={20} color={color} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Network Topology SVG ──────────────────────────────────────────────────────
-
-function NetworkTopology({ nodes, edges }: { nodes: MockNode[]; edges: MockEdge[] }) {
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [selectedNode, setSelectedNode] = useState<MockNode | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 900, height: 480 });
-  const containerRef = useRef<HTMLDivElement>(null);
+function NetworkTopologySVG({ nodes, edges, width, height }: { nodes:NetNode[]; edges:NetEdge[]; width:number; height:number }) {
+  const [hovered, setHovered] = useState<string|null>(null);
   const animTime = useRef(0);
   const rafRef = useRef(0);
 
-  const nodeMap = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
-  const edgeKey = useMemo(() => {
-    const s = new Set<string>();
-    edges.forEach(e => { s.add([e.source, e.target].sort().join('|')); });
-    return s;
-  }, [edges]);
-
-  useEffect(() => {
-    const measure = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      setDimensions({ width: Math.max(rect.width, 600), height: Math.max(rect.height, 420) });
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
-
-  // Run force simulation on data change or dimension change
-  const layout = useMemo(() => {
-    return simulateForces(nodes, dimensions.width, dimensions.height);
-  }, [nodes, dimensions.width, dimensions.height]);
-
   useEffect(() => {
     let running = true;
-    const animate = (ts: number) => {
+    const tick = (ts: number) => {
       if (!running) return;
       animTime.current = ts * 0.001;
-      rafRef.current = requestAnimationFrame(animate);
+      rafRef.current = requestAnimationFrame(tick);
     };
-    rafRef.current = requestAnimationFrame(animate);
+    rafRef.current = requestAnimationFrame(tick);
     return () => { running = false; cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  const nodeColor = (node: MockNode) => {
-    if (node.type === 'attacker') return { fill: `${C.red}18`, stroke: C.red, glow: C.red, label: C.red };
-    if (node.type === 'server') return { fill: `${C.green}18`, stroke: C.green, glow: C.green, label: C.green };
-    if (node.type === 'internal') return { fill: `${C.cyan}18`, stroke: C.cyan, glow: C.cyan, label: C.cyan };
-    return { fill: `${C.muted}15`, stroke: C.muted, glow: 'transparent', label: C.muted };
-  };
-
-  const threatColor = (score: number) => {
-    if (score >= 80) return C.red;
-    if (score >= 55) return C.orange;
-    if (score >= 35) return C.yellow;
-    return '#06b6d4';
-  };
-
-  const visibleEdges = useMemo(() => {
-    const h = hoveredNode;
-    const s = selectedNode?.id;
-    if (!h && !s) return edges;
-    const connected = new Set<string>();
-    if (h) { connected.add(h); edges.filter(e => e.source === h || e.target === h).forEach(e => { connected.add(e.source); connected.add(e.target); }); }
-    if (s) { connected.add(s); edges.filter(e => e.source === s || e.target === s).forEach(e => { connected.add(e.source); connected.add(e.target); }); }
-    return edges.filter(e => connected.has(e.source) && connected.has(e.target));
-  }, [edges, hoveredNode, selectedNode]);
-
-  const visibleNodes = useMemo(() => {
-    if (!hoveredNode && !selectedNode) return layout;
-    const connected = new Set<string>();
-    if (hoveredNode) {
-      connected.add(hoveredNode);
-      edges.filter(e => e.source === hoveredNode || e.target === hoveredNode).forEach(e => { connected.add(e.source); connected.add(e.target); });
-    }
-    if (selectedNode) {
-      connected.add(selectedNode.id);
-      edges.filter(e => e.source === selectedNode.id || e.target === selectedNode.id).forEach(e => { connected.add(e.source); connected.add(e.target); });
-    }
-    return layout.filter(n => connected.has(n.id));
-  }, [layout, hoveredNode, selectedNode, edges]);
-
+  const nodeMap = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
   const t = animTime.current;
 
-  return (
-    <div className="relative" style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-      {/* Section header */}
-      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${C.border}` }}>
-        <div className="flex items-center gap-3">
-          <div className="w-1.5 h-5 rounded-full" style={{ background: C.cyan }} />
-          <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.text, fontFamily: MONO, letterSpacing: '3px' }}>
-            Network Topology
-          </h3>
-          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: C.cyanDim, color: C.cyan, fontFamily: MONO, border: `1px solid ${C.cyan}25` }}>
-            LIVE
-          </span>
-        </div>
-        <div className="flex items-center gap-4 text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>
-          <span>{layout.length} nodes</span>
-          <span style={{ color: C.border }}>|</span>
-          <span>{edges.length} connections</span>
-          <span style={{ color: C.border }}>|</span>
-          <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.red }} />
-            {edges.filter(e => e.status === 'attack').length} attacks
-          </span>
-        </div>
-      </div>
-
-      <div ref={containerRef} className="relative" style={{ height: 480 }}>
-        <svg
-          ref={svgRef}
-          width={dimensions.width}
-          height={dimensions.height}
-          className="w-full"
-          style={{ display: 'block' }}
-        >
-          <defs>
-            <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-            <filter id="attackGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="6" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-            <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%">
-              <feGaussianBlur stdDeviation="8" />
-            </filter>
-            <linearGradient id="gridGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={C.border} stopOpacity="0.3" />
-              <stop offset="100%" stopColor={C.border} stopOpacity="0.1" />
-            </linearGradient>
-          </defs>
-
-          {/* Grid */}
-          <pattern id="smallGrid" width="30" height="30" patternUnits="userSpaceOnUse">
-            <path d={`M 30 0 L 0 0 0 30`} fill="none" stroke={C.border} strokeWidth="0.5" opacity="0.4" />
-          </pattern>
-          <pattern id="grid" width="150" height="150" patternUnits="userSpaceOnUse">
-            <rect width="150" height="150" fill="url(#smallGrid)" />
-            <path d={`M 150 0 L 0 0 0 150`} fill="none" stroke={C.gridLineHi} strokeWidth="1" opacity="0.3" />
-          </pattern>
-          <rect width="100%" height="100%" fill={C.bg} />
-          <rect width="100%" height="100%" fill="url(#grid)" />
-
-          {/* Edges */}
-          {visibleEdges.map((edge, i) => {
-            const src = layout.find(n => n.id === edge.source);
-            const tgt = layout.find(n => n.id === edge.target);
-            if (!src || !tgt) return null;
-
-            const isAttack = edge.status === 'attack';
-            const isSuspicious = edge.status === 'suspicious';
-            const edgeColor = isAttack ? C.red : isSuspicious ? C.orange : C.muted;
-            const edgeOpacity = isAttack ? 0.55 : isSuspicious ? 0.35 : 0.12;
-
-            // Animated dash for attacks
-            const dashOffset = t * (isAttack ? 40 : 15);
-
-            return (
-              <g key={`${edge.source}-${edge.target}-${i}`}>
-                {/* Glow line for attacks */}
-                {isAttack && (
-                  <line
-                    x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
-                    stroke={C.red} strokeWidth={4} opacity={0.15}
-                    filter="url(#softGlow)"
-                  />
-                )}
-                <line
-                  x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
-                  stroke={edgeColor}
-                  strokeWidth={isAttack ? 1.8 : isSuspicious ? 1.2 : 0.8}
-                  strokeDasharray={isSuspicious ? '6 4' : isAttack ? '8 4' : 'none'}
-                  strokeDashoffset={isAttack || isSuspicious ? -dashOffset : 0}
-                  strokeLinecap="round"
-                  opacity={edgeOpacity}
-                />
-                {/* Arrowhead for attacks */}
-                {isAttack && (
-                  <circle cx={tgt.x} cy={tgt.y} r={3} fill={C.red} opacity={0.6}>
-                    <animate attributeName="r" values="2;5;2" dur="1.5s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.5s" repeatCount="indefinite" />
-                  </circle>
-                )}
-              </g>
-            );
-          })}
-
-          {/* Nodes */}
-          {visibleNodes.map(node => {
-            const colors = nodeColor(node);
-            const isHovered = node.id === hoveredNode;
-            const isSelected = node.id === selectedNode?.id;
-            const isAttacker = node.type === 'attacker';
-            const radius = isAttacker ? 10 : node.type === 'server' ? 9 : 7;
-            const tColor = threatColor(node.threatScore);
-
-            // Pulse for attackers
-            const pulse = isAttacker ? 1 + 0.12 * Math.sin(t * 3 + node.id.charCodeAt(9) || 0) : 1;
-            const finalR = radius * pulse;
-
-            return (
-              <g
-                key={node.id}
-                onMouseEnter={() => setHoveredNode(node.id)}
-                onMouseLeave={() => setHoveredNode(null)}
-                onClick={() => setSelectedNode(node)}
-                style={{ cursor: 'pointer' }}
-              >
-                {/* Outer glow */}
-                <circle
-                  cx={node.x} cy={node.y} r={finalR * 3}
-                  fill={`url(#attackGlow)`}
-                  opacity={isAttacker ? 0.2 : isHovered ? 0.12 : 0.05}
-                >
-                  {isAttacker && (
-                    <animate attributeName="opacity" values="0.15;0.35;0.15" dur="2s" repeatCount="indefinite" />
-                  )}
-                </circle>
-
-                {/* Threat ring */}
-                {node.threatScore > 35 && (
-                  <circle
-                    cx={node.x} cy={node.y} r={finalR + 3}
-                    fill="none"
-                    stroke={tColor}
-                    strokeWidth={2}
-                    strokeDasharray={`${(node.threatScore / 100) * 2 * Math.PI * (finalR + 3)} ${2 * Math.PI * (finalR + 3)}`}
-                    strokeLinecap="round"
-                    opacity={0.7}
-                    transform={`rotate(-90 ${node.x} ${node.y})`}
-                  />
-                )}
-
-                {/* Selection ring */}
-                {isSelected && (
-                  <circle
-                    cx={node.x} cy={node.y} r={finalR + 10}
-                    fill="none"
-                    stroke={C.cyan}
-                    strokeWidth={1.5}
-                    strokeDasharray="4 3"
-                    opacity={0.8}
-                  />
-                )}
-
-                {/* Hover ring */}
-                {isHovered && !isSelected && (
-                  <circle
-                    cx={node.x} cy={node.y} r={finalR + 6}
-                    fill="none"
-                    stroke={C.text}
-                    strokeWidth={1}
-                    opacity={0.4}
-                  />
-                )}
-
-                {/* Node fill */}
-                <circle
-                  cx={node.x} cy={node.y} r={finalR}
-                  fill={colors.fill}
-                  stroke={isHovered || isSelected ? C.text : colors.stroke}
-                  strokeWidth={isHovered || isSelected ? 2 : 1.5}
-                  filter={isAttacker ? 'url(#attackGlow)' : isHovered ? 'url(#nodeGlow)' : undefined}
-                />
-
-                {/* Node inner dot */}
-                <circle
-                  cx={node.x} cy={node.y} r={finalR * 0.35}
-                  fill={isAttacker ? `${C.red}60` : `${colors.stroke}40`}
-                />
-
-                {/* Score text for large nodes */}
-                {finalR >= 10 && (
-                  <text
-                    x={node.x} y={node.y}
-                    textAnchor="middle" dominantBaseline="central"
-                    fill={C.text}
-                    fontSize="8"
-                    fontFamily={MONO}
-                    fontWeight="bold"
-                    opacity={0.85}
-                  >
-                    {node.threatScore}
-                  </text>
-                )}
-
-                {/* Label */}
-                <text
-                  x={node.x} y={node.y + finalR + 14}
-                  textAnchor="middle"
-                  fill={isAttacker ? C.red : isHovered ? C.text : colors.label}
-                  fontSize="9"
-                  fontFamily={MONO}
-                  fontWeight={isAttacker ? 'bold' : 'normal'}
-                  opacity={isHovered ? 1 : 0.7}
-                >
-                  {node.label.length > 14 ? node.label.slice(0, 12) + '…' : node.label}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Tooltip */}
-          {hoveredNode && (() => {
-            const node = nodeMap.get(hoveredNode);
-            if (!node) return null;
-            const tx = Math.min(node.x + 20, dimensions.width - 220);
-            const ty = Math.max(node.y - 100, 10);
-            const lines = [
-              { label: 'NODE', value: node.label, color: node.type === 'attacker' ? C.red : node.type === 'server' ? C.green : C.cyan },
-              { label: 'IP ADDR', value: node.ip, color: C.muted },
-              { label: 'PORT', value: node.port ? String(node.port) : '—', color: C.muted },
-              { label: 'PROTO', value: node.protocol || 'N/A', color: C.muted },
-              { label: 'THREAT', value: `${node.threatScore}%`, color: threatColor(node.threatScore) },
-              { label: 'TYPE', value: node.type.toUpperCase(), color: node.type === 'attacker' ? C.red : node.type === 'server' ? C.green : C.cyan },
-              { label: 'CONNS', value: String(node.connections.length), color: C.muted },
-            ];
-
-            return (
-              <g style={{ pointerEvents: 'none' }}>
-                <rect x={tx - 4} y={ty - 4} width={210} height={lines.length * 17 + 12} rx={6}
-                  fill={C.card} stroke={node.type === 'attacker' ? C.red : C.cyan} strokeWidth={1} opacity={0.97} />
-                {lines.map((line, i) => (
-                  <text key={i} x={tx + 8} y={ty + i * 17 + 6}
-                    fill={line.color} fontSize="10" fontFamily={MONO}>
-                    {line.label === 'NODE' ? (
-                      <tspan fontWeight="bold" fill={line.color}>{line.value}</tspan>
-                    ) : (
-                      <>
-                        <tspan fill={C.dim}>{line.label}</tspan>
-                        <tspan dx="8" fill={line.color} fontWeight="500">{line.value}</tspan>
-                      </>
-                    )}
-                  </text>
-                ))}
-              </g>
-            );
-          })()}
-        </svg>
-
-        {/* Legend */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-4 px-3 py-2 rounded-lg"
-          style={{ background: `${C.bg}dd`, border: `1px solid ${C.border}`, backdropFilter: 'blur(8px)' }}>
-          {[
-            { label: 'Server', color: C.green },
-            { label: 'Internal', color: C.cyan },
-            { label: 'External', color: C.muted },
-            { label: 'Attacker', color: C.red },
-          ].map(item => (
-            <div key={item.label} className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color, boxShadow: `0 0 6px ${item.color}50` }} />
-              <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>{item.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Selected node detail */}
-        {selectedNode && (
-          <div className="absolute top-3 right-3 w-64 rounded-lg p-4"
-            style={{ background: `${C.bg}ee`, border: `1px solid ${C.border}`, backdropFilter: 'blur(8px)' }}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.cyan, fontFamily: MONO, letterSpacing: '2px' }}>
-                Selected Node
-              </span>
-              <button onClick={() => setSelectedNode(null)} className="p-0.5 rounded transition-colors" style={{ color: C.muted }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                style={{ background: `${nodeColor(selectedNode).stroke}18`, border: `1px solid ${nodeColor(selectedNode).stroke}40` }}>
-                <Server size={16} color={nodeColor(selectedNode).stroke} />
-              </div>
-              <div>
-                <p className="text-sm font-bold" style={{ fontFamily: MONO, color: C.text }}>{selectedNode.label}</p>
-                <p className="text-[11px]" style={{ fontFamily: MONO, color: C.muted }}>{selectedNode.ip}</p>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              {[
-                { label: 'Type', value: selectedNode.type.toUpperCase(), color: nodeColor(selectedNode).stroke },
-                { label: 'Threat Score', value: `${selectedNode.threatScore}%`, color: threatColor(selectedNode.threatScore) },
-                { label: 'Connections', value: String(selectedNode.connections.length), color: C.text },
-                { label: 'Status', value: selectedNode.type === 'attacker' ? 'COMPROMISED' : 'ACTIVE', color: selectedNode.type === 'attacker' ? C.red : C.green },
-              ].map(row => (
-                <div key={row.label} className="flex items-center justify-between text-[11px]">
-                  <span style={{ fontFamily: MONO, color: C.muted }}>{row.label}</span>
-                  <span className="font-semibold" style={{ fontFamily: MONO, color: row.color }}>{row.value}</span>
-                </div>
-              ))}
-            </div>
-            {selectedNode.connections.length > 0 && (
-              <div className="mt-3 pt-3" style={{ borderTop: `1px solid ${C.border}` }}>
-                <p className="text-[10px] uppercase tracking-wider mb-2" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '1.5px' }}>Connected To</p>
-                <div className="flex flex-wrap gap-1">
-                  {selectedNode.connections.slice(0, 6).map(cid => {
-                    const cn = nodeMap.get(cid);
-                    return (
-                      <span key={cid} className="text-[9px] px-1.5 py-0.5 rounded"
-                        style={{ background: C.border, color: C.muted, fontFamily: MONO }}>
-                        {cn?.label?.split('-')[0] || cid.slice(0, 8)}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Bar chart: protocol traffic ───────────────────────────────────────────────
-
-function ProtocolBarChart({ data }: { data: { protocol: string; volume: number; color: string }[] }) {
-  const maxVol = Math.max(...data.map(d => d.volume));
-  const barWidth = 28;
-  const chartHeight = 180;
-  const chartWidth = 340;
+  const statusColors: Record<string,{fill:string;stroke:string;label:string}> = {
+    benign:    { fill:`${C.green}18`,   stroke:C.green,   label:C.green },
+    suspicious:{ fill:`${C.amber}18`,   stroke:C.amber,   label:C.amber },
+    threat:    { fill:`${C.red}18`,     stroke:C.red,     label:C.red },
+  };
 
   return (
-    <div className="flex items-center gap-4">
-      <svg width={chartWidth} height={chartHeight + 50} style={{ flexShrink: 0 }}>
-        {/* Grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map(pct => (
-          <line key={pct}
-            x1={40} y1={20 + (1 - pct) * chartHeight}
-            x2={chartWidth - 10} y2={20 + (1 - pct) * chartHeight}
-            stroke={C.border} strokeWidth={0.5} strokeDasharray="3 3"
-          />
-        ))}
-        {/* Y-axis labels */}
-        {[0, 0.25, 0.5, 0.75, 1].map(pct => {
-          const val = Math.round(maxVol * pct);
-          return (
-            <text key={pct} x={38} y={24 + (1 - pct) * chartHeight}
-              textAnchor="end" fill={C.muted} fontSize="8" fontFamily={MONO}>
-              {val >= 1000 ? `${val / 1000}K` : val}
-            </text>
-          );
-        })}
-        {/* Bars */}
-        {data.map((d, i) => {
-          const barH = (d.volume / maxVol) * chartHeight;
-          const x = 50 + i * (barWidth + 8);
-          const y = 20 + chartHeight - barH;
-          return (
-            <g key={d.protocol}>
-              <rect x={x} y={y} width={barWidth} height={barH} rx={3} fill={d.color} opacity={0.8}>
-                <animate attributeName="height" from="0" to={barH} dur="0.6s" fill="freeze" />
-                <animate attributeName="y" from={20 + chartHeight} to={y} dur="0.6s" fill="freeze" />
-              </rect>
-              <rect x={x} y={y} width={barWidth} height={barH} rx={3} fill={C.text} opacity={0.06} />
-              <text x={x + barWidth / 2} y={chartHeight + 36}
-                textAnchor="middle" fill={C.muted} fontSize="9" fontFamily={MONO} fontWeight="600">
-                {d.protocol}
-              </text>
-              <text x={x + barWidth / 2} y={y - 5}
-                textAnchor="middle" fill={C.text} fontSize="8" fontFamily={MONO} opacity={0.7}>
-                {d.volume >= 1000 ? `${(d.volume / 1000).toFixed(1)}K` : d.volume}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-      <div className="flex flex-col gap-2">
-        {data.map(d => (
-          <div key={d.protocol} className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ background: d.color }} />
-            <span className="text-[11px]" style={{ fontFamily: MONO, color: C.muted }}>{d.protocol}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+    <svg width={width} height={height} style={{ display:'block' }}>
+      <defs>
+        <filter id="attGlow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="6" />
+        </filter>
+      </defs>
 
-// ── Line chart: 24h traffic ───────────────────────────────────────────────────
-
-function TrafficLineChart({ data }: { data: { hour: string; inbound: number; outbound: number }[] }) {
-  const chartHeight = 160;
-  const chartWidth = 580;
-  const padding = { top: 20, right: 30, bottom: 30, left: 45 };
-  const innerW = chartWidth - padding.left - padding.right;
-  const innerH = chartHeight - padding.top - padding.bottom;
-
-  const allVals = data.flatMap(d => [d.inbound, d.outbound]);
-  const maxVal = Math.max(...allVals) * 1.1;
-
-  const points = (vals: number[]) => vals.map((v, i) => ({
-    x: padding.left + (i / (vals.length - 1)) * innerW,
-    y: padding.top + innerH - (v / maxVal) * innerH,
-  }));
-
-  const inboundPts = points(data.map(d => d.inbound));
-  const outboundPts = points(data.map(d => d.outbound));
-
-  const linePath = (pts: typeof inboundPts) =>
-    pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-  const areaPath = (pts: typeof inboundPts) =>
-    `${linePath(pts)} L ${pts[pts.length - 1].x} ${padding.top + innerH} L ${pts[0].x} ${padding.top + innerH} Z`;
-
-  const gridY = [0, 0.25, 0.5, 0.75, 1];
-
-  return (
-    <svg width={chartWidth} height={chartHeight + 40} style={{ display: 'block' }}>
       {/* Grid */}
-      {gridY.map(pct => (
-        <line key={pct}
-          x1={padding.left} y1={padding.top + (1 - pct) * innerH}
-          x2={padding.left + innerW} y2={padding.top + (1 - pct) * innerH}
-          stroke={C.border} strokeWidth={0.5} opacity={0.5}
-        />
-      ))}
-      {/* Y labels */}
-      {gridY.map(pct => (
-        <text key={pct} x={padding.left - 6} y={padding.top + (1 - pct) * innerH + 3}
-          textAnchor="end" fill={C.muted} fontSize="8" fontFamily={MONO}>
-          {Math.round(maxVal * pct) >= 1000 ? `${(maxVal * pct / 1000).toFixed(0)}K` : Math.round(maxVal * pct)}
-        </text>
-      ))}
-      {/* Area fills */}
-      <path d={areaPath(inboundPts)} fill={C.cyan} opacity={0.06} />
-      <path d={areaPath(outboundPts)} fill={C.green} opacity={0.04} />
-      {/* Lines */}
-      <path d={linePath(outboundPts)} fill="none" stroke={C.green} strokeWidth={1.5} opacity={0.6} />
-      <path d={linePath(inboundPts)} fill="none" stroke={C.cyan} strokeWidth={2} filter="url(#nodeGlow)" />
-      {/* End dots */}
-      {inboundPts.map((p, i) => i % 4 === 0 || i === inboundPts.length - 1 ? (
-        <circle key={i} cx={p.x} cy={p.y} r={3} fill={C.cyan} opacity={0.8} />
-      ) : null)}
-      {/* X labels */}
-      {data.filter((_, i) => i % 3 === 0).map((d, i) => {
-        const idx = i * 3;
-        const x = padding.left + (idx / (data.length - 1)) * innerW;
+      <pattern id="nwSm" width="24" height="24" patternUnits="userSpaceOnUse">
+        <path d="M 24 0 L 0 0 0 24" fill="none" stroke={C.border} strokeWidth="0.4" opacity="0.3" />
+      </pattern>
+      <pattern id="nwBg" width="120" height="120" patternUnits="userSpaceOnUse">
+        <rect width="120" height="120" fill="url(#nwSm)" />
+        <path d="M 120 0 L 0 0 0 120" fill="none" stroke={C.border} strokeWidth="0.8" opacity="0.2" />
+      </pattern>
+      <rect width={width} height={height} fill={C.bg} />
+      <rect width={width} height={height} fill="url(#nwBg)" />
+
+      {/* Zone labels */}
+      <text x={70} y={16} textAnchor="middle" fill={C.textDim} fontSize="8" fontFamily={MONO} fontWeight="700" letterSpacing="1.5">
+        SOURCE IPS
+      </text>
+      <text x={width/2} y={16} textAnchor="middle" fill={C.accent} fontSize="8" fontFamily={MONO} fontWeight="700" letterSpacing="1.5">
+        ENCLAVE
+      </text>
+      <text x={width-100} y={16} textAnchor="middle" fill={C.textDim} fontSize="8" fontFamily={MONO} fontWeight="700" letterSpacing="1.5">
+        DEST CLUSTERS
+      </text>
+
+      {/* Edges */}
+      {edges.map(edge => {
+        const src = nodeMap.get(edge.source);
+        const tgt = nodeMap.get(edge.target);
+        if (!src || !tgt) return null;
+        const isAttack = edge.status === 'attack';
+        const isSusp = edge.status === 'suspicious';
+        const eColor = isAttack ? C.red : isSusp ? C.amber : `${C.accent}30`;
+        const eOpacity = isAttack ? 0.7 : isSusp ? 0.4 : 0.18;
+
         return (
-          <text key={d.hour} x={x} y={padding.top + innerH + 18}
-            textAnchor="middle" fill={C.muted} fontSize="8" fontFamily={MONO}>
-            {d.hour}
-          </text>
+          <g key={edge.id}>
+            {isAttack && (
+              <line x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+                stroke={C.red} strokeWidth={5} opacity={0.1} filter="url(#softGlow)" />
+            )}
+            <line x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+              stroke={eColor}
+              strokeWidth={isAttack?2:isSusp?1.2:0.7}
+              strokeDasharray={isAttack?'10 5':isSusp?'6 4':'none'}
+              className={isAttack?'flow-attack':isSusp?'flow-suspicious':'flow-normal'}
+              strokeLinecap="round" opacity={eOpacity} />
+            {isAttack && (
+              <circle r={3} fill={C.red} opacity={0.8} filter="url(#attGlow)">
+                <animateMotion dur="2s" repeatCount="indefinite" path={`M${src.x},${src.y} L${tgt.x},${tgt.y}`} />
+                <animate attributeName="opacity" values="0.3;0.9;0.3" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Nodes */}
+      {nodes.map(node => {
+        const isEnclave = node.type === 'enclave';
+        const isHov = node.id === hovered;
+        const sc = isEnclave ? {fill:`${C.accent}15`,stroke:C.accent,label:C.accent} : statusColors[node.status];
+        const r = isEnclave ? 20 : node.type==='dest' ? 14 : 10;
+        const pulse = node.status === 'threat' ? 1 + 0.1*Math.sin(t*4 + node.id.charCodeAt(4)) : 1;
+        const fr = r * (isEnclave ? 1 + 0.04*Math.sin(t*2) : pulse);
+
+        return (
+          <g key={node.id}
+            onMouseEnter={() => setHovered(node.id)}
+            onMouseLeave={() => setHovered(null)}
+            style={{ cursor:'pointer' }}>
+            {/* Glow */}
+            {(node.status==='threat'||isEnclave) && (
+              <circle cx={node.x} cy={node.y} r={fr*2.5}
+                fill={isEnclave?`${C.accent}10`:`${C.red}12`}
+                filter={isEnclave?'url(#attGlow)':'url(#softGlow)'}>
+                {node.status==='threat' && (
+                  <animate attributeName="opacity" values="0.15;0.4;0.15" dur="2s" repeatCount="indefinite" />
+                )}
+              </circle>
+            )}
+            {/* Threat ring */}
+            {node.status==='threat' && (
+              <circle cx={node.x} cy={node.y} r={fr+4} fill="none"
+                stroke={C.red} strokeWidth={2} opacity="0.8"
+                strokeDasharray={`${0.4*2*Math.PI*(fr+4)} ${2*Math.PI*(fr+4)}`}
+                strokeLinecap="round" transform={`rotate(-90 ${node.x} ${node.y})`}>
+                <animateTransform attributeName="transform" type="rotate"
+                  from={`-90 ${node.x} ${node.y}`} to={`270 ${node.x} ${node.y}`}
+                  dur="4s" repeatCount="indefinite" />
+              </circle>
+            )}
+            {/* Hover ring */}
+            {isHov && (
+              <circle cx={node.x} cy={node.y} r={fr+7} fill="none"
+                stroke={C.text} strokeWidth={1} opacity={0.35} />
+            )}
+            {/* Node body */}
+            <circle cx={node.x} cy={node.y} r={fr}
+              fill={sc.fill} stroke={isHov?C.text:sc.stroke}
+              strokeWidth={isHov?2.5:isEnclave?2:1.5}
+              filter={node.status==='threat'?'url(#attGlow)':isEnclave?'url(#attGlow)':undefined} />
+            {/* Enclave pattern */}
+            {isEnclave && (
+              <circle cx={node.x} cy={node.y} r={fr*0.5}
+                fill="none" stroke={C.accent} strokeWidth={1.5} opacity="0.4" />
+            )}
+            {/* Inner dot */}
+            <circle cx={node.x} cy={node.y} r={fr*0.3}
+              fill={isEnclave?`${C.accent}50`:`${sc.stroke}40`} />
+            {/* Enclave symbol */}
+            {isEnclave && (
+              <text x={node.x} y={node.y+1} textAnchor="middle" dominantBaseline="central"
+                fill={C.accent} fontSize="14" fontFamily={MONO} fontWeight="700" opacity={0.9}>◈</text>
+            )}
+            {/* Label */}
+            <text x={node.x} y={node.y+fr+14} textAnchor="middle"
+              fill={isHov?C.text:sc.label} fontSize={isEnclave?10:9} fontFamily={MONO}
+              fontWeight={node.status==='threat'?'700':isEnclave?'700':'400'}
+              opacity={isHov?1:0.85}>
+              {node.label.length>14?node.label.slice(0,12)+'…':node.label}
+            </text>
+            <text x={node.x} y={node.y+fr+25} textAnchor="middle"
+              fill={C.textSec} fontSize="8" fontFamily={MONO} opacity="0.6">{node.ip}</text>
+          </g>
         );
       })}
     </svg>
   );
 }
 
-// ── Donut chart: threat distribution ─────────────────────────────────────────
-
-function ThreatDonutChart({ data }: { data: { name: string; count: number; pct: number; color: string }[] }) {
-  const size = 200;
-  const cx = size / 2;
-  const cy = size / 2;
-  const outerR = 80;
-  const innerR = 48;
-  const total = data.reduce((s, d) => s + d.count, 0);
-
-  let cumulativeAngle = -Math.PI / 2;
-
-  const segments = data.map(d => {
-    const sliceAngle = (d.count / total) * 2 * Math.PI;
-    const startAngle = cumulativeAngle;
-    const endAngle = cumulativeAngle + sliceAngle;
-    const midAngle = startAngle + sliceAngle / 2;
-
-    const x1 = cx + outerR * Math.cos(startAngle);
-    const y1 = cy + outerR * Math.sin(startAngle);
-    const x2 = cx + outerR * Math.cos(endAngle);
-    const y2 = cy + outerR * Math.sin(endAngle);
-
-    const ix1 = cx + innerR * Math.cos(startAngle);
-    const iy1 = cy + innerR * Math.sin(startAngle);
-    const ix2 = cx + innerR * Math.cos(endAngle);
-    const iy2 = cy + innerR * Math.sin(endAngle);
-
-    const largeArc = sliceAngle > Math.PI ? 1 : 0;
-
-    const path = [
-      `M ${x1} ${y1}`,
-      `A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2}`,
-      `L ${ix2} ${iy2}`,
-      `A ${innerR} ${innerR} 0 ${largeArc} 0 ${ix1} ${iy1}`,
-      'Z',
-    ].join(' ');
-
-    const labelR = outerR + 18;
-    const lx = cx + labelR * Math.cos(midAngle);
-    const ly = cy + labelR * Math.sin(midAngle);
-
-    cumulativeAngle = endAngle;
-
-    return { ...d, path, midAngle, lx, ly, sliceAngle };
-  });
-
-  return (
-    <div className="flex items-center gap-5">
-      <svg width={size} height={size} style={{ flexShrink: 0 }}>
-        {segments.map((seg, i) => (
-          <g key={i}>
-            <path d={seg.path} fill={seg.color} opacity={0.8}>
-              <animate attributeName="opacity" from="0" to="0.8" dur="0.5s" fill="freeze" begin={`${i * 0.05}s`} />
-            </path>
-            <path d={seg.path} fill={C.text} opacity={0.06} />
-          </g>
-        ))}
-        {/* Center text */}
-        <text x={cx} y={cy - 4} textAnchor="middle" fill={C.text} fontSize="16" fontFamily={MONO} fontWeight="bold">
-          {total}
-        </text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily={MONO} letterSpacing="1.5">
-          THREATS
-        </text>
-      </svg>
-      <div className="flex flex-col gap-1.5">
-        {segments.map(seg => (
-          <div key={seg.name} className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-sm" style={{ background: seg.color }} />
-            <span className="text-[11px]" style={{ fontFamily: MONO, color: C.text }}>{seg.name}</span>
-            <span className="text-[10px] ml-auto" style={{ fontFamily: MONO, color: C.muted }}>
-              {seg.pct}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Section wrapper ───────────────────────────────────────────────────────────
-
-function Section({
-  title, icon, children, accentColor = C.cyan,
-}: {
-  title: string; icon: React.ReactNode; children: React.ReactNode; accentColor?: string;
-}) {
-  return (
-    <div className="mb-5">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-1 h-5 rounded-full" style={{ background: accentColor }} />
-        <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.text, fontFamily: MONO, letterSpacing: '3px' }}>
-          {title}
-        </h3>
-        {icon}
-      </div>
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '16px 20px' }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ── Main NetworkMap component ────────────────────────────────────────────────
-
-import { useRef } from 'react';
+/* ═══════════════════════════════════════════════════════════════════════════════════
+   MAIN NetworkMap COMPONENT
+   ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const NetworkMap: React.FC = () => {
-  const { nodes, edges } = useMemo(() => generateMockData(), []);
-  const [stats, setStats] = useState({
-    totalNodes: 0,
-    activeConns: 0,
-    threatNodes: 0,
-    dataTransferred: 0,
-  });
-  const [trends, setTrends] = useState({ nodes: 0, conns: 0, threats: 0, data: 0 });
+  const [clock, setClock] = useState(now());
+  const [svgDims, setSvgDims] = useState({ width:900, height:480 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const nodeMapRef = useRef<Map<string,{label:string;ip:string;status:string}>>(new Map());
 
   useEffect(() => {
-    // Simulate live stat changes
-    const threatCount = nodes.filter(n => n.type === 'attacker').length;
-    const totalBytes = edges.reduce((s, e) => s + e.bytes, 0);
-    setStats({
-      totalNodes: nodes.length,
-      activeConns: edges.length,
-      threatNodes: threatCount,
-      dataTransferred: totalBytes,
-    });
-    setTrends({
-      nodes: Math.round((Math.random() - 0.3) * 15),
-      conns: Math.round((Math.random() - 0.3) * 20),
-      threats: Math.round((Math.random() - 0.5) * 25),
-      data: Math.round((Math.random() - 0.2) * 18),
-    });
-  }, [nodes, edges]);
+    const t = setInterval(() => setClock(now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
-  const protocolTraffic = useMemo(() => generateProtocolTraffic(), []);
-  const traffic24h = useMemo(() => generate24hTraffic(), []);
-  const threatDist = useMemo(() => generateThreatDistribution(), []);
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const r = containerRef.current.getBoundingClientRect();
+      setSvgDims({ width:Math.max(r.width,600), height:480 });
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
-  const totalTraffic = useMemo(() => protocolTraffic.reduce((s, d) => s + d.volume, 0), [protocolTraffic]);
+  const { nodes, edges } = useMemo(() => buildTopology(svgDims.width, svgDims.height), [svgDims.width, svgDims.height]);
+
+  // Build node map
+  useEffect(() => {
+    nodeMapRef.current = new Map(nodes.map(n => [n.id, {label:n.label, ip:n.ip, status:n.status}]));
+  }, [nodes]);
+
+  const totalFlows = useMemo(() => edges.reduce((s,e) => s + e.packets, 0), [edges]);
+  const blockedConns = useMemo(() => edges.filter(e=>e.status==='attack').reduce((s,e) => s + e.packets, 0), [edges]);
+  const activeThreats = useMemo(() => edges.filter(e=>e.status==='attack').length, [edges]);
+
+  const attackEdges = useMemo(() => edges.filter(e=>e.status==='attack'), [edges]);
+  const suspEdges = useMemo(() => edges.filter(e=>e.status==='suspicious'), [edges]);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] p-5" style={{ background: C.bg }}>
-      {/* ── Top stat cards ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
-        <StatCard
-          label="Total Nodes"
-          value={stats.totalNodes}
-          icon={Server}
-          trend={trends.nodes}
-          color={C.cyan}
-        />
-        <StatCard
-          label="Active Connections"
-          value={stats.activeConns}
-          icon={Activity}
-          trend={trends.conns}
-          color={C.green}
-        />
-        <StatCard
-          label="Threat Nodes"
-          value={stats.threatNodes}
-          icon={ShieldAlert}
-          trend={trends.threats}
-          color={C.red}
-        />
-        <StatCard
-          label="Data Transferred"
-          value={formatBytes(stats.dataTransferred)}
-          icon={HardDrive}
-          trend={trends.data}
-          color={C.orange}
-        />
-      </div>
+    <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:MONO, fontSize:12, lineHeight:1.5 }}>
+      <style>{`
+        @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+        @keyframes wt-row-in { from{opacity:0;transform:translateX(-6px);} to{opacity:1;transform:translateX(0);} }
+        @keyframes flow-attack { to { stroke-dashoffset: -30; } }
+        @keyframes flow-suspicious { to { stroke-dashoffset: -20; } }
+        .flow-attack { stroke-dasharray: 10 5; animation: flow-attack 0.8s linear infinite; }
+        .flow-suspicious { stroke-dasharray: 6 4; animation: flow-suspicious 2s linear infinite; }
+        ::selection { background:rgba(0,212,255,0.15); color:${C.text}; }
+        :focus-visible { outline:1.5px solid rgba(0,212,255,0.5); outline-offset:2px; border-radius:2px; }
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:${C.border}; border-radius:3px; }
+        .wt-interactive { transition:transform 160ms cubic-bezier(0.22,1,0.36,1), background 0.2s; }
+        .wt-interactive:active { transform:scale(0.98); }
+        a { color:inherit; text-decoration:none; }
+        @media (max-width:1024px) { .wt-grid-aside { grid-template-columns:1fr !important; } }
+        @media (max-width:768px) { .wt-grid-aside { grid-template-columns:1fr !important; } }
+        @media (max-width:480px) {
+          header>div { padding:0 14px !important; gap:8px !important; }
+          main { padding:20px 14px 60px !important; }
+        }
+      `}</style>
 
-      {/* ── Network Topology ───────────────────────────────────────── */}
-      <Section title="Network Topology" icon={
-        <span className="text-[10px] px-2 py-0.5 rounded-full animate-pulse"
-          style={{ background: `${C.red}18`, color: C.red, fontFamily: MONO, border: `1px solid ${C.red}30` }}>
-          ● MONITORING
-        </span>
-      } accentColor={C.cyan}>
-        <NetworkTopology nodes={nodes} edges={edges} />
-      </Section>
-
-      {/* ── Traffic + Threat Distribution row ──────────────────────── */}
-      <div className="grid grid-cols-5 gap-4">
-        {/* Traffic Analysis (3/5 width) */}
-        <div className="col-span-3">
-          <Section title="Traffic Analysis" icon={
-            <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>
-              {formatBytes(totalTraffic * 10000)} / 24h
+      {/* ── STICKY HUD BAR ─────────────────────────────────────────────── */}
+      <header style={{
+        position:'sticky',top:0,zIndex:40,
+        background:'rgba(5,8,13,0.94)',backdropFilter:'blur(14px) saturate(1.2)',
+        borderBottom:`1px solid ${C.border}`,
+      }}>
+        <div style={{
+          maxWidth:1480,margin:'0 auto',padding:'0 28px',
+          display:'flex',alignItems:'center',height:48,gap:14,
+        }}>
+          <div style={{ display:'flex',alignItems:'center',gap:9,flexShrink:0 }}>
+            <div style={{
+              width:26,height:26,borderRadius:5,
+              background:`linear-gradient(135deg,${C.accent}18,${C.accent}06)`,
+              border:`1px solid ${C.accent}30`,
+              display:'flex',alignItems:'center',justifyContent:'center',
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+                <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+              </svg>
+            </div>
+            <span style={{ fontSize:13,fontWeight:800,letterSpacing:'4px',color:C.text,fontVariantNumeric:'tabular-nums' }}>
+              WATCHTOWER
             </span>
-          } accentColor={C.green}>
-            {/* Bar chart */}
-            <div className="mb-4">
-              <p className="text-[10px] uppercase tracking-wider mb-3" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '1.5px' }}>
-                By Protocol
-              </p>
-              <ProtocolBarChart data={protocolTraffic} />
-            </div>
-
-            {/* Divider */}
-            <div style={{ borderTop: `1px solid ${C.border}` }} className="my-4" />
-
-            {/* Line chart */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] uppercase tracking-wider" style={{ color: C.muted, fontFamily: MONO, letterSpacing: '1.5px' }}>
-                  24-Hour Traffic Volume
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-0.5 rounded" style={{ background: C.cyan }} />
-                    <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>Inbound</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-0.5 rounded" style={{ background: C.green }} />
-                    <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>Outbound</span>
-                  </div>
-                </div>
-              </div>
-              <TrafficLineChart data={traffic24h} />
-            </div>
-          </Section>
+          </div>
+          <div style={{ width:1,height:18,background:C.border,flexShrink:0 }} />
+          <span style={{ fontSize:10,color:C.textSec,letterSpacing:'0.8px',flexShrink:0 }}>
+            PS-26145 · NETWORK MAP
+          </span>
+          <div style={{ flex:1 }} />
+          <span style={{ fontSize:11,color:C.textSec,letterSpacing:'0.8px',fontVariantNumeric:'tabular-nums' }}>{clock}</span>
         </div>
+      </header>
 
-        {/* Threat Distribution (2/5 width) */}
-        <div className="col-span-2">
-          <Section title="Threat Distribution" icon={
-            <Eye size={14} color={C.muted} />
-          } accentColor={C.red}>
-            <ThreatDonutChart data={threatDist} />
+      {/* ── SCROLLABLE MAIN ────────────────────────────────────────────── */}
+      <main style={{ maxWidth:1480,margin:'0 auto',padding:'28px 28px 80px' }}>
 
-            {/* Summary stats */}
-            <div className="mt-4 pt-4 grid grid-cols-2 gap-3" style={{ borderTop: `1px solid ${C.border}` }}>
+        {/* Hero context */}
+        <section style={{ marginBottom:32 }}>
+          <h1 style={{ fontSize:13,fontWeight:700,letterSpacing:'2.5px',color:C.accent,marginBottom:8 }}>
+            Network Topology — Live Traffic Map
+          </h1>
+          <p style={{ fontSize:13,color:C.textSec,maxWidth:720,lineHeight:1.75,margin:0 }}>
+            Real-time visualization of flow topology across the enclave. Enclave node monitors
+            bidirectional streams between {nodes.filter(n=>n.type==='source').length} source segments and
+            {nodes.filter(n=>n.type==='dest').length} destination clusters. Attack paths highlighted with
+            animated indicators. Passive observation only.
+          </p>
+        </section>
+
+        {/* Section 1: Stats sidebar + Network Topology */}
+        <section style={{ display:'grid',gridTemplateColumns:'260px 1fr',gap:16,marginBottom:20 }} className="wt-grid-aside">
+
+          {/* Stats sidebar */}
+          <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
+            <Panel delay={0.05}>
+              <SH label="Flow Stats" />
+              <div style={{ display:'flex',flexDirection:'column',gap:8 }}>
+                {[
+                  { label:'Total Flows', value:fmt(totalFlows), color:C.accent },
+                  { label:'Blocked Conns', value:fmt(blockedConns), color:C.red },
+                  { label:'Active Threats', value:String(activeThreats), color:C.orange },
+                ].map((s,i) => (
+                  <div key={i} style={{
+                    padding:'14px 16px', border:`1px solid ${C.border}`, borderRadius:5,
+                    background:'rgba(255,255,255,0.008)',
+                    transition:`border-color 0.2s ${EASE}`,
+                  }}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor=`${s.color}40`;}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;}}
+                  >
+                    <div style={{ fontSize:9,fontWeight:700,letterSpacing:'1.2px',color:C.textSec,marginBottom:6 }}>{s.label}</div>
+                    <div style={{
+                      fontSize:26,fontWeight:800,color:s.color,
+                      fontFamily:MONO,letterSpacing:'-0.5px',lineHeight:1.1,
+                      fontVariantNumeric:'tabular-nums',
+                    }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+
+            <Panel delay={0.1}>
+              <SH label="Traffic Volume" />
+              <div style={{ display:'flex',flexDirection:'column',gap:6 }}>
+                {[
+                  { label:'Total Transferred', value:fmtBytes(edges.reduce((s,e)=>s+e.bytes,0)), color:C.green },
+                  { label:'Attack Traffic', value:fmtBytes(attackEdges.reduce((s,e)=>s+e.bytes,0)), color:C.red },
+                  { label:'Connections', value:fmt(edges.length), color:C.purple },
+                ].map((s,i) => (
+                  <div key={i} style={{
+                    display:'flex',justifyContent:'space-between',alignItems:'center',
+                    padding:'7px 0', borderBottom:i<2?`1px solid ${C.border}`:'none',
+                  }}>
+                    <span style={{ fontSize:10,color:C.textSec,letterSpacing:'0.3px' }}>{s.label}</span>
+                    <span style={{ fontSize:11,fontWeight:700,color:s.color,fontVariantNumeric:'tabular-nums' }}>{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+
+            <Panel delay={0.15}>
+              <SH label="Source Breakdown" />
+              <div style={{ display:'flex',flexDirection:'column',gap:5 }}>
+                {[
+                  { status:'benign', label:'Benign', color:C.green },
+                  { status:'suspicious', label:'Suspicious', color:C.amber },
+                  { status:'threat', label:'Threat', color:C.red },
+                ].map(s => {
+                  const count = nodes.filter(n=>n.type==='source'&&n.status===s.status).length;
+                  return (
+                    <div key={s.status} style={{
+                      display:'flex',alignItems:'center',gap:8,padding:'6px 10px',
+                      border:`1px solid ${C.border}`,borderRadius:4,
+                    }}>
+                      <div style={{ width:8,height:8,borderRadius:'50%',background:s.color,boxShadow:`0 0 6px ${s.color}50`,flexShrink:0 }} />
+                      <span style={{ fontSize:10,color:C.textSec,textTransform:'capitalize',flex:1 }}>{s.label}</span>
+                      <span style={{ fontSize:11,fontWeight:700,color:s.color,fontVariantNumeric:'tabular-nums' }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+
+            <Panel delay={0.2}>
+              <SH label="Dest Clusters" />
+              <div style={{ display:'flex',flexDirection:'column',gap:4 }}>
+                {nodes.filter(n=>n.type==='dest').map(node => {
+                  const c = node.status==='threat'?C.red:node.status==='suspicious'?C.amber:C.green;
+                  return (
+                    <div key={node.id} style={{
+                      display:'flex',alignItems:'center',gap:8,padding:'5px 10px',
+                    }}>
+                      <div style={{ width:6,height:6,borderRadius:2,background:c,opacity:0.7 }} />
+                      <span style={{ fontSize:10,color:C.textSec,flex:1 }}>{node.label}</span>
+                      <span style={{ fontSize:9,color:C.textDim,fontFamily:MONO }}>{node.ip}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+          </div>
+
+          {/* Network topology */}
+          <Panel delay={0.05}>
+            <SH label="Live Topology" right={
+              <span style={{ fontSize:9,color:C.textSec }}>
+                {nodes.length} NODES · {edges.length} EDGES
+              </span>
+            } />
+            <div ref={containerRef} style={{ position:'relative' }}>
+              <NetworkTopologySVG nodes={nodes} edges={edges} width={svgDims.width} height={svgDims.height} />
+            </div>
+          </Panel>
+        </section>
+
+        {/* Section 2: Flow Table */}
+        <Panel delay={0.25} style={{ marginBottom:20 }}>
+          <SH label="Active Flow Table" right={
+            <span style={{ fontSize:9,color:C.textSec }}>
+              {edges.length} FLOWS · {fmt(totalFlows)} TOTAL PACKETS
+            </span>
+          } />
+          <div style={{ overflowX:'auto' }}>
+            <table style={{ width:'100%',borderCollapse:'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom:`1px solid ${C.border}`,background:'rgba(0,212,255,0.015)' }}>
+                  {['Source','Destination','Status','Packets','Bytes','Direction'].map(h => (
+                    <th key={h} style={{
+                      padding:'9px 14px',textAlign:'left',fontSize:9,fontWeight:700,
+                      letterSpacing:'1.2px',color:C.textSec,fontFamily:MONO,
+                      textTransform:'uppercase',whiteSpace:'nowrap',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {edges.map((edge,idx) => {
+                  const srcN = nodeMapRef.current.get(edge.source);
+                  const tgtN = nodeMapRef.current.get(edge.target);
+                  const sc = edge.status==='attack'?C.red:edge.status==='suspicious'?C.amber:C.green;
+                  const fresh = idx < 3;
+                  return (
+                    <tr key={edge.id} style={{
+                      borderBottom:`1px solid ${C.border}`,
+                      background: fresh && edge.status==='attack' ? 'rgba(239,68,68,0.025)' : 'transparent',
+                      animation:`wt-row-in 0.35s ${EASE} ${idx*0.02}s both`,
+                      transition:`background 0.15s ${EASE}`,
+                    }}
+                      onMouseEnter={e=>{e.currentTarget.style.background=`${C.accent}04`;}}
+                      onMouseLeave={e=>{e.currentTarget.style.background=fresh&&edge.status==='attack'?'rgba(239,68,68,0.025)':'transparent';}}
+                    >
+                      <td style={{ padding:'9px 14px',fontSize:11,fontFamily:MONO,color:C.accent,fontVariantNumeric:'tabular-nums' }}>
+                        {srcN?.label ?? edge.source}
+                      </td>
+                      <td style={{ padding:'9px 14px',fontSize:11,fontFamily:MONO,color:C.textSec }}>
+                        {tgtN?.label ?? edge.target}
+                      </td>
+                      <td style={{ padding:'9px 14px' }}>
+                        <span style={{
+                          display:'inline-flex',alignItems:'center',gap:5,
+                          padding:'2px 8px',borderRadius:3,fontSize:9,fontWeight:700,
+                          letterSpacing:'1px',color:sc,background:`${sc}0a`,
+                          border:`1px solid ${sc}25`,fontFamily:MONO,textTransform:'uppercase',
+                        }}>
+                          {edge.status==='attack' && <span style={{width:4,height:4,borderRadius:'50%',background:sc,animation:'wt-pulse 1.6s ease-in-out infinite'}} />}
+                          {edge.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ padding:'9px 14px',fontSize:11,fontFamily:MONO,color:C.text,fontVariantNumeric:'tabular-nums' }}>{fmt(edge.packets)}</td>
+                      <td style={{ padding:'9px 14px',fontSize:11,fontFamily:MONO,color:C.textSec,fontVariantNumeric:'tabular-nums' }}>{fmtBytes(edge.bytes)}</td>
+                      <td style={{ padding:'9px 14px',fontSize:11,fontFamily:MONO }}>
+                        <span style={{color:C.accent}}>INGRESS</span>
+                        {' → '}
+                        <span style={{color:C.purple}}>EGRESS</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+
+        {/* Section 3: Source Assessment + Performance */}
+        <section style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:20 }} className="wt-grid-aside">
+          <Panel delay={0.3}>
+            <SH label="Source Threat Assessment" right={
+              <span style={{ fontSize:9,color:C.red }}>
+                {nodes.filter(n=>n.type==='source'&&n.status==='threat').length} COMPROMISED
+              </span>
+            } />
+            <div style={{ display:'flex',flexDirection:'column',gap:5 }}>
+              {nodes.filter(n=>n.type==='source').map(node => {
+                const sc = node.status==='threat'?C.red:node.status==='suspicious'?C.amber:C.green;
+                return (
+                  <div key={node.id} style={{
+                    display:'flex',alignItems:'center',gap:10,padding:'7px 12px',
+                    border:`1px solid ${C.border}`,borderRadius:4,
+                    transition:`border-color 0.2s ${EASE}`,
+                  }}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor=`${sc}40`;}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;}}
+                  >
+                    <div style={{ width:8,height:8,borderRadius:'50%',background:sc,boxShadow:`0 0 6px ${sc}50`,flexShrink:0 }} />
+                    <span style={{ fontSize:11,fontFamily:MONO,color:C.text,flex:1,fontVariantNumeric:'tabular-nums' }}>{node.ip}</span>
+                    <span style={{ fontSize:9,fontWeight:700,letterSpacing:'0.8px',color:sc,textTransform:'uppercase' }}>{node.status}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Panel>
+
+          <Panel delay={0.35}>
+            <SH label="Network Performance" right={
+              <span style={{ fontSize:9,color:C.textSec }}>TARGET 50K FLOWS/S</span>
+            } />
+            <div style={{ display:'flex',flexDirection:'column',gap:14,paddingTop:2 }}>
               {[
-                { label: 'Critical', value: threatDist.filter(t => t.color === C.red).reduce((s, t) => s + t.count, 0), color: C.red },
-                { label: 'High', value: threatDist.filter(t => t.color === C.orange).reduce((s, t) => s + t.count, 0), color: C.orange },
-                { label: 'Medium', value: threatDist.filter(t => t.color === C.yellow).reduce((s, t) => s + t.count, 0), color: C.yellow },
-                { label: 'Low', value: threatDist.filter(t => t.color === '#06b6d4').reduce((s, t) => s + t.count, 0), color: '#06b6d4' },
-              ].map(stat => (
-                <div key={stat.label} className="flex items-center justify-between">
-                  <span className="text-[11px]" style={{ fontFamily: MONO, color: C.muted }}>{stat.label}</span>
-                  <span className="text-sm font-bold" style={{ fontFamily: MONO, color: stat.color }}>
-                    {stat.value}
-                  </span>
+                { label:'Ingress throughput', value:'34.2K flows/s', pct:68, color:C.accent },
+                { label:'Egress throughput', value:'28.7K flows/s', pct:57, color:C.purple },
+                { label:'Enclave utilization', value:'72%', pct:72, color:C.amber },
+                { label:'Processing latency', value:'8ms p99', pct:8, color:C.green },
+              ].map(m => (
+                <div key={m.label}>
+                  <div style={{ display:'flex',justifyContent:'space-between',marginBottom:5 }}>
+                    <span style={{ fontSize:10,color:C.textSec,letterSpacing:'0.3px' }}>{m.label}</span>
+                    <span style={{ fontSize:10,fontWeight:700,color:C.text,fontVariantNumeric:'tabular-nums' }}>{m.value}</span>
+                  </div>
+                  <Progress value={m.pct} max={100} color={m.color} />
                 </div>
               ))}
             </div>
-          </Section>
-        </div>
-      </div>
+          </Panel>
+        </section>
 
-      {/* ── Footer info ───────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mt-5 px-1">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.green }} />
-          <span className="text-[10px]" style={{ fontFamily: MONO, color: C.muted }}>
-            Data refreshed every 5s · {nodes.length} nodes monitored · {edges.length} active flows
+        {/* Footer */}
+        <footer style={{
+          padding:'24px 0',borderTop:`1px solid ${C.border}`,
+          display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,
+        }}>
+          <span style={{ fontSize:9,color:C.textDim,letterSpacing:'1px' }}>
+            WATCHTOWER v3.2.1 · EKADHARA · NTRO SIH26
           </span>
-        </div>
-        <span className="text-[10px]" style={{ fontFamily: MONO, color: C.dim }}>
-          WATCHTOWER v2.4.1 · Mock Data Environment
-        </span>
-      </div>
+          <span style={{ fontSize:9,color:C.textDim,letterSpacing:'0.5px',fontVariantNumeric:'tabular-nums' }}>
+            {nodes.length} NODES · {edges.length} FLOWS · {fmt(totalFlows)} PACKETS
+          </span>
+        </footer>
+      </main>
     </div>
   );
 };

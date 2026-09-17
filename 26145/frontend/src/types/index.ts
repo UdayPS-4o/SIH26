@@ -24,6 +24,9 @@ export interface Alert {
   severity: 'low' | 'medium' | 'high' | 'critical';
   src_ip: string;
   dst_ip: string;
+  src_port: number;
+  dst_port: number;
+  protocol: string;
   evidence: Record<string, any>;
   flow_count: number;
 }

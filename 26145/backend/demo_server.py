@@ -2,16 +2,25 @@
 Demo server — combines real packet capture, attack generation, and alert streaming.
 
 WebSocket endpoints:
-  /ws/dashboard   — dashboard stats (real packets + attacks)
-  /ws/alerts      — threat alerts (real + simulated)
-  /ws/attack      — attack control (launch/stop attacks)
+  /ws              — multiplexed dashboard + alerts (single connection, frontend default)
+  /ws/dashboard    — dashboard stats (real packets + attacks)
+  /ws/alerts       — threat alerts (real + simulated)
+  /ws/attack       — attack control (launch/stop attacks)
 
 REST endpoints:
-  GET  /api/real-stats      — live capture statistics
-  GET  /api/active-attacks  — list running attacks
-  POST /api/attack/start    — launch an attack
-  POST /api/attack/stop     — stop an attack
-  GET  /api/interfaces      — list network interfaces
+  GET  /api/health         — service health
+  GET  /api/stats          — dashboard statistics (alias for /api/real-stats)
+  GET  /api/real-stats     — live capture statistics
+  GET  /api/alerts         — recent alerts
+  GET  /api/active-attacks — list running attacks
+  GET  /api/interfaces     — list network interfaces
+  GET  /api/threat-types   — threat type catalogue
+  GET  /api/materials      — materials list
+  POST /api/attack/start   — launch an attack
+  POST /api/attack/stop    — stop an attack
+  POST /api/attack/stop-all
+  POST /api/capture/start  — start real capture
+  POST /api/capture/stop   — stop real capture
 
 Usage:
   python demo_server.py                    # localhost only
@@ -33,7 +42,6 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 # ---------------------------------------------------------------------------
@@ -93,6 +101,7 @@ _sniffer_lock = threading.Lock()
 _dashboard_clients: set[WebSocket] = set()
 _alert_clients: set[WebSocket] = set()
 _attack_clients: set[WebSocket] = set()
+_ws_clients: set[WebSocket] = set()  # multiplexed /ws clients
 
 # Simulated traffic for when real capture isn't running
 _sim_thread: threading.Thread | None = None
@@ -110,14 +119,15 @@ def _on_alert(alert: DetectedAlert) -> None:
         _real_alerts.appendleft(alert)
         _stats["alerts_generated"] += 1
 
-    # Push to WebSocket clients
+    # Normalize confidence 0.0-1.0 -> 0-100 for frontend
+    confidence = round(alert.confidence * 100, 1)
     msg = json.dumps({
-        "type": "real_alert",
+        "type": "alert",
         "data": {
             "id": alert.id,
             "timestamp": alert.timestamp,
-            "threat_type": alert.threat_type,
-            "confidence": round(alert.confidence, 3),
+            "threat_class": alert.threat_type,
+            "confidence_score": confidence,
             "severity": alert.severity,
             "src_ip": alert.src_ip,
             "dst_ip": alert.dst_ip,
@@ -130,10 +140,15 @@ def _on_alert(alert: DetectedAlert) -> None:
         },
     })
 
-    # Send to all connected alert clients
+    # Push to WebSocket clients
     for ws in list(_alert_clients):
         try:
-            asyncio.get_event_loop().run_in_executor(None, _safe_send, ws, msg)
+            _ws_send(ws, msg)
+        except Exception:
+            pass
+    for ws in list(_ws_clients):
+        try:
+            _ws_send(ws, msg)
         except Exception:
             pass
 
@@ -157,51 +172,64 @@ def _generate_simulated_alert() -> dict:
     """Generate a realistic simulated alert for demo purposes."""
     import random
 
+    # 6 threat categories matching the dashboard
     threat_types = [
         ("DDoS", "critical", 0.85 + random.random() * 0.14),
         ("Beaconing", "high", 0.70 + random.random() * 0.25),
         ("DGA", "medium", 0.65 + random.random() * 0.30),
-        ("DNS Tunneling", "medium", 0.60 + random.random() * 0.35),
         ("TLS Anomaly", "high", 0.75 + random.random() * 0.20),
         ("Port Scan", "medium", 0.70 + random.random() * 0.25),
         ("Data Exfiltration", "critical", 0.80 + random.random() * 0.19),
     ]
 
     t_type, sev, conf = random.choice(threat_types)
-    src_ips = ["185.220.101.34", "91.234.99.12", "103.224.182.250",
-               "198.51.100.45", "203.0.113.88", "45.33.32.156",
-               "192.168.1." + str(random.randint(2, 254))]
+    src_ips = [
+        "185.220.101.34", "91.234.99.12", "103.224.182.250",
+        "198.51.100.45", "203.0.113.88", "45.33.32.156",
+        "192.168.1." + str(random.randint(2, 254)),
+    ]
     dst_ips = ["10.0.1.50", "10.0.1.100", "10.0.1.200", "192.168.1.10"]
 
     evidence_presets = {
-        "DDoS": {"syn_count": random.randint(50, 500), "packet_count": random.randint(100, 1000),
-                 "unique_src_ips": random.randint(10, 200), "detection_method": "syn_rate_threshold"},
-        "Beaconing": {"avg_interval_sec": round(random.uniform(1.0, 5.0), 3),
-                       "beacon_count": random.randint(10, 50),
-                       "coefficient_of_variation": round(random.uniform(0.05, 0.25), 4),
-                       "detection_method": "interval_regularity"},
-        "DGA": {"domain_entropy": round(random.uniform(3.5, 5.0), 2),
-                 "domain_length": random.randint(15, 40),
-                 "detection_method": "entropy_analysis"},
-        "DNS Tunneling": {"avg_query_length": random.randint(40, 100),
-                          "query_count": random.randint(20, 100),
-                          "detection_method": "dns_length_analysis"},
-        "TLS Anomaly": {"tls_fingerprint": _random_ja3(),
-                        "certificate_valid": random.random() < 0.3,
-                        "detection_method": "ja3_fingerprint_mismatch"},
-        "Port Scan": {"unique_ports_scanned": random.randint(10, 100),
-                      "syn_count": random.randint(15, 200),
-                      "detection_method": "sequential_port_probe"},
-        "Data Exfiltration": {"bytes_transferred": random.randint(1_000_000, 100_000_000),
-                               "unusual_port": random.choice([8080, 8443, 9001, 31337]),
-                               "detection_method": "volume_anomaly"},
+        "DDoS": {
+            "syn_count": random.randint(50, 500),
+            "packet_count": random.randint(100, 1000),
+            "unique_src_ips": random.randint(10, 200),
+            "detection_method": "syn_rate_threshold",
+        },
+        "Beaconing": {
+            "avg_interval_sec": round(random.uniform(1.0, 5.0), 3),
+            "beacon_count": random.randint(10, 50),
+            "coefficient_of_variation": round(random.uniform(0.05, 0.25), 4),
+            "detection_method": "interval_regularity",
+        },
+        "DGA": {
+            "domain_entropy": round(random.uniform(3.5, 5.0), 2),
+            "domain_length": random.randint(15, 40),
+            "detection_method": "entropy_analysis",
+        },
+        "TLS Anomaly": {
+            "tls_fingerprint": _random_ja3(),
+            "certificate_valid": random.random() < 0.3,
+            "detection_method": "ja3_fingerprint_mismatch",
+        },
+        "Port Scan": {
+            "unique_ports_scanned": random.randint(10, 100),
+            "syn_count": random.randint(15, 200),
+            "detection_method": "sequential_port_probe",
+        },
+        "Data Exfiltration": {
+            "bytes_transferred": random.randint(1_000_000, 100_000_000),
+            "unusual_port": random.choice([8080, 8443, 9001, 31337]),
+            "detection_method": "volume_anomaly",
+        },
     }
 
     alert = {
         "id": f"sim-{int(time.time() * 1000)}-{random.randint(1000, 9999)}",
         "timestamp": time.time(),
-        "threat_type": t_type,
-        "confidence": round(conf, 3),
+        "threat_class": t_type,
+        "confidence_score": round(conf * 100, 1),  # 0-100 for frontend
         "severity": sev,
         "src_ip": random.choice(src_ips),
         "dst_ip": random.choice(dst_ips),
@@ -242,11 +270,18 @@ def _sim_alert_loop() -> None:
 
             # Push to WebSocket clients
             msg = json.dumps({
-                "type": "simulated_alert",
+                "type": "alert",
                 "data": alert,
             })
 
             for ws in list(_alert_clients):
+                try:
+                    loop = asyncio.get_event_loop()
+                    if not loop.is_closed():
+                        loop.run_in_executor(None, _ws_send, ws, msg)
+                except Exception:
+                    pass
+            for ws in list(_ws_clients):
                 try:
                     loop = asyncio.get_event_loop()
                     if not loop.is_closed():
@@ -281,25 +316,16 @@ def _sim_stats_loop() -> None:
                 _stats["total_bytes"] += random.randint(10000, 500000)
                 _stats["active_flows"] = random.randint(20, 200)
 
-            # Broadcast stats to dashboard clients
-            stats_msg = json.dumps({
-                "type": "stats",
-                "data": {
-                    "total_packets": _stats["total_packets"],
-                    "total_bytes": _stats["total_bytes"],
-                    "active_flows": _stats["active_flows"],
-                    "alerts_generated": _stats["alerts_generated"],
-                    "attacks_launched": _stats["attacks_launched"],
-                    "capture_mode": "simulated" if _sniffer is None or not _sniffer.is_running else "real",
-                    "uptime": int(time.time() - _start_time),
-                },
-            })
+            msg = _build_stats_message()
 
             for ws in list(_dashboard_clients):
                 try:
-                    loop = asyncio.get_event_loop()
-                    if not loop.is_closed():
-                        asyncio.run_coroutine_threadsafe(ws.send_text(stats_msg), loop)
+                    _ws_send(ws, msg)
+                except Exception:
+                    pass
+            for ws in list(_ws_clients):
+                try:
+                    _ws_send(ws, msg)
                 except Exception:
                     pass
 
@@ -307,6 +333,23 @@ def _sim_stats_loop() -> None:
             logger.error(f"[SIM] Stats error: {e}")
 
         time.sleep(1.0)
+
+
+def _build_stats_message() -> str:
+    """Build the stats JSON message for dashboard / multiplexed ws."""
+    with _lock:
+        return json.dumps({
+            "type": "stats",
+            "data": {
+                "total_packets": _stats["total_packets"],
+                "total_bytes": _stats["total_bytes"],
+                "active_flows": _stats["active_flows"],
+                "alerts_generated": _stats["alerts_generated"],
+                "attacks_launched": _stats["attacks_launched"],
+                "capture_mode": "real" if (_sniffer and _sniffer.is_running) else "simulated",
+                "uptime_sec": int(time.time() - _start_time),
+            },
+        })
 
 
 # ---------------------------------------------------------------------------
@@ -340,6 +383,12 @@ def get_real_stats():
         }
 
 
+@app.get("/api/stats")
+def get_stats():
+    """Alias for real-stats (frontend also calls /api/stats)."""
+    return get_real_stats()
+
+
 @app.get("/api/alerts")
 def get_alerts(limit: int = 50):
     """Get recent alerts (both real and simulated)."""
@@ -347,6 +396,24 @@ def get_alerts(limit: int = 50):
         all_alerts = list(_real_alerts) + list(_simulated_alerts)
     all_alerts.sort(key=lambda a: a.get("timestamp", 0) if isinstance(a, dict) else a.timestamp, reverse=True)
     return {"alerts": all_alerts[:limit], "total": len(all_alerts)}
+
+
+@app.get("/api/threat-types")
+def get_threat_types():
+    """Threat type catalogue for the frontend."""
+    return [
+        {"id": "1", "name": "DDoS", "description": "Distributed Denial of Service", "severity": "critical"},
+        {"id": "2", "name": "Beaconing", "description": "Periodic C2 beaconing", "severity": "high"},
+        {"id": "3", "name": "DGA", "description": "Domain Generation Algorithm", "severity": "medium"},
+        {"id": "4", "name": "TLS Anomaly", "description": "TLS/JA3 fingerprint anomaly", "severity": "high"},
+        {"id": "5", "name": "Port Scan", "description": "Sequential port probing", "severity": "medium"},
+        {"id": "6", "name": "Data Exfiltration", "description": "Unusual large data transfer", "severity": "critical"},
+    ]
+
+
+@app.get("/api/materials")
+def get_materials():
+    return []
 
 
 @app.get("/api/active-attacks")
@@ -435,6 +502,38 @@ def stop_capture():
 # ---------------------------------------------------------------------------
 # WebSocket endpoints
 # ---------------------------------------------------------------------------
+
+
+@app.websocket("/ws")
+async def ws_multiplexed(ws: WebSocket):
+    """
+    Multiplexed WebSocket — sends both stats and alerts on a single connection.
+    This matches the frontend's WebSocket URL: ws://host/ws
+    """
+    await ws.accept()
+    _ws_clients.add(ws)
+    logger.info("[WS] Multiplexed client connected")
+    try:
+        # Immediately send current stats on connect
+        await ws.send_text(_build_stats_message())
+
+        # Also send recent alerts
+        with _lock:
+            recent = list(_real_alerts)[:10] + list(_simulated_alerts)[:10]
+        for alert in recent:
+            alert_data = _serialize_alert(alert)
+            if alert_data:
+                await ws.send_json({"type": "alert", "data": alert_data})
+
+        # Keep alive — stats pushed by _sim_stats_loop
+        while True:
+            await asyncio.sleep(30)
+            await ws.send_text(json.dumps({"type": "ping"}))
+    except WebSocketDisconnect:
+        pass
+    finally:
+        _ws_clients.discard(ws)
+        logger.info("[WS] Multiplexed client disconnected")
 
 
 @app.websocket("/ws/dashboard")
@@ -560,42 +659,74 @@ async def ws_attack(ws: WebSocket):
 
 
 def _serialize_alert(alert) -> dict | None:
-    """Convert alert (dict or object) to JSON dict."""
+    """Convert alert (dict or DetectedAlert object) to a normalized client-facing dict.
+
+    Ensures field names match what the frontend expects:
+      - threat_class  (not threat_type)
+      - confidence_score (0-100, not 0.0-1.0)
+      - evidence as structured object
+    """
     if isinstance(alert, dict):
-        return alert
-    if isinstance(alert, DetectedAlert):
-        return {
-            "id": alert.id,
-            "timestamp": alert.timestamp,
-            "threat_type": alert.threat_type,
-            "confidence": round(alert.confidence, 3),
-            "severity": alert.severity,
-            "src_ip": alert.src_ip,
-            "dst_ip": alert.dst_ip,
-            "src_port": alert.src_port,
-            "dst_port": alert.dst_port,
-            "protocol": alert.protocol,
-            "evidence": alert.evidence,
-            "flow_count": alert.flow_count,
-            "source": "real",
-        }
-    return None
+        base = dict(alert)
+    elif hasattr(alert, "to_dict"):
+        base = alert.to_dict()
+    else:
+        return None
+
+    # Map field names to frontend expectations
+    base.setdefault("threat_class", base.pop("threat_type", base.get("threat_class", "unknown")))
+    base.setdefault("confidence_score", base.pop("confidence", base.get("confidence_score", 0)))
+
+    # Normalize confidence to 0-100 scale
+    conf = base["confidence_score"]
+    if isinstance(conf, (int, float)) and conf <= 1.0:
+        base["confidence_score"] = round(conf * 100, 1)
+
+    return base
 
 
 # ---------------------------------------------------------------------------
 # Static files / SPA fallback
 # ---------------------------------------------------------------------------
+#
+# Mount the built Vite frontend at "/".  html=True means any request that
+# doesn't match a real file on disk falls back to index.html — giving us
+# SPA client-side routing "for free".
+#
+# This mount is declared AFTER all @app.get / @app.post / @app.websocket
+# routes above, so those always take priority and are never swallowed by
+# StaticFiles.  The WebSocket endpoints (/ws/dashboard, /ws/alerts,
+# /ws/attack) and REST endpoints (/api/...) all match first.
+# ---------------------------------------------------------------------------
+
+app.mount(
+    "/",
+    StaticFiles(directory=str(_frontend_dist), html=True, check_dir=False),
+    name="frontend",
+)
+
+
+# ---------------------------------------------------------------------------
+# SPA fallback — catch-all for non-API, non-WebSocket routes
+# ---------------------------------------------------------------------------
+# StaticFiles with html=True handles SPA routing, but this explicit
+# fallback ensures unmatched routes return index.html when the frontend
+# is built, or a helpful message when it is not.
+
+_API_PREFIXES = ("/api", "/docs", "/redoc", "/openapi.json", "/ws")
 
 
 @app.get("/{full_path:path}")
-async def serve_frontend(request, full_path: str):
-    """Serve frontend or fallback to index.html for SPA routing."""
+async def spa_fallback(request, full_path: str):
+    """Serve index.html for SPA client-side routes."""
+    path = "/" + full_path
+    for prefix in _API_PREFIXES:
+        if path == prefix or path.startswith(prefix + "/"):
+            return {"message": "EKADHARA backend — route not found"}
+
     if _frontend_dist.exists():
-        file_path = _frontend_dist / full_path
-        if file_path.is_file():
-            return FileResponse(file_path)
         return FileResponse(_frontend_dist / "index.html")
-    return {"message": "EKADHARA backend — frontend not built yet"}
+    return {"message": "EKADHARA backend — frontend not built yet. Run: cd frontend && npm run build"}
 
 
 # ---------------------------------------------------------------------------
