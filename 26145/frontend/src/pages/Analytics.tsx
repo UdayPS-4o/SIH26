@@ -599,7 +599,7 @@ const Analytics: React.FC = () => {
   const metrics = getDetectionMetrics();
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: FONT, fontSize: 12, lineHeight: 1.5 }}>
+    <div style={{ minHeight: '100%', background: C.bg, color: C.text, fontFamily: FONT, fontSize: 12, lineHeight: 1.5 }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         ::selection { background: rgba(0,212,255,0.15); color: ${C.text}; }
@@ -613,7 +613,7 @@ const Analytics: React.FC = () => {
       {/* ── STICKY HUD BAR ────────────────────────────────────────────── */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 40,
-        background: 'rgba(5,8,13,0.94)', backdropFilter: 'blur(14px) saturate(1.2)',
+        background: 'rgba(5,8,13,0.94)',
         borderBottom: `1px solid ${C.border}`,
       }}>
         <div style={{ maxWidth: 1480, margin: '0 auto', padding: '0 28px', display: 'flex', alignItems: 'center', height: 48, gap: 14 }}>

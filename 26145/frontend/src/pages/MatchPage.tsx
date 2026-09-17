@@ -245,7 +245,7 @@ function MatchPage() {
   return (
     <div style={{
       background: '#060a10',
-      minHeight: '100vh',
+      minHeight: '100%',
       padding: '24px 32px',
       fontFamily: 'var(--font-body, "Inter", sans-serif)',
       color: '#e0e8f0',
