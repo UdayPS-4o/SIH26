@@ -4,22 +4,35 @@ Machine learning models for cyber threat detection.
 Provides model wrappers around scikit-learn IsolationForest and
 LogisticRegression classifiers. Models are trained on synthetic flow
 features and produce per-flow anomaly/attack-type scores.
+
+Falls back to rule-based statistical detection when scikit-learn/numpy
+are not available (e.g., Windows App Control policy).
 """
 
 from __future__ import annotations
 
 import hashlib
 import logging
+import math
 import os
 import pickle
+import random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-import numpy as np
-from sklearn.ensemble import IsolationForest
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
+try:
+    import numpy as np
+    from sklearn.ensemble import IsolationForest
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import StandardScaler
+    HAS_ML = True
+except (ImportError, OSError):
+    HAS_ML = False
+    np = None
+    IsolationForest = None
+    LogisticRegression = None
+    StandardScaler = None
 
 from features import extract_flow_features, features_to_vector
 

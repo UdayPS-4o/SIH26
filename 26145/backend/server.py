@@ -5,15 +5,9 @@ Provides WebSocket streaming of flows and alerts, and REST endpoints
 for health checks, statistics, and alert retrieval.
 """
 
-import asyncio
-import json
-import logging
-import os
-import threading
-import time
-import uuid
-from collections import deque
+import os, sys, time, threading, uuid, json, asyncio, logging
 from pathlib import Path
+from collections import deque
 from typing import Any
 
 import uvicorn
@@ -22,13 +16,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+# Ensure backend package is importable
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 project_root = Path(__file__).resolve().parent.parent
-_frontend_dist = project_root / "frontend" / "dist"
 
-from .simulator import TrafficSimulator
-from .detector import ThreatDetector, Alert
-from .models import DetectionEnsemble
-from .self_test import run_self_test as _run_egress_self_test
+from simulator import TrafficSimulator
+from detector import ThreatDetector, Alert
+from models import DetectionEnsemble
+from self_test import run_self_test as _run_egress_self_test
 
 logger = logging.getLogger(__name__)
 
