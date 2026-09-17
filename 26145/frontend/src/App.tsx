@@ -32,125 +32,126 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   });
 
   return (
-    <div
-      className="terminal-wrapper"
-      style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}
-    >
-      {/* ── MAIN APP SHELL ── */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        <Sidebar isOpen={false} onClose={() => {}} />
+    <div className="terminal-wrapper" style={{ display: 'flex', height: '100vh' }}>
+      {/* Sidebar — always visible, fixed position */}
+      <Sidebar isOpen={true} onClose={() => {}} />
 
-        <div className="terminal-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', minWidth: 0 }}>
-          {/* ── HUD HEADER BAR ── */}
-          <div className="hud-bar">
-            {/* App title */}
-            <div className="hud-title">
-              <span className="hud-title-icon">
-                <ShieldAlert size={14} />
+      {/* Main content area */}
+      <div
+        className="terminal-main"
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          marginLeft: 220,
+          height: '100vh',
+          overflowY: 'auto',
+        }}
+      >
+        {/* HUD HEADER BAR */}
+        <div className="hud-bar">
+          <div className="hud-title">
+            <span className="hud-title-icon">
+              <ShieldAlert size={14} />
+            </span>
+            ◈ WATCHTOWER
+          </div>
+
+          <div className="hud-divider" />
+
+          {/* Project info */}
+          <div
+            className="hud-subtitle"
+            style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}
+          >
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
+              PS-26145
+            </span>
+            <span className="hud-subtitle-sep" />
+            <span>NTRO · SIH26</span>
+          </div>
+
+          <div className="hud-spacer" />
+
+          {/* Status indicators */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="hud-stat">
+              <span className="hud-stat-label">STATUS</span>
+              <span
+                className="hud-live-text"
+                style={{
+                  color: isConnected ? 'var(--accent-green)' : '#f59e0b',
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {isConnected ? 'LIVE' : 'DEMO'}
               </span>
-              ◈ WATCHTOWER
+              <span
+                className="hud-status-dot"
+                style={{
+                  background: isConnected ? 'var(--accent-green)' : '#f59e0b',
+                  boxShadow: isConnected
+                    ? '0 0 8px rgba(0,255,65,0.5)'
+                    : '0 0 8px rgba(245,158,11,0.5)',
+                }}
+              />
             </div>
 
             <div className="hud-divider" />
 
-            {/* Project info */}
-            <div
-              className="hud-subtitle"
-              style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}
-            >
-              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>PS-26145</span>
-              <span className="hud-subtitle-sep" />
-              <span>NTRO // SIH26</span>
+            <div className="hud-stat">
+              <span className="hud-stat-label">ALERTS</span>
+              <span className="hud-stat-value">{alertCount}</span>
             </div>
 
-            <div className="hud-spacer" />
+            <div className="hud-stat">
+              <span className="hud-stat-label">THROUGHPUT</span>
+              <span className="hud-stat-value">{(flowsPerSec ?? 0).toFixed(0)}/s</span>
+            </div>
 
-            {/* Status indicators */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Live / Demo indicator */}
-              <div className="hud-stat">
-                <span className="hud-stat-label">STATUS</span>
-                <span
-                  className="hud-live-text"
-                  style={{
-                    color: isConnected ? 'var(--accent-green)' : '#f59e0b',
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}
-                >
-                  {isConnected ? 'LIVE' : 'DEMO'}
-                </span>
-                <span
-                  className="hud-status-dot"
-                  style={{
-                    background: isConnected ? 'var(--accent-green)' : '#f59e0b',
-                    boxShadow: isConnected
-                      ? '0 0 8px rgba(0,255,65,0.5)'
-                      : '0 0 8px rgba(245,158,11,0.5)',
-                  }}
-                />
-              </div>
+            <div className="hud-divider" />
 
-              <div className="hud-divider" />
+            <div className="diode-badge">
+              <span className="diode-dot" />
+              DIODE READ-ONLY
+            </div>
 
-              {/* Alert count */}
-              <div className="hud-stat">
-                <span className="hud-stat-label">ALERTS</span>
-                <span className="hud-stat-value">{alertCount}</span>
-              </div>
+            <div className="hud-divider" />
 
-              {/* Throughput */}
-              <div className="hud-stat">
-                <span className="hud-stat-label">THROUGHPUT</span>
-                <span className="hud-stat-value">{(flowsPerSec ?? 0).toFixed(0)}/s</span>
-              </div>
-
-              <div className="hud-divider" />
-
-              {/* Diode badge */}
-              <div className="diode-badge">
-                <span className="diode-dot" />
-                DIODE READ-ONLY
-              </div>
-
-              <div className="hud-divider" />
-
-              {/* Clock */}
-              <div className="hud-clock">
-                <span className="hud-clock-date">{dateStr}</span>
-                <span className="hud-clock-sep">|</span>
-                <span className="hud-clock-time">{timeStr}</span>
-              </div>
+            <div className="hud-clock">
+              <span className="hud-clock-date">{dateStr}</span>
+              <span className="hud-clock-sep">|</span>
+              <span className="hud-clock-time">{timeStr}</span>
             </div>
           </div>
-
-          {/* ── CONTENT AREA ── */}
-          <main className="terminal-content">{children}</main>
         </div>
+
+        {/* CONTENT AREA */}
+        <main className="terminal-content">{children}</main>
       </div>
     </div>
   );
 };
 
-const AppContent: React.FC = () => {
-  return (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/live-threats" element={<LiveThreats />} />
-      <Route path="/network-map" element={<NetworkMap />} />
-      <Route path="/analytics" element={<Analytics />} />
-      <Route path="/ai-analyzer" element={<AIAnalyzer />} />
-      <Route path="/materials" element={<MaterialsPage />} />
-      <Route path="/materials/:id" element={<MaterialsPage />} />
-      <Route path="/activity" element={<ActivityPage />} />
-      <Route path="/integrations" element={<IntegrationPage />} />
-      <Route path="/admin" element={<AdminPage />} />
-      <Route path="/match" element={<MatchPage />} />
-      <Route path="/attack" element={<AttackPanel />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-};
+const AppContent: React.FC = () => (
+  <Routes>
+    <Route path="/" element={<Dashboard />} />
+    <Route path="/live-threats" element={<LiveThreats />} />
+    <Route path="/network-map" element={<NetworkMap />} />
+    <Route path="/analytics" element={<Analytics />} />
+    <Route path="/ai-analyzer" element={<AIAnalyzer />} />
+    <Route path="/materials" element={<MaterialsPage />} />
+    <Route path="/materials/:id" element={<MaterialsPage />} />
+    <Route path="/activity" element={<ActivityPage />} />
+    <Route path="/integrations" element={<IntegrationPage />} />
+    <Route path="/admin" element={<AdminPage />} />
+    <Route path="/match" element={<MatchPage />} />
+    <Route path="/attack" element={<AttackPanel />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+);
 
 const App: React.FC = () => (
   <BrowserRouter>
