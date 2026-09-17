@@ -1,29 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ═══════════════════════════════════════════════════════════════════════
-   TACTICAL OPERATIONS CENTER — DARK TERMINAL THEME
+   THEME-AWARE TERMINAL / MILITARY OPS-CENTER THEME
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ───────────────────────────────────────────────────────────────────────
-   CSS CUSTOM PROPERTIES
-   ─────────────────────────────────────────────────────────────────────── */
+/* ── smooth theme transitions ── */
+html,
+html *,
+html *::before,
+html *::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Don't transition on elements that shouldn't */
+.wt-no-transition,
+.wt-no-transition * {
+  transition: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES — DARK (default)
+   ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg-primary: #060a10;
-  --bg-secondary: #0a1018;
-  --bg-card: rgba(10, 18, 28, 0.85);
-  --bg-card-hover: rgba(14, 22, 36, 0.9);
-  --border-color: rgba(0, 212, 255, 0.12);
-  --border-active: rgba(0, 212, 255, 0.4);
-  --text-primary: #c8d6e5;
-  --text-secondary: #5a7a9a;
-  --text-muted: #2d4a6a;
+  --bg-primary: #05080d;
+  --bg-secondary: #080d14;
+  --bg-card: #080d14;
+  --bg-card-hover: #0c1219;
+  --border-color: #111c2b;
+  --border-active: #182a3d;
+  --text-primary: #dce4ec;
+  --text-secondary: #556677;
+  --text-muted: #2a3a4a;
   --accent-cyan: #00d4ff;
-  --accent-green: #00ff41;
-  --accent-red: #ff3355;
-  --accent-orange: #ff8833;
-  --accent-yellow: #ffcc00;
-  --accent-purple: #b347ff;
-  --font-mono: 'JetBrains Mono', 'Share Tech Mono', monospace;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --accent-green: #22c55e;
+  --accent-red: #ef4444;
+  --accent-orange: #f97316;
+  --accent-yellow: #eab308;
+  --accent-purple: #a855f7;
+  --accent-pink: #ec4899;
+  --accent-teal: #14b8a6;
+  --accent-sky: #0ea5e9;
+  --accent-amber: #f59e0b;
+  --accent-indigo: #6366f1;
 
   /* Derived / convenience tokens */
   --radius-sm: 6px;
@@ -34,15 +55,36 @@
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ───────────────────────────────────────────────────────────────────────
-   FONTS
-   ─────────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════
+   LIGHT THEME OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+[data-theme="light"] {
+  --bg-primary: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8f9fb;
+  --border-color: #dde2e8;
+  --border-active: #c4cbd4;
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --accent-cyan: #0891b2;
+  --accent-green: #16a34a;
+  --accent-red: #dc2626;
+  --accent-orange: #ea580c;
+  --accent-yellow: #d97706;
+  --accent-purple: #9333ea;
+  --accent-pink: #db2777;
+  --accent-teal: #0d9488;
+  --accent-sky: #0284c7;
+  --accent-amber: #b45309;
+  --accent-indigo: #4f46e5;
+}
 
-/* ───────────────────────────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════════════
    GLOBAL RESET
-   ─────────────────────────────────────────────────────────────────────── */
+   ═══════════════════════════════════════════════════════════════════════ */
 
 *, *::before, *::after {
   margin: 0;
@@ -56,7 +98,7 @@ html, body, #root {
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.6;
@@ -67,11 +109,10 @@ body {
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   ATMOSPHERIC LAYERS
+   ATMOSPHERIC LAYERS (dark only)
    ─────────────────────────────────────────────────────────────────────── */
 
-/* Full-page scanline overlay */
-body::before {
+[data-theme="dark"] body::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -86,24 +127,21 @@ body::before {
   );
 }
 
-/* Subtle radar / grid background pattern */
-body::after {
+[data-theme="dark"] body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
   background:
-    /* Radial vignette — dark edges */
     radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.6) 100%),
-    /* Grid */
     linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
   background-size: 100% 100%, 40px 40px, 40px 40px;
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   SCROLLBAR — dark, thin, cyan-tinted thumb
+   SCROLLBAR
    ─────────────────────────────────────────────────────────────────────── */
 
 ::-webkit-scrollbar {
@@ -116,22 +154,22 @@ body::after {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 212, 255, 0.15);
+  background: var(--border-color);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 212, 255, 0.3);
+  background: var(--border-active);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 212, 255, 0.15) transparent;
+  scrollbar-color: var(--border-color) transparent;
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   CUSTOM SELECTION — cyan highlight
+   CUSTOM SELECTION
    ─────────────────────────────────────────────────────────────────────── */
 
 ::selection {
@@ -144,8 +182,13 @@ body::after {
   color: #fff;
 }
 
+[data-theme="light"] ::selection {
+  background: rgba(0, 212, 255, 0.2);
+  color: #fff;
+}
+
 /* ───────────────────────────────────────────────────────────────────────
-   UTILITY TYPOGRAPHY — data, timestamps, IPs → mono
+   UTILITY TYPOGRAPHY
    ─────────────────────────────────────────────────────────────────────── */
 
 .mono,
@@ -154,18 +197,18 @@ body::after {
 .ip-address,
 .hash,
 .coordinate {
-  font-family: var(--font-mono) !important;
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace !important;
   font-size: 12px;
   letter-spacing: 0.02em;
 }
 
-/* Glow utility — apply accent color via modifier class */
-.text-glow-cyan { text-shadow: 0 0 8px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.2); }
-.text-glow-green { text-shadow: 0 0 8px rgba(0, 255, 65, 0.5), 0 0 20px rgba(0, 255, 65, 0.2); }
-.text-glow-red   { text-shadow: 0 0 8px rgba(255, 51, 85, 0.5), 0 0 20px rgba(255, 51, 85, 0.2); }
-.text-glow-orange { text-shadow: 0 0 8px rgba(255, 136, 51, 0.5), 0 0 20px rgba(255, 136, 51, 0.2); }
-.text-glow-yellow { text-shadow: 0 0 8px rgba(255, 204, 0, 0.5), 0 0 20px rgba(255, 204, 0, 0.2); }
-.text-glow-purple { text-shadow: 0 0 8px rgba(179, 71, 255, 0.5), 0 0 20px rgba(179, 71, 255, 0.2); }
+/* Glow utility — dark mode only */
+[data-theme="dark"] .text-glow-cyan { text-shadow: 0 0 8px rgba(0, 212, 255, 0.5), 0 0 20px rgba(0, 212, 255, 0.2); }
+[data-theme="dark"] .text-glow-green { text-shadow: 0 0 8px rgba(0, 255, 65, 0.5), 0 0 20px rgba(0, 255, 65, 0.2); }
+[data-theme="dark"] .text-glow-red   { text-shadow: 0 0 8px rgba(255, 51, 85, 0.5), 0 0 20px rgba(255, 51, 85, 0.2); }
+[data-theme="dark"] .text-glow-orange { text-shadow: 0 0 8px rgba(255, 136, 51, 0.5), 0 0 20px rgba(255, 136, 51, 0.2); }
+[data-theme="dark"] .text-glow-yellow { text-shadow: 0 0 8px rgba(255, 204, 0, 0.5), 0 0 20px rgba(255, 204, 0, 0.2); }
+[data-theme="dark"] .text-glow-purple { text-shadow: 0 0 8px rgba(179, 71, 255, 0.5), 0 0 20px rgba(179, 71, 255, 0.2); }
 
 /* ───────────────────────────────────────────────────────────────────────
    ANIMATIONS
@@ -197,8 +240,10 @@ body::after {
   50%      { border-color: rgba(0, 212, 255, 0.35); }
 }
 
-.animate-fade-in   { animation: fade-in 0.3s ease-out; }
-.animate-slide-in  { animation: slide-in-right 0.3s ease-out; }
+[data-theme="dark"] .animate-fade-in   { animation: fade-in 0.3s ease-out; }
+[data-theme="dark"] .animate-slide-in  { animation: slide-in-right 0.3s ease-out; }
+
+@keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
 
 /* ───────────────────────────────────────────────────────────────────────
    CARD
@@ -257,7 +302,7 @@ body::after {
   letter-spacing: 1px;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
 }
 
 .data-table tbody tr {
@@ -272,7 +317,7 @@ body::after {
 .data-table tbody td {
   padding: 11px 16px;
   color: var(--text-primary);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 12px;
 }
 
@@ -281,7 +326,7 @@ body::after {
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   BADGES — severity / status indicators
+   BADGES
    ─────────────────────────────────────────────────────────────────────── */
 
 .badge {
@@ -294,7 +339,7 @@ body::after {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
 }
 
 .badge-critical {
@@ -331,7 +376,7 @@ body::after {
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   PROGRESS BAR — dark track, glowing fill
+   PROGRESS BAR
    ─────────────────────────────────────────────────────────────────────── */
 
 .progress-bar {
@@ -370,14 +415,14 @@ body::after {
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   LIVE INDICATOR — pulsing green dot with glow
+   LIVE INDICATOR
    ─────────────────────────────────────────────────────────────────────── */
 
 .live-indicator {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -392,7 +437,7 @@ body::after {
   background: var(--accent-green);
   border-radius: 50%;
   animation: live-pulse 1.5s ease-in-out infinite;
-  color: var(--accent-green); /* for currentColor in glow */
+  color: var(--accent-green);
   box-shadow: 0 0 6px var(--accent-green), 0 0 14px rgba(0, 255, 65, 0.4);
 }
 
@@ -418,11 +463,11 @@ body::after {
   color: var(--accent-cyan);
   letter-spacing: 4px;
   text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
 }
 
 .boot-status {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 12px;
   color: var(--text-secondary);
   letter-spacing: 0.5px;
@@ -446,7 +491,7 @@ body::after {
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   SIDEBAR — dark navigation rail
+   SIDEBAR
    ─────────────────────────────────────────────────────────────────────── */
 
 .sidebar {
@@ -469,7 +514,7 @@ body::after {
 }
 
 .sidebar-logo {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 14px;
   font-weight: 700;
   color: var(--accent-cyan);
@@ -495,7 +540,7 @@ body::after {
 }
 
 .sidebar-version {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 10px;
   color: var(--text-muted);
   margin-top: 4px;
@@ -507,7 +552,7 @@ body::after {
 }
 
 .sidebar-section-label {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
@@ -565,7 +610,7 @@ body::after {
   margin-left: auto;
   background: rgba(255, 51, 85, 0.15);
   color: var(--accent-red);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 10px;
   font-weight: 700;
   padding: 2px 7px;
@@ -598,7 +643,7 @@ body::after {
   align-items: center;
   justify-content: center;
   color: var(--accent-cyan);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
@@ -612,14 +657,14 @@ body::after {
 }
 
 .sidebar-user-role {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 10px;
   color: var(--text-secondary);
   letter-spacing: 0.5px;
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   HUD BAR — top ops bar
+   HUD BAR — theme-aware
    ─────────────────────────────────────────────────────────────────────── */
 
 .hud-bar {
@@ -636,7 +681,7 @@ body::after {
 }
 
 .hud-title {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
@@ -666,6 +711,19 @@ body::after {
   margin: 0 4px;
 }
 
+.hud-subtitle {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+.hud-subtitle-sep {
+  color: var(--border-color);
+  margin: 0 6px;
+}
+
+.hud-spacer {
+  flex: 1;
+}
+
 .hud-stat {
   display: flex;
   align-items: center;
@@ -677,7 +735,7 @@ body::after {
 }
 
 .hud-stat-label {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
   font-size: 9px;
   font-weight: 600;
   color: var(--text-muted);
@@ -686,22 +744,41 @@ body::after {
 }
 
 .hud-stat-value {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
   font-size: 13px;
   font-weight: 700;
   color: var(--accent-cyan);
 }
 
-.hud-spacer {
-  flex: 1;
-}
-
 .hud-time {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
   letter-spacing: 0.5px;
+}
+
+/* ── Theme toggle button ── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: rgba(0, 212, 255, 0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--border-active);
+  color: var(--accent-cyan);
+  background: rgba(0, 212, 255, 0.08);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
 }
 
 /* ───────────────────────────────────────────────────────────────────────
@@ -716,7 +793,7 @@ body::after {
 }
 
 /* ───────────────────────────────────────────────────────────────────────
-   STAT CARDS — ops-center metric tiles
+   STAT CARDS
    ─────────────────────────────────────────────────────────────────────── */
 
 .stat-grid {
@@ -741,7 +818,7 @@ body::after {
 }
 
 .stat-card-label {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
@@ -751,7 +828,7 @@ body::after {
 }
 
 .stat-card-value {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 28px;
   font-weight: 700;
   color: var(--accent-cyan);
@@ -760,7 +837,7 @@ body::after {
 }
 
 .stat-card-sub {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 11px;
   color: var(--text-secondary);
   margin-top: 6px;
@@ -779,7 +856,7 @@ body::after {
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 600;
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   cursor: pointer;
@@ -826,14 +903,14 @@ body::after {
 .btn-lg { padding: 10px 20px; font-size: 13px; }
 
 /* ───────────────────────────────────────────────────────────────────────
-   INPUTS — dark terminal input fields
+   INPUTS
    ─────────────────────────────────────────────────────────────────────── */
 
 .input {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 12px;
   color: var(--text-primary);
   background: var(--bg-secondary);
@@ -849,7 +926,15 @@ body::after {
 
 .input::placeholder {
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
+}
+
+[data-theme="dark"] select.input {
+  color-scheme: dark;
+}
+
+[data-theme="light"] select.input {
+  color-scheme: light;
 }
 
 /* ───────────────────────────────────────────────────────────────────────
@@ -873,7 +958,7 @@ body::after {
 }
 
 .empty-state-title {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -903,7 +988,7 @@ body::after {
 }
 
 .page-title {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 20px;
   font-weight: 700;
   color: var(--accent-cyan);
@@ -913,7 +998,7 @@ body::after {
 }
 
 .page-subtitle {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 12px;
   color: var(--text-secondary);
   margin-top: 4px;
@@ -937,13 +1022,96 @@ body::after {
 }
 
 .chart-title {
-  font-family: var(--font-mono);
+  font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin-bottom: 16px;
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   DIODE BADGE
+   ─────────────────────────────────────────────────────────────────────── */
+
+.diode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 255, 65, 0.05);
+  border: 1px solid rgba(0, 255, 65, 0.15);
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-green);
+  letter-spacing: 1px;
+}
+
+.diode-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  animation: live-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(0, 255, 65, 0.5);
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   CLOCK
+   ─────────────────────────────────────────────────────────────────────── */
+
+.hud-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
+.hud-clock-date {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.hud-clock-sep {
+  color: var(--border-color);
+  font-size: 11px;
+}
+
+.hud-clock-time {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+  letter-spacing: 1px;
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+   WATCHTOWER PAGE COMPONENTS (used by Dashboard, LiveThreats, etc.)
+   ─────────────────────────────────────────────────────────────────────── */
+
+.wt-interactive {
+  transition: transform 160ms cubic-bezier(0.22,1,0.36,1), background 0.2s;
+}
+
+.wt-interactive:active {
+  transform: scale(0.98);
+}
+
+.wt-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.wt-panel-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
 }
 
 /* ───────────────────────────────────────────────────────────────────────

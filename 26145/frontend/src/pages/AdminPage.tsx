@@ -58,10 +58,10 @@ const USER_DATA: User[] = [
 ];
 
 const STATUS_COLOR: Record<string, string> = {
-  running: '#00ff41', active: '#00ff41', paused: '#ff8833', inactive: '#ff8833',
-  error: '#ef4444', locked: '#ef4444', retraining: '#00d4ff', idle: '#2d4a6a', failed: '#ef4444',
+  running: 'var(--accent-green)', active: 'var(--accent-green)', paused: 'var(--accent-orange)', inactive: 'var(--accent-orange)',
+  error: 'var(--accent-red)', locked: 'var(--accent-red)', retraining: 'var(--accent-cyan)', idle: 'var(--border-active)', failed: 'var(--accent-red)',
 };
-const ROLE_COLOR: Record<string, string> = { admin: '#ef4444', analyst: '#00d4ff', viewer: '#ff8833' };
+const ROLE_COLOR: Record<string, string> = { admin: 'var(--accent-red)', analyst: 'var(--accent-cyan)', viewer: 'var(--accent-orange)' };
 
 function AnimatedRing({ accuracy, size = 64 }: { accuracy: number; size?: number }) {
   const [anim, setAnim] = useState(0);
@@ -73,7 +73,7 @@ function AnimatedRing({ accuracy, size = 64 }: { accuracy: number; size?: number
   const r = 15.9155;
   const circ = 2 * Math.PI * r;
   const offset = circ - (anim / 100) * circ;
-  const strokeColor = anim > 90 ? '#00ff41' : anim > 75 ? '#00d4ff' : '#ff8833';
+  const strokeColor = anim > 90 ? 'var(--accent-green)' : anim > 75 ? 'var(--accent-cyan)' : 'var(--accent-orange)';
   return (
     <div style={{ width: `${size}px`, height: `${size}px`, position: 'relative' }}>
       <svg viewBox="0 0 36 36" style={{ width: `${size}px`, height: `${size}px`, transform: 'rotate(-90deg)' }}>
@@ -223,12 +223,12 @@ function AdminPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span style={{ color: '#00ff41', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+            <span style={{ color: 'var(--accent-green)', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
           </div>
-          <h1 style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00d4ff', fontSize: '20px', letterSpacing: '3px', textTransform: 'uppercase', margin: 0 }}>Administration</h1>
-          <p style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '11px', marginTop: '4px' }}>User management · Pipeline control · Model retraining · System monitoring</p>
+          <h1 style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '20px', letterSpacing: '3px', textTransform: 'uppercase', margin: 0 }}>Administration</h1>
+          <p style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>User management · Pipeline control · Model retraining · System monitoring</p>
         </div>
-        <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '12px', background: '#0a1118', border: '1px solid #1a2736', borderRadius: '6px', padding: '8px 14px' }}>
+        <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '12px', background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '6px', padding: '8px 14px' }}>
           {pipeline.filter(p => p.status === 'running').length}/{pipeline.length} pipelines active
         </div>
       </div>
@@ -238,7 +238,7 @@ function AdminPage() {
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
             background: activeTab === tab.id ? 'rgba(0,212,255,0.08)' : 'transparent',
-            color: activeTab === tab.id ? '#00d4ff' : '#64748b',
+            color: activeTab === tab.id ? 'var(--accent-cyan)' : 'var(--text-secondary)',
             borderBottom: activeTab === tab.id ? '2px solid rgba(0,212,255,0.4)' : '2px solid transparent',
             padding: '10px 18px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
             transition: 'all 0.2s',
@@ -251,19 +251,19 @@ function AdminPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '12px' }}>
           {pipeline.map(node => {
             const history = nodeHistory[node.id] || { cpu: [], mem: [], latency: [] };
-            const healthColor = node.cpu_pct > 80 || node.memory_pct > 80 ? '#ef4444' : node.cpu_pct > 50 ? '#ff8833' : '#00ff41';
+            const healthColor = node.cpu_pct > 80 || node.memory_pct > 80 ? 'var(--accent-red)' : node.cpu_pct > 50 ? 'var(--accent-orange)' : 'var(--accent-green)';
             const latencyTrend = history.latency.length >= 2 ? history.latency[history.latency.length - 1] > history.latency[0] ? '↑' : history.latency[history.latency.length - 1] < history.latency[0] ? '↓' : '→' : '→';
-            const trendColor = latencyTrend === '↑' ? '#ef4444' : latencyTrend === '↓' ? '#00ff41' : '#64748b';
+            const trendColor = latencyTrend === '↑' ? 'var(--accent-red)' : latencyTrend === '↓' ? 'var(--accent-green)' : 'var(--text-secondary)';
 
             return (
               <div key={node.id} style={{
-                background: '#0a1118', border: `1px solid ${node.status === 'error' ? 'rgba(239,68,68,0.3)' : '#1a2736'}`,
+                background: 'var(--bg-secondary)', border: `1px solid ${node.status === 'error' ? 'rgba(239,68,68,0.3)' : 'var(--border-color)'}`,
                 borderRadius: '8px', padding: '16px',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{node.name}</div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '10px', marginTop: '2px' }}>{node.id}</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{node.name}</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '10px', marginTop: '2px' }}>{node.id}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontFamily: '"JetBrains Mono", monospace', color: trendColor, fontSize: '16px', fontWeight: 700 }}>{latencyTrend}</span>
@@ -281,26 +281,26 @@ function AdminPage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
                   <div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Throughput</div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{node.throughput}</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Throughput</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{node.throughput}</div>
                   </div>
                   <div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Latency</div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{node.latency_ms}ms</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>Latency</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{node.latency_ms}ms</div>
                   </div>
                 </div>
 
                 {/* CPU/MEM sparklines */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', fontWeight: 600, width: '28px' }}>CPU</span>
-                    <Sparkline data={history.cpu} max={100} color={node.cpu_pct > 80 ? '#ef4444' : node.cpu_pct > 50 ? '#ff8833' : '#00ff41'} />
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '11px', width: '32px', textAlign: 'right' }}>{node.cpu_pct}%</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', fontWeight: 600, width: '28px' }}>CPU</span>
+                    <Sparkline data={history.cpu} max={100} color={node.cpu_pct > 80 ? 'var(--accent-red)' : node.cpu_pct > 50 ? 'var(--accent-orange)' : 'var(--accent-green)'} />
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '11px', width: '32px', textAlign: 'right' }}>{node.cpu_pct}%</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', fontWeight: 600, width: '28px' }}>MEM</span>
-                    <Sparkline data={history.mem} max={100} color={node.memory_pct > 80 ? '#ef4444' : node.memory_pct > 50 ? '#ff8833' : '#00ff41'} />
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '11px', width: '32px', textAlign: 'right' }}>{node.memory_pct}%</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', fontWeight: 600, width: '28px' }}>MEM</span>
+                    <Sparkline data={history.mem} max={100} color={node.memory_pct > 80 ? 'var(--accent-red)' : node.memory_pct > 50 ? 'var(--accent-orange)' : 'var(--accent-green)'} />
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '11px', width: '32px', textAlign: 'right' }}>{node.memory_pct}%</span>
                   </div>
                 </div>
 
@@ -314,7 +314,7 @@ function AdminPage() {
                   </div>
                   <button onClick={() => setPipeline(prev => prev.map(p => p.id === node.id ? { ...p, status: p.status === 'running' ? 'paused' as const : 'running' as const } : p))} style={{
                     background: node.status === 'running' ? 'rgba(239,68,68,0.12)' : 'rgba(0,255,65,0.12)',
-                    color: node.status === 'running' ? '#ef4444' : '#00ff41',
+                    color: node.status === 'running' ? 'var(--accent-red)' : 'var(--accent-green)',
                     border: `1px solid ${node.status === 'running' ? 'rgba(239,68,68,0.25)' : 'rgba(0,255,65,0.25)'}`,
                     borderRadius: '5px', padding: '5px 12px', cursor: 'pointer',
                     fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
@@ -339,24 +339,24 @@ function AdminPage() {
             ];
 
             return (
-              <div key={model.name} style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
+              <div key={model.name} style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '13px', fontWeight: 600 }}>{model.name}</div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '10px', marginTop: '2px' }}>v{model.version}</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{model.name}</div>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '10px', marginTop: '2px' }}>v{model.version}</div>
                   </div>
                   <AnimatedRing accuracy={model.accuracy} size={64} />
                 </div>
 
                 {/* Feature importance */}
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Feature Importance</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '8px' }}>Feature Importance</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
                   {features.map((f, i) => {
                     const pct = (featureValues[i] / maxVal) * 100;
-                    const barColor = i === 0 ? '#00d4ff' : i === 1 ? '#00ff41' : i === 2 ? '#ff8833' : i === 3 ? '#b347ff' : '#ef4444';
+                    const barColor = i === 0 ? 'var(--accent-cyan)' : i === 1 ? 'var(--accent-green)' : i === 2 ? 'var(--accent-orange)' : i === 3 ? 'var(--accent-purple)' : 'var(--accent-red)';
                     return (
                       <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', width: '65px', textTransform: 'uppercase' }}>{f}</span>
+                        <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', width: '65px', textTransform: 'uppercase' }}>{f}</span>
                         <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: 'rgba(0,212,255,0.06)', overflow: 'hidden' }}>
                           <div style={{ height: '100%', borderRadius: '3px', background: barColor, width: `${pct}%` }} />
                         </div>
@@ -367,7 +367,7 @@ function AdminPage() {
 
                 {/* Confusion matrix */}
                 <div style={{ marginBottom: '14px' }}>
-                  <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Confusion Matrix</div>
+                  <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Confusion Matrix</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', width: '120px' }}>
                     {confusionMatrix.map((row, ri) => row.map((val, ci) => (
                       <div key={`${ri}-${ci}`} style={{
@@ -375,7 +375,7 @@ function AdminPage() {
                         background: `rgba(${ri === ci ? '0,255,65' : '239,68,68'},${val / 100 * 0.25})`,
                         border: `1px solid rgba(${ri === ci ? '0,255,65' : '239,68,68'},0.2)`,
                       }}>
-                        <span style={{ fontFamily: '"JetBrains Mono", monospace', color: ri === ci ? '#00ff41' : '#ef4444', fontSize: '11px', fontWeight: 700 }}>{val}</span>
+                        <span style={{ fontFamily: '"JetBrains Mono", monospace', color: ri === ci ? 'var(--accent-green)' : 'var(--accent-red)', fontSize: '11px', fontWeight: 700 }}>{val}</span>
                       </div>
                     )))}
                   </div>
@@ -389,8 +389,8 @@ function AdminPage() {
                     { label: 'Status', value: model.status, color: STATUS_COLOR[model.status] },
                   ].map(field => (
                     <div key={field.label} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}>
-                      <span style={{ color: '#64748b', textTransform: 'uppercase', fontSize: '10px' }}>{field.label}</span>
-                      <span style={{ color: (field as any).color || '#c8d6e5' }}>{field.value}</span>
+                      <span style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '10px' }}>{field.label}</span>
+                      <span style={{ color: (field as any).color || 'var(--text-primary)' }}>{field.value}</span>
                     </div>
                   ))}
                 </div>
@@ -398,8 +398,8 @@ function AdminPage() {
                 {retrainingModel === model.name && (
                   <div style={{ marginBottom: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px' }}>
-                      <span style={{ color: '#00d4ff' }}>Retraining...</span>
-                      <span style={{ color: '#00ff41' }}>In Progress</span>
+                      <span style={{ color: 'var(--accent-cyan)' }}>Retraining...</span>
+                      <span style={{ color: 'var(--accent-green)' }}>In Progress</span>
                     </div>
                     <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(0,212,255,0.08)', overflow: 'hidden' }}>
                       <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #00d4ff, #00ff41)', width: '60%' }} />
@@ -409,7 +409,7 @@ function AdminPage() {
 
                 <button onClick={() => handleRetrain(model.name)} disabled={retrainingModel === model.name} style={{
                   width: '100%', background: retrainingModel === model.name ? 'rgba(0,212,255,0.08)' : 'rgba(0,212,255,0.12)',
-                  color: '#00d4ff', border: '1px solid rgba(0,212,255,0.25)',
+                  color: 'var(--accent-cyan)', border: '1px solid rgba(0,212,255,0.25)',
                   borderRadius: '6px', padding: '8px', cursor: retrainingModel === model.name ? 'not-allowed' : 'pointer',
                   fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', opacity: retrainingModel === model.name ? 0.6 : 1,
                 }}>{retrainingModel === model.name ? '⟳ Retraining...' : '↻ Retrain Model'}</button>
@@ -425,33 +425,33 @@ function AdminPage() {
           {/* Stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
             {[
-              { label: 'Total Users', value: users.length, color: '#00d4ff' },
-              { label: 'Active', value: users.filter(u => u.status === 'active').length, color: '#00ff41' },
-              { label: 'Inactive', value: users.filter(u => u.status === 'inactive').length, color: '#ff8833' },
-              { label: 'Locked', value: users.filter(u => u.status === 'locked').length, color: '#ef4444' },
+              { label: 'Total Users', value: users.length, color: 'var(--accent-cyan)' },
+              { label: 'Active', value: users.filter(u => u.status === 'active').length, color: 'var(--accent-green)' },
+              { label: 'Inactive', value: users.filter(u => u.status === 'inactive').length, color: 'var(--accent-orange)' },
+              { label: 'Locked', value: users.filter(u => u.status === 'locked').length, color: 'var(--accent-red)' },
             ].map(card => (
-              <div key={card.label} style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{card.label}</div>
+              <div key={card.label} style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{card.label}</div>
                 <div style={{ fontFamily: '"JetBrains Mono", monospace', color: card.color, fontSize: '28px', fontWeight: 700 }}>{card.value}</div>
               </div>
             ))}
           </div>
 
           {/* Users table */}
-          <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #1a2736' }}>
                   {['ID', 'Username', 'Role', 'Status', 'Last Login', 'Sessions', 'Actions'].map(h => (
-                    <th key={h} style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>{h}</th>
+                    <th key={h} style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {users.map(user => (
                   <tr key={user.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00d4ff', fontSize: '12px', padding: '11px 16px' }}>{user.id}</td>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '12px', padding: '11px 16px' }}>{user.username}</td>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '12px', padding: '11px 16px' }}>{user.id}</td>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{user.username}</td>
                     <td style={{ padding: '11px 16px' }}>
                       <span style={{
                         background: `${ROLE_COLOR[user.role]}1a`, color: ROLE_COLOR[user.role],
@@ -466,12 +466,12 @@ function AdminPage() {
                         <span style={{ fontFamily: '"JetBrains Mono", monospace', color: STATUS_COLOR[user.status], fontSize: '12px' }}>{user.status}</span>
                       </div>
                     </td>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '12px', padding: '11px 16px' }}>{new Date(user.last_login).toLocaleString()}</td>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '12px', padding: '11px 16px' }}>{user.sessions}</td>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{new Date(user.last_login).toLocaleString()}</td>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{user.sessions}</td>
                     <td style={{ padding: '11px 16px' }}>
                       <button onClick={() => setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: u.status === 'locked' ? 'active' as const : 'locked' as const, sessions: u.status === 'locked' ? 1 : 0 } : u))} style={{
                         background: user.status === 'locked' ? 'rgba(0,255,65,0.12)' : 'rgba(255,136,51,0.12)',
-                        color: user.status === 'locked' ? '#00ff41' : '#ff8833',
+                        color: user.status === 'locked' ? 'var(--accent-green)' : 'var(--accent-orange)',
                         border: `1px solid ${user.status === 'locked' ? 'rgba(0,255,65,0.25)' : 'rgba(255,136,51,0.25)'}`,
                         borderRadius: '5px', padding: '5px 12px', cursor: 'pointer',
                         fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
@@ -484,21 +484,21 @@ function AdminPage() {
           </div>
 
           {/* Login Activity Timeline */}
-          <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>Login Activity Timeline</div>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>Login Activity Timeline</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {USER_DATA.filter(u => u.status === 'active').map((entry, i) => (
                 <div key={entry.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '2px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#00ff41', boxShadow: '0 0 4px #00ff4166' }} />
-                    {i < USER_DATA.filter(u => u.status === 'active').length - 1 && <div style={{ width: '1px', height: '24px', background: '#1a2736', marginTop: '4px' }} />}
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-green)', boxShadow: '0 0 4px #00ff4166' }} />
+                    {i < USER_DATA.filter(u => u.status === 'active').length - 1 && <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', marginTop: '4px' }} />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '12px', fontWeight: 600 }}>{entry.username}</span>
-                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00ff41', fontSize: '10px', textTransform: 'uppercase' }}>Login</span>
+                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600 }}>{entry.username}</span>
+                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-green)', fontSize: '10px', textTransform: 'uppercase' }}>Login</span>
                     </div>
-                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', marginTop: '2px' }}>
+                    <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', marginTop: '2px' }}>
                       {entry.id} · {new Date(entry.last_login).toLocaleString()}
                     </div>
                   </div>
@@ -512,35 +512,35 @@ function AdminPage() {
       {/* ── TERMINAL ──────────────────────────────────────────────── */}
       {activeTab === 'terminal' && (
         <div style={{
-          background: '#060a10', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden',
+          background: 'var(--bg-primary)', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px',
-            borderBottom: '1px solid #1a2736', background: '#0a1118',
+            borderBottom: '1px solid #1a2736', background: 'var(--bg-secondary)',
           }}>
             <div style={{ display: 'flex', gap: '6px' }}>
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }} />
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff8833' }} />
-              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#00ff41' }} />
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent-red)' }} />
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent-orange)' }} />
+              <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent-green)' }} />
             </div>
-            <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '12px' }}>watchtower@admin:~</span>
+            <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '12px' }}>watchtower@admin:~</span>
           </div>
           <div ref={terminalRef} style={{
             padding: '16px', maxHeight: '400px', overflowY: 'auto',
             fontFamily: '"JetBrains Mono", monospace', fontSize: '13px', lineHeight: 1.8,
           }}>
             {terminalLines.map((line, i) => {
-              let color = '#c8d6e5';
-              if (line.includes('[RETRAIN]')) color = '#00d4ff';
-              else if (line.includes('WARN')) color = '#ff8833';
-              else if (line.includes('ERROR')) color = '#ef4444';
-              else if (line.includes('INFO')) color = '#00d4ff';
-              else if (line.includes('>')) color = '#00ff41';
+              let color = 'var(--text-primary)';
+              if (line.includes('[RETRAIN]')) color = 'var(--accent-cyan)';
+              else if (line.includes('WARN')) color = 'var(--accent-orange)';
+              else if (line.includes('ERROR')) color = 'var(--accent-red)';
+              else if (line.includes('INFO')) color = 'var(--accent-cyan)';
+              else if (line.includes('>')) color = 'var(--accent-green)';
 
               return <div key={i} style={{ color, whiteSpace: 'pre-wrap' }}>{line}</div>;
             })}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #1a2736' }}>
-              <span style={{ color: '#00ff41' }}>$</span>
+              <span style={{ color: 'var(--accent-green)' }}>$</span>
               <input
                 value={terminalInput}
                 onChange={e => setTerminalInput(e.target.value)}
@@ -548,10 +548,10 @@ function AdminPage() {
                 placeholder="Type help, status, health, stats, or clear..."
                 style={{
                   flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                  fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '13px',
+                  fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px',
                 }}
               />
-              <span style={{ color: '#00d4ff', animation: 'pulse-dot 600ms ease-in-out infinite' }}>█</span>
+              <span style={{ color: 'var(--accent-cyan)', animation: 'pulse-dot 600ms ease-in-out infinite' }}>█</span>
             </div>
           </div>
         </div>

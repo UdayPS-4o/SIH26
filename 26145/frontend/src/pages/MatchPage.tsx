@@ -82,11 +82,11 @@ const ALGORITHM_METRICS: AlgorithmMetric[] = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function scoreColor(s: number): string {
-  if (s >= 0.8) return '#22c55e';
-  if (s >= 0.6) return '#84cc16';
-  if (s >= 0.4) return '#eab308';
-  if (s >= 0.2) return '#f97316';
-  return '#ef4444';
+  if (s >= 0.8) return 'var(--accent-green)';
+  if (s >= 0.6) return 'var(--accent-green)';
+  if (s >= 0.4) return 'var(--accent-yellow)';
+  if (s >= 0.2) return 'var(--accent-orange)';
+  return 'var(--accent-red)';
 }
 
 function scoreGradient(s: number): string {
@@ -98,15 +98,15 @@ function scoreGradient(s: number): string {
 }
 
 const MATCH_TYPE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  'Exact Match':   { bg: 'rgba(34,197,94,0.1)',   color: '#22c55e', border: 'rgba(34,197,94,0.35)' },
-  'Partial Match': { bg: 'rgba(234,179,8,0.1)',   color: '#eab308', border: 'rgba(234,179,8,0.35)' },
-  'Similar Match': { bg: 'rgba(6,182,212,0.1)',   color: '#06b6d4', border: 'rgba(6,182,212,0.35)' },
+  'Exact Match':   { bg: 'rgba(34,197,94,0.1)',   color: 'var(--accent-green)', border: 'rgba(34,197,94,0.35)' },
+  'Partial Match': { bg: 'rgba(234,179,8,0.1)',   color: 'var(--accent-yellow)', border: 'rgba(234,179,8,0.35)' },
+  'Similar Match': { bg: 'rgba(6,182,212,0.1)',   color: 'var(--accent-cyan)', border: 'rgba(6,182,212,0.35)' },
 };
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  verified: { bg: 'rgba(34,197,94,0.1)',  color: '#22c55e', border: 'rgba(34,197,94,0.35)' },
-  pending:  { bg: 'rgba(234,179,8,0.1)',  color: '#eab308', border: 'rgba(234,179,8,0.35)' },
-  rejected: { bg: 'rgba(239,68,68,0.1)',  color: '#ef4444', border: 'rgba(239,68,68,0.35)' },
+  verified: { bg: 'rgba(34,197,94,0.1)',  color: 'var(--accent-green)', border: 'rgba(34,197,94,0.35)' },
+  pending:  { bg: 'rgba(234,179,8,0.1)',  color: 'var(--accent-yellow)', border: 'rgba(234,179,8,0.35)' },
+  rejected: { bg: 'rgba(239,68,68,0.1)',  color: 'var(--accent-red)', border: 'rgba(239,68,68,0.35)' },
 };
 
 // ─── Distribution buckets ─────────────────────────────────────────────────
@@ -131,7 +131,7 @@ function useScoreDistribution(matches: MatchEntry[]) {
 function StatCard({ label, value, subtext, color }: { label: string; value: number | string; subtext?: string; color: string }) {
   return (
     <div style={{
-      background: '#0a1118',
+      background: 'var(--bg-secondary)',
       border: '1px solid #1a2736',
       borderRadius: '8px',
       padding: '20px 24px',
@@ -147,7 +147,7 @@ function StatCard({ label, value, subtext, color }: { label: string; value: numb
       <div style={{
         fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
         fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px',
-        color: '#64748b', marginBottom: '8px',
+        color: 'var(--text-secondary)', marginBottom: '8px',
       }}>{label}</div>
       <div style={{
         fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
@@ -157,7 +157,7 @@ function StatCard({ label, value, subtext, color }: { label: string; value: numb
       {subtext && (
         <div style={{
           fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-          fontSize: '11px', color: '#64748b', marginTop: '6px',
+          fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px',
         }}>{subtext}</div>
       )}
     </div>
@@ -168,7 +168,7 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <div style={{
       fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-      color: '#00d4ff',
+      color: 'var(--accent-cyan)',
       fontSize: '12px',
       fontWeight: 700,
       letterSpacing: '3px',
@@ -244,35 +244,35 @@ function MatchPage() {
 
   return (
     <div style={{
-      background: '#060a10',
+      background: 'var(--bg-primary)',
       minHeight: '100%',
       padding: '24px 32px',
       fontFamily: 'var(--font-body, "Inter", sans-serif)',
-      color: '#e0e8f0',
+      color: 'var(--text-primary)',
     }}>
       {/* ─── Header ─────────────────────────────────────────────────── */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
           <span style={{
             fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-            color: '#00ff41', fontSize: '10px', letterSpacing: '1px',
+            color: 'var(--accent-green)', fontSize: '10px', letterSpacing: '1px',
             display: 'inline-flex', alignItems: 'center', gap: '6px',
             animation: 'pulse-dot 2s ease-in-out infinite',
           }}>
             <span style={{
               width: '6px', height: '6px', borderRadius: '50%',
-              backgroundColor: '#00ff41', display: 'inline-block',
+              backgroundColor: 'var(--accent-green)', display: 'inline-block',
             }} />
             LIVE
           </span>
           <span style={{
             fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-            color: '#64748b', fontSize: '11px',
+            color: 'var(--text-secondary)', fontSize: '11px',
           }}>THREAT INTELLIGENCE MATCHING SYSTEM</span>
         </div>
         <h1 style={{
           fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-          color: '#00d4ff',
+          color: 'var(--accent-cyan)',
           fontSize: '28px',
           fontWeight: 700,
           letterSpacing: '4px',
@@ -284,7 +284,7 @@ function MatchPage() {
         </h1>
         <p style={{
           fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-          color: '#64748b',
+          color: 'var(--text-secondary)',
           fontSize: '12px',
           marginTop: '4px',
         }}>
@@ -294,15 +294,15 @@ function MatchPage() {
 
       {/* ─── Stat Cards ────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '16px', marginBottom: '28px', flexWrap: 'wrap' }}>
-        <StatCard label="Total Matches" value={stats.total} subtext="All time" color="#00d4ff" />
-        <StatCard label="High Confidence" value={stats.highConf} subtext={`${Math.round((stats.highConf / stats.total) * 100)}% of total`} color="#22c55e" />
-        <StatCard label="Pending Review" value={stats.pending} subtext="Awaiting analyst input" color="#eab308" />
-        <StatCard label="Verified" value={stats.verified} subtext="Threat confirmed" color="#22c55e" />
+        <StatCard label="Total Matches" value={stats.total} subtext="All time" color="var(--accent-cyan)" />
+        <StatCard label="High Confidence" value={stats.highConf} subtext={`${Math.round((stats.highConf / stats.total) * 100)}% of total`} color="var(--accent-green)" />
+        <StatCard label="Pending Review" value={stats.pending} subtext="Awaiting analyst input" color="var(--accent-yellow)" />
+        <StatCard label="Verified" value={stats.verified} subtext="Threat confirmed" color="var(--accent-green)" />
       </div>
 
       {/* ─── Score Distribution ────────────────────────────────────── */}
       <div style={{
-        background: '#0a1118',
+        background: 'var(--bg-secondary)',
         border: '1px solid #1a2736',
         borderRadius: '8px',
         padding: '20px 24px',
@@ -317,14 +317,14 @@ function MatchPage() {
                 <div style={{
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   fontSize: '11px',
-                  color: '#64748b',
+                  color: 'var(--text-secondary)',
                   width: '70px',
                   textAlign: 'right',
                   flexShrink: 0,
                 }}>{bucket.label}</div>
                 <div style={{
                   flex: 1, height: '18px',
-                  background: '#1a2736',
+                  background: 'var(--border-color)',
                   borderRadius: '4px',
                   overflow: 'hidden',
                   position: 'relative',
@@ -355,7 +355,7 @@ function MatchPage() {
 
       {/* ─── Algorithms Performance ────────────────────────────────── */}
       <div style={{
-        background: '#0a1118',
+        background: 'var(--bg-secondary)',
         border: '1px solid #1a2736',
         borderRadius: '8px',
         padding: '20px 24px',
@@ -364,7 +364,7 @@ function MatchPage() {
         <SectionHeader title="Match Algorithms" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
           {ALGORITHM_METRICS.map(algo => {
-            const col = '#00d4ff';
+            const col = 'var(--accent-cyan)';
             return (
               <div key={algo.name} style={{
                 background: 'rgba(6,10,16,0.6)',
@@ -376,7 +376,7 @@ function MatchPage() {
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   fontSize: '12px',
                   fontWeight: 600,
-                  color: '#e0e8f0',
+                  color: 'var(--text-primary)',
                   marginBottom: '10px',
                 }}>{algo.name}</div>
                 {(['precision', 'recall', 'f1'] as const).map(metric => {
@@ -387,7 +387,7 @@ function MatchPage() {
                         display: 'flex', justifyContent: 'space-between',
                         fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                         fontSize: '10px',
-                        color: '#64748b',
+                        color: 'var(--text-secondary)',
                         textTransform: 'uppercase',
                         letterSpacing: '1px',
                         marginBottom: '3px',
@@ -397,7 +397,7 @@ function MatchPage() {
                       </div>
                       <div style={{
                         height: '5px',
-                        background: '#1a2736',
+                        background: 'var(--border-color)',
                         borderRadius: '3px',
                         overflow: 'hidden',
                       }}>
@@ -419,7 +419,7 @@ function MatchPage() {
 
       {/* ─── Main Table ────────────────────────────────────────────── */}
       <div style={{
-        background: '#0a1118',
+        background: 'var(--bg-secondary)',
         border: '1px solid #1a2736',
         borderRadius: '8px',
         overflow: 'hidden',
@@ -441,7 +441,7 @@ function MatchPage() {
               <span style={{
                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                 fontSize: '11px',
-                color: '#00d4ff',
+                color: 'var(--accent-cyan)',
                 background: 'rgba(0,212,255,0.08)',
                 border: '1px solid rgba(0,212,255,0.25)',
                 padding: '3px 10px',
@@ -456,7 +456,7 @@ function MatchPage() {
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   background: 'rgba(34,197,94,0.1)',
                   border: '1px solid rgba(34,197,94,0.35)',
-                  color: '#22c55e',
+                  color: 'var(--accent-green)',
                   padding: '5px 14px',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -468,7 +468,7 @@ function MatchPage() {
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   background: 'rgba(239,68,68,0.1)',
                   border: '1px solid rgba(239,68,68,0.35)',
-                  color: '#ef4444',
+                  color: 'var(--accent-red)',
                   padding: '5px 14px',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -482,7 +482,7 @@ function MatchPage() {
               fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
               background: 'rgba(0,212,255,0.1)',
               border: '1px solid rgba(0,212,255,0.35)',
-              color: '#00d4ff',
+              color: 'var(--accent-cyan)',
               padding: '5px 14px',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -506,7 +506,7 @@ function MatchPage() {
               border: '1px solid #1a2736',
               borderRadius: '4px',
               padding: '8px 12px',
-              color: '#e0e8f0',
+              color: 'var(--text-primary)',
               fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
               fontSize: '12px',
               outline: 'none',
@@ -528,7 +528,7 @@ function MatchPage() {
                 borderBottom: '1px solid #1a2736',
                 background: 'rgba(6,10,16,0.4)',
               }}>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, width: '36px' }}>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, width: '36px' }}>
                   <input
                     type="checkbox"
                     checked={filtered.length > 0 && selected.size === filtered.length}
@@ -536,18 +536,18 @@ function MatchPage() {
                       if (e.target.checked) setSelected(new Set(filtered.map(m => m.id)));
                       else setSelected(new Set());
                     }}
-                    style={{ accentColor: '#00d4ff', cursor: 'pointer' }}
+                    style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
                   />
                 </th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Match ID</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Material A</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Material B</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Type</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Score</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Algorithm</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Status</th>
-                <th style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Date</th>
-                <th style={{ padding: '10px 14px', textAlign: 'center', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, width: '30px' }}></th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Match ID</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Material A</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Material B</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Type</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Score</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Algorithm</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Status</th>
+                <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600 }}>Date</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, width: '30px' }}></th>
               </tr>
             </thead>
             <tbody>
@@ -570,13 +570,13 @@ function MatchPage() {
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleSelect(m.id)}
-                          style={{ accentColor: '#00d4ff', cursor: 'pointer' }}
+                          style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
                           onClick={e => e.stopPropagation()}
                         />
                       </td>
-                      <td style={{ padding: '10px 14px', color: '#00d4ff', fontWeight: 600, fontSize: '12px' }}>{m.id}</td>
-                      <td style={{ padding: '10px 14px', color: '#c8d6e5' }}>{m.materialA}</td>
-                      <td style={{ padding: '10px 14px', color: '#c8d6e5' }}>{m.materialB}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--accent-cyan)', fontWeight: 600, fontSize: '12px' }}>{m.id}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{m.materialA}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)' }}>{m.materialB}</td>
                       <td style={{ padding: '10px 14px' }}>
                         <span style={{
                           display: 'inline-block',
@@ -594,7 +594,7 @@ function MatchPage() {
                       <td style={{ padding: '10px 14px', minWidth: '130px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{
-                            flex: 1, height: '6px', background: '#1a2736',
+                            flex: 1, height: '6px', background: 'var(--border-color)',
                             borderRadius: '3px', overflow: 'hidden',
                           }}>
                             <div style={{
@@ -613,7 +613,7 @@ function MatchPage() {
                           }}>{(m.score * 100).toFixed(1)}%</span>
                         </div>
                       </td>
-                      <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{m.algorithm}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)' }}>{m.algorithm}</td>
                       <td style={{ padding: '10px 14px' }}>
                         <span style={{
                           display: 'inline-block',
@@ -628,14 +628,14 @@ function MatchPage() {
                           fontWeight: 600,
                         }}>{m.status}</span>
                       </td>
-                      <td style={{ padding: '10px 14px', color: '#64748b', fontSize: '11px' }}>{m.date}</td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: '11px' }}>{m.date}</td>
                       <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                         <button
                           onClick={() => toggleExpand(m.id)}
                           style={{
                             background: 'transparent',
                             border: '1px solid #1a2736',
-                            color: '#64748b',
+                            color: 'var(--text-secondary)',
                             cursor: 'pointer',
                             borderRadius: '3px',
                             padding: '2px 6px',
@@ -657,7 +657,7 @@ function MatchPage() {
                               <div style={{
                                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                                 fontSize: '10px',
-                                color: '#64748b',
+                                color: 'var(--text-secondary)',
                                 textTransform: 'uppercase',
                                 letterSpacing: '2px',
                                 marginBottom: '8px',
@@ -668,16 +668,16 @@ function MatchPage() {
                                     display: 'flex', justifyContent: 'space-between',
                                     fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                                     fontSize: '10px',
-                                    color: '#64748b',
+                                    color: 'var(--text-secondary)',
                                     textTransform: 'capitalize',
                                     marginBottom: '2px',
                                   }}>
                                     <span>{key}</span>
-                                    <span style={{ color: '#00d4ff' }}>{(val * 100).toFixed(1)}%</span>
+                                    <span style={{ color: 'var(--accent-cyan)' }}>{(val * 100).toFixed(1)}%</span>
                                   </div>
                                   <div style={{
                                     height: '4px',
-                                    background: '#1a2736',
+                                    background: 'var(--border-color)',
                                     borderRadius: '2px',
                                     overflow: 'hidden',
                                   }}>
@@ -696,7 +696,7 @@ function MatchPage() {
                               <div style={{
                                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                                 fontSize: '10px',
-                                color: '#64748b',
+                                color: 'var(--text-secondary)',
                                 textTransform: 'uppercase',
                                 letterSpacing: '2px',
                                 marginBottom: '8px',
@@ -704,7 +704,7 @@ function MatchPage() {
                               <div style={{
                                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                                 fontSize: '11px',
-                                color: '#94a3b8',
+                                color: 'var(--text-muted)',
                                 background: 'rgba(6,10,16,0.6)',
                                 border: '1px solid #1a2736',
                                 borderRadius: '4px',
@@ -712,7 +712,7 @@ function MatchPage() {
                                 lineHeight: 1.5,
                               }}>
                                 {m.analystNotes || (
-                                  <span style={{ color: '#475569', fontStyle: 'italic' }}>No analyst notes on record.</span>
+                                  <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No analyst notes on record.</span>
                                 )}
                               </div>
                               <div style={{
@@ -721,11 +721,11 @@ function MatchPage() {
                                 gap: '6px',
                                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                                 fontSize: '10px',
-                                color: '#475569',
+                                color: 'var(--text-secondary)',
                                 textTransform: 'uppercase',
                                 letterSpacing: '1px',
                               }}>
-                                <span>Algorithm: <span style={{ color: '#00d4ff' }}>{m.algorithm}</span></span>
+                                <span>Algorithm: <span style={{ color: 'var(--accent-cyan)' }}>{m.algorithm}</span></span>
                                 <span>·</span>
                                 <span>Type: <span style={{ color: MATCH_TYPE_STYLES[m.matchType].color }}>{m.matchType}</span></span>
                               </div>
@@ -742,7 +742,7 @@ function MatchPage() {
                   <td colSpan={10} style={{
                     padding: '40px',
                     textAlign: 'center',
-                    color: '#475569',
+                    color: 'var(--text-secondary)',
                     fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                     fontSize: '12px',
                   }}>
@@ -769,7 +769,7 @@ function MatchPage() {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              background: '#0a1118',
+              background: 'var(--bg-secondary)',
               border: '1px solid #1a2736',
               borderRadius: '8px',
               padding: '24px',
@@ -781,7 +781,7 @@ function MatchPage() {
             <div style={{
               fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
               fontSize: '14px',
-              color: '#00d4ff',
+              color: 'var(--accent-cyan)',
               letterSpacing: '2px',
               marginBottom: '20px',
             }}>◈ Run New Match</div>
@@ -790,7 +790,7 @@ function MatchPage() {
                 <label style={{
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   fontSize: '10px',
-                  color: '#64748b',
+                  color: 'var(--text-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '2px',
                   marginBottom: '6px',
@@ -805,7 +805,7 @@ function MatchPage() {
                     border: '1px solid #1a2736',
                     borderRadius: '4px',
                     padding: '8px 12px',
-                    color: '#e0e8f0',
+                    color: 'var(--text-primary)',
                     fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                     fontSize: '12px',
                     outline: 'none',
@@ -817,7 +817,7 @@ function MatchPage() {
                 <label style={{
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   fontSize: '10px',
-                  color: '#64748b',
+                  color: 'var(--text-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '2px',
                   marginBottom: '6px',
@@ -832,7 +832,7 @@ function MatchPage() {
                     border: '1px solid #1a2736',
                     borderRadius: '4px',
                     padding: '8px 12px',
-                    color: '#e0e8f0',
+                    color: 'var(--text-primary)',
                     fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                     fontSize: '12px',
                     outline: 'none',
@@ -844,7 +844,7 @@ function MatchPage() {
                 <label style={{
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   fontSize: '10px',
-                  color: '#64748b',
+                  color: 'var(--text-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '2px',
                   marginBottom: '6px',
@@ -856,7 +856,7 @@ function MatchPage() {
                   border: '1px solid #1a2736',
                   borderRadius: '4px',
                   padding: '8px 12px',
-                  color: '#e0e8f0',
+                  color: 'var(--text-primary)',
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   fontSize: '12px',
                   outline: 'none',
@@ -870,7 +870,7 @@ function MatchPage() {
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   background: 'transparent',
                   border: '1px solid #1a2736',
-                  color: '#64748b',
+                  color: 'var(--text-secondary)',
                   padding: '7px 16px',
                   borderRadius: '4px',
                   cursor: 'pointer',
@@ -882,7 +882,7 @@ function MatchPage() {
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                   background: 'rgba(0,212,255,0.12)',
                   border: '1px solid rgba(0,212,255,0.4)',
-                  color: '#00d4ff',
+                  color: 'var(--accent-cyan)',
                   padding: '7px 16px',
                   borderRadius: '4px',
                   cursor: 'pointer',

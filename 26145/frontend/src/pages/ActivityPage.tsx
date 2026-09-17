@@ -15,10 +15,10 @@ interface LogEntry {
 }
 
 const LEVELS: Record<string, { color: string; bg: string; dot: string }> = {
-  critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)', dot: '#ef4444' },
-  high:     { color: '#f97316', bg: 'rgba(249,115,22,0.12)', dot: '#f97316' },
-  medium:   { color: '#eab308', bg: 'rgba(234,179,8,0.12)', dot: '#eab308' },
-  low:      { color: '#06b6d4', bg: 'rgba(6,182,212,0.12)', dot: '#06b6d4' },
+  critical: { color: 'var(--accent-red)', bg: 'rgba(239,68,68,0.12)', dot: 'var(--accent-red)' },
+  high:     { color: 'var(--accent-orange)', bg: 'rgba(249,115,22,0.12)', dot: 'var(--accent-orange)' },
+  medium:   { color: 'var(--accent-yellow)', bg: 'rgba(234,179,8,0.12)', dot: 'var(--accent-yellow)' },
+  low:      { color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.12)', dot: 'var(--accent-cyan)' },
 };
 
 const FILTERS = ['all', 'alert', 'system', 'detection', 'performance'] as const;
@@ -147,10 +147,10 @@ function ActivityPage() {
   };
   const severityTotal = Math.max(logs.length, 1);
   const severityBars = [
-    { label: 'Critical', count: severityCounts.critical, color: '#ef4444', pct: (severityCounts.critical / severityTotal) * 100 },
-    { label: 'High', count: severityCounts.high, color: '#f97316', pct: (severityCounts.high / severityTotal) * 100 },
-    { label: 'Medium', count: severityCounts.medium, color: '#eab308', pct: (severityCounts.medium / severityTotal) * 100 },
-    { label: 'Low', count: severityCounts.low, color: '#06b6d4', pct: (severityCounts.low / severityTotal) * 100 },
+    { label: 'Critical', count: severityCounts.critical, color: 'var(--accent-red)', pct: (severityCounts.critical / severityTotal) * 100 },
+    { label: 'High', count: severityCounts.high, color: 'var(--accent-orange)', pct: (severityCounts.high / severityTotal) * 100 },
+    { label: 'Medium', count: severityCounts.medium, color: 'var(--accent-yellow)', pct: (severityCounts.medium / severityTotal) * 100 },
+    { label: 'Low', count: severityCounts.low, color: 'var(--accent-cyan)', pct: (severityCounts.low / severityTotal) * 100 },
   ];
 
   // Category breakdown
@@ -158,7 +158,7 @@ function ActivityPage() {
   logs.forEach(l => { categoryCounts[l.type] = (categoryCounts[l.type] || 0) + 1; });
   const categoryEntries = Object.entries(categoryCounts).sort(([,a],[,b]) => b - a);
   const categoryTotal = Math.max(logs.length, 1);
-  const donutColors = ['#00d4ff', '#00ff41', '#ff8833', '#ef4444', '#b347ff'];
+  const donutColors = ['var(--accent-cyan)', 'var(--accent-green)', 'var(--accent-orange)', 'var(--accent-red)', 'var(--accent-purple)'];
 
   const filtered = logs.filter(log => {
     if (filter !== 'all' && log.type !== filter) return false;
@@ -182,22 +182,22 @@ function ActivityPage() {
       {/* ── TOP STAT CARDS ─────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
         {[
-          { label: 'Total Events', value: stats.total, color: '#00d4ff', icon: '◈' },
-          { label: 'Alerts', value: stats.alerts, color: '#ff8833', icon: '⚠' },
-          { label: 'Critical', value: stats.errors, color: '#ef4444', icon: '✕' },
-          { label: 'Warnings', value: stats.warnings, color: '#eab308', icon: '◌' },
+          { label: 'Total Events', value: stats.total, color: 'var(--accent-cyan)', icon: '◈' },
+          { label: 'Alerts', value: stats.alerts, color: 'var(--accent-orange)', icon: '⚠' },
+          { label: 'Critical', value: stats.errors, color: 'var(--accent-red)', icon: '✕' },
+          { label: 'Warnings', value: stats.warnings, color: 'var(--accent-yellow)', icon: '◌' },
         ].map(card => (
           <div key={card.label} style={{
-            background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px',
+            background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{card.label}</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{card.label}</div>
                 <div style={{ fontFamily: '"JetBrains Mono", monospace', color: card.color, fontSize: '28px', fontWeight: 700, lineHeight: 1 }}>{card.value.toLocaleString()}</div>
               </div>
               <span style={{ fontSize: '18px', opacity: 0.6 }}>{card.icon}</span>
             </div>
-            <div style={{ height: '3px', borderRadius: '2px', background: '#1a2736', marginTop: '10px', overflow: 'hidden' }}>
+            <div style={{ height: '3px', borderRadius: '2px', background: 'var(--border-color)', marginTop: '10px', overflow: 'hidden' }}>
               <div style={{ height: '100%', borderRadius: '2px', background: `linear-gradient(90deg, ${card.color}, ${card.color}88)`, width: `${Math.min((card.value / Math.max(stats.total, 1)) * 100, 100)}%` }} />
             </div>
           </div>
@@ -210,30 +210,30 @@ function ActivityPage() {
         {/* SIDEBAR */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Event Rate */}
-          <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Event Rate</div>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Event Rate</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '10px' }}>
-              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00ff41', fontSize: '24px', fontWeight: 700 }}>{eventsPerSec}</span>
-              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px' }}>evt/s</span>
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-green)', fontSize: '24px', fontWeight: 700 }}>{eventsPerSec}</span>
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px' }}>evt/s</span>
             </div>
             <svg viewBox="0 0 120 30" style={{ width: '100%', height: '30px' }}>
               {rateHistory.map((rate, i) => {
                 const h = (rate / 200) * 28;
                 const x = (i / 29) * 120;
-                return <rect key={i} x={x} y={30 - h} width={4} height={h} fill={i > 25 ? '#00ff41' : '#00d4ff'} opacity={0.7} />;
+                return <rect key={i} x={x} y={30 - h} width={4} height={h} fill={i > 25 ? 'var(--accent-green)' : 'var(--accent-cyan)'} opacity={0.7} />;
               })}
             </svg>
           </div>
 
           {/* Severity Distribution */}
-          <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Severity Distribution</div>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Severity Distribution</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {severityBars.map(bar => (
                 <div key={bar.label}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                     <span style={{ fontFamily: '"JetBrains Mono", monospace', color: bar.color, fontSize: '10px', fontWeight: 600 }}>{bar.label}</span>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px' }}>{bar.count} ({bar.pct.toFixed(1)}%)</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px' }}>{bar.count} ({bar.pct.toFixed(1)}%)</span>
                   </div>
                   <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(0,212,255,0.06)', overflow: 'hidden' }}>
                     <div style={{ height: '100%', borderRadius: '3px', background: bar.color, width: `${Math.min(bar.pct, 100)}%`, transition: 'width 0.5s ease' }} />
@@ -244,8 +244,8 @@ function ActivityPage() {
           </div>
 
           {/* Category Donut */}
-          <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Categories</div>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Categories</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <svg viewBox="0 0 36 36" style={{ width: '80px', height: '80px', transform: 'rotate(-90deg)', flexShrink: 0 }}>
                 {categoryEntries.map(([cat, count], i) => {
@@ -262,8 +262,8 @@ function ActivityPage() {
                 {categoryEntries.map(([cat, count], i) => (
                   <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: donutColors[i % donutColors.length], display: 'inline-block' }} />
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '10px' }}>{cat}</span>
-                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px' }}>({count})</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '10px' }}>{cat}</span>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px' }}>({count})</span>
                   </div>
                 ))}
               </div>
@@ -271,20 +271,20 @@ function ActivityPage() {
           </div>
 
           {/* Filters */}
-          <div style={{ background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
-            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Filter</div>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+            <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Filter</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {FILTERS.map(f => (
                 <button key={f} onClick={() => setFilter(f)} style={{
                   background: filter === f ? 'rgba(0,212,255,0.1)' : 'transparent',
-                  color: filter === f ? '#00d4ff' : '#64748b',
+                  color: filter === f ? 'var(--accent-cyan)' : 'var(--text-secondary)',
                   border: `1px solid ${filter === f ? 'rgba(0,212,255,0.3)' : 'rgba(0,212,255,0.08)'}`,
                   borderRadius: '6px', padding: '6px 10px', cursor: 'pointer',
                   fontFamily: '"JetBrains Mono", monospace', fontSize: '11px', textTransform: 'capitalize',
                   transition: 'all 0.2s',
                 }}>
                   {f === 'all' ? 'All Events' : f}
-                  {f !== 'all' && <span style={{ marginLeft: '6px', color: '#4a5568' }}>{logs.filter(l => l.type === f).length}</span>}
+                  {f !== 'all' && <span style={{ marginLeft: '6px', color: 'var(--text-secondary)' }}>{logs.filter(l => l.type === f).length}</span>}
                 </button>
               ))}
             </div>
@@ -296,7 +296,7 @@ function ActivityPage() {
                 placeholder="Search events..."
                 style={{
                   width: '100%', background: 'rgba(6,10,16,0.8)', border: '1px solid rgba(0,212,255,0.12)',
-                  borderRadius: '6px', padding: '8px 10px', color: '#c8d6e5', fontSize: '12px',
+                  borderRadius: '6px', padding: '8px 10px', color: 'var(--text-primary)', fontSize: '12px',
                   fontFamily: '"JetBrains Mono", monospace', outline: 'none',
                 }}
               />
@@ -304,7 +304,7 @@ function ActivityPage() {
             <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
               <button onClick={() => setPaused(!paused)} style={{
                 flex: 1, background: paused ? 'rgba(255,136,51,0.15)' : 'transparent',
-                color: paused ? '#ff8833' : '#64748b', border: `1px solid ${paused ? 'rgba(255,136,51,0.3)' : 'rgba(0,212,255,0.12)'}`,
+                color: paused ? 'var(--accent-orange)' : 'var(--text-secondary)', border: `1px solid ${paused ? 'rgba(255,136,51,0.3)' : 'rgba(0,212,255,0.12)'}`,
                 borderRadius: '6px', padding: '6px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
               }}>
                 {paused ? '▶ Resume' : '❚❚ Pause'}
@@ -317,7 +317,7 @@ function ActivityPage() {
                 a.href = url; a.download = `watchtower-logs-${Date.now()}.json`; a.click();
                 URL.revokeObjectURL(url);
               }} style={{
-                flex: 1, background: 'transparent', color: '#00d4ff',
+                flex: 1, background: 'transparent', color: 'var(--accent-cyan)',
                 border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px', padding: '6px', cursor: 'pointer',
                 fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
               }}>Export JSON</button>
@@ -328,7 +328,7 @@ function ActivityPage() {
         {/* LOG FEED */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{
-            background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px',
+            background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px',
             overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1,
           }}>
             <div style={{
@@ -336,13 +336,13 @@ function ActivityPage() {
               padding: '12px 16px', borderBottom: '1px solid #1a2736',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ color: '#00ff41', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
-                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00d4ff', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>Event Stream</span>
-                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px' }}>({filtered.length} events)</span>
+                <span style={{ color: 'var(--accent-green)', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>Event Stream</span>
+                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px' }}>({filtered.length} events)</span>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                 <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} />
-                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px' }}>Auto-scroll</span>
+                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px' }}>Auto-scroll</span>
               </label>
             </div>
 
@@ -352,8 +352,8 @@ function ActivityPage() {
             }}>
               {filtered.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '24px' }}>◈</div>
-                  <p style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '12px', marginTop: '8px' }}>No events matching filter</p>
+                  <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '24px' }}>◈</div>
+                  <p style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '12px', marginTop: '8px' }}>No events matching filter</p>
                 </div>
               ) : (
                 filtered.map((log, idx) => {
@@ -367,7 +367,7 @@ function ActivityPage() {
                       borderLeft: `3px solid ${ls.color}`,
                       transition: 'background 0.15s',
                     }}>
-                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#2d4a6a', fontSize: '11px', width: '72px', flexShrink: 0 }}>
+                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '11px', width: '72px', flexShrink: 0 }}>
                         {new Date(log.timestamp).toLocaleTimeString('en-US', { hour12: false })}
                       </span>
                       <span style={{
@@ -376,7 +376,7 @@ function ActivityPage() {
                         padding: '2px 8px', borderRadius: '4px', fontSize: '9px',
                         textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: 600, flexShrink: 0,
                       }}>{log.type}</span>
-                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '12px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {log.message}
                       </span>
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: ls.color, flexShrink: 0, boxShadow: `0 0 4px ${ls.color}66` }} />
@@ -392,18 +392,18 @@ function ActivityPage() {
       {/* ── SELECTED LOG DETAIL ────────────────────────────────────── */}
       {selectedLog && (
         <div style={{
-          background: '#0a1118', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden',
+          background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '12px 16px', borderBottom: '1px solid #1a2736',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: '#00d4ff', fontSize: '13px', fontWeight: 600 }}>
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '13px', fontWeight: 600 }}>
                 ◈ Detection Pipeline — {selectedLog.id}
               </span>
             </div>
-            <button onClick={() => setSelectedLog(null)} style={{ background: 'none', border: 'none', color: '#2d4a6a', cursor: 'pointer', fontSize: '16px', fontFamily: '"JetBrains Mono", monospace' }}>✕</button>
+            <button onClick={() => setSelectedLog(null)} style={{ background: 'none', border: 'none', color: 'var(--border-active)', cursor: 'pointer', fontSize: '16px', fontFamily: '"JetBrains Mono", monospace' }}>✕</button>
           </div>
           <div style={{ padding: '16px' }}>
             {/* Pipeline Steps */}
@@ -417,11 +417,11 @@ function ActivityPage() {
                       background: status === 'triggered' ? 'rgba(239,68,68,0.1)' : 'rgba(0,255,65,0.06)',
                       border: `1px solid ${status === 'triggered' ? 'rgba(239,68,68,0.25)' : 'rgba(0,255,65,0.15)'}`,
                     }}>
-                      <div style={{ fontFamily: '"JetBrains Mono", monospace', color: status === 'triggered' ? '#ef4444' : '#00ff41', fontSize: '11px', fontWeight: 600 }}>{step}</div>
-                      <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '9px', textTransform: 'uppercase', marginTop: '2px' }}>{status}</div>
+                      <div style={{ fontFamily: '"JetBrains Mono", monospace', color: status === 'triggered' ? 'var(--accent-red)' : 'var(--accent-green)', fontSize: '11px', fontWeight: 600 }}>{step}</div>
+                      <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', marginTop: '2px' }}>{status}</div>
                     </div>
                     {i < PIPELINE_STEPS.length - 1 && (
-                      <span style={{ color: status === 'triggered' ? '#ef4444' : '#00ff41', fontSize: '14px', flexShrink: 0 }}>→</span>
+                      <span style={{ color: status === 'triggered' ? 'var(--accent-red)' : 'var(--accent-green)', fontSize: '14px', flexShrink: 0 }}>→</span>
                     )}
                   </React.Fragment>
                 );
@@ -431,30 +431,30 @@ function ActivityPage() {
             {/* Event Details */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div style={{ background: 'rgba(6,10,16,0.6)', borderRadius: '6px', padding: '12px', border: '1px solid rgba(0,212,255,0.08)' }}>
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Event Details</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Event Details</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>ID</span>
-                    <span style={{ color: '#00d4ff' }}>{selectedLog.id}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>ID</span>
+                    <span style={{ color: 'var(--accent-cyan)' }}>{selectedLog.id}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Type</span>
-                    <span style={{ color: '#c8d6e5' }}>{selectedLog.type}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Type</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{selectedLog.type}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Severity</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Severity</span>
                     <span style={{ color: (LEVELS[selectedLog.severity] || LEVELS.low).color }}>{selectedLog.severity.toUpperCase()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#64748b' }}>Time</span>
-                    <span style={{ color: '#c8d6e5' }}>{new Date(selectedLog.timestamp).toLocaleString()}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Time</span>
+                    <span style={{ color: 'var(--text-primary)' }}>{new Date(selectedLog.timestamp).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
               <div style={{ background: 'rgba(6,10,16,0.6)', borderRadius: '6px', padding: '12px', border: '1px solid rgba(0,212,255,0.08)' }}>
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: '#64748b', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Decision Path</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Decision Path</div>
                 <pre style={{
-                  fontFamily: '"JetBrains Mono", monospace', color: '#c8d6e5', fontSize: '10px',
+                  fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '10px',
                   whiteSpace: 'pre-wrap', overflow: 'auto', maxHeight: '120px',
                   margin: 0,
                 }}>{selectedLog.decision_path || 'N/A'}</pre>

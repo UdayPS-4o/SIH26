@@ -9,22 +9,22 @@ import { Alert } from '../types';
 /* ── Palette (locked — one accent, matches Dashboard.tsx) ─────────────────── */
 
 const C = {
-  bg: '#05080d',
-  surface: '#080d14',
-  surfaceHi: '#0c1219',
-  border: '#111c2b',
-  borderHi: '#182a3d',
-  text: '#dce4ec',
-  textSec: '#556677',
-  textDim: '#2a3a4a',
-  accent: '#00d4ff',
-  red: '#ef4444',
-  orange: '#f97316',
-  amber: '#eab308',
-  green: '#22c55e',
-  purple: '#a855f7',
-  pink: '#ec4899',
-  teal: '#14b8a6',
+  bg: 'var(--bg-primary)',
+  surface: 'var(--bg-secondary)',
+  surfaceHi: 'var(--bg-card-hover)',
+  border: 'var(--border-color)',
+  borderHi: 'var(--border-active)',
+  text: 'var(--text-primary)',
+  textSec: 'var(--text-secondary)',
+  textDim: 'var(--text-muted)',
+  accent: 'var(--accent-cyan)',
+  red: 'var(--accent-red)',
+  orange: 'var(--accent-orange)',
+  amber: 'var(--accent-yellow)',
+  green: 'var(--accent-green)',
+  purple: 'var(--accent-purple)',
+  pink: 'var(--accent-pink)',
+  teal: 'var(--accent-teal)',
 };
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -41,18 +41,18 @@ let _aid = 0;
 const nextId = () => `LT-${Date.now().toString(36).toUpperCase()}-${(++_aid).toString(36).toUpperCase()}`;
 
 const SEV_MAP: Record<string, { color: string; bg: string; glow: string }> = {
-  critical: { color: '#ef4444', bg: 'rgba(239,68,68,0.10)', glow: 'rgba(239,68,68,0.40)' },
-  high:     { color: '#f97316', bg: 'rgba(249,115,22,0.10)', glow: 'rgba(249,115,22,0.30)' },
-  medium:   { color: '#eab308', bg: 'rgba(234,179,8,0.10)',  glow: 'rgba(234,179,8,0.25)' },
-  low:      { color: '#00d4ff', bg: 'rgba(0,212,255,0.08)',  glow: 'rgba(0,212,255,0.25)' },
+  critical: { color: 'var(--accent-red)', bg: 'rgba(239,68,68,0.10)', glow: 'rgba(239,68,68,0.40)' },
+  high:     { color: 'var(--accent-orange)', bg: 'rgba(249,115,22,0.10)', glow: 'rgba(249,115,22,0.30)' },
+  medium:   { color: 'var(--accent-yellow)', bg: 'rgba(234,179,8,0.10)',  glow: 'rgba(234,179,8,0.25)' },
+  low:      { color: 'var(--accent-cyan)', bg: 'rgba(0,212,255,0.08)',  glow: 'rgba(0,212,255,0.25)' },
 };
 
 const THREAT_TYPES = ['ddos','beaconing','dga','dns_tunnel','port_scan','exfiltration','tls_anomaly','malware','phishing'] as const;
 
 const THREAT_CLR: Record<string,string> = {
   ddos: C.red, beaconing: C.orange, dga: C.amber,
-  dns_tunnel: '#06b6d4', port_scan: C.purple,
-  exfiltration: C.pink, tls_anomaly: C.teal, malware: C.red, phishing: '#f59e0b',
+  dns_tunnel: 'var(--accent-cyan)', port_scan: C.purple,
+  exfiltration: C.pink, tls_anomaly: C.teal, malware: C.red, phishing: 'var(--accent-amber)',
 };
 const THREAT_LBL: Record<string,string> = {
   ddos:'DDoS', beaconing:'Beaconing', dga:'DGA',
@@ -362,7 +362,7 @@ const LiveThreats: React.FC = () => {
                     { k:'critical', label:'CRITICAL', c:C.red },
                     { k:'high', label:'HIGH', c:C.orange },
                     { k:'medium', label:'MEDIUM', c:C.amber },
-                    { k:'low', label:'LOW', c:'#06b6d4' },
+                    { k:'low', label:'LOW', c:'var(--accent-cyan)' },
                   ]).map(s => (
                     <div key={s.k} onClick={() => setFilterSeverity(filterSeverity === s.k ? 'all' : s.k)}
                       style={{
