@@ -1,111 +1,184 @@
 # WATCHTOWER — Demo Video Script
 **Smart India Hackathon 2026 | PS-26145 | NTRO**
-**Duration: 3:00 | Target: Judging Round**
+**Duration: 3:00 | Format: 1080p 60fps**
 
 ---
 
-## ACT 1: THE PROBLEM (0:00 – 0:45)
+## PRE-PRODUCTION SETUP
 
-| TIME | VISUAL | NARRATION | ON-SCREEN TEXT |
-|------|--------|-----------|----------------|
-| 0:00 | **BLACK SCREEN.** A single white cursor blinks. Lines of hex stream upward like matrix rain — representing raw network packets, each one a numbered entry in an infinite column of integers. The scrolling slows, then stops on a single line of code: `socket.recv(BUFFER_SIZE)`. | *(Voiceover, calm, documentary tone — close to the mic, intimate)* | — |
-| 0:08 | **PULL BACK** to reveal: a terminal window inside a dark room, monitor glow reflecting on nothing. The scrolling data continues at high speed — 10,000 lines per second, too fast to read. A counter ticks up in the corner: `PKT/s: 10,247`. | "Every second, ten thousand packets cross your network gateway. You can see them all. But you can never touch them." | `10,000 packets/second` |
-| 0:18 | **SPLIT SCREEN.** Left half: a hand reaching toward the screen, fingers extended. Right half: a diagram of a **DATA DIODE** — a physical device with a one-way arrow. The reverse path is overlaid with a bold red X. Labels appear: "INGRESS — YES" / "EGRESS — BLOCKED". | "This is a data diode. One-way. Read-only. No probes. No handshakes. No decryption. No going back." | `DATA DIODE` · `ONE-WAY ONLY` |
-| 0:28 | **DARKEN** the room. Only the data diode diagram glows. Text fades in one word at a time: "Critical infrastructure operators have used physical data diodes for decades." Then: "They copy traffic into a monitoring enclave." | "Critical infrastructure operators have used physical data diodes for decades. They copy traffic into a monitoring enclave." | — |
-| 0:36 | The text changes. New words appear with a subtle **glitch flicker**: "But here's the problem." Pause. "The enclave can see everything — and do nothing." The RED X on the reverse path **pulses** once. | "But here's the problem: the enclave can see everything and do nothing. No active scanning. No active defense. Just passive observation." | `NO ACTIVE DEFENSE` |
-| 0:42 | **BEAT.** One second of silence. Black screen. Then the problem statement ID slams in: **PS-26145** in stark white against black. | *(Beat — let it land)* "This is PS-26145." | `PS-26145` |
+**Hardware:**
+- Docker host laptop (16GB+ RAM, Docker Desktop)
+- Windows attack PC (separate machine on same LAN)
+- USB microphone
+- OBS Studio on Docker host
 
-**Transition: Screen FLASHES white, then cuts to the dashboard.**
-
----
-
-## ACT 2: THE REVEAL (0:45 – 1:30)
-
-| TIME | VISUAL | NARRATION | ON-SCREEN TEXT |
-|------|--------|-----------|----------------|
-| 0:45 | **FLASH CUT.** The WATCHTOWER dashboard materializes with a **glitch-in** effect. Logo appears top-left: a stylized radar/tower icon with the word **WATCHTOWER** in a sharp geometric font. Cyan accent line sweeps across the header. | "Build AI that sees threats in read-only traffic." *(Pause)* "And we did." | `WATCHTOWER` |
-| 0:52 | **ONE CONTINUOUS SWEEP** across the dashboard — camera pans right across the full UI: sidebar with 6 nav icons (Dashboard, Attack, Live Threats, Analytics, Network Map, About), then the KPI row animates in: **2.8M Flows Scanned**, **10.2K Threats Blocked**, **1,847 Active Sessions**, **98.3% Detection Rate**, **1.8% False Positive**. Each number counts up on screen. | "WATCHTOWER. National Threat Intelligence Platform. Built for NTRO. The only system that detects six classes of cyber threats using nothing but passive flow metadata." | `2.8M SCANNED` · `10.2K BLOCKED` · `98.3% DETECTION` |
-| 1:02 | Camera focuses on the **Threat Pipeline** diagram in the center panel. Four boxes with arrows: **INGEST → FEATURES → INFERENCE → OUTPUT**. Each box pulses cyan in sequence — left to right — as data flows through. | "Six threat classes. Real-time detection. Streaming pipeline processing thousands of flows per second." | `INGEST → FEATURES → INFERENCE → OUTPUT` |
-| 1:10 | **QUICK-CUT MONTAGE.** Six shots, ~1.8 seconds each, rapid-fire: | | |
-| 1:10 | **Shot 1:** A SYN flood attack fires — thousands of connection requests surge on the analytics graph. A red spike erupts. Label: `CRITICAL: SYN Flood` | "SYN flood. Volumetric DDoS detection from flow rate and source IP entropy." | `SYN FLOOD` |
-| 1:12 | **Shot 2:** A network graph shows beaconing nodes pulsing in a steady rhythm — dots flashing at regular intervals. | "Botnet command and control, detected through periodicity analysis." | `C2 BEACONING` |
-| 1:14 | **Shot 3:** A DNS query entropy meter spikes — random-looking domain names scroll by. An alert fires: `DGA DOMAIN DETECTED`. | "DGA domains and DNS tunneling — entropy and n-gram analysis." | `DGA / DNS TUNNEL` |
-| 1:16 | **Shot 4:** TLS handshake metadata renders as a colored hash bar — JA3 fingerprints displayed without a single byte of decrypted payload. | "Malware in encrypted sessions — JA3 fingerprinting. No decryption." | `JA3 FINGERPRINT` |
-| 1:18 | **Shot 5:** A port-scan fan-out diagram — one IP connecting to hundreds of ports in a radial explosion pattern. | "Reconnaissance detection from fan-out patterns." | `PORT SCAN` |
-| 1:20 | **Shot 6:** An asymmetric data spike — tiny outbound, massive outbound. Exfiltration arrow points off-screen. | "Exfiltration through asymmetric flow volume anomalies." | `DATA EXFILTRATION` |
-| 1:22 | **RETURN** to the full dashboard. Six threat class icons arranged in a clean grid at the bottom, each with a green indicator: `ACTIVE`. | "Read-only architecture. Zero decryption. Standardized JSON alerts." | `6 THREAT CLASSES · ACTIVE` |
-
-**Transition: Quick zoom forward into the Attack page.**
+**Software:**
+- Docker Desktop running
+- WATCHTOWER containers: `docker compose up -d`
+- PowerShell 7 on Windows PC with `attack-trigger.ps1`
+- Browser at `http://localhost:3000`
 
 ---
 
-## ACT 3: THE ATTACK (1:30 – 2:15)
+## ACT 1: THE PROBLEM (0:00 – 0:30)
 
-| TIME | VISUAL | NARRATION | ON-SCREEN TEXT |
-|------|--------|-----------|----------------|
-| 1:30 | **CUT** to the **Attack Simulation** page. Split layout: left panel = attack controls (6 buttons stacked vertically: SYN Flood, UDP Flood, DNS Tunneling, DGA Attack, Beaconing, Port Scan). Right panel = Live Threats feed. The narrator's cursor hovers over the red **SYN FLOOD** button. | "Let me show you. Right now." | — |
-| 1:35 | **CLICK.** The SYN Flood button illuminates. The left panel immediately begins counting: `Packets Sent: 0... 1,247... 5,891... 50,000`. A progress bar fills. | "SYN flood. Fifty thousand packets per second." | `SYN FLOOD` · `50,000 pps` |
-| 1:40 | **2 seconds in** — the Live Threats panel on the right **ERUPTS**. Red `CRITICAL` alerts flood in, one after another. Each shows: timestamp, threat class, confidence score (e.g., `94.7%`), source IP, port count. The feed auto-scrolls at 2-second intervals. The KPI "Threats Blocked" counter on the dashboard ticker starts climbing: `10,201... 10,215... 10,234...`. | "Passive observation only. No firewalls touched. No packets dropped. Pure detection from flow metadata." | `CRITICAL — SYN Flood` · `94.7% confidence` |
-| 1:48 | **CUT** to the **Network Map** page. Force-directed graph with nodes and edges. As the attack continues, nodes light up RED one by one. Red arcs draw themselves between compromised endpoints — attack paths materializing in real-time. A legend shows: `RED = Compromised` / `CYAN = Clean`. | "Every attack leaves a fingerprint. We read it. We classify it. We score it." | `NETWORK TOPOLOGY` · `47 NODES` |
-| 1:55 | Close-up on a single node pulsing red. A tooltip pops up: `Source: 192.168.1.105 → Targets: 47 endpoints | Threat: Volumetric DDoS | Confidence: 96.2%`. | *(No new narration — let the visuals speak)* | `96.2% CONFIDENCE` |
-| 2:00 | **SWITCH** to the **Analytics** page. A large **donut chart** renders — each slice a threat class, colored by severity. Red dominates. Below it, **sparkline charts** show detection rate over time — a steady flat line at 98%+ with tiny upward blips when attacks fire. | "Real-time analytics. Threat distribution. Detection confidence — all updating live." | `ANALYTICS` · `DETECTION RATE` |
+**0:00** — BLACK SCREEN. Hex data scrolls upward like matrix rain. Packet counter ticks: `PKT/s: 10,247`.
 
-**Transition: Camera pulls back to the dashboard.**
+> Voiceover: "Every second, ten thousand packets cross your network gateway. You can see them all. But you can never touch them."
 
----
+**0:10** — Data diode diagram: physical device, one-way arrow, red X on reverse path. Labels: INGRESS YES / EGRESS BLOCKED.
 
-## ACT 4: THE CLOSE (2:15 – 3:00)
+> "Critical infrastructure operators use physical data diodes. One-way. Read-only. No probes. No handshakes. No going back."
 
-| TIME | VISUAL | NARRATION | ON-SCREEN TEXT |
-|------|--------|-----------|----------------|
-| 2:15 | **RETURN** to the full Dashboard view. Camera pulls back smoothly — all panels visible in one frame: sidebar, KPIs, pipeline, threat feed, network map thumbnail. The screen is dense with live data. Everything moves subtly — numbers tick, alerts scroll, graphs breathe. | "Six threat classes. Real-time detection. Streaming pipeline processing thousands of flows per second. Read-only architecture. Zero decryption. Standardized JSON alerts." | — |
-| 2:25 | A **CARD HIGHLIGHT** effect: the **"Enclave Constraints"** card on the dashboard edges with a cyan glow. Inside: `✓ Read-Only Mode: ACTIVE` / `✓ No Outbound Traffic` / `✓ No Probes` / `✓ COMPLIANT`. The word **COMPLIANT** pulses green. | "Built for the data diode. Designed for the enclave. Engineered for NTRO." | `COMPLIANT ✓` |
-| 2:32 | **SLOW ZOOM** toward the WATCHTOWER logo in the top-left corner. The rest of the dashboard fades slightly — bokeh effect. The logo holds sharp and centered. | *(Voice drops, slower, deliberate)* "WATCHTOWER. Because the best defense is seeing everything." *(Pause)* "And doing nothing." *(Pause)* "Until it matters." | — |
-| 2:40 | The logo holds for two full seconds. Below it, the problem statement ID fades in: **PS-26145**. Below that, the event name: **Smart India Hackathon 2026**. Below that: **NTRO** with the Indian tricolor accent line. | — | `PS-26145` |
-| 2:48 | Everything begins to fade. The dashboard dissolves into darkness over one full second. The logo persists the longest, then fades. | — | `Smart India Hackathon 2026` |
-| 2:55 | **FULL BLACK** for two seconds. | — | — |
-| 2:57 | One final frame: the WATCHTOWER logo on black. Tiny. Centered. | — | `WATCHTOWER` |
-| 3:00 | **FADE OUT.** | — | — |
+**0:20** — Text appears: "But the enclave can see everything — and do nothing." Red X pulses.
+
+> "The monitoring enclave can see everything crossing the link. And do absolutely nothing about it."
+
+**0:28** — Beat of silence. PS-26145 slams in white on black.
+
+> "This is Smart India Hackathon Problem Statement 26145."
+
+**TRANSITION:** Terminal types `docker compose up -d` — containers spin up — WATCHTOWER dashboard materializes.
 
 ---
 
-## TECHNICAL SPECIFICATIONS
+## ACT 2: THE SYSTEM (0:30 – 0:55)
 
-| Parameter | Value |
-|-----------|-------|
-| **Resolution** | 1920 x 1080 (1080p) or 3840 x 2160 (4K recommended) |
-| **Frame Rate** | 60fps for all UI capture; 24fps for cinematic cutaways |
-| **Audio** | Voiceover recorded with cardioid condenser mic, 48kHz. Add subtle ambient hum (datacenter/rack fans) under Act 1. Add low electronic pulse (60 BPM) under Act 2 reveal. Attack section gets rising tension tone. Act 4 returns to ambient. |
-| **Font** | Use the exact font from the WATCHTOWER UI — JetBrains Mono for data, Inter for headings |
-| **Color Palette** | Background `#0a0e17` (near-black navy), Accent `#06b6d4` (cyan-500), Alert `#ef4444` (red-500), Success `#22c55e` (green-500), Text `#e2e8f0` (slate-200) |
-| **Screen Capture** | Record at `localhost:5178` (dev server). All data is synthetic/mock — the dashboard runs on a seeded in-browser panel with no backend, and says so on screen. |
-| **Recording Tool** | OBS Studio (free) at 60fps. Browser zoom at 110% for crisp UI capture. |
+**0:30** — Docker terminal spinning up containers. Browser opens to localhost:3000. Dashboard materializes with glitch effect. HUD shows: STATUS LIVE, ALERTS 0, THROUGHPUT 0/s.
 
----
+> "We built WATCHTOWER. A containerized AI detection platform that operates entirely inside a read-only enclave."
 
-## RECOMMENDED SHOOTING NOTES
+**0:38** — Camera pans across dashboard: sidebar with 6 nav items, KPI row, pipeline diagram (4 stages), enclave constraints panel (COMPLIANT).
 
-1. **Record in segments, not one take.** Capture each act separately (4 recordings, ~45s each). Stitch in post. This lets you re-record individual sections if a browser glitch or animation timing is off.
+> "Six threat classes. Real-time streaming. Zero decryption. Zero return path. Pure passive observation."
 
-2. **Pre-warm the dashboard.** Before recording, open the dashboard and let all animations play through once. Numbers animate on first load — you want them already settled at their peak values when the camera arrives.
+**0:46** — Close-up on enclave constraints panel. Green checkmarks on each row: READ-ONLY, JA3/JA4 metadata only, Decryption disabled.
 
-3. **Use a clean browser profile.** Incognito window, no extensions, no bookmarks bar, DevTools docked to the side (or hidden with F11). Full-screen the browser. Hide the OS taskbar if possible.
+> "Every architectural constraint is enforced and verified. This isn't design fiction. It's how it actually runs."
 
-4. **The "launch attack" button is the hero moment.** Practice the timing. You want the alerts to start appearing at exactly the 2-second mark after click. If they fire too fast, the demo feels unreal. If too slow, judges get bored. Calibrate this shot specifically.
+**0:52** — Full dashboard. HUD updates: ALERTS 47, THROUGHPUT 12/s.
 
-5. **Mouse cursor visibility.** Make the cursor large and visible. Use a custom cursor or zoom the browser to 110-125% so the pointer is easy to follow. In post, you can add a subtle glow/highlight to the cursor for emphasis.
+> "But here's the thing. It's quiet right now. Too quiet. Let's change that."
 
-6. **Glitch transitions are your brand.** The WATCHTOWER UI uses a cyberpunk aesthetic. Use a subtle RGB-split or scan-line glitch when transitioning between pages (Dashboard → Attack → Network Map). This reinforces the system's identity and makes the edit feel intentional, not just "a screen recording."
-
-7. **Sound design matters more than you think.** Even a basic ambient drone under Act 1 and a rising synth under Act 3 will elevate this from "screen recording" to "cinematic demo." Use free tools: Audacity for voice cleanup, Freesound.org for ambient beds.
-
-8. **Export for the hackathon stage.** If projecting on a hall screen, export at 1080p H.264 at 10-15 Mbps. If submitting a video file, export at 1080p H.265 (HEVC) at 8 Mbps for smaller file size with identical quality. Test playback on the actual presentation machine beforehand.
-
-9. **Subtitles are mandatory.** Indian hackathon judging panels may have members who don't share your first language. Burn in SRT subtitles at the bottom. Use white text with a subtle black outline for legibility against any background.
-
-10. **The opening hook.** The first 10 seconds (dark screen, cursor blink, packet data) are the most important. They set the tone. If judges are checking phones during other teams' demos, this opening will make them look up. Don't rush it. Let the darkness breathe.
+**TRANSITION:** Split screen — LEFT: Windows attack terminal, RIGHT: WATCHTOWER dashboard.
 
 ---
 
-*Script written for WATCHTOWER — PS-26145, Smart India Hackathon 2026*
-*System runs on synthetic/mock data for demonstration purposes.*
+## ACT 3: THE KILL CHAIN (0:55 – 2:00)
+
+### PHASE 1: RECONNAISSANCE (0:55 – 1:05)
+
+**LEFT:** PowerShell: `.\attack-trigger.ps1` then `Start-PortScan`. Terminal shows port scan 1-1024 against target.
+**RIGHT:** Network Map page lights up. RED dots appear across the topology. Alert fires: PORT SCAN DETECTED — 847 ports probed, 94% confidence.
+
+> "Phase one: reconnaissance. Every port probed is a signal. WATCHTOWER sees the fan-out pattern immediately."
+
+### PHASE 2: C2 BEACONING (1:05 – 1:15)
+
+**LEFT:** `Start-C2Beacon -IntervalSec 5`. PowerShell shows periodic GET requests every 5 seconds.
+**RIGHT:** Live Threats page: C2 BEACONING alert. Graph shows regular pulses. Mean IAT 5.1s, std 0.3s, CV 0.06.
+
+> "Phase two: command and control. The infected host phones home every five seconds. The regularity IS the signature."
+
+### PHASE 3: DGA DOMAINS (1:15 – 1:22)
+
+**LEFT:** `Start-DgaBurst -DomainCount 100`. Terminal floods with random subdomain lookups.
+**RIGHT:** DNS analytics spike. DGA DOMAIN DETECTED. Entropy meter maxes out.
+
+> "Phase three: domain generation. High character entropy and unusual n-gram patterns give it away."
+
+### PHASE 4: DNS TUNNELING (1:22 – 1:30)
+
+**LEFT:** `Start-DnsTunnel -DataSizeKB 100`. DNS TXT record bursts.
+**RIGHT:** Alert: DNS TUNNELING — queries averaging 180 characters. 47 tunnel events in 30 seconds.
+
+> "Phase four: exfiltration through DNS. 100KB of data encoded into domain queries. The exfil channel is visible."
+
+### PHASE 5: DATA EXFILTRATION (1:30 – 1:38)
+
+**LEFT:** `Start-DataExfil -SizeMB 20`. Large POST requests stream out.
+**RIGHT:** Alert: DATA EXFILTRATION. Outbound/inbound ratio 47:1. CRITICAL.
+
+> "Phase five: direct exfiltration. Twenty megabytes. The byte ratio screams."
+
+### PHASE 6: VOLUMETRIC DDOS (1:38 – 1:50)
+
+**LEFT:** `Start-SynFlood -Intensity high` AND `Start-UdpFlood -Intensity high`. Two terminals running simultaneously. Packet counter explodes.
+**RIGHT:** Dashboard erupts. Throughput spikes past 10K/s. HUD: ALERTS 3,847. CRITICAL alerts flood the feed. Detection Rate: 98.3%.
+
+> "Phase six: volumetric DDoS. SYN floods and UDP amplification. Ten thousand packets per second. 98.3% detection. Under two percent false positives."
+
+---
+
+## ACT 4: THE DEEP DIVE (1:50 – 2:30)
+
+Full-screen dashboard navigation. Camera clicks through each page.
+
+| TIME | PAGE | SHOW THIS | SAY THIS |
+|------|------|-----------|----------|
+| 1:50 | Dashboard | KPI sweep: 1.2M flows, 3,847 threats, 1,840 sessions, 98.3% detection, 1.2% FP | "After the kill chain: over three thousand threats. Sub-second latency." |
+| 1:58 | Live Threats | Auto-scrolling feed, severity filters, IP search | "Every alert is structured JSON. Timestamp, flow ID, threat class, confidence, evidence." |
+| 2:04 | Network Map | 21 nodes, 20 edges, red attack paths, enclave pulsing | "Every node, every edge, every attack path. Enclave sees everything, touches nothing." |
+| 2:10 | Analytics | Severity donut, 30-min timeline, protocol bars | "Severity distribution, protocol breakdown, attack timeline. All from passive observation." |
+| 2:16 | AI Analyzer | 7 models, 2.6M samples, 10K pred/sec, 93.4% accuracy, 12ms p99 | "Seven threat-specific models. 93.4% accuracy. 10,000 predictions per second. 12ms latency." |
+| 2:22 | Attack Panel | 6 attack cards, kill chain button, live detection monitor | "Six attack vectors. One platform. Real detection." |
+
+---
+
+## ACT 5: THE CLOSE (2:30 – 3:00)
+
+**2:30** — Egress self-test terminal: `curl google.com` → BLOCKED. `connect 8.8.8.8` → BLOCKED.
+
+> "The most important test: egress. The enclave cannot initiate outbound connections. Period."
+
+**2:38** — Docker terminal: `docker compose ps`. All services healthy.
+
+> "Containerized. Isolated. Deploy anywhere."
+
+**2:45** — Terminal: `docker compose down`. Containers stop.
+
+> "Shut it down. Zero trace on the host."
+
+**2:50** — Black screen. Three lines fade in:
+
+> PS-26145
+> NTRO · Smart India Hackathon 2026
+> WATCHTOWER — See everything. Touch nothing.
+
+**2:58** — WATCHTOWER logo on dark background. Cyan accent sweeps across.
+
+**FADE TO BLACK. END.**
+
+---
+
+## EXECUTION CHECKLIST
+
+### Before Recording
+- [ ] Docker Desktop installed and running
+- [ ] Windows attack PC has PowerShell 7 + attack-trigger.ps1
+- [ ] Both machines on same LAN
+- [ ] Browser at localhost:3000
+- [ ] OBS at 1080p 60fps
+- [ ] Docker images built: `docker compose build`
+- [ ] Full kill chain tested — ~90 seconds
+
+### Recording Day
+1. `cd docker && docker compose up -d`
+2. Wait for health checks
+3. Open browser, verify LIVE + data flowing
+4. Start OBS recording
+5. Run attack-killchain.ps1 on Windows PC
+6. Narrate live
+7. Navigate dashboard pages
+8. Stop recording
+9. Save as `WATCHTOWER_Demo_SIH26.mp4`
+
+### Post-Production
+- [ ] Add intro title card
+- [ ] Sync narration
+- [ ] Add threat-type text overlays
+- [ ] Split-screen at 0:55
+- [ ] Color grade (dark, cyan contrast)
+- [ ] Export 1080p H.264, under 100MB
+- [ ] Upload YouTube (unlisted)
+- [ ] Submit
