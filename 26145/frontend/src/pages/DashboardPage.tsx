@@ -490,7 +490,7 @@ const DashboardPage: React.FC = () => {
     <div
       style={{
         background: '#060a10',
-        minHeight: '100vh',
+        minHeight: '100%',
         padding: 24,
         fontFamily: '"Inter", sans-serif',
         color: '#e0e8f0',

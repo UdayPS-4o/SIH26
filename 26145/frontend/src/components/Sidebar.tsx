@@ -43,23 +43,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
 
   return (
-    <>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          onClick={onClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 200,
-          }}
-        />
-      )}
-
-      <aside
-        style={{
+    <aside
+      style={{
           width: 220,
           minWidth: 220,
           height: '100vh',
@@ -226,7 +211,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
       </aside>
-    </>
   );
 };
 

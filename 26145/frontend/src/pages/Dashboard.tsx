@@ -236,7 +236,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div style={{
-      minHeight:'100vh', background:C.bg, color:C.text,
+      minHeight:'100%', background:C.bg, color:C.text,
       fontFamily:'"JetBrains Mono","Fira Code",monospace',
       fontSize:12, lineHeight:1.5,
     }}>
@@ -283,7 +283,7 @@ const Dashboard: React.FC = () => {
       {/* ── STICKY HUD BAR ─────────────────────────────────────────────── */}
       <header style={{
         position:'sticky', top:0, zIndex:40,
-        background:'rgba(5,8,13,0.94)', backdropFilter:'blur(14px) saturate(1.2)',
+        background:'rgba(5,8,13,0.94)',
         borderBottom:`1px solid ${C.border}`,
       }}>
         <div style={{

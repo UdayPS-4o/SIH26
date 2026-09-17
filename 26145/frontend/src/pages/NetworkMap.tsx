@@ -420,7 +420,7 @@ const NetworkMap: React.FC = () => {
   const suspEdges = useMemo(() => edges.filter(e=>e.status==='suspicious'), [edges]);
 
   return (
-    <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:MONO, fontSize:12, lineHeight:1.5 }}>
+    <div style={{ minHeight:'100%', background:C.bg, color:C.text, fontFamily:MONO, fontSize:12, lineHeight:1.5 }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         @keyframes wt-row-in { from{opacity:0;transform:translateX(-6px);} to{opacity:1;transform:translateX(0);} }
@@ -447,7 +447,7 @@ const NetworkMap: React.FC = () => {
       {/* ── STICKY HUD BAR ─────────────────────────────────────────────── */}
       <header style={{
         position:'sticky',top:0,zIndex:40,
-        background:'rgba(5,8,13,0.94)',backdropFilter:'blur(14px) saturate(1.2)',
+        background:'rgba(5,8,13,0.94)',
         borderBottom:`1px solid ${C.border}`,
       }}>
         <div style={{

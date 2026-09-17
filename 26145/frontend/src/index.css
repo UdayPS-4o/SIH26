@@ -209,8 +209,6 @@ body::after {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 20px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   transition: border-color var(--transition-base), background var(--transition-base);
 }
 
@@ -936,8 +934,6 @@ body::after {
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 20px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .chart-title {

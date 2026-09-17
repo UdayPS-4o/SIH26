@@ -46,11 +46,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           minWidth: 0,
           marginLeft: 220,
           height: '100vh',
-          overflowY: 'auto',
+          overflow: 'hidden',
         }}
       >
-        {/* HUD HEADER BAR */}
-        <div className="hud-bar">
+        {/* HUD HEADER BAR — fixed height, no scroll */}
+        <div className="hud-bar" style={{ flexShrink: 0 }}>
           <div className="hud-title">
             <span className="hud-title-icon">
               <ShieldAlert size={14} />
@@ -128,8 +128,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </div>
 
-        {/* CONTENT AREA */}
-        <main className="terminal-content">{children}</main>
+        {/* CONTENT AREA — this is the scrollable region */}
+        <main
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            background: 'var(--bg-primary)',
+            position: 'relative',
+            zIndex: 2,
+          }}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
