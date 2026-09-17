@@ -102,7 +102,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               {/* Throughput */}
               <div className="hud-stat">
                 <span className="hud-stat-label">THROUGHPUT</span>
-                <span className="hud-stat-value">{flowsPerSec.toFixed(0)}/s</span>
+                <span className="hud-stat-value">{(flowsPerSec ?? 0).toFixed(0)}/s</span>
               </div>
 
               <div className="hud-divider" />
