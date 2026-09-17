@@ -8,11 +8,114 @@ that are used by the threat detection models.
 from __future__ import annotations
 
 import math
+import statistics
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import List
 
-import numpy as np
+try:
+    import numpy as _np
+    HAS_NP = True
+except (ImportError, OSError):
+    HAS_NP = False
+    _np = None
+
+
+# Pure-Python numpy replacements for when numpy is unavailable
+def _mean(vals):
+    if not vals: return 0.0
+    return sum(vals) / len(vals)
+
+def _std(vals):
+    if len(vals) < 2: return 0.0
+    m = _mean(vals)
+    return math.sqrt(sum((x - m) ** 2 for x in vals) / len(vals))
+
+def _min(vals):
+    return min(vals) if vals else 0.0
+
+def _max(vals):
+    return max(vals) if vals else 0.0
+
+def _percentile(vals, p):
+    if not vals: return 0.0
+    s = sorted(vals)
+    k = (len(s) - 1) * p / 100.0
+    f = int(k)
+    c = f + 1 if f + 1 < len(s) else f
+    d = k - f
+    return s[f] + d * (s[c] - s[f])
+
+def _array(vals, dtype=None):
+    """Return a list acting like a 1-D array (numpy-compatible for our use)."""
+    return list(vals)
+
+def _column_stack(pairs):
+    """Transpose list-of-lists to list-of-columns."""
+    if not pairs:
+        return []
+    cols = len(pairs[0])
+    return [[row[i] for row in pairs] for i in range(cols)]
+
+def _float32(v):
+    return float(v)
+
+def _rand_seed(s):
+    import random
+    random.seed(s)
+
+def _rand_lognormal(mu, sigma, n):
+    import random
+    result = []
+    for _ in range(n):
+        u = random.random()
+        while u == 0:
+            u = random.random()
+        result.append(math.exp(mu + sigma * math.sqrt(2) * math.erfinv(2 * u - 1)))
+    return result
+
+def _rand_uniform(lo, hi, n):
+    import random
+    return [random.uniform(lo, hi) for _ in range(n)]
+
+def _rand_int(lo, hi, n):
+    import random
+    return [random.randint(lo, hi) for _ in range(n)]
+
+def _rand_choice(items, n, p=None):
+    import random
+    return [random.choices(items, weights=p, k=n)[0] for _ in range(n)]
+
+
+class _NPCompat:
+    """Drop-in numpy-like namespace for our limited usage."""
+    mean = staticmethod(_mean)
+    std = staticmethod(_std)
+    min = staticmethod(_min)
+    max = staticmethod(_max)
+    percentile = staticmethod(_percentile)
+    float32 = staticmethod(_float32)
+    column_stack = staticmethod(_column_stack)
+    array = staticmethod(_array)
+    lognormal = staticmethod(_rand_lognormal)
+    uniform = staticmethod(_rand_uniform)
+    randint = staticmethod(_rand_int)
+    choice = staticmethod(_rand_choice)
+
+
+if HAS_NP:
+    _R = _np
+else:
+    _R = _NPCompat()
+
+
+def _rng(seed):
+    """Return a seeded random helper compatible with both numpy and stdlib."""
+    if HAS_NP:
+        return _np.random.RandomState(seed)
+    import random
+    r = random.Random(seed)
+    return r
 
 
 # ---------------------------------------------------------------------------
@@ -247,31 +350,28 @@ def _estimate_entropy_from_size(byte_count: float) -> float:
     return 6.5  # large payloads likely contain varied data
 
 
-def features_to_vector(features: FlowFeatures) -> np.ndarray:
-    """Convert FlowFeatures to a numpy array for model input.
+def features_to_vector(features: FlowFeatures):
+    """Convert FlowFeatures to a list for model input.
 
     The feature order must match the model's training feature order.
     """
-    return np.array(
-        [
-            features.bytes_sent,
-            features.bytes_recv,
-            features.byte_ratio,
-            features.duration,
-            features.packets,
-            features.avg_packet_size,
-            features.bytes_per_sec,
-            features.packets_per_sec,
-            features.src_port / 65535.0,
-            features.dst_port / 65535.0,
-            float(features.is_well_known_dst_port),
-            float(features.is_ephemeral_src_port),
-            features.dns_query_len / 255.0,
-            features.dns_entropy / 8.0,
-            float(features.has_tls),
-        ],
-        dtype=np.float32,
-    )
+    return [
+        features.bytes_sent,
+        features.bytes_recv,
+        features.byte_ratio,
+        features.duration,
+        features.packets,
+        features.avg_packet_size,
+        features.bytes_per_sec,
+        features.packets_per_sec,
+        features.src_port / 65535.0,
+        features.dst_port / 65535.0,
+        float(features.is_well_known_dst_port),
+        float(features.is_ephemeral_src_port),
+        features.dns_query_len / 255.0,
+        features.dns_entropy / 8.0,
+        float(features.has_tls),
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -353,15 +453,15 @@ def sliding_window_stats(flows: List[dict], window_secs: float = 60.0) -> Window
     # Temporal stats
     if len(timestamps) > 1:
         intervals = [timestamps[i + 1] - timestamps[i] for i in range(len(timestamps) - 1)]
-        stats.avg_interval = float(np.mean(intervals))
-        stats.std_interval = float(np.std(intervals)) if len(intervals) > 1 else 0.0
-        stats.min_interval = float(np.min(intervals))
-        stats.max_interval = float(np.max(intervals))
+        stats.avg_interval = sum(intervals) / len(intervals)
+        stats.std_interval = (sum((x - stats.avg_interval) ** 2 for x in intervals) / len(intervals)) ** 0.5 if len(intervals) > 1 else 0.0
+        stats.min_interval = min(intervals)
+        stats.max_interval = max(intervals)
 
     # Herfindahl concentration index on destination ports
     if port_counts:
         total_ports = sum(port_counts.values())
         shares = [(c / total_ports) ** 2 for c in port_counts.values()]
-        stats.dst_port_concentration = float(np.sum(shares))
+        stats.dst_port_concentration = sum(shares)
 
     return stats

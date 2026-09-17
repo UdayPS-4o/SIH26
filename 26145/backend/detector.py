@@ -14,7 +14,7 @@ from typing import Any
 
 import numpy as np
 
-from .simulator import TrafficSimulator
+from simulator import TrafficSimulator
 from features import (
     compute_entropy,
     compute_ngram_score,
@@ -339,8 +339,8 @@ class ThreatDetector:
         if len(iats) < 3:
             return alerts
 
-        mean_iat = np.mean(iats)
-        std_iat = np.std(iats)
+        mean_iat = sum(iats) / len(iats)
+        std_iat = (sum((x - mean_iat) ** 2 for x in iats) / len(iats)) ** 0.5 if len(iats) > 1 else 0.0
 
         # Low coefficient of variation indicates beaconing
         if mean_iat > 0:
