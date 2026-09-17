@@ -13,22 +13,22 @@ import { useDashboardData } from '../lib/useDashboardData';
 /* ── Palette (one accent, locked) ───────────────────────────────────────── */
 
 const C = {
-  bg:        '#05080d',
-  surface:   '#080d14',
-  surfaceHi: '#0c1219',
-  border:    '#111c2b',
-  borderHi:  '#182a3d',
-  text:      '#dce4ec',
-  textSec:   '#556677',
-  textDim:   '#2a3a4a',
-  accent:    '#00d4ff',   // locked — one accent, used everywhere
-  red:       '#ef4444',
-  orange:    '#f97316',
-  amber:     '#eab308',
-  green:     '#22c55e',
-  purple:    '#a855f7',
-  pink:      '#ec4899',
-  teal:      '#14b8a6',
+  bg:        'var(--bg-primary)',
+  surface:   'var(--bg-secondary)',
+  surfaceHi: 'var(--bg-card-hover)',
+  border:    'var(--border-color)',
+  borderHi:  'var(--border-active)',
+  text:      'var(--text-primary)',
+  textSec:   'var(--text-secondary)',
+  textDim:   'var(--text-muted)',
+  accent:    'var(--accent-cyan)',   // locked — one accent, used everywhere
+  red:       'var(--accent-red)',
+  orange:    'var(--accent-orange)',
+  amber:     'var(--accent-yellow)',
+  green:     'var(--accent-green)',
+  purple:    'var(--accent-purple)',
+  pink:      'var(--accent-pink)',
+  teal:      'var(--accent-teal)',
 };
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'; // strong ease-out per emil-design-eng
@@ -49,8 +49,8 @@ const dateNow = () => new Date().toLocaleDateString('en-US', { weekday:'short', 
 
 const THREAT_CLR: Record<string, string> = {
   ddos: C.red, beaconing: C.orange, dga: C.amber,
-  dns_tunnel: '#06b6d4', port_scan: C.purple,
-  exfiltration: C.pink, tls_anomaly: C.teal, malware: C.red, phishing: '#f59e0b',
+  dns_tunnel: 'var(--accent-cyan)', port_scan: C.purple,
+  exfiltration: C.pink, tls_anomaly: C.teal, malware: C.red, phishing: 'var(--accent-amber)',
 };
 const THREAT_LBL: Record<string, string> = {
   ddos:'Volumetric DDoS', beaconing:'C2 Beaconing', dga:'DGA Domains',
@@ -79,7 +79,7 @@ const Sev: React.FC<{ sev: string }> = ({ sev }) => {
     critical:{c:C.red,bg:'rgba(239,68,68,0.10)'},
     high:{c:C.orange,bg:'rgba(249,115,22,0.10)'},
     medium:{c:C.amber,bg:'rgba(234,179,8,0.10)'},
-    low:{c:'#06b6d4',bg:'rgba(6,182,212,0.10)'},
+    low:{c:'var(--accent-cyan)',bg:'rgba(6,182,212,0.10)'},
   };
   const s = M[sev] || M.low;
   return (
@@ -139,7 +139,7 @@ const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; children: R
 /* ── Horizontal bar chart (no decoration — labels carry meaning) ── */
 const HBar: React.FC<{ data: Array<{label:string; value:number; color?:string}> }> = ({ data }) => {
   const max = Math.max(...data.map(d => d.value), 1);
-  const palette = [C.accent,'#0891b2','#06b6d4','#0ea5e9','#14b8a6',C.green,C.purple,C.orange,C.amber,C.red];
+  const palette = [C.accent,'var(--accent-cyan)','var(--accent-cyan)','var(--accent-sky)','var(--accent-teal)',C.green,C.purple,C.orange,C.amber,C.red];
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
       {data.map((d, i) => {
@@ -153,7 +153,7 @@ const HBar: React.FC<{ data: Array<{label:string; value:number; color?:string}> 
               overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
             }}>{d.label}</span>
             <div style={{
-              flex:1, height:16, background:'#0a1018', borderRadius:2,
+              flex:1, height:16, background:'var(--bg-secondary)', borderRadius:2,
               border:`1px solid ${C.border}`, overflow:'hidden',
             }}>
               <div style={{
@@ -177,7 +177,7 @@ const HBar: React.FC<{ data: Array<{label:string; value:number; color?:string}> 
 const Progress: React.FC<{ value: number; max?: number; color?: string }> = ({ value, max = 100, color = C.accent }) => {
   const pct = Math.min((value / max) * 100, 100);
   return (
-    <div style={{ height:4, background:'#0a1018', borderRadius:2, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+    <div style={{ height:4, background:'var(--bg-secondary)', borderRadius:2, border:`1px solid ${C.border}`, overflow:'hidden' }}>
       <div style={{
         height:'100%', width:`${pct}%`, background:color, opacity:0.65,
         borderRadius:1, transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
@@ -529,7 +529,7 @@ const Dashboard: React.FC = () => {
                 { label:'Critical', val:sev.critical, color:C.red },
                 { label:'High', val:sev.high, color:C.orange },
                 { label:'Medium', val:sev.medium, color:C.amber },
-                { label:'Low', val:sev.low, color:'#06b6d4' },
+                { label:'Low', val:sev.low, color:'var(--accent-cyan)' },
               ].map(s => (
                 <div key={s.label} style={{
                   textAlign:'center', padding:'10px 6px',

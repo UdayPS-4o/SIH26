@@ -15,13 +15,13 @@ const SECTION_LABEL: React.CSSProperties = {
   fontWeight: 700,
   letterSpacing: '3px',
   textTransform: 'uppercase',
-  color: '#00d4ff',
+  color: 'var(--accent-cyan)',
   fontFamily: '"JetBrains Mono", monospace',
   marginBottom: 4,
 };
 
 const CARD_BASE: React.CSSProperties = {
-  background: '#0a1118',
+  background: 'var(--bg-secondary)',
   border: '1px solid #1a2736',
   borderRadius: 8,
   padding: 20,
@@ -61,17 +61,17 @@ const THREAT_TYPES = [
 ];
 
 const SEVERITY_CONFIG: Record<string, { color: string; bg: string; label: string; glow: string }> = {
-  critical: { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)', label: 'CRITICAL', glow: 'rgba(239, 68, 68, 0.5)' },
-  high:     { color: '#f97316', bg: 'rgba(249, 115, 22, 0.12)', label: 'HIGH', glow: 'rgba(249, 115, 22, 0.4)' },
-  medium:   { color: '#eab308', bg: 'rgba(234, 179, 8, 0.12)', label: 'MEDIUM', glow: 'rgba(234, 179, 8, 0.3)' },
-  low:      { color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.12)', label: 'LOW', glow: 'rgba(6, 182, 212, 0.3)' },
+  critical: { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.12)', label: 'CRITICAL', glow: 'rgba(239, 68, 68, 0.5)' },
+  high:     { color: 'var(--accent-orange)', bg: 'rgba(249, 115, 22, 0.12)', label: 'HIGH', glow: 'rgba(249, 115, 22, 0.4)' },
+  medium:   { color: 'var(--accent-yellow)', bg: 'rgba(234, 179, 8, 0.12)', label: 'MEDIUM', glow: 'rgba(234, 179, 8, 0.3)' },
+  low:      { color: 'var(--accent-cyan)', bg: 'rgba(6, 182, 212, 0.12)', label: 'LOW', glow: 'rgba(6, 182, 212, 0.3)' },
 };
 
 const THREAT_LEVEL_CONFIG: Record<string, { color: string; bg: string; label: string; glow: string }> = {
-  low:      { color: '#06b6d4', bg: 'rgba(6, 182, 212, 0.15)', label: 'LOW', glow: 'rgba(6, 182, 212, 0.4)' },
-  medium:   { color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)', label: 'MEDIUM', glow: 'rgba(234, 179, 8, 0.4)' },
-  high:     { color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)', label: 'HIGH', glow: 'rgba(249, 115, 22, 0.4)' },
-  critical: { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', label: 'CRITICAL', glow: 'rgba(239, 68, 68, 0.4)' },
+  low:      { color: 'var(--accent-cyan)', bg: 'rgba(6, 182, 212, 0.15)', label: 'LOW', glow: 'rgba(6, 182, 212, 0.4)' },
+  medium:   { color: 'var(--accent-yellow)', bg: 'rgba(234, 179, 8, 0.15)', label: 'MEDIUM', glow: 'rgba(234, 179, 8, 0.4)' },
+  high:     { color: 'var(--accent-orange)', bg: 'rgba(249, 115, 22, 0.15)', label: 'HIGH', glow: 'rgba(249, 115, 22, 0.4)' },
+  critical: { color: 'var(--accent-red)', bg: 'rgba(239, 68, 68, 0.15)', label: 'CRITICAL', glow: 'rgba(239, 68, 68, 0.4)' },
 };
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -138,7 +138,7 @@ const generateMockData = () => {
    ANIMATED COMPONENTS
    ══════════════════════════════════════════════════════════════════════ */
 
-const PulsingDot: React.FC<{ color?: string; size?: number }> = ({ color = '#22c55e', size = 8 }) => (
+const PulsingDot: React.FC<{ color?: string; size?: number }> = ({ color = 'var(--accent-green)', size = 8 }) => (
   <span
     style={{
       width: size,
@@ -159,7 +159,7 @@ const ProgressBar: React.FC<{
   height?: number;
   color?: string;
   showLabel?: boolean;
-}> = ({ value, max = 100, height = 6, color = '#00d4ff', showLabel = false }) => {
+}> = ({ value, max = 100, height = 6, color = 'var(--accent-cyan)', showLabel = false }) => {
   const pct = Math.min((value / max) * 100, 100);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
@@ -167,7 +167,7 @@ const ProgressBar: React.FC<{
         style={{
           flex: 1,
           height,
-          background: '#1a2736',
+          background: 'var(--border-color)',
           borderRadius: height / 2,
           overflow: 'hidden',
         }}
@@ -219,7 +219,7 @@ const ProgressBar: React.FC<{
    ══════════════════════════════════════════════════════════════════════ */
 
 const Sparkline: React.FC<{ data: number[]; color?: string; height?: number }> = ({
-  data, color = '#00d4ff', height = 32,
+  data, color = 'var(--accent-cyan)', height = 32,
 }) => {
   const width = 120;
   const max = Math.max(...data, 1);
@@ -274,10 +274,10 @@ const ThreatGauge: React.FC<{ level: 'low' | 'medium' | 'high' | 'critical'; val
   const center = size / 2;
 
   const segments = [
-    { from: 0, to: 25, color: '#06b6d4', label: 'LOW' },
-    { from: 25, to: 50, color: '#eab308', label: 'MED' },
-    { from: 50, to: 75, color: '#f97316', label: 'HIGH' },
-    { from: 75, to: 100, color: '#ef4444', label: 'CRIT' },
+    { from: 0, to: 25, color: 'var(--accent-cyan)', label: 'LOW' },
+    { from: 25, to: 50, color: 'var(--accent-yellow)', label: 'MED' },
+    { from: 50, to: 75, color: 'var(--accent-orange)', label: 'HIGH' },
+    { from: 75, to: 100, color: 'var(--accent-red)', label: 'CRIT' },
   ];
 
   return (
@@ -289,7 +289,7 @@ const ThreatGauge: React.FC<{ level: 'low' | 'medium' | 'high' | 'critical'; val
           cy={center}
           r={radius}
           fill="none"
-          stroke="#1a2736"
+          stroke="var(--border-color)"
           strokeWidth={strokeWidth}
         />
         {/* colored segments */}
@@ -376,7 +376,7 @@ const ThreatGauge: React.FC<{ level: 'low' | 'medium' | 'high' | 'critical'; val
         <span
           style={{
             fontSize: 11,
-            color: '#64748b',
+            color: 'var(--text-secondary)',
             fontFamily: '"JetBrains Mono", monospace',
             marginTop: 2,
           }}
@@ -461,10 +461,10 @@ const DashboardPage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'center',
           height: '80vh',
-          background: '#060a10',
+          background: 'var(--bg-primary)',
         }}
       >
-        <div style={{ color: '#64748b', fontFamily: '"JetBrains Mono", monospace', fontSize: 14 }}>
+        <div style={{ color: 'var(--text-secondary)', fontFamily: '"JetBrains Mono", monospace', fontSize: 14 }}>
           <span style={{ animation: 'wtd-pulse 1s infinite', marginRight: 8 }}>◉</span>
           LOADING INTELLIGENCE FEED...
         </div>
@@ -489,31 +489,31 @@ const DashboardPage: React.FC = () => {
   return (
     <div
       style={{
-        background: '#060a10',
+        background: 'var(--bg-primary)',
         minHeight: '100%',
         padding: 24,
         fontFamily: '"Inter", sans-serif',
-        color: '#e0e8f0',
+        color: 'var(--text-primary)',
       }}
     >
       {/* ================================================================
           TOP: SECTION HEADER
          ================================================================ */}
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Radar size={20} style={{ color: '#00d4ff' }} />
+        <Radar size={20} style={{ color: 'var(--accent-cyan)' }} />
         <span style={{ ...SECTION_LABEL, marginBottom: 0, fontSize: 12 }}>◈ OPERATIONS DASHBOARD</span>
         <span
           style={{
             marginLeft: 'auto',
             fontSize: 11,
-            color: isConnected ? '#22c55e' : '#64748b',
+            color: isConnected ? 'var(--accent-green)' : 'var(--text-secondary)',
             fontFamily: '"JetBrains Mono", monospace',
             display: 'flex',
             alignItems: 'center',
             gap: 6,
           }}
         >
-          {isConnected ? <><PulsingDot color="#22c55e" size={6} /> FEED ACTIVE</> : 'OFFLINE MODE'}
+          {isConnected ? <><PulsingDot color="var(--accent-green)" size={6} /> FEED ACTIVE</> : 'OFFLINE MODE'}
         </span>
       </div>
 
@@ -530,48 +530,48 @@ const DashboardPage: React.FC = () => {
       >
         {/* Total Flows */}
         <KpiCard
-          icon={<Activity size={18} style={{ color: '#00d4ff' }} />}
+          icon={<Activity size={18} style={{ color: 'var(--accent-cyan)' }} />}
           label="Total Flows"
           value={formatLakh(stats.total_flows)}
           sub="processed in session"
           sparkline={sparklineData(12, stats.total_flows / 1e5, stats.total_flows / 1e6)}
-          sparkColor="#00d4ff"
+          sparkColor="var(--accent-cyan)"
           trend="+12.4%"
           trendUp
         />
 
         {/* Total Alerts */}
         <KpiCard
-          icon={<Shield size={18} style={{ color: '#f97316' }} />}
+          icon={<Shield size={18} style={{ color: 'var(--accent-orange)' }} />}
           label="Total Alerts"
           value={stats.total_alerts.toLocaleString()}
           sub="detected events"
           sparkline={sparklineData(12, stats.total_alerts / 10, stats.total_alerts / 30)}
-          sparkColor="#f97316"
+          sparkColor="var(--accent-orange)"
           trend={stats.total_alerts > 100 ? '+8.2%' : '-4.1%'}
           trendUp={stats.total_alerts > 100}
         />
 
         {/* Avg Confidence */}
         <KpiCard
-          icon={<Eye size={18} style={{ color: '#22c55e' }} />}
+          icon={<Eye size={18} style={{ color: 'var(--accent-green)' }} />}
           label="Avg Confidence"
           value={`${stats.avg_confidence.toFixed(1)}%`}
           sub="ML model accuracy"
           sparkline={sparklineData(12, stats.avg_confidence, 5)}
-          sparkColor="#22c55e"
+          sparkColor="var(--accent-green)"
           trend="+2.3%"
           trendUp
         />
 
         {/* Flows/sec */}
         <KpiCard
-          icon={<Zap size={18} style={{ color: '#eab308' }} />}
+          icon={<Zap size={18} style={{ color: 'var(--accent-yellow)' }} />}
           label="Flows / sec"
           value={stats.flows_per_sec.toString()}
           sub="current throughput"
           sparkline={sparklineData(12, stats.flows_per_sec, stats.flows_per_sec * 0.3)}
-          sparkColor="#eab308"
+          sparkColor="var(--accent-yellow)"
           trend="steady"
           trendUp={false}
         />
@@ -595,12 +595,12 @@ const DashboardPage: React.FC = () => {
             {/* Left: status block */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 160 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <PulsingDot color="#22c55e" size={10} />
+                <PulsingDot color="var(--accent-green)" size={10} />
                 <span
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#22c55e',
+                    color: 'var(--accent-green)',
                     textTransform: 'uppercase',
                     letterSpacing: '1px',
                   }}
@@ -608,13 +608,13 @@ const DashboardPage: React.FC = () => {
                   {health.status || 'OPERATIONAL'}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)' }}>
                 <Clock size={14} />
                 <span style={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace' }}>
                   Uptime: {formatUptime(health.uptime)}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)' }}>
                 <Network size={14} />
                 <span style={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace' }}>
                   {stats.active_connections.toLocaleString()} active connections
@@ -623,9 +623,9 @@ const DashboardPage: React.FC = () => {
             </div>
             {/* Right: bars */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <MetricBar label="CPU" value={health.cpu ?? 34} unit="%" color="#00d4ff" />
-              <MetricBar label="MEM" value={health.memory ?? 62} unit="%" color="#a855f7" />
-              <MetricBar label="NET" value={28 + Math.floor(Math.random() * 40)} unit="%" color="#22c55e" />
+              <MetricBar label="CPU" value={health.cpu ?? 34} unit="%" color="var(--accent-cyan)" />
+              <MetricBar label="MEM" value={health.memory ?? 62} unit="%" color="var(--accent-purple)" />
+              <MetricBar label="NET" value={28 + Math.floor(Math.random() * 40)} unit="%" color="var(--accent-green)" />
             </div>
           </div>
         </div>
@@ -661,7 +661,7 @@ const DashboardPage: React.FC = () => {
                       fontSize: 10,
                       fontWeight: 700,
                       letterSpacing: '1.5px',
-                      color: '#64748b',
+                      color: 'var(--text-secondary)',
                       textTransform: 'uppercase',
                     }}
                   >
@@ -688,7 +688,7 @@ const DashboardPage: React.FC = () => {
                         padding: '10px 12px',
                         fontFamily: '"JetBrains Mono", monospace',
                         fontSize: 11,
-                        color: '#64748b',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       {formatTime(a.timestamp)}
@@ -696,7 +696,7 @@ const DashboardPage: React.FC = () => {
                     <td style={{ padding: '10px 12px' }}>
                       <SeverityBadge severity={a.severity} />
                     </td>
-                    <td style={{ padding: '10px 12px', color: '#e0e8f0', fontWeight: 500 }}>
+                    <td style={{ padding: '10px 12px', color: 'var(--text-primary)', fontWeight: 500 }}>
                       {a.threat_type}
                     </td>
                     <td
@@ -704,7 +704,7 @@ const DashboardPage: React.FC = () => {
                         padding: '10px 12px',
                         fontFamily: '"JetBrains Mono", monospace',
                         fontSize: 11,
-                        color: '#00d4ff',
+                        color: 'var(--accent-cyan)',
                       }}
                     >
                       {a.src_ip}
@@ -717,7 +717,7 @@ const DashboardPage: React.FC = () => {
                         padding: '10px 12px',
                         fontFamily: '"JetBrains Mono", monospace',
                         fontSize: 11,
-                        color: '#64748b',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       {a.flow_count ?? Math.floor(Math.random() * 30)}
@@ -754,7 +754,7 @@ const DashboardPage: React.FC = () => {
                       fontSize: 10,
                       fontWeight: 700,
                       letterSpacing: '1.5px',
-                      color: '#64748b',
+                      color: 'var(--text-secondary)',
                       textTransform: 'uppercase',
                     }}
                   >
@@ -779,7 +779,7 @@ const DashboardPage: React.FC = () => {
                       padding: '10px 12px',
                       fontFamily: '"JetBrains Mono", monospace',
                       fontSize: 11,
-                      color: '#64748b',
+                      color: 'var(--text-secondary)',
                     }}
                   >
                     {formatTime(flow.timestamp)}
@@ -789,7 +789,7 @@ const DashboardPage: React.FC = () => {
                       padding: '10px 12px',
                       fontFamily: '"JetBrains Mono", monospace',
                       fontSize: 11,
-                      color: '#00d4ff',
+                      color: 'var(--accent-cyan)',
                     }}
                   >
                     {flow.src_ip}:{flow.src_port}
@@ -799,18 +799,18 @@ const DashboardPage: React.FC = () => {
                       padding: '10px 12px',
                       fontFamily: '"JetBrains Mono", monospace',
                       fontSize: 11,
-                      color: '#a855f7',
+                      color: 'var(--accent-purple)',
                     }}
                   >
                     {flow.dst_ip}:{flow.dst_port}
                   </td>
-                  <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{flow.protocol}</td>
+                  <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>{flow.protocol}</td>
                   <td
                     style={{
                       padding: '10px 12px',
                       fontFamily: '"JetBrains Mono", monospace',
                       fontSize: 11,
-                      color: '#64748b',
+                      color: 'var(--text-secondary)',
                     }}
                   >
                     {formatBytes(flow.bytes_sent + flow.bytes_recv)}
@@ -826,7 +826,7 @@ const DashboardPage: React.FC = () => {
                           fontSize: 10,
                           fontWeight: 700,
                           background: 'rgba(34, 197, 94, 0.1)',
-                          color: '#22c55e',
+                          color: 'var(--accent-green)',
                           border: '1px solid rgba(34, 197, 94, 0.2)',
                           letterSpacing: '0.5px',
                         }}
@@ -873,7 +873,7 @@ const KpiCard: React.FC<{
       e.currentTarget.style.boxShadow = `0 0 20px ${sparkColor}10`;
     }}
     onMouseLeave={(e) => {
-      e.currentTarget.style.borderColor = '#1a2736';
+      e.currentTarget.style.borderColor = 'var(--border-color)';
       e.currentTarget.style.boxShadow = 'none';
     }}
   >
@@ -893,14 +893,14 @@ const KpiCard: React.FC<{
       {icon}
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, fontWeight: 500, letterSpacing: '0.3px' }}>
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 500, letterSpacing: '0.3px' }}>
         {label}
       </div>
       <div
         style={{
           fontSize: 24,
           fontWeight: 800,
-          color: '#e0e8f0',
+          color: 'var(--text-primary)',
           fontFamily: '"JetBrains Mono", monospace',
           lineHeight: 1,
           letterSpacing: '-0.5px',
@@ -908,7 +908,7 @@ const KpiCard: React.FC<{
       >
         {value}
       </div>
-      <div style={{ fontSize: 10, color: '#64748b', marginTop: 4 }}>{sub}</div>
+      <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 4 }}>{sub}</div>
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
       <Sparkline data={sparkline} color={sparkColor} height={32} />
@@ -917,7 +917,7 @@ const KpiCard: React.FC<{
           style={{
             fontSize: 10,
             fontWeight: 600,
-            color: trendUp ? '#22c55e' : '#ef4444',
+            color: trendUp ? 'var(--accent-green)' : 'var(--accent-red)',
             fontFamily: '"JetBrains Mono", monospace',
           }}
         >
@@ -976,14 +976,14 @@ const SeverityBadge: React.FC<{ severity: string }> = ({ severity }) => {
 };
 
 const ConfidenceBar: React.FC<{ value: number }> = ({ value }) => {
-  const color = value > 85 ? '#22c55e' : value > 60 ? '#eab308' : '#ef4444';
+  const color = value > 85 ? 'var(--accent-green)' : value > 60 ? 'var(--accent-yellow)' : 'var(--accent-red)';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div
         style={{
           width: 56,
           height: 4,
-          background: '#1a2736',
+          background: 'var(--border-color)',
           borderRadius: 2,
           overflow: 'hidden',
         }}

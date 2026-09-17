@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { WebSocketProvider, useWebSocketContext } from './context/WebSocketContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import LiveThreats from './pages/LiveThreats';
@@ -13,10 +14,12 @@ import IntegrationPage from './pages/IntegrationPage';
 import AdminPage from './pages/AdminPage';
 import MatchPage from './pages/MatchPage';
 import AttackPanel from './components/AttackPanel';
-import { ShieldAlert } from 'lucide-react';
+import ReviewPage from './pages/ReviewPage';
+import { ShieldAlert, Sun, Moon, ScrollText } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, flowsPerSec, alertCount } = useWebSocketContext();
+  const { isDark, toggleTheme } = useTheme();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -55,7 +58,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <span className="hud-title-icon">
               <ShieldAlert size={14} />
             </span>
-            ◈ WATCHTOWER
+            WATCHTOWER
           </div>
 
           <div className="hud-divider" />
@@ -125,6 +128,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <span className="hud-clock-sep">|</span>
               <span className="hud-clock-time">{timeStr}</span>
             </div>
+
+            {/* Theme toggle */}
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
         </div>
 
@@ -159,17 +172,20 @@ const AppContent: React.FC = () => (
     <Route path="/admin" element={<AdminPage />} />
     <Route path="/match" element={<MatchPage />} />
     <Route path="/attack" element={<AttackPanel />} />
+    <Route path="/review" element={<ReviewPage />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
 
 const App: React.FC = () => (
   <BrowserRouter>
-    <WebSocketProvider>
-      <Layout>
-        <AppContent />
-      </Layout>
-    </WebSocketProvider>
+    <ThemeProvider>
+      <WebSocketProvider>
+        <Layout>
+          <AppContent />
+        </Layout>
+      </WebSocketProvider>
+    </ThemeProvider>
   </BrowserRouter>
 );
 

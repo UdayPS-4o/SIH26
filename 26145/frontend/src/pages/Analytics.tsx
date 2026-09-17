@@ -14,22 +14,22 @@ import {
 /* ================================================================== */
 
 const C = {
-  bg:        '#05080d',
-  surface:   '#080d14',
-  surfaceHi: '#0c1219',
-  border:    '#111c2b',
-  borderHi:  '#182a3d',
-  text:      '#dce4ec',
-  textSec:   '#556677',
-  textDim:   '#2a3a4a',
-  accent:    '#00d4ff',
-  red:       '#ef4444',
-  orange:    '#f97316',
-  amber:     '#eab308',
-  green:     '#22c55e',
-  purple:    '#a855f7',
-  pink:      '#ec4899',
-  teal:      '#14b8a6',
+  bg:        'var(--bg-primary)',
+  surface:   'var(--bg-secondary)',
+  surfaceHi: 'var(--bg-card-hover)',
+  border:    'var(--border-color)',
+  borderHi:  'var(--border-active)',
+  text:      'var(--text-primary)',
+  textSec:   'var(--text-secondary)',
+  textDim:   'var(--text-muted)',
+  accent:    'var(--accent-cyan)',
+  red:       'var(--accent-red)',
+  orange:    'var(--accent-orange)',
+  amber:     'var(--accent-yellow)',
+  green:     'var(--accent-green)',
+  purple:    'var(--accent-purple)',
+  pink:      'var(--accent-pink)',
+  teal:      'var(--accent-teal)',
 };
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -41,7 +41,7 @@ const SEV_META: Record<string, { c: string; bg: string }> = {
   critical: { c: C.red,    bg: 'rgba(239,68,68,0.10)' },
   high:     { c: C.orange, bg: 'rgba(249,115,22,0.10)' },
   medium:   { c: C.amber,  bg: 'rgba(234,179,8,0.10)' },
-  low:      { c: '#06b6d4', bg: 'rgba(6,182,212,0.10)' },
+  low:      { c: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.10)' },
 };
 
 const SEV_LABEL: Record<string, string> = {
@@ -135,7 +135,7 @@ function Progress({ value, max = 100, color = C.accent }: {
   const pct = clamp((value / max) * 100, 0, 100);
   return (
     <div style={{
-      height: 4, background: '#0a1018', borderRadius: 2,
+      height: 4, background: 'var(--bg-secondary)', borderRadius: 2,
       border: `1px solid ${C.border}`, overflow: 'hidden',
     }}>
       <div style={{
@@ -269,7 +269,7 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
         const v = Math.round(maxV - (maxV / 4) * i);
         return (
           <g key={i}>
-            <line x1={pad.left} y1={y} x2={width - pad.right} y2={y} stroke="#0a1018" strokeWidth="1" />
+            <line x1={pad.left} y1={y} x2={width - pad.right} y2={y} stroke="var(--bg-secondary)" strokeWidth="1" />
             <text x={pad.left - 8} y={y + 3} textAnchor="end" fill={C.textDim} fontSize="9" fontFamily={FONT}>{v}</text>
           </g>
         );
@@ -280,7 +280,7 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
         if (idx >= data.length) return null;
         const x = pts[idx]?.x;
         if (!x) return null;
-        return <line key={i} x1={x} y1={pad.top} x2={x} y2={pad.top + ch} stroke="#0a1018" strokeWidth="1" />;
+        return <line key={i} x1={x} y1={pad.top} x2={x} y2={pad.top + ch} stroke="var(--bg-secondary)" strokeWidth="1" />;
       })}
       <path d={area} fill="url(#sparkGrad)" />
       <path d={line} fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" filter="url(#sparkGlow)" />
@@ -315,7 +315,7 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
 
 function ProtocolChart({ data }: { data: Array<{ name: string; value: number }> }) {
   const max = Math.max(...data.map(d => d.value), 1);
-  const palette = [C.accent, '#0891b2', '#06b6d4', '#0ea5e9', C.teal, C.green];
+  const palette = [C.accent, 'var(--accent-cyan)', 'var(--accent-cyan)', 'var(--accent-sky)', C.teal, C.green];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -329,7 +329,7 @@ function ProtocolChart({ data }: { data: Array<{ name: string; value: number }> 
               letterSpacing: '0.3px', textTransform: 'uppercase', fontFamily: FONT,
             }}>{d.name}</span>
             <div style={{
-              flex: 1, height: 16, background: '#0a1018', borderRadius: 2,
+              flex: 1, height: 16, background: 'var(--bg-secondary)', borderRadius: 2,
               border: `1px solid ${C.border}`, overflow: 'hidden',
             }}>
               <div style={{
@@ -649,8 +649,8 @@ const Analytics: React.FC = () => {
         {/* Header */}
         <section style={{ marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Dot color="#00ff41" size={6} />
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#00ff41', fontFamily: FONT, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+            <Dot color="var(--accent-green)" size={6} />
+            <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--accent-green)', fontFamily: FONT, letterSpacing: '1.5px', textTransform: 'uppercase' }}>
               Live Monitoring Active
             </span>
           </div>
@@ -766,7 +766,7 @@ const Analytics: React.FC = () => {
             WATCHTOWER v3.2.1 · EKADHARA · NTRO SIH26
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#00ff41', animation: 'wt-pulse 1.6s ease-in-out infinite' }} />
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-green)', animation: 'wt-pulse 1.6s ease-in-out infinite' }} />
             <span style={{ fontSize: 9, color: C.textSec, letterSpacing: '0.5px' }}>
               SIMULATION · AUTO-REFRESH 3s · {clock}
             </span>

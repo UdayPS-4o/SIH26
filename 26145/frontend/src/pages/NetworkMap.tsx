@@ -6,22 +6,22 @@ import { useState, useEffect, useMemo, useRef } from 'react';
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const C = {
-  bg:        '#05080d',
-  surface:   '#080d14',
-  surfaceHi: '#0c1219',
-  border:    '#111c2b',
-  borderHi:  '#182a3d',
-  text:      '#dce4ec',
-  textSec:   '#556677',
-  textDim:   '#2a3a4a',
-  accent:    '#00d4ff',
-  red:       '#ef4444',
-  orange:    '#f97316',
-  amber:     '#eab308',
-  green:     '#22c55e',
-  purple:    '#a855f7',
-  pink:      '#ec4899',
-  teal:      '#14b8a6',
+  bg:        'var(--bg-primary)',
+  surface:   'var(--bg-secondary)',
+  surfaceHi: 'var(--bg-card-hover)',
+  border:    'var(--border-color)',
+  borderHi:  'var(--border-active)',
+  text:      'var(--text-primary)',
+  textSec:   'var(--text-secondary)',
+  textDim:   'var(--text-muted)',
+  accent:    'var(--accent-cyan)',
+  red:       'var(--accent-red)',
+  orange:    'var(--accent-orange)',
+  amber:     'var(--accent-yellow)',
+  green:     'var(--accent-green)',
+  purple:    'var(--accent-purple)',
+  pink:      'var(--accent-pink)',
+  teal:      'var(--accent-teal)',
 };
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const MONO = '"JetBrains Mono","Fira Code",monospace';
@@ -87,7 +87,7 @@ const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:Reac
 const Progress: React.FC<{ value:number; max?:number; color?:string }> = ({ value, max=100, color=C.accent }) => {
   const pct = Math.min((value/max)*100, 100);
   return (
-    <div style={{ height:4, background:'#0a1018', borderRadius:2, border:`1px solid ${C.border}`, overflow:'hidden' }}>
+    <div style={{ height:4, background:'var(--bg-secondary)', borderRadius:2, border:`1px solid ${C.border}`, overflow:'hidden' }}>
       <div style={{
         height:'100%', width:`${pct}%`, background:color, opacity:0.65,
         borderRadius:1, transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
@@ -101,7 +101,7 @@ const Sev: React.FC<{ sev:string }> = ({ sev }) => {
     critical:{c:C.red,bg:'rgba(239,68,68,0.10)'},
     high:{c:C.orange,bg:'rgba(249,115,22,0.10)'},
     medium:{c:C.amber,bg:'rgba(234,179,8,0.10)'},
-    low:{c:'#06b6d4',bg:'rgba(6,182,212,0.10)'},
+    low:{c:'var(--accent-cyan)',bg:'rgba(6,182,212,0.10)'},
   };
   const s = M[sev] || M.low;
   return (
