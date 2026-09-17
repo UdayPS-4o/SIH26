@@ -1,75 +1,101 @@
-# VIMAAN Video Script
-## Title: VIMAAN — How It Works
-## Duration: ~3 minutes
+# VIMAAN Demo Video — Scene-by-Scene Script
+## Duration: ~3 min | Format: 1920×1080 MP4 (H.264)
+## Voiceover style: natural, narrated while screen-recording
 
 ---
 
-### SCENE 1 — Opening (0:00 – 0:20)
-**Camera:** Wide shot of a dark cockpit-style dashboard. The VIMAAN APIx index line is rising gently across a 90-day chart.
-**VO:** "VIMAAN builds an airline-fare index from real data. Here is how."
+### TITLE CARD — 0:00 – 0:15
+**Visual:** Black screen. VIMAAN wordmark fades in.
+**VO:** "VIMAAN builds a transparent, reproducible airline-fare index from real public data. Here is how it works."
 
-### SCENE 2 — Raw Quotes (0:20 – 0:45)
-**Screen recording:**
-1. Navigate to the Quotes panel.
-2. Apply a filter: Sector = DEL-BOM, Lead = T+15.
-3. The table updates instantly.
-4. Point out the fare split: base, taxes, UDF, convenience fee.
+---
 
-**VO:** "Quotes are pulled from airline sites and OTAs every night. Each one is split into base fare, taxes, user development fee, and convenience fee. Sold-out seats are recorded, not dropped, because they carry pricing information."
+### SCENE 1 — The Raw Quotes Table — 0:15 – 0:50
+**Action:**
+1. Browser opens to `localhost:5173/quotes`.
+2. Show the filter row at the top. Select Sector = `DEL-BOM`, Lead window = `T+15`.
+3. The table updates instantly. Scroll down.
+4. Hover over one row — highlight the four-way fare split (Base, Taxes, UDF, Convenience).
+5. Point out the Flags column — imputed, winsorised, sold-out badges.
 
-### SCENE 3 — Compliance (0:45 – 1:10)
-**Screen recording:**
-1. Navigate to the Compliance panel.
-2. Show the robots.txt table — one row per source, green check or red X.
-3. Show the Kill Switch table — sources that hit 429s in the last 24 hours are quarantined.
+**VO:** "Quotes are collected nightly from airline websites and OTAs. Each row stores its four-way fare split: base fare, fuel surcharge and other taxes, the user development fee, and the OTA convenience charge. Sold-out seats are recorded, not dropped, because they carry pricing signal."
 
-**VO:** "Every scrape respects robots.txt. After three consecutive 429s from one domain, the kill-switch automatically quarantines that source for 24 hours. There is no bypass."
+---
 
-### SCENE 4 — Live Scrape (1:10 – 1:45)
-**Screen recording:**
-1. Navigate to the Quotes panel.
-2. Click the **"Run live scrape"** button in the Live fare scrape panel.
-3. Log shows: "Connecting to Cleartrip & MakeMyTrip via Playwright..."
-4. Wait 15-30 seconds.
-5. Quotes appear in the results table with fare breakdown.
-6. If the button is disabled and shows "Scraping...", click it after completion to trigger again.
+### SCENE 2 — Compliance & Kill Switch — 0:50 – 1:15
+**Action:**
+1. Click the Compliance tab.
+2. Scroll through the robots.txt table — show green checkmarks for compliant sources.
+3. Scroll to the Kill Switch table — point to a quarantined source (red badge).
+4. Hover to show the reason: "Three consecutive 429s in the last 24 hours."
 
-**VO:** "The live-scrape button kicks off a real-time Playwright session. Fingerprint-masking patches 20-plus automation signals: webdriver, user-agent data, webGL vendor, Chrome runtime, plugins, and languages. Requests are rate-limited at four seconds per domain. No CAPTCHA-bypass service is used."
+**VO:** "Every scrape respects robots.txt. If a domain returns three consecutive 429 errors, the kill-switch quarantines that source for 24 hours. No bypass, no exception."
 
-### SCENE 5 — API Explorer (1:45 – 2:15)
-**Screen recording:**
-1. Navigate to the API Reference page.
-2. Show the left sidebar: 46 endpoints across 18 tags.
+---
+
+### SCENE 3 — Live Scrape Button — 1:15 – 1:50
+**Action:**
+1. Navigate back to Quotes (click the Quotes tab or sidebar link).
+2. Scroll to the **Live fare scrape** panel below the stat tiles.
+3. Click **Run live scrape**.
+4. The button becomes disabled and shows "Scraping..."
+5. Watch the log box update: "Connecting to Cleartrip & MakeMyTrip via Playwright..." → "Processing responses..." → "Done — 5 quotes from 2 sources"
+6. Quotes populate the results table with fare breakdowns.
+7. Point out the Stealth column (100% green meter) and the Playwright note.
+
+**VO:** "The live-scrape button fires a real Playwright session with 20-plus stealth fingerprint patches: webdriver flag, user-agent data, webGL vendor, Chrome runtime, plugin list, and language headers. Requests are rate-limited to four seconds per domain. No CAPTCHA-bypass service is used."
+
+*(If backend is unavailable, say: "The mock fallback shows the same data shape so the video still demonstrates the flow.")*
+
+---
+
+### SCENE 4 — API Explorer — 1:50 – 2:20
+**Action:**
+1. Click the API Reference tab.
+2. Show the left sidebar — scroll through tags: Auth, Index, Sectors, Quotes, Compliance, Anomalies, Forecast, Analysis, Methodology, Scraper, Reports, Exchange, Reference, Admin.
 3. Click **POST /api/v1/scraper/live-scrape**.
-4. Press **Send** — response shows 5 live quotes with compliance metadata.
-5. Show the compliance block: stealthActive, robotsChecked, rateLimitDelayS, killSwitch.
+4. Press Send.
+5. The response panel shows the live-scrape result JSON — scroll through the `results` array.
+6. Show the compliance block in the response: stealthActive, robotsChecked, rateLimitDelayS, killSwitch: ARMED.
 
-**VO:** "Every screen in VIMAAN is a client of these endpoints. The API explorer fires real requests to the backend with your JWT token. The live-scrape endpoint returns the same quotes you just saw, plus full compliance metadata."
-
-### SCENE 6 — Index & Methodology (2:15 – 2:40)
-**Screen recording:**
-1. Navigate to the Methodology page.
-2. Show the formula for APIx.
-3. Navigate to the Index page — show the 90-day APIx line.
-4. Point to the publication gate: 70 percent minimum coverage.
-
-**VO:** "The APIx index uses cell-mean imputation for missing values, Winsorisation at the 5th and 95th percentiles, and a 70-percent coverage gate before any nightly number is published."
-
-### SCENE 7 — Closing (2:40 – 3:00)
-**Screen recording:**
-1. Show the three-panel layout: Quotes on the left, Scraper status in the centre, Index on the right.
-2. A single fare quote highlights, then expands to show its cell key.
-3. The APIx line pulses once.
-4. Fade to black. VIMAAN logo. "Built for Smart India Hackathon 2026."
-
-**VO:** "From raw quotes to a national fare index — fully compliant, fully reproducible, fully transparent."
+**VO:** "Every screen in VIMAAN is a client of these 46 endpoints. The API explorer fires real requests with your JWT token. Here is the live-scrape endpoint — the same quotes you just saw, plus full compliance metadata in the response."
 
 ---
 
-## Production notes
-- Record screen at 1920 x 1080, 30 fps.
-- Use the dev server at localhost:5173.
-- Have backend running at localhost:8000 for live-scrape demo; fall back to mock if needed.
-- Keep mouse movements smooth — use a cursor-highlighter tool if available.
-- Mute system notifications before recording.
-- Export as MP4 (H.264) for submission.
+### SCENE 5 — Methodology — 2:20 – 2:40
+**Action:**
+1. Click the Methodology tab.
+2. Show the formula for APIx — the cell-mean imputation formula and the Winsorisation bounds.
+3. Click to the Index page — show the 90-day APIx line.
+4. Hover to show the publication status: FROZEN, REVISED, PROVISIONAL.
+5. Point to the 70% coverage gate badge.
+
+**VO:** "The APIx index uses cell-mean imputation for missing values, Winsorisation at the 5th and 95th percentiles, and a 70-percent minimum coverage gate before any nightly number is published."
+
+---
+
+### SCENE 6 — Closing — 2:40 – 3:00
+**Action:**
+1. Split screen: left shows Quotes table with filters active, centre shows the API explorer with the live-scrape endpoint selected, right shows the 90-day APIx chart trending up.
+2. A single fare row highlights — it pulses once.
+3. Fade to black.
+4. "VIMAAN · Smart India Hackathon 2026" + team name.
+
+**VO:** "From raw quotes to a national fare index — fully compliant, fully reproducible, and fully transparent. Thank you."
+
+---
+
+## Pre-recording checklist
+- [ ] Backend running at `localhost:8000` (or mock fallback will activate)
+- [ ] Dev server running at `localhost:5173`
+- [ ] Logged in with a non-mock JWT token
+- [ ] Screen recording tool ready (OBS Studio, Camtasia, or built-in)
+- [ ] Cursor highlighter enabled
+- [ ] Notifications muted
+- [ ] Browser at 1920×1080 resolution
+
+## Post-production checklist
+- [ ] Add chapter markers at each scene transition
+- [ ] Add background music at low volume (VO should remain primary)
+- [ ] Export as MP4 (H.264, 1920×1080, 30fps)
+- [ ] File size under 500MB for submission platform

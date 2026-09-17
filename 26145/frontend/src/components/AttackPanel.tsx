@@ -542,7 +542,7 @@ export default function AttackPanel() {
         <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: 6 }}>
           <Gauge size={12} />
           <span>Flows:</span>
-          <span style={{ color: '#00d4ff', fontWeight: 700 }}>{flowsPerSec.toFixed(0)}/s</span>
+          <span style={{ color: '#00d4ff', fontWeight: 700 }}>{(flowsPerSec ?? 0).toFixed(0)}/s</span>
         </div>
         <div style={{ width: 1, height: 20, background: '#1a2736' }} />
         <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: 6 }}>

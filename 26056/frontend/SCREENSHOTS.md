@@ -331,6 +331,8 @@
 | 8 | **APIx delta column** | Shows how each quote compares to the computed index (above/below) with colour |
 | 9 | **Refresh button** | Manually trigger fresh scrape for selected route |
 | 10 | **Export** | Download filtered quotes as CSV |
+| 11 | **Live fare scrape panel** | Click "Run live scrape" to fire a real Playwright session against Cleartrip and MakeMyTrip. Progress bar + log stream + results table with fare breakdown and stealth meter |
+| 12 | **Compliance callout** | Playwright-stealth active, robots.txt checked, rate-limited, kill-switch ARMED |
 
 ### Visual Layout
 
