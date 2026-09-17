@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Alert, Flow, Stats, ThreatType } from '../types';
 
-const WS_URL = 'ws://localhost:8000/ws';
+const WS_URL = typeof window !== 'undefined' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws` : 'ws://localhost:8000/ws';
 const API_BASE = '/api';
 
 const generateIp = (): string =>

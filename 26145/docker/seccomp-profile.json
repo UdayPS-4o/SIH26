@@ -1,0 +1,55 @@
+{
+  "defaultAction": "SCMP_ACT_ALLOW",
+  "syscalls": [
+    {
+      "name": "connect",
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [],
+      "comment": "Kill on ANY outbound TCP/UDP connect — enforces unidirectional constraint"
+    },
+    {
+      "name": "sendto",
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [],
+      "comment": "Kill on any datagram transmission"
+    },
+    {
+      "name": "sendmsg",
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [],
+      "comment": "Kill on any message transmission"
+    },
+    {
+      "name": "sendmmsg",
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [],
+      "comment": "Kill on vectored message transmission"
+    },
+    {
+      "name": "socket",
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [
+        {
+          "index": 0,
+          "value": 2,
+          "valueTwo": 0,
+          "op": "SCMP_CMP_EQ"
+        }
+      ],
+      "comment": "Kill on AF_INET socket creation (outbound TCP/UDP). AF_INET6 handled by separate rule."
+    },
+    {
+      "name": "socket",
+      "action": "SCMP_ACT_KILL_PROCESS",
+      "args": [
+        {
+          "index": 0,
+          "value": 10,
+          "valueTwo": 0,
+          "op": "SCMP_CMP_EQ"
+        }
+      ],
+      "comment": "Kill on AF_INET6 socket creation"
+    }
+  ]
+}

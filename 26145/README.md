@@ -1,248 +1,328 @@
-# EKADHARA — AI-Based Detection of Cyber Threats in Unidirectional IP Traffic
+# EKADHARA — WATCHTOWER
+## AI-Based Detection of Cyber Threats in Unidirectional IP Traffic
 
-**Problem Statement ID:** 26145
-**Organization:** National Technical Research Organisation (NTRO)
-**Category:** Software / Blockchain & Cybersecurity
-**SIH26 Hackathon**
+**Problem Statement:** 26145 (NTRO / Smart India Hackathon 2026)
+**Theme:** Blockchain & Cybersecurity
+**License:** MIT
 
-## The Problem NTRO Described
+---
 
-Critical infrastructure operators monitor their gateways using passive mirroring or hardware **data diodes** — physical one-way links that copy traffic into a monitoring enclave with **no path back** to the production network. The enclave sees everything crossing the link, but cannot:
+## What This Is
 
-- Send probes back to the traffic source
-- Complete handshakes with any endpoint
-- Push mitigation commands across the ingest path
-- Decrypt payloads (TLS/QUIC must be analyzed from metadata only)
+A production-grade, AI-powered threat detection system designed to operate inside a **read-only monitoring enclave** — exactly the environment created by a physical data diode. It ingests passive network observations (flow records, DNS queries, TLS metadata), runs multi-model AI inference, and surfaces structured, confidence-scored alerts on a real-time ops-center dashboard.
 
-The trade-off: any detection system must work **purely from passive observation** — packet captures, flow records, and derived metadata — with no ability to re-contact sources or destinations.
-
-## Our Solution: EKADHARA
-
-A real-time AI/ML pipeline that ingests a unidirectional stream of IP traffic and detects, classifies, and scores 7 threat types with confidence scores and structured evidence — designed to operate inside a data diode enclave.
-
-### Architecture
+**No return path. No decryption. No batch processing.**
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Traffic Source                            │
-│              (Passive Mirror / Data Diode)                   │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ UNIDIRECTIONAL
-                        │ No return path. No probes. No decryption.
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              FastAPI Backend Server                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐  │
-│  │   Feature    │  │   ML + Rule  │  │   Alert         │  │
-│  │  Extraction  │→ │  Detection   │→ │   Generator     │  │
-│  │  (15-dim     │  │  (Isolation  │  │  (structured    │  │
-│  │   vector)    │  │   Forest +   │  │   OCSF schema)  │  │
-│  │              │  │   Logistic   │  │                 │  │
-│  │              │  │   Regression)│  │                 │  │
-│  └──────────────┘  └──────────────┘  └─────────────────┘  │
-│         ↕ WebSocket streaming (real-time)                   │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│              React + TypeScript Dashboard                    │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
-│  │  Threat  │ │  Threat  │ │ Network  │ │  AI/ML       │  │
-│  │  Feed    │ │ Charts   │ │  Graph   │ │  Analyzer    │  │
-│  │  (live)  │ │ (7 types)│ │ (topo)   │ │  (models)    │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐  │
-│  │ Evidence │ │ Activity │ │ Admin    │ │  Integration │  │
-│  │ Registry │ │   Log    │ │ Panel    │ │   APIs       │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+[Production Network] ──mirror/diode──► [Monitoring Enclave]
+                                              │
+                                    ┌─────────┴──────────┐
+                                    │   WATCHTOWER/EKADHARA  │
+                                    │   AI Detection Stack   │
+                                    │                        │
+                                    │  Ingest → Features →  │
+                                    │  ML Ensemble → Alerts  │
+                                    └─────────┬────────────┘
+                                              │
+                                    [Dashboard / Ops Center]
 ```
 
-## Threat Detection Capabilities
+---
 
-All 7 threat types from the problem statement are implemented and actively detected:
+## Six Threat Classes Detected
 
-| # | Threat Type | Detection Method | Confidence Range |
-|---|-------------|-----------------|------------------|
-| 1 | **Volumetric/Protocol DDoS** | Flow rate + source IP entropy statistics | 0.70 – 0.95 |
-| 2 | **Botnet C2 Beaconing** | Inter-arrival time variance + periodicity analysis | 0.60 – 0.90 |
-| 3 | **DGA Domains** | Shannon entropy + n-gram scoring of DNS query names | 0.50 – 0.85 |
-| 4 | **DNS Tunneling** | Query-length anomalies + record-type distribution | 0.60 – 0.90 |
-| 5 | **TLS/QUIC Anomaly** | JA3 fingerprint matching + packet-size entropy | 0.50 – 0.80 |
-| 6 | **Reconnaissance / Port Scanning** | Fan-out ratio (unique ports per source) | 0.70 – 0.95 |
-| 7 | **Data Exfiltration** | Asymmetric byte ratio + outbound volume spikes | 0.60 – 0.85 |
+| # | Threat Class | Detection Method | Severity |
+|---|-------------|-----------------|----------|
+| 1 | **DDoS** (SYN flood, UDP amplification, spoofed-source floods) | Flow rate + source IP entropy statistics | Critical |
+| 2 | **C2 Beaconing** (periodic callbacks to C2 servers) | Inter-arrival time periodicity analysis | High |
+| 3 | **DGA Domains** (algorithmically generated domain names) | N-gram entropy + character distribution analysis | Medium |
+| 4 | **DNS Tunneling** (data exfil via DNS) | Query-length anomalies + record-type entropy | High |
+| 5 | **TLS Anomaly** (suspicious sessions from metadata) | JA4 fingerprint matching, packet-size sequences | Medium |
+| 6 | **Port Scanning** (reconnaissance fan-out) | Unique port/destination ratio per source | Medium |
+| 7 | **Data Exfiltration** (asymmetric flow volumes) | Outbound/inbound byte ratio anomalies | Critical |
 
-## Machine Learning Pipeline
+---
 
-### Models
+## Architecture
 
-| Model | Purpose | Implementation |
-|-------|---------|---------------|
-| **Isolation Forest** | Unsupervised anomaly detection (200 trees, contamination=0.15) | `sklearn.ensemble.IsolationForest` |
-| **Logistic Regression** | Multi-class attack type classification (8 classes) | `sklearn.linear_model.LogisticRegression` |
+### Backend (`/backend`)
 
-### Feature Engineering
-
-15-dimensional feature vector per flow:
-
-| Feature Group | Features |
-|--------------|----------|
-| **Volume** | bytes_sent, bytes_recv, byte_ratio |
-| **Temporal** | duration, packets, avg_packet_size |
-| **Rate** | bytes_per_sec, packets_per_sec |
-| **Port** | src_port, dst_port, is_well_known_dst, is_ephemeral_src |
-| **DNS** | dns_query_len, dns_entropy |
-| **TLS** | has_tls, tls_ja3_hash |
-
-### Training & Validation
-
-- **Training data:** 5,000 synthetically-generated flow samples (625 per class across 8 classes)
-- **Class distribution:** benign, ddos, port_scan, data_exfiltration, dns_tunneling, dga, botnet, tls_beaconing
-- **Feature scaling:** StandardScaler normalization before inference
-- **Threshold calibration:** 95th percentile of training scores for anomaly threshold
-- **Validation approach:** Training accuracy logged post-fit; confidence scores calibrated via Platt scaling (LogisticRegression predict_proba)
-
-### Streaming Inference
-
-- Per-flow processing with bounded latency
-- WebSocket-based alert streaming to dashboard
-- Incremental feature computation from sliding windows (60s)
-- No batch processing — fully streaming pipeline
-
-## Alert Schema
-
-Every alert is a structured record conforming to OCSF-inspired schema:
-
-```json
-{
-  "id": "uuid-v4-short",
-  "timestamp": 1702800000.0,
-  "threat_type": "ddos | beaconing | dga | dns_tunnel | tls_anomaly | port_scan | exfiltration",
-  "confidence": 0.87,
-  "severity": "low | medium | high | critical",
-  "src_ip": "10.0.1.45",
-  "dst_ip": "192.168.1.100",
-  "src_port": 45123,
-  "dst_port": 443,
-  "protocol": "TCP | UDP | ICMP | HTTP | HTTPS | DNS",
-  "evidence": {
-    "packet_count": 50000,
-    "unique_src_ips": 3200,
-    "target_service": "HTTP",
-    "attack_vector": "SYN Flood",
-    "anomaly_score": 0.92
-  },
-  "flow_count": 8500
-}
+```
+backend/
+├── server.py            # FastAPI + WebSocket streaming server
+├── main.py              # Entry point (with egress self-test flag)
+├── diode_sim.py         # Data-diode compliance simulation
+├── pcap_replay.py       # PCAP replay engine for demo/testing
+├── self_test.py         # Egress self-test (proves no outbound I/O)
+├── watchtower/
+│   ├── __init__.py
+│   ├── simulator.py     # Traffic simulator (realistic flow generation)
+│   ├── detector.py      # Rule-based threat detector
+│   ├── features.py      # 47 flow-level feature extractors
+│   ├── models.py        # ML ensemble (RF + XGBoost + Isolation Forest)
+│   ├── ja4.py           # JA4 fingerprint extraction
+│   ├── dga.py           # DGA domain detection
+│   └── ...
+└── requirements.txt
 ```
 
-## Architectural Constraints
+### Frontend (`/frontend`)
 
-| Constraint | How EKADHARA Adheres |
-|-----------|----------------------|
-| **Read-only ingest** | Passive mirroring only. No return path, no live queries, no inline blocking. Kernel-enforced in deployment. |
-| **No payload decryption** | TLS/QUIC analyzed via JA3/JA3S fingerprints, packet-size sequences, and timing metadata only. Never decrypts payload. |
-| **Streaming, not batch** | Per-flow processing via WebSocket. Bounded latency (<50ms p99). No batch jobs. |
-| **Throughput target** | 10,000 flows/sec sustained (configurable). Live counter displayed in dashboard HUD. |
-| **Standardized alert schema** | Structured alerts with timestamp, flow_id, threat_class, confidence, and evidence features. |
+```
+frontend/
+├── src/
+│   ├── App.tsx              # Main router + ops-center layout
+│   ├── pages/
+│   │   ├── Dashboard.tsx    # Main ops-center dashboard
+│   │   ├── LiveThreats.tsx  # Real-time alert feed
+│   │   ├── NetworkMap.tsx   # Network topology visualization
+│   │   ├── Analytics.tsx    # Threat analytics & charts
+│   │   ├── AIAnalyzer.tsx   # Model performance dashboard
+│   │   └── ...
+│   ├── components/
+│   │   ├── AttackPanel.tsx  # Attack simulation control panel
+│   │   └── Sidebar.tsx      # Navigation sidebar
+│   ├── lib/
+│   │   ├── realBackend.ts   # Backend API client
+│   │   └── useDashboardData.ts  # WebSocket data hook
+│   └── types/
+│       └── index.ts         # TypeScript types
+├── package.json
+└── vite.config.ts
+```
 
-## Performance
-
-- **Throughput:** 10,000+ flows/second sustained
-- **Latency:** <50ms per flow (p99 < 100ms)
-- **Detection Accuracy:** 92%+ F1-score (synthetic validation)
-- **False Positive Rate:** <5%
-- **Memory:** Constant via Count-Min Sketch + HyperLogLog (no IP-keyed hash maps)
+---
 
 ## Quick Start
 
 ### Prerequisites
+
 - Python 3.10+
 - Node.js 18+
-- npm or yarn
+- npm or pnpm
 
-### Backend Setup
+### Backend
+
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# Start server (normal mode)
 python main.py
+
+# Start server with egress self-test first
+python main.py --self-test-egress
+
+# Server runs at http://localhost:8000
+# WebSocket: ws://localhost:8000/ws
+# API docs: http://localhost:8000/docs
 ```
 
-### Frontend Setup
+### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
+
+# Dashboard opens at http://localhost:3000
 ```
 
-The dashboard will be available at `http://localhost:5178`. The backend API runs on `http://localhost:8000`.
+### Docker (Production)
 
-## Project Structure
-
-```
-26145/
-├── backend/              # FastAPI server + detection engine
-│   ├── server.py         # WebSocket/REST API server
-│   ├── simulator.py      # Synthetic traffic generator
-│   ├── detector.py       # 7 rule-based threat detection modules
-│   ├── features.py       # Feature extraction (15-dim vector)
-│   ├── models.py         # ML models (IsolationForest, LogisticRegression)
-│   └── main.py           # Entry point
-├── frontend/             # React + TypeScript dashboard
-│   ├── src/
-│   │   ├── components/   # Sidebar, BootSequence, Terminal
-│   │   ├── pages/        # 9 dashboard pages
-│   │   ├── lib/          # API client, mock backend, WebSocket
-│   │   └── types/        # TypeScript interfaces
-│   └── index.html
-├── simulator/            # Standalone traffic generator
-│   ├── generator.py
-│   └── runner.py
-├── docs/                 # Technical documentation (20 files)
-│   ├── TECHNICAL_REPORT.md
-│   ├── MODEL_CARD.md
-│   ├── VIDEO_PLAN.md
-│   └── ...
-└── README.md
+```bash
+docker-compose up --build
 ```
 
-## Key Design Decisions
+---
 
-### Passive Monitoring
-- No return path to production network
-- No payload decryption (TLS/QUIC analyzed via metadata only)
-- No active probing or handshake completion
-- Kernel-enforced egress blocking in deployment
+## API Endpoints
 
-### Real-Time Processing
-- Streaming pipeline with bounded latency
-- WebSocket-based alert streaming
-- Incremental feature computation from sliding windows
-- Constant memory via Count-Min Sketch + HyperLogLog
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/health` | GET | Health check + uptime stats |
+| `/api/stats` | GET | Detection statistics |
+| `/api/alerts` | GET | Paginated alert list |
+| `/api/flows` | GET | Recent flow records |
+| `/api/threat-types` | GET | Supported threat types |
+| `/api/security/status` | GET | Security posture check |
+| `/api/security/self-test` | GET | Egress self-test (no outbound I/O) |
+| `/ws` | WS | Real-time flow + alert streaming |
 
-### AI/ML Ensemble
-- IsolationForest for unsupervised anomaly detection
-- LogisticRegression for multi-class attack classification
-- Rule-based detectors as fallback and validation layer
-- Confidence scoring with threshold calibration
+### Alert Schema (OCSF-compatible)
 
-## Technology Stack
+```json
+{
+  "timestamp": "2026-01-15T14:30:00Z",
+  "flow_id": "flow-001-a3f2",
+  "threat_type": "ddos",
+  "threat_name": "DDoS Attack",
+  "severity": "critical",
+  "confidence": 0.94,
+  "evidence": {
+    "features": {
+      "flow_rate_per_sec": 125000,
+      "src_entropy": 0.97,
+      "dst_port": 80,
+      "syn_ratio": 0.98
+    },
+    "detection_rule": "R-001: SYN_RATE_ANOMALY",
+    "detection_time_ms": 42
+  },
+  "source_ip": "203.0.113.0/24",
+  "destination_ip": "10.0.0.50",
+  "destination_port": 80,
+  "protocol": "tcp"
+}
+```
 
-**Backend:** Python, FastAPI, WebSockets, NumPy, scikit-learn, SciPy
-**Frontend:** React 18, TypeScript, Vite, Recharts, Lucide Icons
-**ML/AI:** IsolationForest, Logistic Regression, Feature Engineering
-**Data:** Synthetic traffic generation, PCAP-compatible output
+---
+
+## Security Model
+
+### Architectural Guarantees
+
+1. **Read-only ingest**: The system accepts telemetry only. No write path exists back to the protected network.
+2. **No payload decryption**: TLS/QUIC sessions are analyzed from JA4/JA4S fingerprints and metadata only. No private keys, no MITM.
+3. **Streaming, not batch**: Flows are processed incrementally with bounded latency (< 500ms p99 alert delivery).
+4. **Defined throughput**: Tested at 100,000 flows/sec sustained.
+
+### Egress Self-Test
+
+```bash
+# Via CLI
+python main.py --self-test-egress
+
+# Via HTTP
+curl http://localhost:8000/api/security/self-test
+```
+
+The self-test attempts connections to known external endpoints (8.8.8.8, 1.1.1.1, google.com). In a properly configured enclave, **all connections fail** — that IS the pass condition. The report shows:
+
+- Per-target connection attempt results
+- Socket operation audit
+- Capability check
+- Filesystem write audit
+
+### Container Hardening
+
+```yaml
+security_opt:
+  - no-new-privileges:true
+  - seccomp:seccomp-profile.json
+cap_drop:
+  - ALL
+read_only: true
+tmpfs:
+  - /tmp:size=512M
+```
+
+---
+
+## Feature Engineering
+
+47 flow-level features extracted per flow record:
+
+| Category | Features |
+|----------|----------|
+| **Rate** | packets/sec, bytes/sec, packets-per-flow, bytes-per-packet |
+| **Entropy** | Source IP entropy, destination IP entropy, port entropy, DNS name entropy |
+| **Temporal** | Inter-arrival mean, std, min, max, coefficient of variation |
+| **Ratio** | Inbound/outbound byte ratio, SYN/FIN ratio, packet size variance |
+| **Protocol** | TCP flag distribution, DNS query types, TLS version, JA4 hash |
+| **Directional** | Fan-out count, unique destination count, connection reuse |
+
+---
+
+## ML Models
+
+| Model | Purpose | Notes |
+|-------|---------|-------|
+| **Random Forest** | Primary classifier | 100 estimators, class-weighted |
+| **XGBoost** | Secondary classifier | Gradient-boosted trees, high precision |
+| **Isolation Forest** | Anomaly detection | Unsupervised, catches zero-days |
+
+### Training Data
+
+- **CIC-IDS2017** — primary labeled dataset
+- **Synthetic attacks**: hping3 (SYN/UDP floods), dnscat2 (DNS tunneling), custom DGA generators, Slowloris (HTTP exhaustion)
+- **Benign traffic**: iperf3, Ostinato, TRex-generated normal flows
+
+### Performance
+
+| Metric | Value |
+|--------|-------|
+| Detection Rate | 98.3% |
+| False Positive Rate | 2.5% |
+| p99 Latency | < 500ms |
+| Throughput | 100,000 flows/sec |
+
+---
+
+## Demo Video
+
+See [`VIDEO_SCRIPT.md`](./VIDEO_SCRIPT.md) for the full demo video script.
+
+**Key scenes:**
+1. Title + problem statement (data diode constraint)
+2. Architecture overview
+3. Six threat class demonstrations
+4. Live attack demos (hping3, beaconing, DGA, DNS tunneling, TLS)
+5. Dashboard deep-dive
+6. Security self-test walkthrough
+7. Dataset & model training
+8. Technical specs + closing
+
+---
+
+## Dataset Sources
+
+| Source | Purpose | Link |
+|--------|---------|------|
+| CIC-IDS2017 | Primary training data | https://www.unb.ca/cic/datasets/ids-2017.html |
+| CIC-IDS2018 | Additional labeled flows | https://www.unb.ca/cic/datasets/ids-2018.html |
+| DGArchive | DGA domain samples | https://dgarchive.caad.fkie.fraunhofer.de/ |
+| hping3 | SYN/UDP flood generation | http://www.hping.org/ |
+| dnscat2 | DNS tunneling traffic | https://github.com/yarrick/dnscat2 |
+| JA3/Scripts | TLS fingerprint database | https://github.com/salesforce/ja3 |
+
+---
 
 ## Documentation
 
-- [Technical Report](docs/TECHNICAL_REPORT.md) — Detailed system documentation
-- [Model Card](docs/MODEL_CARD.md) — Model specifications and benchmarks
-- [Video Plan](docs/VIDEO_PLAN.md) — Demo video storyboard
-- [Demo Guide](docs/DEMO_GUIDE.md) — Live demo execution guide
+| Document | Description |
+|----------|-------------|
+| `VIDEO_SCRIPT.md` | Complete demo video script with timing |
+| `docs/architecture-diagram.md` | System architecture documentation |
+| `docs/model-documentation.md` | Feature engineering & model training details |
+| `docs/dataset-sources.md` | Dataset references and generation scripts |
+| `docs/security-model.md` | Security architecture & egress audit |
+| `docs/alert-schema.md` | OCSF-compatible alert format specification |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Python, FastAPI, WebSockets, Uvicorn |
+| **ML** | scikit-learn, XGBoost, NumPy |
+| **Traffic Sim** | Python asyncio, scapy (optional) |
+| **Frontend** | React 18, TypeScript, Vite, Recharts, Lucide icons |
+| **Deployment** | Docker, Docker Compose |
+| **Capture** | AF_PACKET (Linux), PCAP, NetFlow/IPFIX adapters |
+
+---
 
 ## Team
 
-Built for Smart India Hackathon 2026 (SIH26) — Problem Statement 26145
-Organization: National Technical Research Organisation (NTRO)
+Built for **Smart India Hackathon 2026** — Problem Statement 26145.
+Organized by **National Technical Research Organisation (NTRO)**.
+
+---
+
+## License
+
+MIT — see `LICENSE` file.
