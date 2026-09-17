@@ -40,7 +40,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <Sidebar isOpen={false} onClose={() => {}} />
 
-        <div className="terminal-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        <div className="terminal-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', minWidth: 0 }}>
           {/* ── HUD HEADER BAR ── */}
           <div className="hud-bar">
             {/* App title */}
