@@ -20,41 +20,41 @@ interface ThemeColors {
 }
 
 const darkColors: ThemeColors = {
-  bg:        '#05080d',
-  surface:   '#080d14',
-  surfaceHi: '#0c1219',
-  border:    '#111c2b',
-  borderHi:  '#182a3d',
-  text:      '#dce4ec',
-  textSec:   '#556677',
-  textDim:   '#2a3a4a',
-  accent:    '#00d4ff',
+  bg:        '#0a0e14',
+  surface:   '#11151c',
+  surfaceHi: '#181d27',
+  border:    '#1e2736',
+  borderHi:  '#2a3548',
+  text:      '#e8ecf1',
+  textSec:   '#8b95a5',
+  textDim:   '#4f5b6b',
+  accent:    '#3b82f6',
   red:       '#ef4444',
-  orange:    '#f97316',
-  amber:     '#eab308',
+  orange:    '#f59e0b',
+  amber:     '#f59e0b',
   green:     '#22c55e',
-  purple:    '#a855f7',
+  purple:    '#8b5cf6',
   pink:      '#ec4899',
-  teal:      '#14b8a6',
+  teal:      '#06b6d4',
 };
 
 const lightColors: ThemeColors = {
-  bg:        '#f0f2f5',
+  bg:        '#f8fafc',
   surface:   '#ffffff',
-  surfaceHi: '#f8f9fb',
-  border:    '#e2e6ec',
-  borderHi:  '#ccd1d9',
-  text:      '#1a1a2e',
-  textSec:   '#64748b',
+  surfaceHi: '#f1f5f9',
+  border:    '#e2e8f0',
+  borderHi:  '#cbd5e1',
+  text:      '#0f172a',
+  textSec:   '#475569',
   textDim:   '#94a3b8',
-  accent:    '#0891b2',
+  accent:    '#2563eb',
   red:       '#dc2626',
-  orange:    '#ea580c',
+  orange:    '#d97706',
   amber:     '#d97706',
   green:     '#16a34a',
-  purple:    '#9333ea',
+  purple:    '#7c3aed',
   pink:      '#db2777',
-  teal:      '#0d9488',
+  teal:      '#0891b2',
 };
 
 interface ThemeContextType {
@@ -82,22 +82,45 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     root.setAttribute('data-theme', isDark ? 'dark' : 'light');
     localStorage.setItem('watchtower-theme', isDark ? 'dark' : 'light');
 
-    // Set CSS custom properties for CSS-class-based elements
-    root.style.setProperty('--bg-primary', colors.bg);
-    root.style.setProperty('--bg-secondary', colors.surface);
-    root.style.setProperty('--bg-card', colors.surface);
-    root.style.setProperty('--bg-card-hover', colors.surfaceHi);
-    root.style.setProperty('--border-color', colors.border);
-    root.style.setProperty('--border-active', colors.borderHi);
-    root.style.setProperty('--text-primary', colors.text);
-    root.style.setProperty('--text-secondary', colors.textSec);
-    root.style.setProperty('--text-muted', colors.textDim);
-    root.style.setProperty('--accent-cyan', colors.accent);
-    root.style.setProperty('--accent-green', colors.green);
-    root.style.setProperty('--accent-red', colors.red);
-    root.style.setProperty('--accent-orange', colors.orange);
-    root.style.setProperty('--accent-yellow', colors.amber);
-    root.style.setProperty('--accent-purple', colors.purple);
+    const set = (prop: string, val: string) => root.style.setProperty(prop, val);
+
+    /* Old names (backward compat for inline styles & existing CSS) */
+    set('--bg-primary',    colors.bg);
+    set('--bg-secondary',  colors.surface);
+    set('--bg-card',       colors.surface);
+    set('--bg-card-hover', colors.surfaceHi);
+    set('--border-color',  colors.border);
+    set('--border-active', colors.borderHi);
+    set('--text-primary',  colors.text);
+    set('--text-secondary',colors.textSec);
+    set('--text-muted',    colors.textDim);
+    set('--accent-cyan',   colors.accent);
+    set('--accent-green',  colors.green);
+    set('--accent-red',    colors.red);
+    set('--accent-orange', colors.orange);
+    set('--accent-yellow', colors.amber);
+    set('--accent-purple', colors.purple);
+
+    /* New design-system tokens */
+    set('--bg-base',     colors.bg);
+    set('--bg-surface',  colors.surface);
+    set('--bg-elevated', colors.surfaceHi);
+    set('--bg-inset',    colors.bg);
+    set('--border-default', colors.border);
+    set('--border-strong',  colors.borderHi);
+    set('--border-muted',   isDark ? '#151c28' : '#eef1f5');
+    set('--color-accent',    colors.accent);
+    set('--color-accent-dim', isDark ? 'rgba(59,130,246,0.12)' : 'rgba(37,99,235,0.07)');
+    set('--color-success',   colors.green);
+    set('--color-success-dim', isDark ? 'rgba(34,197,94,0.10)' : 'rgba(22,163,74,0.06)');
+    set('--color-danger',    colors.red);
+    set('--color-danger-dim',  isDark ? 'rgba(239,68,68,0.10)' : 'rgba(220,38,38,0.06)');
+    set('--color-warning',   colors.orange);
+    set('--color-warning-dim', isDark ? 'rgba(245,158,11,0.10)' : 'rgba(217,119,6,0.06)');
+    set('--color-info',    colors.teal);
+    set('--color-info-dim', isDark ? 'rgba(6,182,212,0.10)' : 'rgba(8,145,178,0.06)');
+    set('--color-purple',  colors.purple);
+    set('--color-purple-dim', isDark ? 'rgba(139,92,246,0.10)' : 'rgba(124,58,237,0.06)');
   }, [isDark, colors]);
 
   const toggleTheme = () => setIsDark((prev) => !prev);

@@ -15,7 +15,10 @@ import AdminPage from './pages/AdminPage';
 import MatchPage from './pages/MatchPage';
 import AttackPanel from './components/AttackPanel';
 import ReviewPage from './pages/ReviewPage';
-import { ShieldAlert, Sun, Moon, ScrollText } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
+
+const SIDEBAR_WIDTH = 260;
+const HUD_HEIGHT = 56;
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, flowsPerSec, alertCount } = useWebSocketContext();
@@ -35,94 +38,59 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   });
 
   return (
-    <div className="terminal-wrapper" style={{ display: 'flex', height: '100vh' }}>
-      {/* Sidebar — always visible, fixed position */}
+    <div className="app-shell">
+      {/* Sidebar — fixed width, always visible */}
       <Sidebar isOpen={true} onClose={() => {}} />
 
-      {/* Main content area */}
-      <div
-        className="terminal-main"
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          minWidth: 0,
-          marginLeft: 220,
-          height: '100vh',
-          overflow: 'hidden',
-        }}
-      >
-        {/* HUD HEADER BAR — fixed height, no scroll */}
-        <div className="hud-bar" style={{ flexShrink: 0 }}>
-          <div className="hud-title">
-            <span className="hud-title-icon">
-              <ShieldAlert size={14} />
-            </span>
-            WATCHTOWER
+      {/* Main column: header + scrollable content */}
+      <div className="app-main">
+        {/* ── HUD Header ── */}
+        <header className="hud-bar" style={{ height: HUD_HEIGHT }}>
+          {/* Left: wordmark + subtitle */}
+          <div className="hud-left">
+            <div className="hud-wordmark">WATCHTOWER</div>
+            <div className="hud-subtitle">
+              <span className="hud-subtitle-project">PS-26145</span>
+              <span className="hud-subtitle-sep">·</span>
+              <span>NTRO · SIH26</span>
+            </div>
           </div>
 
-          <div className="hud-divider" />
-
-          {/* Project info */}
-          <div
-            className="hud-subtitle"
-            style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 500 }}
-          >
-            <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>
-              PS-26145
-            </span>
-            <span className="hud-subtitle-sep" />
-            <span>NTRO · SIH26</span>
-          </div>
-
-          <div className="hud-spacer" />
-
-          {/* Status indicators */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="hud-stat">
-              <span className="hud-stat-label">STATUS</span>
-              <span
-                className="hud-live-text"
-                style={{
-                  color: isConnected ? 'var(--accent-green)' : '#f59e0b',
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {isConnected ? 'LIVE' : 'DEMO'}
-              </span>
-              <span
-                className="hud-status-dot"
-                style={{
-                  background: isConnected ? 'var(--accent-green)' : '#f59e0b',
-                  boxShadow: isConnected
-                    ? '0 0 8px rgba(0,255,65,0.5)'
-                    : '0 0 8px rgba(245,158,11,0.5)',
-                }}
-              />
+          {/* Right: telemetry + controls */}
+          <div className="hud-right">
+            {/* Connection status */}
+            <div className={`hud-status-badge ${isConnected ? 'status-live' : 'status-demo'}`}>
+              <span className="hud-status-dot" />
+              <span className="hud-status-text">{isConnected ? 'LIVE' : 'DEMO'}</span>
             </div>
 
             <div className="hud-divider" />
 
+            {/* Alert count */}
             <div className="hud-stat">
-              <span className="hud-stat-label">ALERTS</span>
+              <span className="hud-stat-label">Alerts</span>
               <span className="hud-stat-value">{alertCount}</span>
             </div>
 
+            <div className="hud-divider" />
+
+            {/* Throughput */}
             <div className="hud-stat">
-              <span className="hud-stat-label">THROUGHPUT</span>
+              <span className="hud-stat-label">Throughput</span>
               <span className="hud-stat-value">{(flowsPerSec ?? 0).toFixed(0)}/s</span>
             </div>
 
             <div className="hud-divider" />
 
+            {/* Diode indicator */}
             <div className="diode-badge">
               <span className="diode-dot" />
-              DIODE READ-ONLY
+              Diode Read-Only
             </div>
 
             <div className="hud-divider" />
 
+            {/* Clock */}
             <div className="hud-clock">
               <span className="hud-clock-date">{dateStr}</span>
               <span className="hud-clock-sep">|</span>
@@ -139,19 +107,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* CONTENT AREA — this is the scrollable region */}
-        <main
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            background: 'var(--bg-primary)',
-            position: 'relative',
-            zIndex: 2,
-          }}
-        >
-          {children}
+        {/* ── Scrollable Content ── */}
+        <main className="content-area">
+          <div className="content-inner">
+            {children}
+          </div>
         </main>
       </div>
     </div>

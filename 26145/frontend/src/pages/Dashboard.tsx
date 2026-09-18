@@ -1,37 +1,33 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Activity, Network, Crosshair, Eye, Radar, Zap,
-  ArrowUpRight, ShieldCheck, Cpu, ShieldAlert,
+  ArrowRight, ShieldCheck, Cpu, ShieldAlert,
+  TrendingUp, Globe, Lock, Gauge, AlertTriangle, BarChart3,
 } from 'lucide-react';
 import { useDashboardData } from '../lib/useDashboardData';
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
-   WATCHTOWER — Dashboard
-   Dark ops center. Scrollable. Built with Emil / Taste / Impeccable principles.
+   WATCHTOWER — Dashboard (Redesigned)
+   Clean Swiss grid. Light-mode primary. No glow effects.
    ═══════════════════════════════════════════════════════════════════════════════════ */
-
-/* ── Palette (one accent, locked) ───────────────────────────────────────── */
 
 const C = {
   bg:        'var(--bg-primary)',
   surface:   'var(--bg-secondary)',
-  surfaceHi: 'var(--bg-card-hover)',
   border:    'var(--border-color)',
   borderHi:  'var(--border-active)',
   text:      'var(--text-primary)',
   textSec:   'var(--text-secondary)',
   textDim:   'var(--text-muted)',
-  accent:    'var(--accent-cyan)',   // locked — one accent, used everywhere
+  accent:    'var(--accent-cyan)',
   red:       'var(--accent-red)',
   orange:    'var(--accent-orange)',
   amber:     'var(--accent-yellow)',
   green:     'var(--accent-green)',
   purple:    'var(--accent-purple)',
-  pink:      'var(--accent-pink)',
-  teal:      'var(--accent-teal)',
 };
 
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'; // strong ease-out per emil-design-eng
+const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
 
@@ -50,7 +46,7 @@ const dateNow = () => new Date().toLocaleDateString('en-US', { weekday:'short', 
 const THREAT_CLR: Record<string, string> = {
   ddos: C.red, beaconing: C.orange, dga: C.amber,
   dns_tunnel: 'var(--accent-cyan)', port_scan: C.purple,
-  exfiltration: C.pink, tls_anomaly: C.teal, malware: C.red, phishing: 'var(--accent-amber)',
+  exfiltration: C.purple, tls_anomaly: 'var(--accent-teal)', malware: C.red, phishing: 'var(--accent-amber)',
 };
 const THREAT_LBL: Record<string, string> = {
   ddos:'Volumetric DDoS', beaconing:'C2 Beaconing', dga:'DGA Domains',
@@ -63,32 +59,29 @@ const THREAT_LBL: Record<string, string> = {
    ATOMIC COMPONENTS
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Pulsing dot (decorative — seen rarely, not every second) ── */
+/* ── Status dot (clean, no glow) ── */
 const Dot: React.FC<{ color?: string; size?: number }> = ({ color = C.green, size = 6 }) => (
   <span style={{
     width: size, height: size, borderRadius: '50%', background: color,
-    boxShadow: `0 0 ${size}px ${color}60`,
-    animation: `wt-pulse 1.6s ease-in-out infinite`,
     display: 'inline-block', flexShrink: 0,
   }} />
 );
 
-/* ── Severity badge ── */
+/* ── Severity badge (flat design) ── */
 const Sev: React.FC<{ sev: string }> = ({ sev }) => {
   const M: Record<string,{c:string;bg:string}> = {
-    critical:{c:C.red,bg:'rgba(239,68,68,0.10)'},
-    high:{c:C.orange,bg:'rgba(249,115,22,0.10)'},
-    medium:{c:C.amber,bg:'rgba(234,179,8,0.10)'},
-    low:{c:'var(--accent-cyan)',bg:'rgba(6,182,212,0.10)'},
+    critical:{c:C.red,bg:'rgba(239,68,68,0.08)'},
+    high:{c:C.orange,bg:'rgba(249,115,22,0.08)'},
+    medium:{c:C.amber,bg:'rgba(234,179,8,0.08)'},
+    low:{c:'var(--accent-cyan)',bg:'rgba(6,182,212,0.08)'},
   };
   const s = M[sev] || M.low;
   return (
     <span style={{
-      display:'inline-flex', alignItems:'center', gap:5,
+      display:'inline-flex', alignItems:'center', gap:4,
       padding:'2px 8px', borderRadius:3, fontSize:9, fontWeight:700,
-      letterSpacing:'1px', color:s.c, background:s.bg, border:`1px solid ${s.c}25`,
+      letterSpacing:'1px', color:s.c, background:s.bg,
       fontFamily:'"JetBrains Mono",monospace', textTransform:'uppercase',
-      transition: `border-color 0.2s ${EASE}`,
     }}>
       <span style={{width:4,height:4,borderRadius:'50%',background:s.c}} />
       {sev}
@@ -96,95 +89,19 @@ const Sev: React.FC<{ sev: string }> = ({ sev }) => {
   );
 };
 
-/* ── Section header (no kicker — craft-floor ban) ── */
-const SH: React.FC<{ label: string; right?: React.ReactNode }> = ({ label, right }) => (
+/* ── Section label (13px uppercase, accent color) ── */
+const SectionLabel: React.FC<{ label: string; right?: React.ReactNode }> = ({ label, right }) => (
   <div style={{
-    display:'flex', alignItems:'baseline', justifyContent:'space-between',
-    paddingBottom:10, marginBottom:14, borderBottom:`1px solid ${C.border}`,
+    display:'flex', alignItems:'center', justifyContent:'space-between',
+    marginBottom:16,
   }}>
     <span style={{
-      fontFamily:'"JetBrains Mono",monospace', fontSize:10, fontWeight:700,
-      letterSpacing:'2.5px', color:C.accent, textTransform:'uppercase',
+      fontFamily:'"JetBrains Mono",monospace', fontSize:11, fontWeight:700,
+      letterSpacing:'2px', color:C.textSec, textTransform:'uppercase',
     }}>{label}</span>
     {right}
   </div>
 );
-
-/* ── Panel (shared surface) ── */
-const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; children: React.ReactNode }> = ({ delay = 0, style, children }) => {
-  const [ready, setReady] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
-
-  return (
-    <div style={{
-      background: C.surface,
-      border: `1px solid ${C.border}`,
-      borderRadius: 8,
-      position: 'relative', overflow: 'hidden',
-      opacity: ready ? 1 : 0,
-      transform: ready ? 'translateY(0)' : 'translateY(12px)',
-      transition: `opacity 0.5s ${EASE} ${delay}s, transform 0.5s ${EASE} ${delay}s`,
-      ...style,
-    }}>
-      {/* Top accent line — not decorative, marks the panel boundary */}
-      <div style={{
-        position:'absolute', top:0, left:0, right:0, height:1,
-        background:`linear-gradient(90deg, transparent, ${C.accent}30, transparent)`,
-      }} />
-      <div style={{ padding:'20px 22px', position:'relative', zIndex:1 }}>{children}</div>
-    </div>
-  );
-};
-
-/* ── Horizontal bar chart (no decoration — labels carry meaning) ── */
-const HBar: React.FC<{ data: Array<{label:string; value:number; color?:string}> }> = ({ data }) => {
-  const max = Math.max(...data.map(d => d.value), 1);
-  const palette = [C.accent,'var(--accent-cyan)','var(--accent-cyan)','var(--accent-sky)','var(--accent-teal)',C.green,C.purple,C.orange,C.amber,C.red];
-  return (
-    <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
-      {data.map((d, i) => {
-        const pct = (d.value / max) * 100;
-        const c = d.color || palette[i % palette.length];
-        return (
-          <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <span style={{
-              fontSize:10, color:C.textSec, width:96, flexShrink:0,
-              letterSpacing:'0.3px', textTransform:'uppercase',
-              overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-            }}>{d.label}</span>
-            <div style={{
-              flex:1, height:16, background:'var(--bg-secondary)', borderRadius:2,
-              border:`1px solid ${C.border}`, overflow:'hidden',
-            }}>
-              <div style={{
-                height:'100%', width:`${Math.max(pct,0.5)}%`,
-                background: c, opacity:0.75, borderRadius:1,
-                transition:'width 1.2s cubic-bezier(0.22,1,0.36,1)',
-              }} />
-            </div>
-            <span style={{
-              fontSize:10, fontWeight:700, color:c, width:40, textAlign:'right',
-              fontVariantNumeric:'tabular-nums',
-            }}>{d.value > 0 ? `${pct.toFixed(0)}%` : '—'}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-/* ── Progress bar (functional, not decorative) ── */
-const Progress: React.FC<{ value: number; max?: number; color?: string }> = ({ value, max = 100, color = C.accent }) => {
-  const pct = Math.min((value / max) * 100, 100);
-  return (
-    <div style={{ height:4, background:'var(--bg-secondary)', borderRadius:2, border:`1px solid ${C.border}`, overflow:'hidden' }}>
-      <div style={{
-        height:'100%', width:`${pct}%`, background:color, opacity:0.65,
-        borderRadius:1, transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
-      }} />
-    </div>
-  );
-};
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
    DASHBOARD
@@ -199,7 +116,7 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(t);
   }, []);
 
-  /* ── Derived (honest — no fake filler) ──────────────────────────────── */
+  /* ── Derived ──────────────────────────────────────────────────────── */
 
   const threatCounts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -225,7 +142,6 @@ const Dashboard: React.FC = () => {
 
   const recent = useMemo(() => data.alerts.slice(0, 25), [data.alerts]);
 
-  // KPIs — derived from real data, no hardcoded filler when data exists
   const flowsProc   = Math.max(data.alerts.length * 47, 1200);
   const blocked     = sev.critical * 23 + sev.high * 17 + 47;
   const activeSess  = data.activeConnections || Math.max(data.alerts.length * 3, 120);
@@ -237,187 +153,300 @@ const Dashboard: React.FC = () => {
   return (
     <div style={{
       minHeight:'100%', background:C.bg, color:C.text,
-      fontFamily:'"JetBrains Mono","Fira Code",monospace',
-      fontSize:12, lineHeight:1.5,
+      fontFamily:'"Inter",system-ui,sans-serif',
+      fontSize:14, lineHeight:1.6,
     }}>
       <style>{`
-        @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-        @keyframes wt-row-in { from{opacity:0; transform:translateX(-6px);} to{opacity:1; transform:translateX(0);} }
+        @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+        @keyframes wt-row-in { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
 
-        ::selection { background: rgba(0,212,255,0.15); color: ${C.text}; }
-        :focus-visible { outline: 1.5px solid rgba(0,212,255,0.5); outline-offset: 2px; border-radius: 2px; }
+        ::selection { background: rgba(0,212,255,0.15); }
+        :focus-visible { outline: 1.5px solid rgba(0,212,255,0.4); outline-offset: 2px; border-radius: 2px; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${C.textDim}; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
 
-        .wt-interactive { transition: transform 160ms cubic-bezier(0.22,1,0.36,1), background 0.2s; }
-        .wt-interactive:active { transform: scale(0.98); }
+        .kpi-card { transition: background 0.2s, border-color 0.2s; }
+        .kpi-card:hover { background: var(--bg-card-hover); border-color: var(--border-active); }
 
-        a { color: inherit; text-decoration: none; }
-
-        /* ── Responsive breakpoints ── */
-        @media (max-width: 1024px) {
-          .wt-grid-aside { grid-template-columns: 1fr !important; }
-          .wt-kpi-grid { grid-template-columns: repeat(3, 1fr) !important; }
-          .wt-kpi-grid > *:nth-child(n+4) { border-top: 1px solid ${C.border}; }
+        @media (max-width: 1200px) {
+          .kpi-row { flex-wrap: wrap; }
+          .kpi-card { min-width: calc(50% - 10px); }
         }
         @media (max-width: 768px) {
-          .wt-grid-aside { grid-template-columns: 1fr !important; }
-          .wt-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .wt-kpi-grid > * { border-right: none !important; border-bottom: 1px solid ${C.border}; }
-          .wt-kpi-grid > *:nth-child(odd) { border-right: 1px solid ${C.border}; }
-          .wt-kpi-grid > *:nth-child(n+3) { border-top: 1px solid ${C.border}; }
-          .wt-pipeline-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        }
-        @media (max-width: 480px) {
-          .wt-kpi-grid { grid-template-columns: 1fr !important; }
-          .wt-kpi-grid > * { border-right: none !important; border-bottom: 1px solid ${C.border}; }
-          .wt-kpi-grid > *:last-child { border-bottom: none; }
-          .wt-pipeline-grid { grid-template-columns: 1fr !important; }
-          header > div { padding: 0 14px !important; gap: 8px !important; }
-          main { padding: 20px 14px 60px !important; }
+          .kpi-card { min-width: 100%; }
+          .row-2 { grid-template-columns: 1fr !important; }
+          .row-3 { grid-template-columns: 1fr !important; }
         }
       `}</style>
 
       {/* ── STICKY HUD BAR ─────────────────────────────────────────────── */}
       <header style={{
         position:'sticky', top:0, zIndex:40,
-        background:'rgba(5,8,13,0.94)',
+        background:'var(--bg-secondary)',
         borderBottom:`1px solid ${C.border}`,
       }}>
         <div style={{
-          maxWidth:1480, margin:'0 auto', padding:'0 28px',
-          display:'flex', alignItems:'center', height:48, gap:14,
+          maxWidth:1400, margin:'0 auto', padding:'0 28px',
+          display:'flex', alignItems:'center', height:52, gap:14,
         }}>
-          {/* Brand mark */}
-          <div style={{ display:'flex', alignItems:'center', gap:9, flexShrink:0 }}>
+          {/* Brand */}
+          <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
             <div style={{
-              width:26, height:26, borderRadius:5,
-              background:`linear-gradient(135deg, ${C.accent}18, ${C.accent}06)`,
-              border:`1px solid ${C.accent}30`,
+              width:28, height:28, borderRadius:6,
+              border:`1px solid ${C.border}`,
               display:'flex', alignItems:'center', justifyContent:'center',
-              transition: `border-color 0.3s ${EASE}, box-shadow 0.3s ${EASE}`,
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = `${C.accent}60`; e.currentTarget.style.boxShadow = `0 0 12px ${C.accent}15`; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = `${C.accent}30`; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <ShieldAlert size={14} color={C.accent} strokeWidth={1.8} />
+            }}>
+              <ShieldAlert size={14} color={C.textSec} strokeWidth={1.8} />
             </div>
             <span style={{
-              fontSize:13, fontWeight:800, letterSpacing:'4px', color:C.text,
-              fontVariantNumeric:'tabular-nums',
+              fontSize:12, fontWeight:700, letterSpacing:'3px', color:C.text,
+              fontFamily:'"JetBrains Mono",monospace',
             }}>WATCHTOWER</span>
           </div>
 
           <div style={{ width:1, height:18, background:C.border, flexShrink:0 }} />
 
-          {/* Context */}
-          <span style={{ fontSize:10, color:C.textSec, letterSpacing:'0.8px', flexShrink:0 }}>
+          <span style={{ fontSize:10, color:C.textSec, letterSpacing:'0.8px', flexShrink:0, fontFamily:'"JetBrains Mono",monospace' }}>
             PS-26145 · NTRO · SIH26
           </span>
 
           <div style={{ flex:1 }} />
 
-          {/* Status cluster */}
+          {/* Status */}
           <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-            <div className="wt-interactive" style={{
+            <div style={{
               display:'flex', alignItems:'center', gap:5, padding:'3px 10px',
-              background: data.isLive ? `${C.green}0a` : `${C.amber}0a`,
-              border:`1px solid ${data.isLive ? `${C.green}25` : `${C.amber}25`}`,
-              borderRadius:4, cursor:'default',
+              border:`1px solid ${C.border}`, borderRadius:4,
             }}>
               <Dot color={data.isLive ? C.green : C.amber} size={5} />
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'1.5px', color: data.isLive ? C.green : C.amber }}>
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'1.5px', color: data.isLive ? C.green : C.amber, fontFamily:'"JetBrains Mono",monospace' }}>
                 {data.isLive ? 'LIVE' : 'DEMO'}
               </span>
             </div>
 
-            <div className="wt-interactive" style={{
+            <div style={{
               display:'flex', alignItems:'center', gap:5, padding:'3px 10px',
-              background:`${C.accent}08`, border:`1px solid ${C.border}`, borderRadius:4, cursor:'default',
+              border:`1px solid ${C.border}`, borderRadius:4,
             }}>
-              <Activity size={10} color={C.accent} strokeWidth={2} />
-              <span style={{ fontSize:9, color:C.textSec, letterSpacing:'0.5px' }}>DIODE READ-ONLY</span>
+              <Activity size={10} color={C.textDim} strokeWidth={2} />
+              <span style={{ fontSize:9, color:C.textSec, letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace' }}>DIODE READ-ONLY</span>
             </div>
 
             <span style={{
               fontSize:11, color:C.textSec, letterSpacing:'0.8px',
+              fontFamily:'"JetBrains Mono",monospace',
               fontVariantNumeric:'tabular-nums',
             }}>{dateNow()} · {clock}</span>
           </div>
         </div>
       </header>
 
-      {/* ── SCROLLABLE MAIN ────────────────────────────────────────────── */}
-      <main style={{ maxWidth:1480, margin:'0 auto', padding:'28px 28px 80px' }}>
+      {/* ── MAIN CONTENT ──────────────────────────────────────────────── */}
+      <main style={{ maxWidth:1400, margin:'0 auto', padding:'32px 28px 80px' }}>
 
         {/* ════════════════════════════════════════════════════════════════
-             HERO CONTEXT
-             Text, not a metric strip. The page opens with what this is.
-           ════════════════════════════════════════════════════════════════ */}
+             PAGE HEADER
+             ════════════════════════════════════════════════════════════════ */}
         <section style={{ marginBottom:36 }}>
           <h1 style={{
-            fontSize:13, fontWeight:700, letterSpacing:'2.5px', color:C.accent,
-            marginBottom:8,
-          }}>National Threat Intelligence Platform</h1>
+            fontSize:28, fontWeight:700, letterSpacing:'-0.5px', color:C.text,
+            marginBottom:8, fontFamily:'"Inter",system-ui,sans-serif',
+          }}>Dashboard</h1>
           <p style={{
-            fontSize:13, color:C.textSec, maxWidth:720, lineHeight:1.75, margin:0,
+            fontSize:14, color:C.textSec, maxWidth:680, lineHeight:1.7, margin:0,
           }}>
             AI-based detection pipeline for unidirectional IP traffic monitoring.
-            Passive observation only — no probes, no decryption, no return path.
-            Streaming analysis of flow records, DNS metadata, and TLS fingerprints across 6 threat categories.
+            Passive observation — no probes, no decryption, no return path.
           </p>
         </section>
 
         {/* ════════════════════════════════════════════════════════════════
-             SECTION 1 — Pipeline + Enclave Constraints
-             Asymmetric: pipeline 3fr, constraints 2fr (taste-skill: anti-center)
-           ════════════════════════════════════════════════════════════════ */}
-        <section style={{ display:'grid', gridTemplateColumns:'3fr 2fr', gap:16, marginBottom:20 }} className="wt-grid-aside">
-
-          {/* Pipeline */}
-          <Panel delay={0.05}>
-            <SH label="Pipeline" right={
-              <span style={{ fontSize:9, color:C.textSec, fontVariantNumeric:'tabular-nums' }}>
-                UPTIME {fmtUptime(data.uptime)}
-              </span>
-            } />
-            <div className="wt-pipeline-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
-              {[
-                { label:'INGEST', sub:'PCAP / NetFlow / sFlow', c:C.accent, icon:Cpu },
-                { label:'FEATURES', sub:'JA3 / DNS / Flow metadata', c:C.purple, icon:Radar },
-                { label:'INFERENCE', sub:'Ensemble classifier', c:C.green, icon:Crosshair },
-                { label:'OUTPUT', sub:'WebSocket + REST alerts', c:C.amber, icon:Zap },
-              ].map((st, i) => (
-                <div key={i} className="wt-interactive" style={{
-                  padding:'12px 14px', background:'rgba(255,255,255,0.008)',
-                  border:`1px solid ${C.border}`, borderRadius:5, cursor:'default',
-                  display:'flex', flexDirection:'column', gap:6,
-                  transition: `border-color 0.2s ${EASE}`,
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderHi; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
-                >
-                  <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                    <Dot color={st.c} size={4} />
-                    <span style={{ fontSize:10, fontWeight:700, letterSpacing:'1.2px', color:st.c }}>{st.label}</span>
-                  </div>
-                  <span style={{ fontSize:9, color:C.textSec, lineHeight:1.4 }}>{st.sub}</span>
+             ROW 1 — KPI CARDS (6 across)
+             ════════════════════════════════════════════════════════════════ */}
+        <section className="kpi-row" style={{
+          display:'flex', gap:20, marginBottom:24,
+        }}>
+          {[
+            {
+              label:'FLOWS PROCESSED', value:fmt(flowsProc), sub:'+2.4K/s',
+              icon:Globe, color:C.accent, pct:68,
+            },
+            {
+              label:'THREATS BLOCKED', value:fmt(blocked), sub:'countermeasures',
+              icon:ShieldCheck, color:C.red, pct:42,
+            },
+            {
+              label:'ACTIVE SESSIONS', value:fmt(activeSess), sub:'concurrent',
+              icon:Activity, color:C.purple, pct:55,
+            },
+            {
+              label:'DETECTION RATE', value:`${data.detectionRate.toFixed(1)}%`, sub:'confidence',
+              icon:Crosshair, color:C.green, pct:94,
+            },
+            {
+              label:'FALSE POSITIVE', value:`${data.falsePositiveRate.toFixed(1)}%`, sub:'noise filter',
+              icon:AlertTriangle, color:C.amber, pct:8,
+            },
+            {
+              label:'THREATS TODAY', value:fmt(data.alertsToday || data.alerts.length), sub:'events',
+              icon:BarChart3, color:C.orange, pct:35,
+            },
+          ].map((kpi, i) => {
+            const Icon = kpi.icon;
+            return (
+              <div key={i} className="kpi-card" style={{
+                flex:1, minWidth:0,
+                background:'var(--bg-card)',
+                border:`1px solid ${C.border}`,
+                borderRadius:12,
+                padding:20,
+                display:'flex', flexDirection:'column', gap:10,
+              }}>
+                {/* Icon */}
+                <div style={{
+                  width:32, height:32, borderRadius:8,
+                  background:`${kpi.color}10`,
+                  border:`1px solid ${kpi.color}20`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                }}>
+                  <Icon size={16} color={kpi.color} strokeWidth={1.8} />
                 </div>
-              ))}
-            </div>
-          </Panel>
 
-          {/* Enclave constraints */}
-          <Panel delay={0.1}>
-            <SH label="Enclave Constraints" right={
-              <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-                <ShieldCheck size={11} color={C.green} />
-                <span style={{ fontSize:9, color:C.green, fontWeight:700, letterSpacing:'0.5px' }}>COMPLIANT</span>
+                {/* Label */}
+                <div style={{
+                  fontSize:10, fontWeight:700, letterSpacing:'1.5px',
+                  color:C.textDim, fontFamily:'"JetBrains Mono",monospace',
+                  textTransform:'uppercase',
+                }}>{kpi.label}</div>
+
+                {/* Value */}
+                <div style={{
+                  fontSize:28, fontWeight:700, color:kpi.color,
+                  fontFamily:'"JetBrains Mono",monospace',
+                  letterSpacing:'-0.5px', lineHeight:1.1,
+                  fontVariantNumeric:'tabular-nums',
+                }}>{kpi.value}</div>
+
+                {/* Sub-detail */}
+                <div style={{
+                  fontSize:12, color:C.textSec,
+                  fontFamily:'"JetBrains Mono",monospace',
+                }}>{kpi.sub}</div>
+
+                {/* Mini progress bar */}
+                <div style={{
+                  height:4, background:'var(--bg-secondary)',
+                  borderRadius:2, marginTop:'auto', overflow:'hidden',
+                }}>
+                  <div style={{
+                    height:'100%', width:`${kpi.pct}%`,
+                    background:kpi.color, opacity:0.6,
+                    borderRadius:1,
+                    transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
+                  }} />
+                </div>
               </div>
-            } />
-            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            );
+          })}
+        </section>
+
+        {/* ════════════════════════════════════════════════════════════════
+             ROW 2 — TWO COLUMNS (60/40)
+             ════════════════════════════════════════════════════════════════ */}
+        <section className="row-2" style={{
+          display:'grid', gridTemplateColumns:'3fr 2fr', gap:20, marginBottom:24,
+        }}>
+          {/* ── Pipeline Diagram (60%) ── */}
+          <div style={{
+            background:'var(--bg-card)',
+            border:`1px solid ${C.border}`,
+            borderRadius:12,
+            padding:24,
+          }}>
+            <SectionLabel
+              label="Detection Pipeline"
+              right={
+                <span style={{ fontSize:10, color:C.textSec, fontFamily:'"JetBrains Mono",monospace', fontVariantNumeric:'tabular-nums' }}>
+                  UPTIME {fmtUptime(data.uptime)}
+                </span>
+              }
+            />
+
+            {/* 4-step pipeline with arrows */}
+            <div style={{
+              display:'flex', alignItems:'stretch', gap:0,
+            }}>
+              {[
+                { label:'INGEST', sub:'PCAP / NetFlow / sFlow', icon:Cpu, color:C.accent },
+                { label:'FEATURES', sub:'JA3 / DNS / Flow metadata', icon:Radar, color:C.purple },
+                { label:'INFERENCE', sub:'Ensemble classifier', icon:Crosshair, color:C.green },
+                { label:'OUTPUT', sub:'WebSocket + REST alerts', icon:Zap, color:C.amber },
+              ].map((step, i, arr) => {
+                const Icon = step.icon;
+                return (
+                  <div key={i} style={{
+                    flex:1, display:'flex', flexDirection:'column', alignItems:'center',
+                    gap:8, padding:'16px 12px',
+                    borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
+                    position:'relative',
+                  }}>
+                    {/* Icon */}
+                    <div style={{
+                      width:32, height:32, borderRadius:8,
+                      background:`${step.color}10`,
+                      border:`1px solid ${step.color}18`,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                    }}>
+                      <Icon size={16} color={step.color} strokeWidth={1.8} />
+                    </div>
+
+                    {/* Step label */}
+                    <div style={{
+                      fontSize:11, fontWeight:700, letterSpacing:'1px',
+                      color:step.color, fontFamily:'"JetBrains Mono",monospace',
+                    }}>{step.label}</div>
+
+                    {/* Sub-text */}
+                    <div style={{
+                      fontSize:10, color:C.textSec, textAlign:'center',
+                      lineHeight:1.5,
+                    }}>{step.sub}</div>
+
+                    {/* Arrow between steps */}
+                    {i < arr.length - 1 && (
+                      <div style={{
+                        position:'absolute', right:-10, top:'50%', transform:'translateY(-50%)',
+                        zIndex:2,
+                      }}>
+                        <ArrowRight size={14} color={C.textDim} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Enclave Constraints (40%) ── */}
+          <div style={{
+            background:'var(--bg-card)',
+            border:`1px solid ${C.border}`,
+            borderRadius:12,
+            padding:24,
+          }}>
+            <div style={{
+              display:'flex', alignItems:'center', justifyContent:'space-between',
+              marginBottom:16,
+            }}>
+              <SectionLabel label="Enclave Constraints" />
+              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                <ShieldCheck size={13} color={C.green} />
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.5px', color:C.green, fontFamily:'"JetBrains Mono",monospace' }}>COMPLIANT</span>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
               {[
                 ['Ingest', 'READ-ONLY — no return path'],
                 ['TLS analysis', 'JA3/JA4 metadata only'],
@@ -428,76 +457,102 @@ const Dashboard: React.FC = () => {
               ].map(([k, v]) => (
                 <div key={k} style={{
                   display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'6px 10px', border:`1px solid ${C.border}`, borderRadius:4,
+                  padding:'10px 12px',
+                  borderBottom: k !== 'Alert schema' ? `1px solid ${C.border}` : 'none',
                 }}>
-                  <span style={{ fontSize:10, color:C.textSec, fontWeight:600, letterSpacing:'0.3px' }}>{k}</span>
-                  <span style={{ fontSize:10, color:C.text }}>{v}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <Dot color={C.green} size={4} />
+                    <span style={{ fontSize:13, color:C.textSec, fontWeight:500 }}>{k}</span>
+                  </div>
+                  <span style={{ fontSize:12, color:C.text }}>{v}</span>
                 </div>
               ))}
             </div>
-          </Panel>
+          </div>
         </section>
 
         {/* ════════════════════════════════════════════════════════════════
-             SECTION 2 — KPIs
-             Horizontal strip. Not same-size cards (craft-floor ban).
-             Labels contextualize the numbers.
-           ════════════════════════════════════════════════════════════════ */}
-        <Panel delay={0.15} style={{ marginBottom:20 }}>
-          <div className="wt-kpi-grid" style={{
-            display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:0,
+             ROW 3 — FULL WIDTH
+             ════════════════════════════════════════════════════════════════ */}
+        <section className="row-3" style={{
+          display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24,
+        }}>
+          {/* ── Threat Classification Bar ── */}
+          <div style={{
+            background:'var(--bg-card)',
+            border:`1px solid ${C.border}`,
+            borderRadius:12,
+            padding:24,
           }}>
-            {[
-              { label:'Flows Processed',  value:fmt(flowsProc),   sub:'total packets',  color:C.accent },
-              { label:'Threats Blocked',  value:fmt(blocked),     sub:'countermeasures', color:C.red },
-              { label:'Active Sessions',  value:fmt(activeSess),  sub:'concurrent',    color:C.purple },
-              { label:'Detection Rate',   value:`${data.detectionRate.toFixed(1)}%`, sub:'confidence', color:C.green },
-              { label:'False Positive',   value:`${data.falsePositiveRate.toFixed(1)}%`, sub:'noise filter', color:C.amber },
-            ].map((m, i) => (
-              <div key={i} className="wt-interactive" style={{
-                padding:'16px 20px',
-                borderRight: i < 4 ? `1px solid ${C.border}` : 'none',
-                cursor:'default',
-                transition: `background 0.2s ${EASE}`,
-              }}
-                onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}04`; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                <div style={{ fontSize:9, fontWeight:700, letterSpacing:'1.2px', color:C.textSec, marginBottom:6 }}>
-                  {m.label}
+            <SectionLabel
+              label="Threat Classification"
+              right={
+                <span style={{ fontSize:10, color:C.textSec, fontFamily:'"JetBrains Mono",monospace' }}>
+                  {Object.values(threatCounts).reduce((a,b)=>a+b,0)} DETECTED
+                </span>
+              }
+            />
+
+            {/* Horizontal stacked bar */}
+            <div style={{
+              height:24, borderRadius:6, overflow:'hidden',
+              display:'flex', marginBottom:16,
+              border:`1px solid ${C.border}`,
+            }}>
+              {topThreats.length > 0 ? topThreats.map((t, i) => {
+                const total = topThreats.reduce((a, b) => a + b.value, 0) || 1;
+                const pct = (t.value / total) * 100;
+                return (
+                  <div key={i} title={`${t.label}: ${t.value}`} style={{
+                    width:`${pct}%`, background: Object.entries(THREAT_CLR).find(([k]) =>
+                      THREAT_LBL[k] === t.label
+                    )?.[1] || C.accent,
+                    opacity:0.8, transition:'width 0.8s cubic-bezier(0.22,1,0.36,1)',
+                    minWidth: topThreats.length > 5 ? 4 : 0,
+                  }} />
+                );
+              }) : (
+                <div style={{ flex:1, background:'var(--bg-secondary)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:C.textDim }}>
+                  Awaiting stream
                 </div>
-                <div style={{
-                  fontSize:28, fontWeight:800, color:m.color,
-                  fontFamily:'"JetBrains Mono",monospace', letterSpacing:'-0.5px', lineHeight:1.1,
-                  fontVariantNumeric:'tabular-nums',
-                }}>{m.value}</div>
-                <div style={{ fontSize:9, color:C.textDim, marginTop:5 }}>{m.sub}</div>
-              </div>
-            ))}
+              )}
+            </div>
+
+            {/* Legend */}
+            <div style={{
+              display:'flex', flexWrap:'wrap', gap:'8px 16px',
+            }}>
+              {topThreats.length > 0 ? topThreats.map((t, i) => {
+                const color = Object.entries(THREAT_CLR).find(([k]) =>
+                  THREAT_LBL[k] === t.label
+                )?.[1] || C.accent;
+                const total = topThreats.reduce((a, b) => a + b.value, 0) || 1;
+                const pct = ((t.value / total) * 100).toFixed(0);
+                return (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
+                    <div style={{ width:8, height:8, borderRadius:2, background:color }} />
+                    <span style={{ fontSize:11, color:C.textSec }}>{t.label}</span>
+                    <span style={{ fontSize:10, color:C.textDim, fontFamily:'"JetBrains Mono",monospace' }}>{pct}%</span>
+                  </div>
+                );
+              }) : (
+                <span style={{ fontSize:11, color:C.textDim }}>No threats detected</span>
+              )}
+            </div>
           </div>
-        </Panel>
 
-        {/* ════════════════════════════════════════════════════════════════
-             SECTION 3 — Threat Classification + Data Flow
-             Asymmetric: classification wider than flow diagram
-           ════════════════════════════════════════════════════════════════ */}
-        <section style={{ display:'grid', gridTemplateColumns:'5fr 4fr', gap:16, marginBottom:20 }} className="wt-grid-aside">
-          {/* Threat breakdown */}
-          <Panel delay={0.2}>
-            <SH label="Threat Classification" right={
-              <span style={{ fontSize:9, color:C.textSec }}>
-                {Object.values(threatCounts).reduce((a,b)=>a+b,0)} DETECTED
-              </span>
-            } />
-            <HBar data={topThreats.length > 0 ? topThreats : [{label:'Awaiting stream', value:0}]} />
-          </Panel>
+          {/* ── Data Flow Diagram ── */}
+          <div style={{
+            background:'var(--bg-card)',
+            border:`1px solid ${C.border}`,
+            borderRadius:12,
+            padding:24,
+          }}>
+            <SectionLabel label="Data Flow" />
 
-          {/* Data flow + severity */}
-          <Panel delay={0.25}>
-            <SH label="Data Flow" />
             <div style={{
               display:'flex', alignItems:'center', gap:4, flexWrap:'wrap',
-              justifyContent:'space-between', padding:'6px 0',
+              justifyContent:'space-between', padding:'8px 0',
             }}>
               {[
                 { label:'Production', sub:'Encrypted traffic', c:C.textSec },
@@ -506,25 +561,24 @@ const Dashboard: React.FC = () => {
                 { label:'AI Engine', sub:'Detect / Classify', c:C.green },
                 { label:'Alerts', sub:'Intelligence', c:C.amber },
               ].map((n, i, arr) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:4, flex:'1 1 0', minWidth:60 }}>
+                <div key={i} style={{ display:'flex', alignItems:'center', gap:4, flex:'1 1 0', minWidth:50 }}>
                   <div style={{
-                    flex:1, padding:'8px 6px', borderRadius:4, textAlign:'center',
-                    border:`1px solid ${n.c}20`, background:`${n.c}06`,
-                    transition: `border-color 0.2s ${EASE}`,
-                  }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${n.c}50`; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = `${n.c}20`; }}
-                  >
-                    <div style={{ fontSize:9, fontWeight:700, color:n.c, letterSpacing:'0.5px' }}>{n.label}</div>
-                    <div style={{ fontSize:8, color:C.textSec, marginTop:2 }}>{n.sub}</div>
+                    flex:1, padding:'10px 6px', borderRadius:6, textAlign:'center',
+                    border:`1px solid ${n.c}18`, background:`${n.c}04`,
+                  }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:n.c, letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace' }}>{n.label}</div>
+                    <div style={{ fontSize:9, color:C.textSec, marginTop:2 }}>{n.sub}</div>
                   </div>
-                  {i < arr.length - 1 && <ArrowUpRight size={10} color={C.textDim} style={{flexShrink:0}} />}
+                  {i < arr.length - 1 && <ArrowRight size={12} color={C.textDim} style={{flexShrink:0, opacity:0.5}} />}
                 </div>
               ))}
             </div>
 
-            {/* Severity grid */}
-            <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:14, marginTop:16, display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+            {/* Severity breakdown */}
+            <div style={{
+              borderTop:`1px solid ${C.border}`, paddingTop:16, marginTop:16,
+              display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12,
+            }}>
               {[
                 { label:'Critical', val:sev.critical, color:C.red },
                 { label:'High', val:sev.high, color:C.orange },
@@ -532,47 +586,47 @@ const Dashboard: React.FC = () => {
                 { label:'Low', val:sev.low, color:'var(--accent-cyan)' },
               ].map(s => (
                 <div key={s.label} style={{
-                  textAlign:'center', padding:'10px 6px',
-                  border:`1px solid ${C.border}`, borderRadius:4,
-                  transition: `border-color 0.2s ${EASE}`,
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = `${s.color}40`; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
-                >
-                  <div style={{ fontSize:22, fontWeight:800, color:s.color, fontVariantNumeric:'tabular-nums' }}>{s.val}</div>
-                  <div style={{ fontSize:8, color:C.textSec, letterSpacing:'1px', marginTop:2 }}>{s.label.toUpperCase()}</div>
+                  textAlign:'center', padding:'12px 8px',
+                  border:`1px solid ${C.border}`, borderRadius:8,
+                }}>
+                  <div style={{ fontSize:22, fontWeight:700, color:s.color, fontFamily:'"JetBrains Mono",monospace', fontVariantNumeric:'tabular-nums' }}>{s.val}</div>
+                  <div style={{ fontSize:9, color:C.textSec, letterSpacing:'1px', marginTop:4, textTransform:'uppercase', fontWeight:600 }}>{s.label}</div>
                 </div>
               ))}
             </div>
-          </Panel>
+          </div>
         </section>
 
         {/* ════════════════════════════════════════════════════════════════
-             SECTION 4 — Live Threat Feed
-             The core data surface. Scan it, find what matters.
-           ════════════════════════════════════════════════════════════════ */}
-        <Panel delay={0.3} style={{ marginBottom:20 }}>
-          <SH label="Live Threat Feed" right={
+             LIVE THREAT FEED
+             ════════════════════════════════════════════════════════════════ */}
+        <section style={{
+          background:'var(--bg-card)',
+          border:`1px solid ${C.border}`,
+          borderRadius:12,
+          padding:24,
+          marginBottom:24,
+        }}>
+          <div style={{
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            marginBottom:16,
+          }}>
+            <SectionLabel label="Live Threat Feed" />
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{
-                display:'flex', alignItems:'center', gap:4,
-                fontSize:9, fontWeight:700, letterSpacing:'1px', color:C.red,
-              }}>
+              <span style={{ display:'flex', alignItems:'center', gap:4, fontSize:9, fontWeight:700, letterSpacing:'1px', color:C.red }}>
                 <span style={{
                   width:5, height:5, borderRadius:'50%', background:C.red,
                   animation:'wt-pulse 1.6s ease-in-out infinite',
-                  boxShadow:`0 0 5px ${C.red}60`,
                 }} />
                 STREAMING
               </span>
-              <span style={{ fontSize:9, color:C.textSec }}>{recent.length} EVENTS</span>
+              <span style={{ fontSize:9, color:C.textSec, fontFamily:'"JetBrains Mono",monospace' }}>{recent.length} EVENTS</span>
             </div>
-          } />
+          </div>
 
-          {/* Empty state — honest (impeccable: never static-only success) */}
           {recent.length === 0 ? (
             <div style={{
-              padding:'72px 20px', textAlign:'center', color:C.textDim,
+              padding:'64px 20px', textAlign:'center', color:C.textDim,
               display:'flex', flexDirection:'column', alignItems:'center', gap:12,
             }}>
               <div style={{
@@ -585,7 +639,7 @@ const Dashboard: React.FC = () => {
                 <div style={{ fontSize:11, color:C.textSec, letterSpacing:'1px', marginBottom:4 }}>
                   {data.isLive ? 'CONNECTING TO STREAM…' : 'SIMULATION ACTIVE'}
                 </div>
-                <div style={{ fontSize:9, color:C.textDim }}>
+                <div style={{ fontSize:10, color:C.textDim }}>
                   {data.isLive
                     ? 'Establishing WebSocket connection to ingest pipeline'
                     : 'Use the Attack Panel to inject threat traffic and trigger detection'}
@@ -596,11 +650,11 @@ const Dashboard: React.FC = () => {
             <div style={{ overflowX:'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom:`1px solid ${C.border}`, background:'rgba(0,212,255,0.015)' }}>
+                  <tr style={{ borderBottom:`1px solid ${C.border}` }}>
                     {['Sev', 'Time', 'Threat Type', 'Source', 'Destination', 'Confidence', 'Evidence'].map(h => (
                       <th key={h} style={{
-                        padding:'9px 14px', textAlign:'left', fontSize:9, fontWeight:700,
-                        letterSpacing:'1.2px', color:C.textSec,
+                        padding:'8px 14px', textAlign:'left', fontSize:9, fontWeight:700,
+                        letterSpacing:'1.2px', color:C.textDim,
                         fontFamily:'"JetBrains Mono",monospace',
                         textTransform:'uppercase', whiteSpace:'nowrap',
                       }}>{h}</th>
@@ -615,41 +669,41 @@ const Dashboard: React.FC = () => {
                     return (
                       <tr key={alert.id ?? idx} style={{
                         borderBottom:`1px solid ${C.border}`,
-                        background: fresh ? 'rgba(239,68,68,0.025)' : 'transparent',
-                        animation: `wt-row-in 0.35s ${EASE} ${idx * 0.02}s both`,
-                        transition: `background 0.15s ${EASE}`,
+                        background: fresh ? `${C.red}04` : 'transparent',
+                        animation: `wt-row-in 0.3s ${EASE} ${idx * 0.02}s both`,
+                        transition:'background 0.15s',
                       }}
                         onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}04`; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = fresh ? 'rgba(239,68,68,0.025)' : 'transparent'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = fresh ? `${C.red}04` : 'transparent'; }}
                       >
-                        <td style={{ padding:'9px 14px' }}><Sev sev={alert.severity} /></td>
+                        <td style={{ padding:'10px 14px' }}><Sev sev={alert.severity} /></td>
                         <td style={{
-                          padding:'9px 14px', fontSize:11, color:C.textSec,
+                          padding:'10px 14px', fontSize:11, color:C.textSec,
                           fontFamily:'"JetBrains Mono",monospace', whiteSpace:'nowrap',
                           fontVariantNumeric:'tabular-nums',
                         }}>{fmtTime(alert.timestamp)}</td>
                         <td style={{
-                          padding:'9px 14px', fontSize:11, fontWeight:700,
+                          padding:'10px 14px', fontSize:11, fontWeight:600,
                           fontFamily:'"JetBrains Mono",monospace',
                           letterSpacing:'0.4px', textTransform:'uppercase', color:tClr,
                         }}>{lbl}</td>
                         <td style={{
-                          padding:'9px 14px', fontSize:11,
-                          fontFamily:'"JetBrains Mono",monospace', color:C.accent,
+                          padding:'10px 14px', fontSize:11,
+                          fontFamily:'"JetBrains Mono",monospace', color:C.text,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums',
                         }}>{alert.src_ip ?? '—'}</td>
                         <td style={{
-                          padding:'9px 14px', fontSize:11,
+                          padding:'10px 14px', fontSize:11,
                           fontFamily:'"JetBrains Mono",monospace', color:C.textSec,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums',
                         }}>{alert.dst_ip ?? '—'}</td>
                         <td style={{
-                          padding:'9px 14px', fontSize:11, fontWeight:700,
+                          padding:'10px 14px', fontSize:11, fontWeight:700,
                           fontFamily:'"JetBrains Mono",monospace', color:C.green,
                           fontVariantNumeric:'tabular-nums',
                         }}>{(alert.confidence * 100).toFixed(0)}%</td>
                         <td style={{
-                          padding:'9px 14px', fontSize:10, color:C.textSec,
+                          padding:'10px 14px', fontSize:10, color:C.textSec,
                           fontFamily:'"JetBrains Mono",monospace',
                           maxWidth:340, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
                         }}>
@@ -662,17 +716,24 @@ const Dashboard: React.FC = () => {
               </table>
             </div>
           )}
-        </Panel>
+        </section>
 
         {/* ════════════════════════════════════════════════════════════════
-             SECTION 5 — Feature Extraction + Performance
-             Asymmetric: features wider
-           ════════════════════════════════════════════════════════════════ */}
-        <section style={{ display:'grid', gridTemplateColumns:'5fr 4fr', gap:16, marginBottom:20 }} className="wt-grid-aside">
-          {/* Feature extraction */}
-          <Panel delay={0.35}>
-            <SH label="Feature Extraction" />
-            <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+             ROW 4 — FEATURE EXTRACTION + PERFORMANCE
+             ════════════════════════════════════════════════════════════════ */}
+        <section style={{
+          display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24,
+        }}>
+          {/* Feature Extraction */}
+          <div style={{
+            background:'var(--bg-card)',
+            border:`1px solid ${C.border}`,
+            borderRadius:12,
+            padding:24,
+          }}>
+            <SectionLabel label="Feature Extraction" />
+
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {[
                 { label:'DNS query entropy',  sub:'Shannon entropy + n-gram',     cat:'DGA / Tunneling' },
                 { label:'TLS fingerprint',    sub:'JA3 / JA4 hash matching',       cat:'TLS Anomaly' },
@@ -683,66 +744,81 @@ const Dashboard: React.FC = () => {
               ].map(f => (
                 <div key={f.label} style={{
                   display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'8px 12px', border:`1px solid ${C.border}`, borderRadius:4,
-                  transition: `border-color 0.2s ${EASE}`,
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.borderHi; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
-                >
+                  padding:'10px 12px',
+                  borderBottom: f.label !== 'Fan-out analysis' ? `1px solid ${C.border}` : 'none',
+                }}>
                   <div>
-                    <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.3px', color:C.text }}>{f.label}</div>
-                    <div style={{ fontSize:9, color:C.textSec, marginTop:1 }}>{f.sub}</div>
+                    <div style={{ fontSize:13, fontWeight:500, letterSpacing:'0.2px', color:C.text }}>{f.label}</div>
+                    <div style={{ fontSize:10, color:C.textSec, marginTop:2 }}>{f.sub}</div>
                   </div>
                   <span style={{
                     fontSize:9, fontWeight:700, color:C.accent,
-                    border:`1px solid ${C.accent}25`, padding:'2px 7px', borderRadius:3,
+                    border:`1px solid ${C.accent}25`, padding:'3px 8px', borderRadius:4,
                     fontFamily:'"JetBrains Mono",monospace', letterSpacing:'0.5px',
                     whiteSpace:'nowrap',
                   }}>{f.cat}</span>
                 </div>
               ))}
             </div>
-          </Panel>
+          </div>
 
           {/* Performance */}
-          <Panel delay={0.4}>
-            <SH label="Performance" right={
-              <span style={{ fontSize:9, color:C.textSec }}>TARGET 10K FLOWS/SEC</span>
-            } />
-            <div style={{ display:'flex', flexDirection:'column', gap:14, paddingTop:2 }}>
+          <div style={{
+            background:'var(--bg-card)',
+            border:`1px solid ${C.border}`,
+            borderRadius:12,
+            padding:24,
+          }}>
+            <SectionLabel
+              label="Performance"
+              right={
+                <span style={{ fontSize:10, color:C.textSec, fontFamily:'"JetBrains Mono",monospace' }}>TARGET 10K FLOWS/SEC</span>
+              }
+            />
+
+            <div style={{ display:'flex', flexDirection:'column', gap:16, paddingTop:4 }}>
               {[
-                { label:'Current throughput', value:`${data.flowsPerSec} flows/s`, pct: Math.min(data.flowsPerSec, 100) },
-                { label:'Avg confidence',     value:`${data.detectionRate.toFixed(1)}%`, pct: data.detectionRate },
-                { label:'Processing latency', value:'12ms p99', pct: 12 },
-                { label:'Memory footprint',   value:'847 MB', pct: 35 },
+                { label:'Current throughput', value:`${data.flowsPerSec} flows/s`, pct: Math.min(data.flowsPerSec, 100), color:C.accent },
+                { label:'Avg confidence',     value:`${data.detectionRate.toFixed(1)}%`, pct: data.detectionRate, color:C.green },
+                { label:'Processing latency', value:'12ms p99', pct: 12, color:C.purple },
+                { label:'Memory footprint',   value:'847 MB', pct: 35, color:C.amber },
               ].map(m => (
                 <div key={m.label}>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
-                    <span style={{ fontSize:10, color:C.textSec, letterSpacing:'0.3px' }}>{m.label}</span>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                    <span style={{ fontSize:12, color:C.textSec }}>{m.label}</span>
                     <span style={{
-                      fontSize:10, fontWeight:700, color:C.text,
+                      fontSize:12, fontWeight:600, color:C.text,
+                      fontFamily:'"JetBrains Mono",monospace',
                       fontVariantNumeric:'tabular-nums',
                     }}>{m.value}</span>
                   </div>
-                  <Progress value={m.pct} />
+                  <div style={{
+                    height:4, background:'var(--bg-secondary)',
+                    borderRadius:2, overflow:'hidden',
+                  }}>
+                    <div style={{
+                      height:'100%', width:`${Math.min(m.pct, 100)}%`,
+                      background:m.color, opacity:0.6,
+                      borderRadius:1,
+                      transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
+                    }} />
+                  </div>
                 </div>
               ))}
             </div>
-          </Panel>
+          </div>
         </section>
 
-        {/* ════════════════════════════════════════════════════════════════
-             FOOTER
-             ════════════════════════════════════════════════════════════════ */}
+        {/* ── FOOTER ───────────────────────────────────────────────────── */}
         <footer style={{
-          padding:'24px 0', borderTop:`1px solid ${C.border}`,
+          padding:'20px 0', borderTop:`1px solid ${C.border}`,
           display:'flex', justifyContent:'space-between', alignItems:'center',
           flexWrap:'wrap', gap:8,
         }}>
-          <span style={{ fontSize:9, color:C.textDim, letterSpacing:'1px' }}>
+          <span style={{ fontSize:10, color:C.textDim, letterSpacing:'1px', fontFamily:'"JetBrains Mono",monospace' }}>
             WATCHTOWER v3.2.1 · EKADHARA · NTRO SIH26
           </span>
-          <span style={{ fontSize:9, color:C.textDim, letterSpacing:'0.5px', fontVariantNumeric:'tabular-nums' }}>
+          <span style={{ fontSize:10, color:C.textDim, letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace', fontVariantNumeric:'tabular-nums' }}>
             {data.isLive ? 'REAL-TIME STREAM' : 'SIMULATION'} · {data.alerts.length} ALERTS · {fmtUptime(data.uptime)} UPTIME
           </span>
         </footer>
