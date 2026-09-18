@@ -168,6 +168,11 @@ class TrafficSimulator:
         self._start_time: float = 0.0
         self._flows_generated = 0
 
+        # Throughput tracking
+        self._throughput_lock = threading.Lock()
+        self._second_counts: dict[int, int] = {}   # unix_second → count
+        self._current_fps: float = 0.0
+
         # State for attack generation
         self._beacon_target: str | None = None
         self._beacon_interval: float = 0.0
@@ -212,21 +217,55 @@ class TrafficSimulator:
 
     def _generation_loop(self) -> None:
         """Main generation loop running in background thread."""
+        # Target 10,000 flows/sec
+        target_fps = 10_000
+        batch_size = 100  # flows per batch
+        interval = batch_size / target_fps  # seconds per batch
+
+        next_second = int(time.time()) + 1
+        second_count = 0
+
         while self.running:
             try:
-                flow = self.generate_flow()
-                self._flows_generated += 1
-                self._emit(flow)
+                batch_start = time.perf_counter()
 
-                # Adaptive sleep based on load
-                if random.random() < 0.3:
-                    # Burst of flows
-                    for _ in range(random.randint(1, 5)):
-                        flow = self._gen_benign_flow()
-                        self._emit(flow)
-                        self._flows_generated += 1
+                for _ in range(batch_size):
+                    flow = self.generate_flow()
+                    self._flows_generated += 1
+                    second_count += 1
+                    self._emit(flow)
 
-                time.sleep(random.uniform(0.001, 0.01))
+                    # Occasional extra burst
+                    if random.random() < 0.3:
+                        for _ in range(random.randint(1, 5)):
+                            flow = self._gen_benign_flow()
+                            self._flows_generated += 1
+                            second_count += 1
+                            self._emit(flow)
+
+                # Sleep to maintain target rate
+                elapsed = time.perf_counter() - batch_start
+                sleep_time = max(0.0, interval - elapsed)
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+
+                # Track per-second throughput
+                now = time.time()
+                if now >= next_second:
+                    with self._throughput_lock:
+                        sec_key = int(now)
+                        self._second_counts[sec_key] = second_count
+                        # Keep only last 5 seconds
+                        cutoff = sec_key - 5
+                        self._second_counts = {
+                            k: v for k, v in self._second_counts.items()
+                            if k > cutoff
+                        }
+                        counts = list(self._second_counts.values())
+                        self._current_fps = sum(counts) / len(counts) if counts else 0.0
+                    second_count = 0
+                    next_second = sec_key + 1
+
             except Exception as e:
                 logger.debug(f"Generation loop error: {e}")
                 time.sleep(0.1)
@@ -661,13 +700,17 @@ class TrafficSimulator:
         """Get simulator statistics.
 
         Returns:
-            Dictionary with uptime, flows_generated, and running status.
+            Dictionary with uptime, flows_generated, running status, and throughput.
         """
         uptime = time.time() - self._start_time if self._start_time else 0.0
+        with self._throughput_lock:
+            fps = self._current_fps
         return {
             "running": self.running,
             "uptime_sec": uptime,
             "flows_generated": self._flows_generated,
+            "flows_per_sec": round(fps, 2),
+            "target_flows_per_sec": 10_000,
             "attack_probability": self.attack_probability,
         }
 

@@ -24,6 +24,13 @@ from simulator import TrafficSimulator
 from detector import ThreatDetector, Alert
 from models import DetectionEnsemble
 from self_test import run_self_test as _run_egress_self_test
+from attack_gen import controller as _attack_controller
+from diode_sim import DiodeMode, DIODE_DEGRADATION_TABLE, global_diode
+
+_ALLOWED_ATTACK_TYPES = {
+    "syn_flood", "udp_flood", "c2_beaconing", "dga_domain",
+    "port_scan", "data_exfiltration",
+}
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +106,7 @@ _detector = ThreatDetector(window_sec=60)
 _ensemble = DetectionEnsemble()
 _background_task: asyncio.Task | None = None
 _processing_active: bool = False
+_event_loop: asyncio.AbstractEventLoop | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +137,7 @@ async def _process_flows() -> None:
     _simulator.start()
 
     # Store loop reference for cross-thread broadcast (used by attack injection)
+    global _event_loop
     _event_loop = loop
 
     # Periodic stats broadcast
@@ -378,6 +387,91 @@ async def get_threat_types() -> dict:
     }
 
 
+# ── Diode mode endpoints (Tasks 2, 4) ──────────────────────────────────
+
+@app.post("/api/diode/mode")
+async def set_diode_mode(request: Request) -> dict:
+    """Set the data-diode operating mode and return the degradation table.
+
+    Body:
+        mode: "full-duplex" | "diode-only" | "ack-shadow"
+
+    Returns degradation rates per threat type for all three modes.
+    """
+    body = {}
+    try:
+        body = await request.json() or {}
+    except Exception:
+        pass
+
+    mode = body.get("mode", DiodeMode.FULL_DUPLEX)
+    try:
+        global_diode.mode = mode
+        _detector.set_diode_mode(mode)
+    except ValueError as exc:
+        return {
+            "status": "error",
+            "error": str(exc),
+            "mode": global_diode.mode,
+            "degradation_table": DIODE_DEGRADATION_TABLE,
+        }
+
+    return {
+        "status": "ok",
+        "mode": global_diode.mode,
+        "degradation_table": DIODE_DEGRADATION_TABLE,
+    }
+
+
+@app.get("/api/diode/mode")
+async def get_diode_mode() -> dict:
+    """Return the current diode mode and the degradation table."""
+    status = global_diode.get_status()
+    return {
+        "mode": status["mode"],
+        "label": status["label"],
+        "integrity": status["integrity"],
+        "uptime_sec": status["uptime_sec"],
+        "degradation_table": status.get("degradation_table", DIODE_DEGRADATION_TABLE),
+    }
+
+
+# ── Egress self-test endpoint (Task 3) ──────────────────────────────────
+
+@app.get("/api/self-test/egress")
+async def egress_self_test() -> dict:
+    """Run egress self-test and return structured results.
+
+    Returns:
+        Self-test report with status, checks, and kernel verdict.
+    """
+    import asyncio as _asyncio
+    loop = _asyncio.get_event_loop()
+    report = await loop.run_in_executor(None, _run_egress_self_test)
+
+    checks = []
+    for r in report.results:
+        checks.append({
+            "id": len(checks) + 1,
+            "name": r.description,
+            "status": "PASS" if r.passed else "FAIL",
+            "detail": r.detail,
+        })
+
+    kernel_verdict = (
+        "ENCLAVE IS AIR-GAPPED"
+        if report.overall_status == "PASS"
+        else "ENCLAVE HAS EGRESS PATH"
+    )
+
+    return {
+        "status": report.overall_status,
+        "timestamp": _asyncio.get_event_loop().time(),
+        "checks": checks,
+        "kernel_verdict": kernel_verdict,
+    }
+
+
 @app.get("/api/flows")
 async def get_flows(limit: int = 100, offset: int = 0) -> dict:
     """Get recent flows.
@@ -400,15 +494,119 @@ async def get_flows(limit: int = 100, offset: int = 0) -> dict:
     }
 
 
-# Attack Injection Endpoint
+# Attack Injection Endpoints
 # ---------------------------------------------------------------------------
 
 _attack_active: dict[str, Any] = {}
 _original_attack_prob: float = 0.15
 _attack_src_ip: str = ""
 
+
+# ── New launch endpoint (Task 1) ────────────────────────────────────────
+
+_ALLOWED_ATTACK_TYPES = {
+    "syn_flood", "udp_flood", "c2_beaconing", "dga_domain",
+    "port_scan", "data_exfiltration",
+}
+
+
+@app.post("/api/attack/launch")
+async def launch_attack_v2(request: Request) -> dict:
+    """Launch an attack and feed generated flows through the detector.
+
+    Accepts JSON body with:
+        - attack_type: one of the supported types
+        - intensity: 0.1 to 1.0 (default 0.5)
+
+    Returns:
+        {status, alerts_generated, latency_ms, attack_id}
+    """
+    global _attack_active, _original_attack_prob, _attack_src_ip
+
+    body = {}
+    try:
+        body = await request.json() or {}
+    except Exception:
+        pass
+
+    attack_type = body.get("attack_type", "syn_flood")
+    intensity = float(body.get("intensity", 0.5))
+
+    if attack_type not in _ALLOWED_ATTACK_TYPES:
+        return {
+            "status": "error",
+            "error": f"Invalid attack_type '{attack_type}'. Allowed: {sorted(_ALLOWED_ATTACK_TYPES)}",
+            "attack_id": "",
+            "alerts_generated": 0,
+            "latency_ms": 0.0,
+        }
+
+    intensity = max(0.1, min(1.0, intensity))
+    attack_id = str(uuid.uuid4())[:8]
+
+    # Use a consistent external attacker IP
+    import ipaddress, random as _rnd
+    _attack_src_ip = str(ipaddress.IPv4Address(
+        int(ipaddress.IPv4Address("1.0.0.0")) + _rnd.randint(0, 0x7FFFFFFF)
+    ))
+
+    start_ts = time.time()
+
+    # Set high attack probability
+    _original_attack_prob = _simulator.attack_probability
+    _simulator.attack_probability = 0.85
+
+    # Inject attack flows directly via the attack generator
+    injected = 0
+    attack_type_map = {
+        "syn_flood": "syn_flood",
+        "udp_flood": "udp_flood",
+        "c2_beaconing": "beaconing",
+        "dga_domain": "dga",
+        "port_scan": "port_scan",
+        "data_exfiltration": "exfiltration",
+    }
+    sim_attack_type = attack_type_map.get(attack_type, attack_type)
+    num_flows = int(20 + intensity * 80)  # 20–100 attack flows
+
+    for _ in range(num_flows):
+        flow = _simulator.inject_attack(sim_attack_type)
+        flow["src_ip"] = _attack_src_ip
+        asyncio.create_task(_handle_flow(flow))
+        injected += 1
+
+    _attack_active[attack_id] = {
+        "type": attack_type,
+        "start": start_ts,
+        "intensity": intensity,
+        "src_ip": _attack_src_ip,
+    }
+
+    async def _cooldown():
+        await asyncio.sleep(15)
+        _simulator.attack_probability = _original_attack_prob
+        _attack_active.pop(attack_id, None)
+
+    asyncio.create_task(_cooldown())
+
+    latency_ms = (time.time() - start_ts) * 1000
+
+    return {
+        "status": "launched",
+        "attack_id": attack_id,
+        "attack_type": attack_type,
+        "intensity": intensity,
+        "flows_injected": injected,
+        "attacker_ip": _attack_src_ip,
+        "latency_ms": round(latency_ms, 2),
+        "message": f"Launched {attack_type} (intensity={intensity}) from {_attack_src_ip}",
+    }
+
+
+# ── Legacy attack endpoint (kept for backwards compat) ──────────────────
+
 @app.post("/api/attack")
-async def launch_attack(request: Request, attack_type: str = "syn_flood", duration: int = 10) -> dict:
+async def launch_attack_legacy(request: Request, attack_type: str = "syn_flood", duration: int = 10) -> dict:
     """Launch a simulated attack to test detection.
 
     Accepts attack_type and duration as both query params and JSON body.

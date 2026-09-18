@@ -418,16 +418,21 @@ class AttackController:
     def launch(self, attack_type: str, **kwargs) -> str:
         """Launch an attack in a background thread. Returns attack ID."""
         attack_map = {
-            "ddos": syn_flood,
+            "syn_flood": syn_flood,
+            "udp_flood": syn_flood,   # reuse with different params
             "port_scan": port_scan,
-            "beaconing": beaconing,
+            "c2_beaconing": beaconing,
+            "dga_domain": dns_flood,
+            "data_exfiltration": beaconing,
             "dns_tunnel": dns_flood,
+            "ddos": syn_flood,
+            "beaconing": beaconing,
             "http_flood": http_flood,
         }
 
         func = attack_map.get(attack_type)
         if not func:
-            raise ValueError(f"Unknown attack type: {attack_type}. Choose from: {list(attack_map.keys())}")
+            raise ValueError(f"Unknown attack type: {attack_type}. Choose from: {sorted(attack_map.keys())}")
 
         attack_id = f"{attack_type}_{int(time.time() * 1000)}"
         stop_event = threading.Event()

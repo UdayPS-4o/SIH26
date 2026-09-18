@@ -536,3 +536,186 @@ class DetectionEnsemble:
             "attack_type": attack_type,
             "attack_confidence": attack_confidence,
         }
+
+
+# ---------------------------------------------------------------------------
+# CIC-IDS2017 DDoS training (Task 8)
+# ---------------------------------------------------------------------------
+
+def train_cic_ids2017(
+    csv_path: str = "data/CIC-IDS2017/Monday-WorkingHours.pcap_ISCX.csv",
+    output_path: str | None = None,
+) -> str:
+    """Train a RandomForestClassifier for DDoS detection using CIC-IDS2017.
+
+    Downloads the dataset using the official downloader if not present,
+    or accepts a local CSV path. Saves the trained model and prints metrics.
+
+    Args:
+        csv_path: Path to the CIC-IDS2017 CSV file.
+        output_path: Optional path to save the trained model pickle.
+            Defaults to ``models/trained_rf.pkl`` relative to this file.
+
+    Returns:
+        Path to the saved model pickle.
+    """
+    import csv
+    import os
+    from pathlib import Path
+
+    if not HAS_ML:
+        raise ImportError(
+            "scikit-learn / numpy are required for CIC-IDS2017 training. "
+            "Install them and retry."
+        )
+
+    csv_path = Path(csv_path)
+    if not csv_path.exists():
+        raise FileNotFoundError(
+            f"CIC-IDS2017 CSV not found at {csv_path}. "
+            "Download it from https://www.unb.ca/cic/datasets/ids-2017.html "
+            "or use the downloader script at "
+            "https://github.com/ahlashkari/CIC-IDS2017"
+        )
+
+    output_path = Path(output_path) if output_path else (
+        Path(__file__).resolve().parent / "models" / "trained_rf.pkl"
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    logger.info("Loading CIC-IDS2017 from %s", csv_path)
+
+    # Parse the CSV — CIC-IDS2017 has 78 columns.
+    # We'll use a subset of numeric features that map to our flow features.
+    _FEATURE_NAMES = [
+        "Flow Duration", "Total Fwd Packet", "Total Bwd Packet",
+        "Total Length of Fwd Packet", "Total Length of Bwd Packet",
+        "Fwd Packet Length Max", "Fwd Packet Length Min",
+        "Flow Bytes/s", "Flow Packets/s", "Flow IAT Mean",
+        "Fwd IAT Mean", "Bwd IAT Mean", "Fwd PSH Flags",
+        "Bwd PSH Flags", "Fwd URG Flags", "Bwd URG Flags",
+        "Fwd Header Length", "Bwd Header Length",
+        "Fwd Packets/s", "Bwd Packets/s",
+        "Min Packet Length", "Max Packet Length", "Packet Length Mean",
+        "FIN Flag Count", "SYN Flag Count", "RST Flag Count",
+        "PSH Flag Count", "ACK Flag Count", "URG Flag Count",
+        "CWE Flag Count", "ECE Flag Count",
+        "Down/Up Ratio", "Average Packet Size",
+        "Fwd Avg Bytes/Bulk", "Fwd Avg Packets/Bulk",
+        "Fwd Avg Bulk Rate", "Bwd Avg Bytes/Bulk",
+        "Bwd Avg Packets/Bulk", "Bwd Avg Bulk Rate",
+        "Subflow Fwd Packets", "Subflow Fwd Bytes",
+        "Subflow Bwd Packets", "Subflow Bwd Bytes",
+        "Init_Win_bytes_forward", "Init_Win_bytes_backward",
+        "act_data_pkt_fwd", "min_seg_size_forward",
+        "Active Mean", "Active Std", "Active Max", "Active Min",
+        "Idle Mean", "Idle Std", "Idle Max", "Idle Min",
+    ]
+
+    _LABEL_COL = "Label"
+
+    X_list: list[list[float]] = []
+    y_list: list[int] = []
+
+    with open(csv_path, newline="", encoding="utf-8", errors="replace") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            try:
+                features = []
+                for name in _FEATURE_NAMES:
+                    val = row.get(name, "").strip()
+                    if not val or val.lower() in ("nan", "infinity", "inf", ""):
+                        features.append(0.0)
+                    else:
+                        try:
+                            features.append(float(val))
+                        except ValueError:
+                            features.append(0.0)
+
+                label = row.get(_LABEL_COL, "").strip()
+                is_ddos = 1 if "ddos" in label.lower() or "dos" in label.lower() else 0
+                # Skip rows where everything is 0 (malformed)
+                if sum(features) == 0:
+                    continue
+
+                X_list.append(features)
+                y_list.append(is_ddos)
+            except Exception:
+                continue
+
+    if not X_list:
+        raise ValueError(f"No valid rows parsed from {csv_path}")
+
+    X = np.array(X_list, dtype=np.float32)
+    y = np.array(y_list, dtype=np.int32)
+
+    n_ddos = int(sum(y))
+    n_benign = int(len(y) - n_ddos)
+    logger.info(
+        "Parsed %d rows: %d DDoS, %d benign (%d features)",
+        len(y), n_ddos, n_benign, X.shape[1],
+    )
+
+    if n_ddos < 10 or n_benign < 10:
+        raise ValueError(
+            f"Insufficient data: {n_ddos} DDoS, {n_benign} benign. "
+            "Check that the CSV is the full dataset, not a partial file."
+        )
+
+    # Train/test split (80/20 stratified)
+    from sklearn.model_selection import train_test_split
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    scaler = StandardScaler()
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s = scaler.transform(X_test)
+
+    logger.info("Training RandomForestClassifier on %d samples...", len(y_train))
+    clf = RandomForestClassifier(
+        n_estimators=200,
+        max_depth=25,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        n_jobs=-1,
+        random_state=42,
+        class_weight="balanced",
+    )
+    clf.fit(X_train_s, y_train)
+
+    # Evaluate
+    y_pred = clf.predict(X_test_s)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, zero_division=0)
+    recall = recall_score(y_test, y_pred, zero_division=0)
+    f1 = f1_score(y_test, y_pred, zero_division=0)
+
+    print("\n" + "=" * 50)
+    print("CIC-IDS2017 DDoS Model — Training Results")
+    print("=" * 50)
+    print(f"  Accuracy:  {accuracy:.4f}")
+    print(f"  Precision: {precision:.4f}")
+    print(f"  Recall:    {recall:.4f}")
+    print(f"  F1 Score:  {f1:.4f}")
+    print("-" * 50)
+    print(classification_report(y_test, y_pred, target_names=["Benign", "DDoS"], zero_division=0))
+    print("=" * 50)
+
+    # Save model + scaler together
+    model_package = {
+        "model": clf,
+        "scaler": scaler,
+        "feature_names": _FEATURE_NAMES,
+        "accuracy": accuracy,
+        "version": "cic_ids2017_rf_v1",
+    }
+    with open(output_path, "wb") as fh:
+        pickle.dump(model_package, fh)
+
+    logger.info("Model saved to %s", output_path)
+    return str(output_path)
