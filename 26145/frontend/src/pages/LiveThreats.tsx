@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ShieldAlert, Search, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldAlert, Search } from 'lucide-react';
 import { Alert } from '../types';
+import ValidityChip from '../components/ValidityChip';
 
 const C = {
   bg: 'var(--bg-primary)',
@@ -179,6 +181,7 @@ const Sparkline: React.FC<{ data: number[]; width?: number; height?: number }> =
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const LiveThreats: React.FC = () => {
+  const navigate = useNavigate();
   const [alerts, setAlerts] = useState<Alert[]>(() => {
     const initial: Alert[] = [];
     const t = Date.now();
@@ -189,7 +192,6 @@ const LiveThreats: React.FC = () => {
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
   const [throughput, setThroughput] = useState<number[]>(Array.from({ length: 30 }, () => rand(10, 120)));
 
   /* ── Clock ──────────────────────────────────────────────────────────────── */
@@ -303,6 +305,12 @@ const LiveThreats: React.FC = () => {
                 display:'inline-block',
               }} />
               <span style={{ fontSize: 9, fontWeight: 600, letterSpacing:'1.2px', color: C.red }}>STREAMING</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px',
+              border:`1px solid var(--border-color)`, borderRadius:4,
+            }}>
+              <span style={{ width:5, height:5, borderRadius:'50%', background:C.green, display:'inline-block' }} />
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'0.5px', color:C.green, fontFamily:'"JetBrains Mono",monospace' }}>DIODE FULL-DUPLEX</span>
             </div>
             <span style={{ fontSize: 11, color: C.textSec, letterSpacing:'0.5px', fontVariantNumeric:'tabular-nums' }}>
               {new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })} &middot; {clock}
@@ -471,7 +479,7 @@ const LiveThreats: React.FC = () => {
               <table style={{ width:'100%', borderCollapse:'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                    {['Time','Threat Class','Source IP','Dest IP','Port','Confidence','Severity'].map(h => (
+                    {['Time','Threat Class','Source IP','Dest IP','Port','Confidence','Severity','Validity'].map(h => (
                       <th key={h} style={{
                         padding:'10px 14px', textAlign:'left', fontSize: 10, fontWeight: 600,
                         letterSpacing:'0.8px', color: C.textSec,
@@ -487,6 +495,7 @@ const LiveThreats: React.FC = () => {
                     const tClr = THREAT_CLR[alert.threat_type.toLowerCase()] || C.accent;
                     const sevStyle = SEV_MAP[alert.severity] || SEV_MAP.low;
                     const rowBg = fresh ? `${C.red}06` : (idx % 2 === 0 ? 'transparent' : `${C.accent}02`);
+                    const validity = (alert.confidence > 0.85 ? 'MEASURED' : alert.confidence > 0.6 ? 'ESTIMATED' : 'MISSING') as 'MEASURED' | 'ESTIMATED' | 'MISSING';
                     return (
                       <tr key={alert.id} style={{
                         borderBottom: `1px solid ${C.border}30`,
@@ -497,7 +506,7 @@ const LiveThreats: React.FC = () => {
                       }}
                         onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}06`; }}
                         onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
-                        onClick={() => setSelectedAlert(alert)}
+                        onClick={() => navigate(`/evidence?alertId=${encodeURIComponent(alert.id)}`)}
                       >
                         <td style={{
                           padding:'10px 14px', fontSize: 12, color: C.textSec,
@@ -544,6 +553,10 @@ const LiveThreats: React.FC = () => {
                         <td style={{ padding:'10px 14px' }}>
                           <Sev sev={alert.severity} />
                         </td>
+
+                        <td style={{ padding:'10px 14px' }}>
+                          <ValidityChip validity={validity} />
+                        </td>
                       </tr>
                     );
                   })}
@@ -555,112 +568,13 @@ const LiveThreats: React.FC = () => {
 
         {/* ── Threat Class Distribution Bar ────────────────────────────────── */}
         <Panel delay={0.15} style={{ marginBottom: 20 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${C.border}` }}>
-            <span style={{
-              fontFamily:'"JetBrains Mono",monospace', fontSize: 11, fontWeight: 600,
-              letterSpacing: '2px', color: C.accent, textTransform: 'uppercase',
-            }}>Threat Class Distribution</span>
-            <span style={{ fontSize: 11, color: C.textSec }}>{Object.keys(typeCounts).length} classes active</span>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap: 8 }}>
-            {Object.entries(typeCounts)
-              .sort((a:[string,number], b:[string,number]) => b[1] - a[1])
-              .map(([type, count]) => {
-                const total = Object.values(typeCounts).reduce((s:number, c:number) => s + c, 0) || 1;
-                const pct = (count / total * 100);
-                const clr = THREAT_CLR[type.toLowerCase()] || C.accent;
-                return (
-                  <div key={type} style={{ display:'flex', alignItems:'center', gap: 12 }}>
-                    <span style={{
-                      width: 8, height: 8, borderRadius: 2, background: clr, flexShrink: 0,
-                    }} />
-                    <span style={{
-                      fontSize: 12, fontWeight: 500, color: C.text, minWidth: 110,
-                      textTransform:'capitalize',
-                    }}>{THREAT_LBL[type] || type}</span>
-                    <div style={{
-                      flex:1, height: 8, background: C.border, borderRadius: 4, overflow:'hidden',
-                    }}>
-                      <div style={{
-                        height:'100%', width:`${pct}%`, background: clr, borderRadius: 4,
-                        transition: `width 0.5s ${EASE}`, opacity: 0.85,
-                      }} />
-                    </div>
-                    <span style={{
-                      fontSize: 12, fontWeight: 600, color: C.textSec, fontVariantNumeric:'tabular-nums',
-                      minWidth: 36, textAlign:'right',
-                    }}>{count}</span>
-                  </div>
-                );
-              })}
-          </div>
-        </Panel>
-
-        {/* ── Alert Detail Modal ─────────────────────────────────────────────── */}
-        {selectedAlert && (
-          <div style={{
-            position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000,
-            display:'flex', alignItems:'center', justifyContent:'center',
-          }} onClick={() => setSelectedAlert(null)}>
-            <div style={{
-              background: C.surface, border: `1px solid ${C.border}`,
-              borderRadius: 10, padding: 24, maxWidth: 560, width:'90%', maxHeight:'80vh', overflow:'auto',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-            }} onClick={e => e.stopPropagation()}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 16 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing:'1px', color: C.accent, fontFamily:'"JetBrains Mono",monospace' }}>
-                  Alert Detail &middot; {selectedAlert.id}
-                </span>
-                <button onClick={() => setSelectedAlert(null)} style={{ background:'none', border:'none', color: C.textSec, cursor:'pointer', padding: 4, borderRadius: 4, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <X size={16} />
-                </button>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap: 12 }}>
-                {[
-                  { label:'Threat Type', val: selectedAlert.threat_type, mono:true },
-                  { label:'Severity', val: <Sev sev={selectedAlert.severity} /> },
-                  { label:'Source IP', val: selectedAlert.src_ip, mono:true },
-                  { label:'Dest IP', val: selectedAlert.dst_ip, mono:true },
-                  { label:'Dest Port', val: String(selectedAlert.dst_port ?? '—'), mono:true },
-                  { label:'Src Port', val: String((selectedAlert.evidence as any)?.src_port ?? '—'), mono:true },
-                  { label:'Protocol', val: String((selectedAlert.evidence as any)?.proto ?? (selectedAlert as any).protocol ?? '—'), mono:true },
-                  { label:'Confidence', val: `${selectedAlert.confidence.toFixed(1)}%`, mono:true },
-                  { label:'Flow Count', val: String(selectedAlert.flow_count), mono:true },
-                  { label:'Timestamp', val: new Date(selectedAlert.timestamp).toLocaleString(), mono:true },
-                ].map(({label, val, mono}) => (
-                  <div key={label} style={{ display:'flex', flexDirection:'column', gap: 3 }}>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: C.textSec, textTransform:'uppercase', letterSpacing:'0.5px' }}>{label}</span>
-                    <span style={{
-                      fontSize: 13, color: C.text, fontFamily: mono ? '"JetBrains Mono",monospace' : 'inherit', fontWeight: mono ? 500 : 400,
-                    }}>{val}</span>
-                  </div>
-                ))}
-                <div style={{ gridColumn:'1 / -1', marginTop: 4 }}>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: C.textSec, display:'block', marginBottom: 4, textTransform:'uppercase', letterSpacing:'0.5px' }}>Evidence</span>
-                  <pre style={{
-                    background: C.bg, border: `1px solid ${C.border}`,
-                    borderRadius: 6, padding:'12px 14px', fontSize: 11, color: C.textSec,
-                    fontFamily:'"JetBrains Mono",monospace', overflow:'auto', maxHeight:120,
-                    margin:0, whiteSpace:'pre-wrap', wordBreak:'break-all', lineHeight: 1.6,
-                  }}>{typeof selectedAlert.evidence === 'string' ? selectedAlert.evidence : JSON.stringify(selectedAlert.evidence, null, 2)}</pre>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Footer ─────────────────────────────────────────────────────────── */}
-        <footer style={{
-          padding:'20px 0', borderTop: `1px solid ${C.border}`,
-          display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap: 8, marginTop: 8,
-        }}>
           <span style={{ fontSize: 11, color: C.textDim }}>
             WATCHTOWER v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
           </span>
           <span style={{ fontSize: 11, color: C.textDim, fontVariantNumeric:'tabular-nums' }}>
             Auto-refresh 2s &middot; {filteredAlerts.length} filtered &middot; {alerts.length} total
           </span>
-        </footer>
+        </Panel>
 
       </main>
     </div>
