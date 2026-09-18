@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 # Ensure backend package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 project_root = Path(__file__).resolve().parent.parent
+_frontend_dist = project_root / "frontend" / "dist"
 
 from simulator import TrafficSimulator
 from detector import ThreatDetector, Alert
