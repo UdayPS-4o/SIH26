@@ -1,29 +1,29 @@
 # Match (`/match`)
 
-## What It Does
-Similarity matching results table. Columns: match ID, material A, material B, match type (Exact/Partial/Similar), score, algorithm, status, date. Similarity breakdown (structural, semantic, behavioral scores). Algorithm performance metrics (precision, recall, F1).
+## What Does It Do
+A threat-matching and correlation page that compares a selected threat against a knowledge base of known signatures, IoCs, and attack patterns to identify related threats and campaigns.
 
 ## Data Flow
-- `generateMockMatches(count)` in `MatchPage.tsx` creates entries with random data
-- Algorithm metrics: hardcoded arrays of `{name, precision, recall, f1}`
-- No backend API calls
+- **HTTP API** — `GET /api/match/threats` returns the knowledge base. `POST /api/match/compare` sends a threat payload and receives matched signatures, correlation scores, and related threat IDs.
+- **Local state** — `selectedThreat`, `matchResults` (array of matched signatures), `isMatching`, `confidenceThreshold` (slider).
+- **WebSocketContext** — receives `match_update` events when background matching completes for queued threats.
 
 ## What Is Real
-- Nothing. Zero API calls.
-- Algorithm names are real concepts (Exact Match, Fuzzy Match, Similarity Hash, ML Embedding)
+- Threat knowledge base comes from the API.
+- Match/comparison POST sends real threat data and receives real correlation results.
+- Confidence scores and match percentages are from the backend matching engine.
+- Related threat IDs and linked campaigns are API responses.
+- Confidence threshold slider filters results client-side on the real `matchResults` array.
+- Match result cards display real signature names, descriptions, and source databases.
 
 ## What Is Fake
-| Data | How |
-|------|-----|
-| Match IDs | Sequential: MATCH-0001 through MATCH-0025 |
-| Material IDs | Random from predefined prefixes (MAL, C2, DDOS, DNS, etc.) |
-| Match type | Determined by score: ≥0.85 = Exact, ≥0.5 = Partial, else Similar |
-| Match score | Random between 0.05-0.98 |
-| Algorithm | Random from 4 predefined names |
-| Status | First 8 verified, next 8 pending, rest rejected |
-| Dates | Random within last 90 days |
-| Similarity breakdown | Random scores for structural/semantic/behavioral |
-| Precision/Recall/F1 | Hardcoded per algorithm |
+| Aspect | How |
+|---|---|
+| Matching algorithm | Backend algorithm is a stub/similarity heuristic, not a full ML correlation engine. |
+| "Campaign" linking | Backend groups threats by shared attributes; the visual campaign badges are client-side rendering of real IDs. |
+| Confidence threshold slider | Client-side filter; min/max bounds hardcoded (`0`–`100`). |
+| Match strength visual indicator | CSS gradient bar; the numeric score is real but the visual is cosmetic. |
+| Default selected threat | Hardcoded sample threat object used when no threat is selected. |
 
 ## Verdict
-**0% real data.** Entirely procedural generation. No backend connection. This is a concept page for the material matching feature described in PS-26145.
+~75% real. The matching pipeline (API endpoints, WebSocket updates, correlation results) is implemented and functional. The matching algorithm itself is a simplified heuristic rather than a full ML model, and the default threat is hardcoded.
