@@ -297,7 +297,7 @@ const Dashboard: React.FC = () => {
             return (
               <div key={i} className="kpi-card" style={{
                 flex:1, minWidth:0,
-                background:'var(--bg-card)',
+                background:'var(--bg-elevated)',
                 border:`1px solid ${C.border}`,
                 borderRadius:12,
                 padding:20,
