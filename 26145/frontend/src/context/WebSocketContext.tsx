@@ -49,7 +49,7 @@ export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children 
         const [statsData, alertsData] = await Promise.all([fetchStats(), fetchAlerts(50, 0)]);
         setStats(statsData);
         setAlerts(alertsData);
-        setAlertCount(statsData.alerts_generated ?? statsData.total_alerts ?? 0);
+        setAlertCount(statsData.total_alerts ?? statsData.alerts_generated ?? 0);
         setFlowsPerSec(statsData.flows_per_sec ?? statsData.active_flows ?? 0);
       } catch (e) {
         console.error('Failed to load initial data:', e);

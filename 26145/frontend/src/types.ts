@@ -42,10 +42,12 @@ export interface ThreatType {
 export interface Stats {
   total_flows: number;
   total_alerts: number;
+  alerts_generated?: number;
   threats_per_type: Record<string, number>;
   avg_confidence: number;
   flows_per_sec: number;
   active_connections: number;
+  active_flows?: number;
   uptime_sec: number;
 }
 
