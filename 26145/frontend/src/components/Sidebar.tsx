@@ -100,49 +100,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* Problem Statement Footer */}
+        {/* User Footer */}
         <div className="sidebar-footer">
-          <div
-            style={{
-              padding: '12px 14px',
-              background: 'rgba(0, 212, 255, 0.03)',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-color)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontFamily: "'JetBrains Mono', 'Share Tech Mono', monospace",
-                color: 'var(--text-muted)',
-                marginBottom: 4,
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-              }}
-            >
-              Problem Statement
-            </div>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: "'Inter', system-ui, sans-serif",
-                color: 'var(--text-primary)',
-                lineHeight: 1.3,
-              }}
-            >
-              PS-26145 &middot; NTRO
-            </div>
-            <div
-              style={{
-                fontSize: 10,
-                fontFamily: "'JetBrains Mono', 'Share Tech Mono', monospace",
-                color: 'var(--text-muted)',
-                marginTop: 3,
-                letterSpacing: '0.3px',
-              }}
-            >
-              Smart India Hackathon 2026
+          <div className="sidebar-user">
+            <div className="sidebar-avatar">OP</div>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">Operator</div>
+              <div className="sidebar-user-role">ENCLAVE · READ-ONLY</div>
             </div>
           </div>
         </div>
