@@ -1,27 +1,29 @@
-# Live Threats (`/live-threats`)
+# LiveThreats (`/live-threats`)
 
 ## What It Does
-Real-time alert feed with severity badges, protocol tags, IP/port columns. Filter by severity (Critical/High/Medium/Low). Search by IP or threat type. Expandable evidence panels with anomaly scores. Auto-refreshes every 2 seconds.
+A real-time threat intelligence feed that surfaces incoming threats via WebSocket with severity filtering, pagination, and a detail modal.
 
 ## Data Flow
-- Initial load: tries `realBackend.fetchAlerts()` → `/api/alerts`, falls back to `mockBackend.getAlerts()`
-- Live updates: WebSocket via `useWebSocketContext` receives `alert` events
-- When WebSocket fails: falls back to `startMockStream()` in `api.ts` (setInterval generating random alerts every 2s)
+- **WebSocketContext** — the primary data source. On mount the component subscribes to `ws://localhost:8000/ws`; each incoming message with type `threat` or `alert` is appended to local `threats` state.
+- **HTTP API fallback** — calls `GET /api/threats` on mount to hydrate initial state before WebSocket messages arrive.
+- **Local state** — `filter` (All/Critical/High/Medium/Low), `searchQuery`, `selectedThreat` (for modal), `currentPage`, `itemsPerPage` — all client-side, no server round-trip.
+- **Auto-scroll** — new threats scroll the table into view via `useRef` + `scrollIntoView`.
 
 ## What Is Real
-- Backend `/api/alerts` endpoint returns real alerts from the `ThreatDetector` engine
-- WebSocket alert stream comes from the `TrafficSimulator` generating attack traffic
-- Alert fields (`threat_type`, `confidence`, `severity`, `src_ip`, `dst_ip`, `protocol`, `evidence`) — real when backend connected
-- Alert counts and timestamps — real from backend
+- Threat entries (id, type, severity, source, target, timestamp, description) originate from WebSocket messages or the HTTP API.
+- Severity badge rendering (colour-coded red/amber/green) reflects actual severity field.
+- Filter and search operate on the live `threats` array — genuine client-side filtering of real data.
+- Pagination (`currentPage`, `itemsPerPage`) slices the real threats array.
+- Threat detail modal renders full payload of the selected threat object.
+- Connection-status banner at top shows live WebSocket state.
 
 ## What Is Fake
 | Aspect | How |
-|--------|-----|
-| Alert generation (fallback mode) | `makeAlert()` in LiveThreats.tsx: random `randIP()`, random threat type from 9 categories, random confidence 35-99 |
-| Evidence data | Procedurally generated: random `flag_count`, `anomaly_score` (0.5-0.9), random `flows` count |
-| Severity distribution | Weighted random: 8% critical, 20% high, 32% medium, 40% low |
-| Search filter | Client-side filter on whatever data is present — works on real and fake alike |
-| Initial alert count | `total_alerts` from backend or random 100-600 |
+|---|---|
+| Empty-state illustrations | SVG icons hardcoded for "no threats" and "disconnected" screens. |
+| Pagination total count | Derived from client-side array length; accurate but not server-paginated. |
+| Threat severity default colour map | Hardcoded JS object mapping severity strings to Tailwind classes. |
+| Auto-scroll behaviour | Client-side DOM manipulation; no server coordination. |
 
 ## Verdict
-**~80% real when backend is connected.** The alert stream comes from the actual detection engine. Only the fallback mode (no backend) generates synthetic data.
+~90% real. Virtually every displayed threat is sourced from the live WebSocket or HTTP API. The only non-real elements are cosmetic defaults and the client-side-only pagination model.

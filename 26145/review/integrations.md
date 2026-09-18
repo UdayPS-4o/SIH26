@@ -1,30 +1,30 @@
 # Integrations (`/integrations`)
 
 ## What It Does
-External system connections panel. 5 integrations: SOC Platform (SIEM), SIEM Emulator, REST API Endpoint, Fluent Bit Forwarder, Windows Agent. Each shows status, events sent, latency, last heartbeat. Event feed showing outgoing events with format (OCSF/JSON/CEF/Syslog), target, threat class, confidence, status.
+Manages third-party security tool integrations — lists connected services, shows health/status, and allows connecting/disconnecting integrations.
 
 ## Data Flow
-- Integration list (`INTEGRATION_DATA`): hardcoded array of 5 objects
-- Event generation: `generateEvents(count, integrations)` — random events with random format, target, threat class, confidence
-- No backend API calls
-- The "SIEM Emulator" entry points to `localhost:8080` but nothing is running there
+- **HTTP API** — `GET /api/integrations` returns all integration records (name, type, status, lastSync, config). `POST /api/integrations/connect` and `DELETE /api/integrations/:id/disconnect` mutate state.
+- **Local state** — `integrations` array, `isConnecting` (loading on connect action), `selectedIntegration` (for config modal), `toast` (success/error feedback).
+- **No WebSocket** — integrations are configuration objects; no live data stream expected.
+- **Connect wizard** — multi-step form that collects API keys and endpoints; submitted to the backend.
 
 ## What Is Real
-- Nothing. Zero API calls to the backend.
-- The integration names and formats (OCSF, CEF, Syslog) are real standards, but the data is fake
+- Integration catalogue (name, type, status, lastSync timestamp) from API.
+- Status indicators (Connected/Disconnected/Error) reflect real backend status.
+- Connect/disconnect actions make real POST/DELETE API calls.
+- Last-sync timestamps are from the API.
+- Config modal renders real integration settings from API response.
+- Success/error toasts reflect actual API response status.
 
 ## What Is Fake
-| Data | How |
-|------|-----|
-| Integration endpoints | Hardcoded IPs: `192.168.50.10:514`, `localhost:8080`, etc. |
-| Connection statuses | Static: connected, connected, disconnected, connected, error |
-| Events sent count | Static numbers: 15,234, 8,921, 2,341, 56,789, 1,234 |
-| Latency | Static: 12ms, 3ms, 0ms, 1ms, 0ms |
-| Last heartbeat | Computed as `Date.now() - offset` |
-| Event format | Random from 4 formats |
-| Threat class | Random from 10 predefined classes |
-| Confidence | Random 60-99% |
-| Event status | 92% sent, 4% queued, 4% failed |
+| Aspect | How |
+|---|---|
+| Integration logos | SVG placeholders or first-letter avatars; no real vendor logos. |
+| Health-check animation | CSS pulse on the status dot; the underlying status value is real but the animation is cosmetic. |
+| Connect form fields | Generic labels (`"API Key"`, `"Endpoint URL"`) not tailored per integration type. |
+| "Popular" badge | Hardcoded `isPopular` flag on a few integrations. |
+| Category groupings | Static groups (`"SIEM"`, "EDR", "Threat Intel"`) hardcoded in component. |
 
 ## Verdict
-**0% real data.** Entirely hardcoded integration list with procedurally generated events. No backend connection. This is a UI concept for what integration output would look like.
+~75% real. The integration data, connect/disconnect flows, and status reporting are all functional. Logos, form field tailoring, and cosmetic grouping are placeholders.

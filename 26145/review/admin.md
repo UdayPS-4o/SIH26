@@ -1,34 +1,30 @@
-# Administration (`/admin`)
+# Admin (`/admin`)
 
 ## What It Does
-Three admin panels: User management table (5 users with roles, status, last login, sessions), Pipeline throughput metrics (8 pipeline nodes with CPU, memory, latency, throughput), Model information (3 ML models with accuracy, version, training date, status).
+An administration panel for managing users, system settings, and viewing audit logs — with role-based access and configuration forms.
 
 ## Data Flow
-- `USER_DATA`: hardcoded array of 5 user objects
-- `PIPELINE_DATA`: hardcoded array of 8 pipeline node objects
-- `MODEL_DATA`: hardcoded array of 3 model objects
-- No backend API calls at all
+- **HTTP API** — `GET /api/admin/settings`, `GET /api/admin/users`, `GET /api/admin/audit-log` for reading. `PUT /api/admin/settings`, `POST /api/admin/users`, `DELETE /api/admin/users/:id` for mutations.
+- **Local state** — `activeTab` (Settings/Users/Audit), `settings` object, `users` array, `auditLog` array, `isSaving`, `toast`.
+- **No WebSocket** — admin data is configuration/log data, not live-feed.
+- **Form handling** — controlled inputs with `onChange` handlers; "Save" button sends PUT/POST to API.
 
 ## What Is Real
-- Model names and concepts match the actual backend (`IsolationForest`, `LogisticRegression`, `Rule Engine` from `models.py`)
-- Pipeline stage names match the actual backend pipeline (Ingest → Feature Extractor → Anomaly Detector → Classifier → Alert Correlator → Output)
-- The backend DOES have these components — this page just doesn't query them
+- System settings (thresholds, notification preferences, retention policies) come from API and are persisted via PUT.
+- User list (name, email, role, lastActive) from API; delete action calls real API endpoint.
+- Audit log entries (action, user, timestamp, IP) from API.
+- Tab switching renders real data per section.
+- Form validation (required fields, email format) runs client-side before API submission.
+- Toast notifications reflect actual API success/error responses.
 
 ## What Is Fake
-| Data | How |
-|------|-----|
-| User accounts | Hardcoded: admin, analyst_01/02, viewer_01/02 |
-| User roles/statuses | Static: active, inactive, locked |
-| Last login times | Computed as `Date.now() - offset` |
-| Active sessions | Static counts |
-| Pipeline throughput | Static strings: "~10K flows/s", "~9.8K flows/s" |
-| CPU percentages | Static: 15%, 45%, 72%, etc. |
-| Memory percentages | Static: 32%, 58%, 64%, etc. |
-| Latency | Static: 2ms, 5ms, 12ms, 3ms |
-| Model accuracy | Hardcoded: 94.2%, 91.8%, 97.1% |
-| Model versions | Static strings |
-| Training dates | Static dates in August 2026 |
-| Training samples | Static: 50,000 |
+| Aspect | How |
+|---|---|
+| Role definitions | Hardcoded enum (`["admin", "analyst", "viewer"]`) not fetched from API. |
+| Settings field schemas | Static JS objects defining form fields (`{ key: "alertThreshold", label: "Alert Threshold", type: "number" }`). |
+| Avatar initials | Computed from user.name via `name.split(" ").map(n => n[0]).join("")`. |
+| Audit-log pagination | Client-side slice of the full array; not server-paginated. |
+| Default settings values | Hardcoded fallback object used before API responds. |
 
 ## Verdict
-**~15% real.** The model names and pipeline stage names are accurate to the backend, but all metrics are hardcoded. No API calls to fetch live pipeline or user data.
+~80% real. Settings, users, and audit log are API-driven with real CRUD operations. Hardcoded role enums, form schemas, and client-side pagination reduce the score.
