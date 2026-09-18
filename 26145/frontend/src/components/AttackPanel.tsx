@@ -12,6 +12,7 @@ import {
   Server, Crosshair, Skull, Activity, Eye, Cpu, Gauge, AlertTriangle,
 } from 'lucide-react';
 import { useWebSocketContext } from '../context/WebSocketContext';
+import DetectionFeedback from './DetectionFeedback';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -181,7 +182,7 @@ export default function AttackPanel() {
 
   useEffect(() => {
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${proto}//${window.location.hostname}:8000/ws`;
+    const wsUrl = `${proto}//${window.location.host}/ws`;
 
     const connect = () => {
       try {
@@ -642,6 +643,20 @@ export default function AttackPanel() {
                         </>
                       )}
                     </button>
+
+                    {/* Detection feedback — inline after launch */}
+                    {attacks.filter(a => a.type === def.id && a.status === 'detected' && a.detectionResult).map(a => (
+                      <div key={a.id} style={{ marginTop: 8 }}>
+                        <DetectionFeedback
+                          attack={{ name: def.label, type: def.id }}
+                          detection={{
+                            confidence: a.detectionResult!.confidence,
+                            latency: a.detectionResult!.time_ms,
+                            evidence: [a.detectionResult!.rule],
+                          }}
+                        />
+                      </div>
+                    ))}
                   </div>
                 );
               })}

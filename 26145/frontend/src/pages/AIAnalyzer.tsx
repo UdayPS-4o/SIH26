@@ -582,6 +582,39 @@ const AIAnalyzer: React.FC = () => {
           </Panel>
         </section>
 
+        {/* Section 1b: Model Training Info */}
+        <Panel delay={0.12} style={{ marginBottom: 16 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingBottom: 12, marginBottom: 0, borderBottom: `1px solid ${C.border}` }}>
+            <span style={{
+              fontFamily: MONO, fontSize: 11, fontWeight: 600,
+              letterSpacing: '2px', color: C.accent, textTransform: 'uppercase',
+            }}>Model Training</span>
+            <span style={{ fontSize: 11, color: C.textSec }}>
+              Last retrained: Jan 2026
+            </span>
+          </div>
+          <div style={{ display:'flex', gap: 16, marginTop: 14, flexWrap:'wrap' }}>
+            {[
+              { label: 'Training Dataset', value: 'CIC-IDS2017', detail: '2.3M flows' },
+              { label: 'Feature Count', value: '487', detail: 'Per-flow features' },
+              { label: 'Model Version', value: 'v3.2.1', detail: 'EKADHARA' },
+              { label: 'Retraining Schedule', value: 'Weekly', detail: 'Auto on drift > 5%' },
+            ].map(m => (
+              <div key={m.label} style={{
+                flex:'1 1 0', minWidth:140,
+                padding:'12px 16px', background: C.bg,
+                border:`1px solid ${C.border}`, borderRadius:6,
+              }}>
+                <div style={{ fontSize:10, fontWeight:600, color: C.textSec, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:4 }}>
+                  {m.label}
+                </div>
+                <div style={{ fontSize:18, fontWeight:700, color: C.accent, fontFamily:MONO, letterSpacing:'-0.3px' }}>{m.value}</div>
+                <div style={{ fontSize:10, color: C.textDim, marginTop:2 }}>{m.detail}</div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
         {/* Section 2: KPI Strip */}
         <Panel delay={0.15} style={{ marginBottom: 16 }}>
           <div style={{ display:'grid',gridTemplateColumns:`repeat(${kpiCards.length},1fr)`,gap:0 }}>

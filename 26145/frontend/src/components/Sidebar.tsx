@@ -10,6 +10,9 @@ import {
   Plug,
   Settings,
   Shield,
+  Crosshair,
+  Lock,
+  Radar,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -18,6 +21,16 @@ const NAV_ITEMS = [
   { label: 'Network Map', path: '/network-map', icon: Network, key: 'netmap' },
   { label: 'Analytics', path: '/analytics', icon: BarChart3, key: 'analytics' },
   { label: 'AI Analyzer', path: '/ai-analyzer', icon: Brain, key: 'ai' },
+  { label: 'Attack Simulation', path: '/attack', icon: Crosshair, key: 'attack' },
+];
+
+const ENCLAVE_NAV_ITEMS = [
+  { label: 'Diode Lab', path: '/diode-lab', icon: Activity, key: 'diode' },
+  { label: 'Evidence Locker', path: '/evidence', icon: Shield, key: 'evidence' },
+  { label: 'Egress Terminal', path: '/egress-test', icon: Lock, key: 'egress' },
+];
+
+const SECONDARY_NAV_ITEMS = [
   { label: 'Evidence', path: '/materials', icon: FolderOpen, key: 'materials' },
   { label: 'Activity Log', path: '/activity', icon: Activity, key: 'activity' },
   { label: 'Integrations', path: '/integrations', icon: Plug, key: 'integrations' },
@@ -74,6 +87,46 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen: _isOpen }) => {
               </Link>
             );
           })}
+
+          <div className="sidebar-section-label" style={{ marginTop: 16 }}>Enclave Analysis</div>
+
+          {ENCLAVE_NAV_ITEMS.map(item => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`nav-item${isActive ? ' active' : ''}`}
+              >
+                <span className="nav-icon">
+                  <Icon size={18} strokeWidth={isActive ? 2 : 1.8} />
+                </span>
+                <span className="nav-label">{item.label}</span>
+              </Link>
+            );
+          })}
+
+          <div className="sidebar-section-label" style={{ marginTop: 16 }}>Resources</div>
+
+          {SECONDARY_NAV_ITEMS.map(item => {
+            const isActive = location.pathname === item.path;
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`nav-item${isActive ? ' active' : ''}`}
+              >
+                <span className="nav-icon">
+                  <Icon size={18} strokeWidth={isActive ? 2 : 1.8} />
+                </span>
+                <span className="nav-label">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {/* User Footer */}
@@ -81,8 +134,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen: _isOpen }) => {
           <div className="sidebar-user">
             <div className="sidebar-avatar">OP</div>
             <div className="sidebar-user-info">
-              <div className="sidebar-user-name">Operator</div>
-              <div className="sidebar-user-role">ENCLAVE · READ-ONLY</div>
+              <div className="sidebar-user-name" style={{ fontSize:11, color:'var(--text-secondary)' }}>Operator</div>
+              <div className="sidebar-user-role" style={{ fontSize:9, color:'var(--text-muted)' }}>
+                DEMO MODE · SEEDED DATA
+              </div>
             </div>
           </div>
         </div>

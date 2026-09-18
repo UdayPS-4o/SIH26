@@ -13,6 +13,9 @@ import ActivityPage from './pages/ActivityPage';
 import IntegrationPage from './pages/IntegrationPage';
 import AdminPage from './pages/AdminPage';
 import MatchPage from './pages/MatchPage';
+import DiodeLab from './pages/DiodeLab';
+import EgressTerminal from './pages/EgressTerminal';
+import EvidenceLocker from './pages/EvidenceLocker';
 import AttackPanel from './components/AttackPanel';
 import ReviewPage from './pages/ReviewPage';
 import { Sun, Moon } from 'lucide-react';
@@ -143,6 +146,9 @@ const AppContent: React.FC = () => (
     <Route path="/match" element={<MatchPage />} />
     <Route path="/attack" element={<AttackPanel />} />
     <Route path="/review" element={<ReviewPage />} />
+    <Route path="/diode-lab" element={<DiodeLab />} />
+    <Route path="/egress-test" element={<EgressTerminal />} />
+    <Route path="/evidence" element={<EvidenceLocker />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );

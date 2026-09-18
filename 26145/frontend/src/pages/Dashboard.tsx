@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Activity, Network, Crosshair, Eye, Radar, Zap,
   ArrowRight, ShieldCheck, Cpu, ShieldAlert,
@@ -109,6 +110,7 @@ const SectionLabel: React.FC<{ label: string; right?: React.ReactNode }> = ({ la
 
 const Dashboard: React.FC = () => {
   const data = useDashboardData(3000);
+  const navigate = useNavigate();
   const [clock, setClock] = useState(now());
 
   useEffect(() => {
@@ -259,6 +261,51 @@ const Dashboard: React.FC = () => {
             AI-based detection pipeline for unidirectional IP traffic monitoring.
             Passive observation — no probes, no decryption, no return path.
           </p>
+          {/* Hero statement */}
+          <div style={{
+            marginTop:16, padding:'14px 18px',
+            background:'var(--bg-primary)',
+            border:`1px solid var(--border-color)`,
+            borderRadius:8,
+            fontFamily:'"JetBrains Mono",monospace',
+            fontSize:12, color:C.textSec,
+            lineHeight:1.7, letterSpacing:'0.3px',
+          }}>
+            <span style={{ color: C.accent, fontWeight:700 }}>WATCHTOWER</span>
+            {' '}operates in a read-only enclave.
+            <span style={{ color: C.green }}> No probes. No decryption. No return path.</span>
+          </div>
+
+          {/* Quick Actions */}
+          <div style={{
+            marginTop:16, display:'flex', gap:10, flexWrap:'wrap',
+          }}>
+            {[
+              { label:'Launch Attack Simulation', path:'/attack', color: C.red, icon: Crosshair },
+              { label:'Run Egress Test', path:'/egress-test', color: C.green, icon: ShieldCheck },
+              { label:'View Degradation Matrix', path:'/diode-lab', color: C.accent, icon: Activity },
+            ].map((action, i) => {
+              const Icon = action.icon;
+              return (
+                <button key={i} onClick={() => navigate(action.path)} style={{
+                  display:'inline-flex', alignItems:'center', gap:8,
+                  padding:'9px 16px', borderRadius:8, cursor:'pointer',
+                  fontFamily:'"JetBrains Mono",monospace', fontSize:11, fontWeight:700,
+                  textTransform:'uppercase', letterSpacing:'0.5px',
+                  border: `1px solid ${action.color}30`,
+                  background:`${action.color}08`,
+                  color: action.color,
+                  transition:`all 0.2s cubic-bezier(0.22,1,0.36,1)`,
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = `${action.color}14`; e.currentTarget.style.borderColor = `${action.color}50`; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = `${action.color}08`; e.currentTarget.style.borderColor = `${action.color}30`; }}
+                >
+                  <Icon size={13} strokeWidth={1.8} />
+                  {action.label}
+                </button>
+              );
+            })}
+          </div>
         </section>
 
         {/* ════════════════════════════════════════════════════════════════
@@ -441,30 +488,41 @@ const Dashboard: React.FC = () => {
             }}>
               <SectionLabel label="Enclave Constraints" />
               <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                <ShieldCheck size={13} color={C.green} />
-                <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.5px', color:C.green, fontFamily:'"JetBrains Mono",monospace' }}>COMPLIANT</span>
+                <span style={{ width:6, height:6, borderRadius:'50%', background:C.green, display:'inline-block', animation:'wt-pulse 1.5s ease-in-out infinite' }} />
+                <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.5px', color:C.green, fontFamily:'"JetBrains Mono",monospace' }}>ALL COMPLIANT</span>
               </div>
             </div>
 
-            <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
               {[
-                ['Ingest', 'READ-ONLY — no return path'],
-                ['TLS analysis', 'JA3/JA4 metadata only'],
-                ['Processing', 'Streaming — bounded latency'],
-                ['Payload', 'Decryption disabled'],
-                ['Throughput', '10K flows/sec sustained'],
-                ['Alert schema', 'RFC 8071 structured JSON'],
-              ].map(([k, v]) => (
-                <div key={k} style={{
+                { label:'Ingest', status:'READ-ONLY', detail:'No return path' },
+                { label:'TLS Analysis', status:'JA3/JA4', detail:'Metadata only' },
+                { label:'Processing', status:'STREAMING', detail:'Bounded latency' },
+                { label:'Payload', status:'DECRYPT OFF', detail:'Disabled' },
+                { label:'Throughput', status:'10K FPS', detail:'Sustained' },
+                { label:'Alert Schema', status:'RFC 8071', detail:'Structured JSON' },
+              ].map((item, i, arr) => (
+                <div key={item.label} style={{
                   display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'10px 12px',
-                  borderBottom: k !== 'Alert schema' ? `1px solid ${C.border}` : 'none',
-                }}>
+                  padding:'10px 14px',
+                  borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
+                  borderRadius:4,
+                  transition:'background 0.15s',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <Dot color={C.green} size={4} />
-                    <span style={{ fontSize:13, color:C.textSec, fontWeight:500 }}>{k}</span>
+                    <span style={{ width:5, height:5, borderRadius:'50%', background:C.green, display:'inline-block', animation:'wt-pulse 2s ease-in-out infinite' }} />
+                    <span style={{ fontSize:13, color:C.textSec, fontWeight:500 }}>{item.label}</span>
                   </div>
-                  <span style={{ fontSize:12, color:C.text }}>{v}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                    <span style={{
+                      fontSize:11, fontWeight:700, color:C.green,
+                      fontFamily:'"JetBrains Mono",monospace', letterSpacing:'0.5px',
+                    }}>{item.status}</span>
+                    <span style={{ fontSize:12, color:C.textDim }}>{item.detail}</span>
+                  </div>
                 </div>
               ))}
             </div>
