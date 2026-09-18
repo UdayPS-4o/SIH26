@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -26,38 +25,16 @@ const NAV_ITEMS = [
 ];
 
 interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen: _isOpen }) => {
   const location = useLocation();
 
   return (
-    <Fragment>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="sidebar-overlay"
-          onClick={onClose}
-          style={{
-            display: 'block',
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            zIndex: 299,
-          }}
-        />
-      )}
-
-      <aside
-        className="sidebar"
-        style={{
-          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          boxShadow: isOpen ? '4px 0 24px rgba(0, 0, 0, 0.4)' : 'none',
-        }}
-      >
+    <aside
+      className="sidebar"
+    >
         {/* Logo Area */}
         <div className="sidebar-header">
           <div className="sidebar-logo">
@@ -83,7 +60,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                onClick={onClose}
                 className={`nav-item${isActive ? ' active' : ''}`}
               >
                 <span className="nav-icon">
@@ -111,7 +87,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
       </aside>
-    </Fragment>
   );
 };
 

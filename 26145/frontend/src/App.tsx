@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { WebSocketProvider, useWebSocketContext } from './context/WebSocketContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
@@ -23,7 +23,15 @@ const HUD_HEIGHT = 56;
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isConnected, flowsPerSec, alertCount } = useWebSocketContext();
   const { isDark, toggleTheme } = useTheme();
+  const location = useLocation();
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Scroll to top on every route change
+  useEffect(() => {
+    const content = document.querySelector('.content-area');
+    if (content) content.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   useEffect(() => {
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -40,7 +48,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="app-shell">
       {/* Sidebar — fixed width, always visible */}
-      <Sidebar isOpen={true} onClose={() => {}} />
+      <Sidebar />
 
       {/* Main column: header + scrollable content */}
       <div className="app-main">
