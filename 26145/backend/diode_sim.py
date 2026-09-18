@@ -61,6 +61,47 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+__all__ = [
+    "DiodeMode",
+    "DegradationTable",
+    "DIODE_DEGRADATION_TABLE",
+    "ComplianceEvent",
+    "DiodeEnclave",
+    "global_diode",
+]
+
+
+# ---------------------------------------------------------------------------
+# Diode modes
+# ---------------------------------------------------------------------------
+
+class DiodeMode:
+    """Enumeration of diode operating modes."""
+
+    FULL_DUPLEX = "full-duplex"
+    DIODE_ONLY = "diode-only"
+    ACK_SHADOW = "ack-shadow"
+
+
+# ---------------------------------------------------------------------------
+# Degradation table
+# ---------------------------------------------------------------------------
+
+#: Mapping of diode mode → features that are lost or downgraded.
+#: ``features_lost`` is the count of features degraded for that threat type.
+_DEGRADATION_MAP = {
+    "syn_flood": {"full": 0.96, "diode": 0.92, "ack_shadow": 0.94, "features_lost": 2},
+    "c2_beaconing": {"full": 0.97, "diode": 0.85, "ack_shadow": 0.91, "features_lost": 3},
+    "dga_domain": {"full": 0.95, "diode": 0.93, "ack_shadow": 0.94, "features_lost": 1},
+    "dns_tunneling": {"full": 0.94, "diode": 0.88, "ack_shadow": 0.90, "features_lost": 2},
+    "port_scan": {"full": 0.97, "diode": 0.90, "ack_shadow": 0.93, "features_lost": 2},
+    "data_exfiltration": {"full": 0.93, "diode": 0.78, "ack_shadow": 0.84, "features_lost": 4},
+}
+
+# Canonical degradation table used by the API endpoints.
+DegradationTable = _DEGRADATION_MAP
+DIODE_DEGRADATION_TABLE = _DEGRADATION_MAP
+
 
 # ---------------------------------------------------------------------------
 # Compliance event
@@ -105,6 +146,9 @@ class DiodeEnclave:
         Maximum compliance events to keep in memory (FIFO).
     """
 
+    #: Module-level default diode mode (used when enclave has no own set_mode call)
+    _global_mode: str = DiodeMode.FULL_DUPLEX
+
     def __init__(
         self,
         label: str = "enclave-01",
@@ -120,10 +164,12 @@ class DiodeEnclave:
         self._events: list[ComplianceEvent] = []
         self._max_events = max_events
         self._pcap_path = Path(pcap_path) if pcap_path else None
+        self._mode: str = self._global_mode  # per-enclave mode; defaults to global
 
         self._log("info", "Diode enclave initialised", {
             "label": label,
             "pcap": str(self._pcap_path) if self._pcap_path else "none",
+            "mode": self._mode,
         })
 
     # ── Public properties ─────────────────────────────────────────────
@@ -132,6 +178,23 @@ class DiodeEnclave:
     def is_read_only(self) -> bool:
         """Always ``True`` — the diode cannot be switched to write mode."""
         return True
+
+    @property
+    def mode(self) -> str:
+        """Current diode operating mode."""
+        return self._mode
+
+    @mode.setter
+    def mode(self, new_mode: str) -> None:
+        """Set the operating mode (validates against allowed values)."""
+        allowed = {DiodeMode.FULL_DUPLEX, DiodeMode.DIODE_ONLY, DiodeMode.ACK_SHADOW}
+        if new_mode not in allowed:
+            raise ValueError(
+                f"Invalid diode mode '{new_mode}'. Choose from: {sorted(allowed)}"
+            )
+        old = self._mode
+        self._mode = new_mode
+        self._log("info", "Diode mode changed", {"from": old, "to": new_mode})
 
     @property
     def ingested_bytes(self) -> int:
@@ -200,15 +263,24 @@ class DiodeEnclave:
     def get_status(self) -> dict[str, Any]:
         """Return the current diode status for the dashboard."""
         with self._lock:
+            mode_table = {
+                "syn_flood": _DEGRADATION_MAP["syn_flood"],
+                "c2_beaconing": _DEGRADATION_MAP["c2_beaconing"],
+                "dga_domain": _DEGRADATION_MAP["dga_domain"],
+                "dns_tunneling": _DEGRADATION_MAP["dns_tunneling"],
+                "port_scan": _DEGRADATION_MAP["port_scan"],
+                "data_exfiltration": _DEGRADATION_MAP["data_exfiltration"],
+            }
             return {
                 "label": self.label,
-                "mode": "read_only",
+                "mode": self._mode,
                 "integrity": "OK",
                 "ingested_bytes": self._ingested_bytes,
                 "attempted_writes": self._attempted_writes,
                 "uptime_sec": round(self.uptime_sec, 1),
                 "event_count": self.event_count,
                 "pcap_recording": str(self._pcap_path) if self._pcap_path else None,
+                "degradation_table": mode_table,
             }
 
     def get_events(self, limit: int = 50) -> list[dict]:

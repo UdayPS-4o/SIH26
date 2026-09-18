@@ -22,6 +22,12 @@ from features import (
     sliding_window_stats,
 )
 
+try:
+    from diode_sim import DiodeMode, global_diode
+    _HAS_DIODE = True
+except (ImportError, OSError):
+    _HAS_DIODE = False
+
 logger = logging.getLogger(__name__)
 
 # Confidence to severity mapping
@@ -51,6 +57,48 @@ def _severity_from_confidence(confidence: float) -> str:
     return "low"
 
 
+def _current_diode_mode() -> str:
+    """Return the current diode mode, defaulting to full-duplex."""
+    if _HAS_DIODE:
+        try:
+            return global_diode.mode
+        except Exception:
+            pass
+    return DiodeMode.FULL_DUPLEX if _HAS_DIODE else "full-duplex"
+
+
+def _validity_for(diode_mode: str, uses_reverse_path: bool) -> str:
+    """Determine feature validity based on diode mode.
+
+    Args:
+        diode_mode: Current diode mode string.
+        uses_reverse_path: True if the detection relies on reverse-path data
+            (e.g., packets_recv, bytes_recv).
+
+    Returns:
+        "MEASURED", "ESTIMATED", or "MISSING".
+    """
+    if not uses_reverse_path:
+        return "MEASURED"
+    if diode_mode == DiodeMode.DIODE_ONLY:
+        return "MISSING"
+    if diode_mode == DiodeMode.ACK_SHADOW:
+        return "ESTIMATED"
+    return "MEASURED"
+
+
+# Threat type → threat_class mapping
+_THREAT_CLASS_MAP = {
+    "ddos": "syn_flood",
+    "beaconing": "c2_beaconing",
+    "dga": "dga_domain",
+    "dns_tunnel": "dns_tunneling",
+    "tls_anomaly": "tls_anomaly",
+    "port_scan": "port_scan",
+    "exfiltration": "data_exfiltration",
+}
+
+
 @dataclass
 class Alert:
     """Represents a detected threat alert.
@@ -58,24 +106,29 @@ class Alert:
     Attributes:
         id: Unique alert identifier.
         timestamp: Unix timestamp of detection.
-        threat_type: Category of threat detected.
+        threat_class: Category of threat (aligned with attack_type spec).
+        threat_type: Internal threat type string.
         confidence: Detection confidence (0.0 to 1.0).
         severity: Severity level (critical, high, medium, low).
         src_ip: Source IP address.
         dst_ip: Destination IP address.
-        evidence: Human-readable evidence string.
+        evidence: Structured evidence with named features and validity tags.
+        validity: Overall evidence validity (MEASURED, ESTIMATED, MISSING).
+        flow_id: Source flow identifier.
         flow_count: Number of flows that contributed to this alert.
     """
     id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
     timestamp: float = field(default_factory=time.time)
+    threat_class: str = "unknown"
     threat_type: str = "unknown"
     confidence: float = 0.0
     severity: str = "low"
     src_ip: str = ""
     dst_ip: str = ""
-    evidence: str = ""
+    evidence: dict = field(default_factory=dict)
+    validity: str = "MEASURED"
+    flow_id: str = ""
     flow_count: int = 1
-    details: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Convert alert to dictionary for JSON serialization.
@@ -86,14 +139,16 @@ class Alert:
         return {
             "id": self.id,
             "timestamp": self.timestamp,
+            "flow_id": self.flow_id,
+            "threat_class": self.threat_class,
             "threat_type": self.threat_type,
-            "confidence": self.confidence,
             "severity": self.severity,
+            "confidence": self.confidence,
             "src_ip": self.src_ip,
             "dst_ip": self.dst_ip,
             "evidence": self.evidence,
+            "validity": self.validity,
             "flow_count": self.flow_count,
-            "details": self.details,
         }
 
 
@@ -143,6 +198,18 @@ class ThreatDetector:
             "alerts_per_type": {},
             "start_time": time.time(),
         }
+
+        # Current diode mode for validity tracking
+        self._diode_mode = _current_diode_mode()
+
+    def set_diode_mode(self, mode: str) -> None:
+        """Update the current diode mode for validity tracking.
+
+        Args:
+            mode: One of DiodeMode.FULL_DUPLEX, DiodeMode.DIODE_ONLY,
+                or DiodeMode.ACK_SHADOW.
+        """
+        self._diode_mode = mode
 
     def process_flow(self, flow: dict) -> list[Alert]:
         """Process a single flow and run all detection strategies.
@@ -261,6 +328,9 @@ class ThreatDetector:
         # Unique source IPs
         unique_sources = len(set(f.get("src_ip", "") for f in global_window))
 
+        now_ts = time.time()
+        diode_mode = self._diode_mode
+
         # Single source flooding
         if len(src_window) > 100:
             target_ip = src_window[0].get("dst_ip", "")
@@ -269,45 +339,46 @@ class ThreatDetector:
             confidence = min(confidence, 0.95)
 
             if confidence > 0.5:
+                evidence_features = [
+                    {"name": "packets_per_sec", "value": round(packets_per_sec, 2), "unit": "pkt/s", "validity": "MEASURED"},
+                    {"name": "src_flows", "value": len(src_window), "unit": "flows", "validity": "MEASURED"},
+                    {"name": "unique_sources", "value": unique_sources, "unit": "ips", "validity": "MEASURED"},
+                ]
+                validity = _validity_for(diode_mode, uses_reverse_path=False)
                 alerts.append(Alert(
-                    timestamp=time.time(),
+                    timestamp=now_ts,
+                    threat_class="syn_flood",
                     threat_type="ddos",
                     confidence=confidence,
                     severity=_severity_from_confidence(confidence),
                     src_ip=src_window[0].get("src_ip", ""),
                     dst_ip=target_ip,
-                    evidence=(
-                        f"High packet rate: {packets_per_sec:.0f} pps, "
-                        f"{len(src_window)} flows from single source, "
-                        f"{unique_sources} total sources"
-                    ),
+                    evidence={"features": evidence_features},
+                    validity=validity,
+                    flow_id=src_window[0].get("id", ""),
                     flow_count=len(src_window),
-                    details={
-                        "packets_per_sec": round(packets_per_sec, 2),
-                        "flows_per_sec": round(flows_per_sec, 2),
-                        "unique_sources": unique_sources,
-                    },
                 ))
 
         # Distributed flood
         if flows_per_sec > 200 and unique_sources > 50:
             confidence = min(flows_per_sec / 1000.0, 0.9)
             alerts.append(Alert(
-                timestamp=time.time(),
+                timestamp=now_ts,
+                threat_class="syn_flood",
                 threat_type="ddos",
                 confidence=confidence,
                 severity=_severity_from_confidence(confidence),
                 src_ip="multiple",
                 dst_ip=global_window[0].get("dst_ip", ""),
-                evidence=(
-                    f"Distributed traffic spike: {flows_per_sec:.0f} flows/sec, "
-                    f"{unique_sources} unique sources"
-                ),
-                flow_count=len(global_window),
-                details={
-                    "flows_per_sec": round(flows_per_sec, 2),
-                    "unique_sources": unique_sources,
+                evidence={
+                    "features": [
+                        {"name": "flows_per_sec", "value": round(flows_per_sec, 2), "unit": "flows/s", "validity": "MEASURED"},
+                        {"name": "unique_sources", "value": unique_sources, "unit": "ips", "validity": "MEASURED"},
+                    ]
                 },
+                validity="MEASURED",
+                flow_id=global_window[0].get("id", ""),
+                flow_count=len(global_window),
             ))
 
         return alerts
@@ -356,24 +427,26 @@ class ThreatDetector:
 
             if confidence > 0.5:
                 dst_ips = list(set(f.get("dst_ip", "") for f in src_window))
+                validity = _validity_for(self._diode_mode, uses_reverse_path=True)
                 alerts.append(Alert(
                     timestamp=time.time(),
+                    threat_class="c2_beaconing",
                     threat_type="beaconing",
                     confidence=confidence,
                     severity=_severity_from_confidence(confidence),
                     src_ip=src_window[0].get("src_ip", ""),
                     dst_ip=dst_ips[0] if dst_ips else "",
-                    evidence=(
-                        f"Regular beaconing pattern: mean IAT={mean_iat:.1f}s, "
-                        f"std={std_iat:.3f}s, CV={cv:.3f} over {len(src_window)} flows"
-                    ),
-                    flow_count=len(src_window),
-                    details={
-                        "mean_iat": round(mean_iat, 3),
-                        "std_iat": round(std_iat, 3),
-                        "coefficient_of_variation": round(cv, 3),
-                        "unique_destinations": len(dst_ips),
+                    evidence={
+                        "features": [
+                            {"name": "mean_iat", "value": round(mean_iat, 3), "unit": "s", "validity": "MEASURED"},
+                            {"name": "std_iat", "value": round(std_iat, 3), "unit": "s", "validity": "MEASURED"},
+                            {"name": "coefficient_of_variation", "value": round(cv, 3), "unit": "", "validity": "MEASURED"},
+                            {"name": "unique_destinations", "value": len(dst_ips), "unit": "ips", "validity": "MEASURED"},
+                        ]
                     },
+                    validity=validity,
+                    flow_id=src_window[0].get("id", ""),
+                    flow_count=len(src_window),
                 ))
 
         return alerts
@@ -406,23 +479,25 @@ class ThreatDetector:
                 )
 
                 if confidence > 0.5:
+                    validity = _validity_for(self._diode_mode, uses_reverse_path=False)
                     alerts.append(Alert(
                         timestamp=time.time(),
+                        threat_class="dga_domain",
                         threat_type="dga",
                         confidence=confidence,
                         severity=_severity_from_confidence(confidence),
                         src_ip=flow.get("src_ip", ""),
                         dst_ip=flow.get("dst_ip", ""),
-                        evidence=(
-                            f"Suspicious domain '{domain}': "
-                            f"entropy={entropy:.3f}, ngram={ngram_score:.3f}"
-                        ),
-                        flow_count=1,
-                        details={
-                            "domain": domain,
-                            "entropy": round(entropy, 3),
-                            "ngram_score": round(ngram_score, 3),
+                        evidence={
+                            "features": [
+                                {"name": "domain", "value": domain, "unit": "", "validity": "MEASURED"},
+                                {"name": "entropy", "value": round(entropy, 3), "unit": "bits", "validity": "MEASURED"},
+                                {"name": "ngram_score", "value": round(ngram_score, 3), "unit": "", "validity": "MEASURED"},
+                            ]
                         },
+                        validity=validity,
+                        flow_id=flow.get("id", ""),
+                        flow_count=1,
                     ))
 
         return alerts
@@ -446,24 +521,25 @@ class ThreatDetector:
             if query_length > self._thresholds["dns_tunnel_length"]:
                 confidence = min(query_length / 300.0, 0.95)
                 entropy = compute_entropy(query)
-
+                validity = _validity_for(self._diode_mode, uses_reverse_path=False)
                 alerts.append(Alert(
                     timestamp=time.time(),
+                    threat_class="dns_tunneling",
                     threat_type="dns_tunnel",
                     confidence=confidence,
                     severity=_severity_from_confidence(confidence),
                     src_ip=flow.get("src_ip", ""),
                     dst_ip=flow.get("dst_ip", ""),
-                    evidence=(
-                        f"Unusually long DNS query ({query_length} chars): "
-                        f"'{query[:50]}...' entropy={entropy:.3f}"
-                    ),
-                    flow_count=1,
-                    details={
-                        "query_length": query_length,
-                        "entropy": round(entropy, 3),
-                        "query_preview": query[:100],
+                    evidence={
+                        "features": [
+                            {"name": "query_length", "value": query_length, "unit": "chars", "validity": "MEASURED"},
+                            {"name": "query_preview", "value": query[:50], "unit": "", "validity": "MEASURED"},
+                            {"name": "entropy", "value": round(entropy, 3), "unit": "bits", "validity": "MEASURED"},
+                        ]
                     },
+                    validity=validity,
+                    flow_id=flow.get("id", ""),
+                    flow_count=1,
                 ))
 
         return alerts
@@ -503,23 +579,26 @@ class ThreatDetector:
                 confidence = min(confidence + len(flows) * 0.02, 0.95)
 
                 src_ips = list(set(f.get("src_ip", "") for f in flows))
+                validity = _validity_for(self._diode_mode, uses_reverse_path=True)
                 alerts.append(Alert(
                     timestamp=time.time(),
+                    threat_class="tls_anomaly",
                     threat_type="tls_anomaly",
                     confidence=confidence,
                     severity=_severity_from_confidence(confidence),
                     src_ip=src_ips[0] if src_ips else "",
                     dst_ip=flows[0].get("dst_ip", ""),
-                    evidence=(
-                        f"Suspicious TLS JA3 hash: {ja3_hash[:30]}... "
-                        f"({len(flows)} flows from {len(src_ips)} sources)"
-                    ),
-                    flow_count=len(flows),
-                    details={
-                        "ja3_hash": ja3_hash,
-                        "is_suspicious": is_suspicious,
-                        "is_unknown": is_unknown,
+                    evidence={
+                        "features": [
+                            {"name": "ja3_hash", "value": ja3_hash[:30], "unit": "", "validity": "MEASURED"},
+                            {"name": "is_suspicious", "value": is_suspicious, "unit": "", "validity": "MEASURED"},
+                            {"name": "is_unknown", "value": is_unknown, "unit": "", "validity": "MEASURED"},
+                            {"name": "flow_count", "value": len(flows), "unit": "flows", "validity": "MEASURED"},
+                        ]
                     },
+                    validity=validity,
+                    flow_id=flows[0].get("id", ""),
+                    flow_count=len(flows),
                 ))
 
         return alerts
@@ -552,23 +631,26 @@ class ThreatDetector:
             confidence = min(confidence + unique_ports / 200.0, 0.95)
 
             if confidence > 0.5:
+                now_ts = time.time()
+                validity = _validity_for(self._diode_mode, uses_reverse_path=True)
                 alerts.append(Alert(
-                    timestamp=time.time(),
+                    timestamp=now_ts,
+                    threat_class="port_scan",
                     threat_type="port_scan",
                     confidence=confidence,
                     severity=_severity_from_confidence(confidence),
                     src_ip=src_window[0].get("src_ip", ""),
                     dst_ip=src_window[0].get("dst_ip", ""),
-                    evidence=(
-                        f"Port scanning detected: {unique_ports} unique ports, "
-                        f"fan-out ratio={fan_ratio:.2f}, {len(src_window)} probes"
-                    ),
-                    flow_count=len(src_window),
-                    details={
-                        "unique_ports": unique_ports,
-                        "fan_out_ratio": round(fan_ratio, 3),
-                        "ports_scanned": sorted(list(dst_ports))[:20],
+                    evidence={
+                        "features": [
+                            {"name": "unique_ports", "value": unique_ports, "unit": "ports", "validity": "MEASURED"},
+                            {"name": "fan_out_ratio", "value": round(fan_ratio, 3), "unit": "", "validity": "MEASURED"},
+                            {"name": "probes", "value": len(src_window), "unit": "flows", "validity": "MEASURED"},
+                        ]
                     },
+                    validity=validity,
+                    flow_id=src_window[0].get("id", ""),
+                    flow_count=len(src_window),
                 ))
 
         return alerts
@@ -614,24 +696,27 @@ class ThreatDetector:
 
                 if confidence > 0.5:
                     dst_ips = list(set(f.get("dst_ip", "") for f in flows))
+                    now_ts = time.time()
+                    validity = _validity_for(self._diode_mode, uses_reverse_path=True)
                     alerts.append(Alert(
-                        timestamp=time.time(),
+                        timestamp=now_ts,
+                        threat_class="data_exfiltration",
                         threat_type="exfiltration",
                         confidence=confidence,
                         severity=_severity_from_confidence(confidence),
                         src_ip=src_ip,
                         dst_ip=dst_ips[0] if dst_ips else "",
-                        evidence=(
-                            f"Possible data exfiltration: {total_sent / 1024 / 1024:.1f}MB "
-                            f"sent vs {total_recv / 1024:.1f}KB received "
-                            f"(ratio={ratio:.1f}) over {len(flows)} flows"
-                        ),
-                        flow_count=len(flows),
-                        details={
-                            "bytes_sent": total_sent,
-                            "bytes_recv": total_recv,
-                            "ratio": round(ratio, 2),
+                        evidence={
+                            "features": [
+                                {"name": "bytes_sent", "value": total_sent, "unit": "bytes", "validity": "MEASURED"},
+                                {"name": "bytes_recv", "value": total_recv, "unit": "bytes", "validity": _validity_for(self._diode_mode, uses_reverse_path=True)},
+                                {"name": "ratio", "value": round(ratio, 2), "unit": "", "validity": _validity_for(self._diode_mode, uses_reverse_path=True)},
+                                {"name": "flow_count", "value": len(flows), "unit": "flows", "validity": "MEASURED"},
+                            ]
                         },
+                        validity=validity,
+                        flow_id=flows[0].get("id", ""),
+                        flow_count=len(flows),
                     ))
 
         return alerts
