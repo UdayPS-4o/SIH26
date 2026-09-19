@@ -97,8 +97,8 @@ const EvidenceLocker: React.FC = () => {
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         @keyframes wt-row-in { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
-        ::selection { background:rgba(0,212,255,0.12); color:${C.text}; }
-        :focus-visible { outline:1.5px solid rgba(0,212,255,0.4); outline-offset:2px; border-radius:3px; }
+        ::selection { background:var(--accent-cyan); color:${C.text}; }
+        :focus-visible { outline:1.5px solid var(--border-active); outline-offset:2px; border-radius:3px; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
@@ -121,7 +121,7 @@ const EvidenceLocker: React.FC = () => {
             }}>
               <Shield size={15} color={C.accent} strokeWidth={1.8} />
             </div>
-            <span style={{ fontSize:13,fontWeight:700,letterSpacing:'3px',color: C.text }}>WATCHTOWER</span>
+            <span style={{ fontSize:13,fontWeight:700,letterSpacing:'3px',color: C.text }}>EKADHARA</span>
           </div>
           <div style={{ width:1,height:16,background:C.border,flexShrink:0 }} />
           <span style={{ fontSize:10,color:C.textSec,letterSpacing:'0.8px',flexShrink:0 }}>
@@ -256,9 +256,9 @@ const EvidenceLocker: React.FC = () => {
                     <div key={f.name} style={{
                       display:'flex', alignItems:'center', gap:6,
                       padding:'5px 10px', borderRadius:6,
-                      background: f.validity === 'MEASURED' ? 'rgba(34,197,94,0.06)' :
-                        f.validity === 'ESTIMATED' ? 'rgba(234,179,8,0.06)' : 'rgba(239,68,68,0.06)',
-                      border: `1px solid ${f.validity === 'MEASURED' ? 'rgba(34,197,94,0.2)' : f.validity === 'ESTIMATED' ? 'rgba(234,179,8,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                      background: f.validity === 'MEASURED' ? 'var(--color-success-dim)' :
+                        f.validity === 'ESTIMATED' ? 'var(--chip-estimated-bg)' : 'var(--chip-unverified-bg)',
+                      border: `1px solid ${f.validity === 'MEASURED' ? 'var(--color-success-dim)' : f.validity === 'ESTIMATED' ? 'var(--chip-estimated-border)' : 'var(--chip-unverified-border)'}`,
                     }}>
                       <ValidityChip validity={f.validity} />
                       <span style={{ fontSize:10, color:C.textSec, maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -330,7 +330,7 @@ const EvidenceLocker: React.FC = () => {
               flexWrap:'wrap', gap:8,
             }}>
               <span style={{ fontSize:10, color:C.textDim, letterSpacing:'1px', fontFamily:'"JetBrains Mono",monospace' }}>
-                WATCHTOWER v3.2.1 · EKADHARA · NTRO SIH26
+                EKADHARA v3.2.1 · EKADHARA · NTRO SIH26
               </span>
               <span style={{ fontSize:10, color:C.textDim, letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace' }}>
                 Evidence ID: {currentAlert.id}

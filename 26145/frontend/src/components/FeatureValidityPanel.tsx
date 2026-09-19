@@ -57,7 +57,7 @@ const FeatureValidityPanel: React.FC<FeatureValidityPanelProps> = ({ features })
             <span style={{ fontSize:10, color:'var(--accent-yellow)', background:'rgba(234,179,8,0.08)', padding:'2px 7px', borderRadius:4, border:'1px solid rgba(234,179,8,0.2)' }}>
               {counts.ESTIMATED} Estimated
             </span>
-            <span style={{ fontSize:10, color:'var(--accent-red)', background:'rgba(239,68,68,0.08)', padding:'2px 7px', borderRadius:4, border:'1px solid rgba(239,68,68,0.2)' }}>
+            <span style={{ fontSize:10, color:'var(--accent-red)', background:'var(--color-danger-dim)', padding:'2px 7px', borderRadius:4, border:'1px solid var(--sev-critical-border)' }}>
               {counts.MISSING} Missing
             </span>
           </div>

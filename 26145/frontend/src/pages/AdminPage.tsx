@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════════
-   WATCHTOWER — Administration
+   EKADHARA — Administration
    ═══════════════════════════════════════════════════════════════════════ */
 
 interface User {
@@ -77,7 +77,7 @@ function AnimatedRing({ accuracy, size = 64 }: { accuracy: number; size?: number
   return (
     <div style={{ width: `${size}px`, height: `${size}px`, position: 'relative' }}>
       <svg viewBox="0 0 36 36" style={{ width: `${size}px`, height: `${size}px`, transform: 'rotate(-90deg)' }}>
-        <circle cx="18" cy="18" r={r} fill="none" stroke="rgba(0,212,255,0.08)" strokeWidth="3" />
+        <circle cx="18" cy="18" r={r} fill="none" stroke="var(--color-info-dim)" strokeWidth="3" />
         <circle cx="18" cy="18" r={r} fill="none" stroke={strokeColor} strokeWidth="3" strokeDasharray={`${anim}, 100`} strokeLinecap="round" />
       </svg>
       <div style={{
@@ -148,7 +148,7 @@ function AdminPage() {
   useEffect(() => {
     if (activeTab !== 'terminal') return;
     setTerminalLines([
-      'WATCHTOWER Admin Console v1.0.0',
+      'EKADHARA Admin Console v1.0.0',
       '> Connected to localhost:8000',
       '> Authenticated as: admin',
       `> Session: ${Math.random().toString(36).substr(2, 12)}`,
@@ -237,9 +237,9 @@ function AdminPage() {
       <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #1a2736' }}>
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-            background: activeTab === tab.id ? 'rgba(0,212,255,0.08)' : 'transparent',
+            background: activeTab === tab.id ? 'var(--color-info-dim)' : 'transparent',
             color: activeTab === tab.id ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-            borderBottom: activeTab === tab.id ? '2px solid rgba(0,212,255,0.4)' : '2px solid transparent',
+            borderBottom: activeTab === tab.id ? '2px solid var(--border-active)' : '2px solid transparent',
             padding: '10px 18px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
             transition: 'all 0.2s',
           }}>{tab.symbol} {tab.label}</button>
@@ -257,7 +257,7 @@ function AdminPage() {
 
             return (
               <div key={node.id} style={{
-                background: 'var(--bg-secondary)', border: `1px solid ${node.status === 'error' ? 'rgba(239,68,68,0.3)' : 'var(--border-color)'}`,
+                background: 'var(--bg-secondary)', border: `1px solid ${node.status === 'error' ? 'var(--mat-rejected-border)' : 'var(--border-color)'}`,
                 borderRadius: '8px', padding: '16px',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -275,7 +275,7 @@ function AdminPage() {
                 </div>
 
                 {/* Throughput bar */}
-                <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(0,212,255,0.06)', overflow: 'hidden', marginBottom: '12px' }}>
+                <div style={{ height: '4px', borderRadius: '2px', background: 'var(--color-info-dim)', overflow: 'hidden', marginBottom: '12px' }}>
                   <div style={{ height: '100%', borderRadius: '2px', background: 'linear-gradient(90deg, #00d4ff, #00ff41)', width: `${node.cpu_pct}%`, transition: 'width 0.5s' }} />
                 </div>
 
@@ -305,7 +305,7 @@ function AdminPage() {
                 </div>
 
                 {/* Health + Action */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid rgba(0,212,255,0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--color-info-dim)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: healthColor, boxShadow: `0 0 6px ${healthColor}` }} />
                     <span style={{ fontFamily: '"JetBrains Mono", monospace', color: healthColor, fontSize: '10px', textTransform: 'uppercase', fontWeight: 600 }}>
@@ -313,9 +313,9 @@ function AdminPage() {
                     </span>
                   </div>
                   <button onClick={() => setPipeline(prev => prev.map(p => p.id === node.id ? { ...p, status: p.status === 'running' ? 'paused' as const : 'running' as const } : p))} style={{
-                    background: node.status === 'running' ? 'rgba(239,68,68,0.12)' : 'rgba(0,255,65,0.12)',
+                    background: node.status === 'running' ? 'var(--sev-critical-bg)' : 'var(--status-stopped-bg)',
                     color: node.status === 'running' ? 'var(--accent-red)' : 'var(--accent-green)',
-                    border: `1px solid ${node.status === 'running' ? 'rgba(239,68,68,0.25)' : 'rgba(0,255,65,0.25)'}`,
+                    border: `1px solid ${node.status === 'running' ? 'var(--sev-critical-border)' : 'var(--status-stopped-border)'}`,
                     borderRadius: '5px', padding: '5px 12px', cursor: 'pointer',
                     fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
                   }}>{node.status === 'running' ? '■ Pause' : '▶ Resume'}</button>
@@ -357,7 +357,7 @@ function AdminPage() {
                     return (
                       <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', width: '65px', textTransform: 'uppercase' }}>{f}</span>
-                        <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: 'rgba(0,212,255,0.06)', overflow: 'hidden' }}>
+                        <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: 'var(--color-info-dim)', overflow: 'hidden' }}>
                           <div style={{ height: '100%', borderRadius: '3px', background: barColor, width: `${pct}%` }} />
                         </div>
                       </div>
@@ -369,20 +369,29 @@ function AdminPage() {
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Confusion Matrix</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', width: '120px' }}>
-                    {confusionMatrix.map((row, ri) => row.map((val, ci) => (
-                      <div key={`${ri}-${ci}`} style={{
-                        textAlign: 'center', borderRadius: '4px', padding: '6px',
-                        background: `rgba(${ri === ci ? '0,255,65' : '239,68,68'},${val / 100 * 0.25})`,
-                        border: `1px solid rgba(${ri === ci ? '0,255,65' : '239,68,68'},0.2)`,
-                      }}>
-                        <span style={{ fontFamily: '"JetBrains Mono", monospace', color: ri === ci ? 'var(--accent-green)' : 'var(--accent-red)', fontSize: '11px', fontWeight: 700 }}>{val}</span>
-                      </div>
-                    )))}
+                    {confusionMatrix.map((row, ri) => (
+                      <React.Fragment key={`row-${ri}`}>
+                        {row.map((val, ci) => {
+                          const isMatch = ri === ci;
+                          const cellBg = isMatch ? 'var(--admin-match-bg)' : 'var(--admin-mismatch-bg)';
+                          const cellBorder = isMatch ? 'var(--admin-match-border)' : 'var(--admin-mismatch-border)';
+                          const cellColor = isMatch ? 'var(--accent-green)' : 'var(--accent-red)';
+                          return (
+                            <div key={`${ri}-${ci}`} style={{
+                              textAlign: 'center', borderRadius: '4px', padding: '6px',
+                              background: cellBg, border: `1px solid ${cellBorder}`,
+                            }}>
+                              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: cellColor, fontSize: '11px', fontWeight: 700 }}>{val}</span>
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
                   </div>
                 </div>
 
                 {/* Model info */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '14px', padding: '10px', background: 'rgba(6,10,16,0.6)', borderRadius: '6px', border: '1px solid rgba(0,212,255,0.06)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '14px', padding: '10px', background: 'var(--overlay-md)', borderRadius: '6px', border: '1px solid var(--color-info-dim)' }}>
                   {[
                     { label: 'Samples', value: model.samples.toLocaleString() },
                     { label: 'Trained', value: model.last_trained },
@@ -401,15 +410,15 @@ function AdminPage() {
                       <span style={{ color: 'var(--accent-cyan)' }}>Retraining...</span>
                       <span style={{ color: 'var(--accent-green)' }}>In Progress</span>
                     </div>
-                    <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(0,212,255,0.08)', overflow: 'hidden' }}>
+                    <div style={{ height: '6px', borderRadius: '3px', background: 'var(--color-info-dim)', overflow: 'hidden' }}>
                       <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #00d4ff, #00ff41)', width: '60%' }} />
                     </div>
                   </div>
                 )}
 
                 <button onClick={() => handleRetrain(model.name)} disabled={retrainingModel === model.name} style={{
-                  width: '100%', background: retrainingModel === model.name ? 'rgba(0,212,255,0.08)' : 'rgba(0,212,255,0.12)',
-                  color: 'var(--accent-cyan)', border: '1px solid rgba(0,212,255,0.25)',
+                  width: '100%', background: retrainingModel === model.name ? 'var(--color-info-dim)' : 'var(--accent-cyan)',
+                  color: 'var(--accent-cyan)', border: '1px solid var(--border-active)',
                   borderRadius: '6px', padding: '8px', cursor: retrainingModel === model.name ? 'not-allowed' : 'pointer',
                   fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', opacity: retrainingModel === model.name ? 0.6 : 1,
                 }}>{retrainingModel === model.name ? '⟳ Retraining...' : '↻ Retrain Model'}</button>
@@ -449,7 +458,7 @@ function AdminPage() {
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
+                  <tr key={user.id} style={{ borderBottom: '1px solid var(--color-info-dim)' }}>
                     <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '12px', padding: '11px 16px' }}>{user.id}</td>
                     <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{user.username}</td>
                     <td style={{ padding: '11px 16px' }}>
@@ -470,9 +479,9 @@ function AdminPage() {
                     <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{user.sessions}</td>
                     <td style={{ padding: '11px 16px' }}>
                       <button onClick={() => setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: u.status === 'locked' ? 'active' as const : 'locked' as const, sessions: u.status === 'locked' ? 1 : 0 } : u))} style={{
-                        background: user.status === 'locked' ? 'rgba(0,255,65,0.12)' : 'rgba(255,136,51,0.12)',
+                        background: user.status === 'locked' ? 'var(--status-stopped-bg)' : 'var(--status-warning-bg)',
                         color: user.status === 'locked' ? 'var(--accent-green)' : 'var(--accent-orange)',
-                        border: `1px solid ${user.status === 'locked' ? 'rgba(0,255,65,0.25)' : 'rgba(255,136,51,0.25)'}`,
+                        border: `1px solid ${user.status === 'locked' ? 'var(--status-stopped-border)' : 'var(--status-warning-border)'}`,
                         borderRadius: '5px', padding: '5px 12px', cursor: 'pointer',
                         fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
                       }}>{user.status === 'locked' ? 'Unlock' : 'Lock'}</button>

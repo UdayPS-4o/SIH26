@@ -1,9 +1,9 @@
 /* ValidityChip — small rounded pill for feature/alert validity */
 
 const VALIDITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  MEASURED:  { bg: 'rgba(34,197,94,0.12)',  text: 'var(--accent-green)',  border: 'rgba(34,197,94,0.25)' },
-  ESTIMATED: { bg: 'rgba(234,179,8,0.12)',   text: 'var(--accent-yellow)', border: 'rgba(234,179,8,0.25)' },
-  MISSING:   { bg: 'rgba(239,68,68,0.15)',   text: '#ffffff',             border: 'rgba(239,68,68,0.35)' },
+  MEASURED:  { bg: 'var(--mat-approved-bg)',  text: 'var(--accent-green)',  border: 'var(--color-success-dim)' },
+  ESTIMATED: { bg: 'var(--mat-pending-bg)',   text: 'var(--accent-yellow)', border: 'rgba(234,179,8,0.25)' },
+  MISSING:   { bg: 'var(--chip-unverified-border)',   text: '#ffffff',             border: 'var(--sev-critical-border)' },
 };
 
 const ValidityChip: React.FC<{ validity: string; label?: string }> = ({ validity, label }) => {

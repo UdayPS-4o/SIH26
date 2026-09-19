@@ -49,6 +49,8 @@ export interface Stats {
   active_connections: number;
   active_flows?: number;
   uptime_sec: number;
+  threats_blocked?: number;
+  threats_detected?: number;
 }
 
 export interface Material {

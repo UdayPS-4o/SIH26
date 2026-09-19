@@ -98,15 +98,15 @@ function scoreGradient(s: number): string {
 }
 
 const MATCH_TYPE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  'Exact Match':   { bg: 'rgba(34,197,94,0.1)',   color: 'var(--accent-green)', border: 'rgba(34,197,94,0.35)' },
-  'Partial Match': { bg: 'rgba(234,179,8,0.1)',   color: 'var(--accent-yellow)', border: 'rgba(234,179,8,0.35)' },
-  'Similar Match': { bg: 'rgba(6,182,212,0.1)',   color: 'var(--accent-cyan)', border: 'rgba(6,182,212,0.35)' },
+  'Exact Match':   { bg: 'var(--color-success-dim)',   color: 'var(--accent-green)', border: 'var(--color-success-dim)' },
+  'Partial Match': { bg: 'var(--mat-pending-bg)',   color: 'var(--accent-yellow)', border: 'var(--mat-pending-border)' },
+  'Similar Match': { bg: 'var(--color-info-dim)',   color: 'var(--accent-cyan)', border: 'var(--border-active)' },
 };
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
-  verified: { bg: 'rgba(34,197,94,0.1)',  color: 'var(--accent-green)', border: 'rgba(34,197,94,0.35)' },
-  pending:  { bg: 'rgba(234,179,8,0.1)',  color: 'var(--accent-yellow)', border: 'rgba(234,179,8,0.35)' },
-  rejected: { bg: 'rgba(239,68,68,0.1)',  color: 'var(--accent-red)', border: 'rgba(239,68,68,0.35)' },
+  verified: { bg: 'var(--color-success-dim)',  color: 'var(--accent-green)', border: 'var(--color-success-dim)' },
+  pending:  { bg: 'var(--mat-pending-bg)',  color: 'var(--accent-yellow)', border: 'var(--mat-pending-border)' },
+  rejected: { bg: 'var(--status-triggered-bg)',  color: 'var(--accent-red)', border: 'var(--mat-rejected-border)' },
 };
 
 // ─── Distribution buckets ─────────────────────────────────────────────────
@@ -182,7 +182,7 @@ function SectionHeader({ title }: { title: string }) {
       <span>{title}</span>
       <span style={{
         flex: 1, height: '1px',
-        background: 'linear-gradient(90deg, rgba(0,212,255,0.35), transparent)',
+        background: `linear-gradient(90deg, var(--accent-cyan), transparent)`,
       }} />
     </div>
   );
@@ -236,7 +236,7 @@ function MatchPage() {
   };
 
   const handleBulkAction = (action: 'verify' | 'reject') => {
-    console.log(`[WATCHTOWER] Bulk ${action} for:`, Array.from(selected));
+    console.log(`[EKADHARA] Bulk ${action} for:`, Array.from(selected));
     setSelected(new Set());
   };
 
@@ -367,8 +367,8 @@ function MatchPage() {
             const col = 'var(--accent-cyan)';
             return (
               <div key={algo.name} style={{
-                background: 'rgba(6,10,16,0.6)',
-                border: '1px solid rgba(0,212,255,0.12)',
+                background: 'var(--overlay-md)',
+                border: '1px solid var(--accent-cyan)',
                 borderRadius: '6px',
                 padding: '14px 16px',
               }}>
@@ -404,7 +404,7 @@ function MatchPage() {
                         <div style={{
                           height: '100%',
                           width: `${val * 100}%`,
-                          background: `linear-gradient(90deg, rgba(0,212,255,0.4), ${col})`,
+                          background: `linear-gradient(90deg, var(--border-active), ${col})`,
                           borderRadius: '3px',
                         }} />
                       </div>
@@ -442,8 +442,8 @@ function MatchPage() {
                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                 fontSize: '11px',
                 color: 'var(--accent-cyan)',
-                background: 'rgba(0,212,255,0.08)',
-                border: '1px solid rgba(0,212,255,0.25)',
+                background: 'var(--color-info-dim)',
+                border: '1px solid var(--border-active)',
                 padding: '3px 10px',
                 borderRadius: '4px',
               }}>{selected.size} selected</span>
@@ -454,8 +454,8 @@ function MatchPage() {
               <>
                 <button onClick={() => handleBulkAction('verify')} style={{
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                  background: 'rgba(34,197,94,0.1)',
-                  border: '1px solid rgba(34,197,94,0.35)',
+                  background: 'var(--color-success-dim)',
+                  border: '1px solid var(--mat-approved-border)',
                   color: 'var(--accent-green)',
                   padding: '5px 14px',
                   borderRadius: '4px',
@@ -466,8 +466,8 @@ function MatchPage() {
                 }}>Verify Selected</button>
                 <button onClick={() => handleBulkAction('reject')} style={{
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                  background: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.35)',
+                  background: 'var(--status-triggered-bg)',
+                  border: '1px solid var(--mat-rejected-border)',
                   color: 'var(--accent-red)',
                   padding: '5px 14px',
                   borderRadius: '4px',
@@ -480,8 +480,8 @@ function MatchPage() {
             )}
             <button onClick={() => setModalOpen(true)} style={{
               fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-              background: 'rgba(0,212,255,0.1)',
-              border: '1px solid rgba(0,212,255,0.35)',
+              background: 'var(--selection-bg)',
+              border: '1px solid var(--border-active)',
               color: 'var(--accent-cyan)',
               padding: '5px 14px',
               borderRadius: '4px',
@@ -502,7 +502,7 @@ function MatchPage() {
             onChange={e => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              background: 'rgba(6,10,16,0.7)',
+              background: 'var(--panel-dark)',
               border: '1px solid #1a2736',
               borderRadius: '4px',
               padding: '8px 12px',
@@ -526,7 +526,7 @@ function MatchPage() {
             <thead>
               <tr style={{
                 borderBottom: '1px solid #1a2736',
-                background: 'rgba(6,10,16,0.4)',
+                background: 'var(--overlay-light)',
               }}>
                 <th style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, width: '36px' }}>
                   <input
@@ -557,12 +557,12 @@ function MatchPage() {
                 return (
                   <React.Fragment key={m.id}>
                     <tr style={{
-                      borderBottom: expanded ? 'none' : '1px solid rgba(26,39,54,0.6)',
-                      background: checked ? 'rgba(0,212,255,0.04)' : 'transparent',
+                      borderBottom: expanded ? 'none' : '1px solid var(--border-default)',
+                      background: checked ? 'var(--color-info-dim)' : 'transparent',
                       cursor: 'pointer',
                       transition: 'background 0.15s',
                     }}
-                      onMouseEnter={e => { if (!checked) (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(0,212,255,0.03)'; }}
+                      onMouseEnter={e => { if (!checked) (e.currentTarget as HTMLTableRowElement).style.background = 'var(--color-accent-dim)'; }}
                       onMouseLeave={e => { if (!checked) (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'; }}
                     >
                       <td style={{ padding: '10px 14px' }}>
@@ -649,7 +649,7 @@ function MatchPage() {
                       <tr style={{ borderBottom: '1px solid #1a2736' }}>
                         <td colSpan={10} style={{
                           padding: '14px 20px 18px 56px',
-                          background: 'rgba(6,10,16,0.5)',
+                          background: 'var(--overlay-light)',
                         }}>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             {/* Similarity breakdown */}
@@ -684,7 +684,7 @@ function MatchPage() {
                                     <div style={{
                                       height: '100%',
                                       width: `${val * 100}%`,
-                                      background: 'linear-gradient(90deg, rgba(0,212,255,0.35), #00d4ff)',
+                                      background: `linear-gradient(90deg, var(--accent-cyan), var(--accent-cyan))`,
                                       borderRadius: '2px',
                                     }} />
                                   </div>
@@ -705,7 +705,7 @@ function MatchPage() {
                                 fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                                 fontSize: '11px',
                                 color: 'var(--text-muted)',
-                                background: 'rgba(6,10,16,0.6)',
+                                background: 'var(--overlay-md)',
                                 border: '1px solid #1a2736',
                                 borderRadius: '4px',
                                 padding: '8px 12px',
@@ -761,7 +761,7 @@ function MatchPage() {
           onClick={() => setModalOpen(false)}
           style={{
             position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.75)',
+            background: 'var(--overlay-strong)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             zIndex: 1000,
           }}
@@ -775,7 +775,7 @@ function MatchPage() {
               padding: '24px',
               width: '100%',
               maxWidth: '520px',
-              boxShadow: '0 0 60px rgba(0,212,255,0.08)',
+              boxShadow: '0 0 60px var(--color-info-dim)',
             }}
           >
             <div style={{
@@ -801,7 +801,7 @@ function MatchPage() {
                   placeholder="e.g. MAL-2024-0001"
                   style={{
                     width: '100%',
-                    background: 'rgba(6,10,16,0.7)',
+                    background: 'var(--panel-dark)',
                     border: '1px solid #1a2736',
                     borderRadius: '4px',
                     padding: '8px 12px',
@@ -828,7 +828,7 @@ function MatchPage() {
                   placeholder="e.g. C2-2024-0001"
                   style={{
                     width: '100%',
-                    background: 'rgba(6,10,16,0.7)',
+                    background: 'var(--panel-dark)',
                     border: '1px solid #1a2736',
                     borderRadius: '4px',
                     padding: '8px 12px',
@@ -852,7 +852,7 @@ function MatchPage() {
                 }}>Algorithm</label>
                 <select style={{
                   width: '100%',
-                  background: 'rgba(6,10,16,0.7)',
+                  background: 'var(--panel-dark)',
                   border: '1px solid #1a2736',
                   borderRadius: '4px',
                   padding: '8px 12px',
@@ -878,10 +878,10 @@ function MatchPage() {
                   letterSpacing: '1px',
                   textTransform: 'uppercase',
                 }}>Cancel</button>
-                <button onClick={() => { setModalOpen(false); console.log('[WATCHTOWER] Run match'); }} style={{
+                <button onClick={() => { setModalOpen(false); console.log('[EKADHARA] Run match'); }} style={{
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                  background: 'rgba(0,212,255,0.12)',
-                  border: '1px solid rgba(0,212,255,0.4)',
+                  background: 'var(--accent-cyan)',
+                  border: '1px solid var(--border-active)',
                   color: 'var(--accent-cyan)',
                   padding: '7px 16px',
                   borderRadius: '4px',

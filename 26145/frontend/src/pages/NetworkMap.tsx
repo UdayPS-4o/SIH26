@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useWebSocketContext } from '../context/WebSocketContext';
+import { Alert } from '../types';
 
 const C = {
   bg:        'var(--bg-primary)',
@@ -60,7 +62,7 @@ const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:Reac
       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
       opacity:ready?1:0, transform:ready?'translateY(0)':'translateY(8px)',
       transition:`opacity 0.4s ${EASE} ${delay}s, transform 0.4s ${EASE} ${delay}s`,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      boxShadow: '0 1px 3px var(--shadow-sm)',
       ...style,
     }}>
       <div style={{ padding:'20px 24px' }}>{children}</div>
@@ -70,10 +72,10 @@ const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:Reac
 
 const Sev: React.FC<{ sev:string }> = ({ sev }) => {
   const M: Record<string,{c:string;bg:string}> = {
-    critical:{c:C.red,bg:'rgba(239,68,68,0.08)'},
-    high:{c:C.orange,bg:'rgba(249,115,22,0.08)'},
-    medium:{c:C.amber,bg:'rgba(234,179,8,0.08)'},
-    low:{c:'var(--accent-cyan)',bg:'rgba(6,182,212,0.06)'},
+    critical:{c:C.red,bg:'var(--sev-critical-bg)'},
+    high:{c:C.orange,bg:'var(--sev-high-bg)'},
+    medium:{c:C.amber,bg:'var(--sev-medium-bg)'},
+    low:{c:'var(--accent-cyan)',bg:'var(--sev-low-bg)'},
   };
   const s = M[sev] || M.low;
   return (
@@ -103,6 +105,9 @@ interface NetEdge {
   id: string; source: string; target: string;
   status: 'normal'|'suspicious'|'attack';
   packets: number; bytes: number;
+  expiresAt?: number;
+  color?: string;
+  threatType?: string;
 }
 
 function buildTopology(W: number, H: number) {
@@ -147,25 +152,6 @@ function buildTopology(W: number, H: number) {
     });
   });
 
-  const attackPaths: [number, number][] = [[10,2],[11,3],[12,0]];
-  attackPaths.forEach(([si, di], idx) => {
-    edges.push({
-      id:`attack-${idx}`, source:`src-${si}`, target:`dst-${di}`,
-      status:'attack', packets:45_000+idx*15_000, bytes:2_400_000+idx*800_000,
-    });
-  });
-
-  for (let i = 0; i < 15; i++) {
-    if (attackPaths.some(([s]) => s === i)) continue;
-    const di = (i + 1) % 5;
-    edges.push({
-      id:`norm-s${i}`, source:`src-${i}`, target:`dst-${di}`,
-      status: srcStatuses[i] === 'suspicious' ? 'suspicious' : 'normal',
-      packets: 2000 + Math.floor(Math.random()*8000),
-      bytes: 100_000 + Math.floor(Math.random()*500_000),
-    });
-  }
-
   for (let i = 0; i < 5; i++) {
     edges.push({
       id:`enclave-d${i}`, source:'enclave', target:`dst-${i}`,
@@ -180,7 +166,7 @@ function buildTopology(W: number, H: number) {
    SVG NETWORK TOPOLOGY
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
-function NetworkTopologySVG({ nodes, edges, width, height }: { nodes:NetNode[]; edges:NetEdge[]; width:number; height:number }) {
+function NetworkTopologySVG({ nodes, edges, dynamicEdges, width, height }: { nodes:NetNode[]; edges:NetEdge[]; dynamicEdges:NetEdge[]; width:number; height:number }) {
   const [hovered, setHovered] = useState<string|null>(null);
   const animTime = useRef(0);
   const rafRef = useRef(0);
@@ -218,6 +204,35 @@ function NetworkTopologySVG({ nodes, edges, width, height }: { nodes:NetNode[]; 
       <rect width={width} height={height} fill={C.bg} />
       <rect width={width} height={height} fill="url(#nwBg)" />
 
+      {/* Glow filter for attack paths */}
+      <defs>
+        <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <radialGradient id="attack-pulse" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={C.red} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={C.red} stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
       {/* Zone labels */}
       <text x={70} y={16} textAnchor="middle" fill={C.textDim} fontSize="9" fontFamily={MONO} fontWeight="600" letterSpacing="1.5">
         SOURCE IPS
@@ -241,25 +256,77 @@ function NetworkTopologySVG({ nodes, edges, width, height }: { nodes:NetNode[]; 
 
         return (
           <g key={edge.id}>
+            {/* Attack glow */}
             {isAttack && (
               <line x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
-                stroke={C.red} strokeWidth={4} opacity={0.06} />
+                stroke={C.red} strokeWidth={6} opacity={0.08}
+                filter="url(#glow-red)" />
             )}
+            {/* Suspicious glow */}
+            {isSusp && (
+              <line x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+                stroke={C.amber} strokeWidth={4} opacity={0.06}
+                filter="url(#glow-amber)" />
+            )}
+            {/* Main line */}
             <line x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
               stroke={eColor} strokeWidth={isAttack?1.5:isSusp?1:0.6}
               strokeDasharray={isAttack?'8 4':isSusp?'5 3':'none'}
               strokeLinecap="round" opacity={eOpacity} />
+            {/* Attack packet animation */}
             {isAttack && (
-              <circle r={2.5} fill={C.red} opacity={0.7}>
+              <circle r={2.5} fill={C.red} opacity={0.8}>
                 <animateMotion dur="2s" repeatCount="indefinite" path={`M${src.x},${src.y} L${tgt.x},${tgt.y}`} />
-                <animate attributeName="opacity" values="0.2;0.7;0.2" dur="1.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.3;0.9;0.3" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+            )}
+            {/* Suspicious subtle pulse */}
+            {isSusp && (
+              <circle r={1.5} fill={C.amber} opacity={0.5}>
+                <animateMotion dur="3s" repeatCount="indefinite" path={`M${src.x},${src.y} L${tgt.x},${tgt.y}`} />
+                <animate attributeName="opacity" values="0.2;0.6;0.2" dur="2.5s" repeatCount="indefinite" />
               </circle>
             )}
           </g>
         );
       })}
 
-      {/* Nodes */}
+      {/* Dynamic attack edges from WebSocket */}
+      {dynamicEdges.map(edge => {
+        const src = nodeMap.get(edge.source);
+        const tgt = nodeMap.get(edge.target);
+        if (!src || !tgt) return null;
+        const color = edge.color || C.red;
+        const age = 5000 - ((edge.expiresAt || 0) - Date.now());
+        const opacity = Math.max(0.15, 1 - age / 5000);
+        const edgeId = `dynamic-${edge.id}`;
+
+        return (
+          <g key={edgeId}>
+            {/* Glow line */}
+            <line x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+              stroke={color} strokeWidth={8} opacity={opacity * 0.15}
+              filter="url(#glow-red)" />
+            {/* Main line */}
+            <line x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+              stroke={color} strokeWidth={1.5}
+              strokeDasharray="8 4" strokeLinecap="round" opacity={opacity} />
+            {/* Animated packet dot */}
+            <circle r={3} fill={color} opacity={opacity * 0.9}>
+              <animateMotion dur="2s" repeatCount="indefinite" path={`M${src.x},${src.y} L${tgt.x},${tgt.y}`} />
+              <animate attributeName="opacity" values={`${opacity*0.3};${opacity*0.9};${opacity*0.3}`} dur="1.5s" repeatCount="indefinite" />
+            </circle>
+            {/* Target pulse when newly created */}
+            {age < 1500 && (
+              <circle cx={tgt.x} cy={tgt.y} r={25} fill="none" stroke={color} strokeWidth={2}
+                opacity={1 - age / 1500}>
+                <animate attributeName="r" values="10;30" dur="1.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.6;0" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+            )}
+          </g>
+        );
+      })}
       {nodes.map(node => {
         const isEnclave = node.type === 'enclave';
         const isHov = node.id === hovered;
@@ -319,10 +386,13 @@ function NetworkTopologySVG({ nodes, edges, width, height }: { nodes:NetNode[]; 
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const NetworkMap: React.FC = () => {
+  const { alerts: wsAlerts } = useWebSocketContext();
   const [clock, setClock] = useState(now());
   const [svgDims, setSvgDims] = useState({ width:900, height:480 });
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeMapRef = useRef<Map<string,{label:string;ip:string;status:string}>>(new Map());
+  const prevAlertCountRef = useRef(0);
+  const [dynamicEdges, setDynamicEdges] = useState<NetEdge[]>([]);
 
   useEffect(() => {
     const t = setInterval(() => setClock(now()), 1000);
@@ -340,18 +410,92 @@ const NetworkMap: React.FC = () => {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
+  // Map WebSocket alerts to dynamic attack edges
+  useEffect(() => {
+    const newAlerts = wsAlerts.slice(0, prevAlertCountRef.current || wsAlerts.length);
+    prevAlertCountRef.current = wsAlerts.length;
+
+    const THREAT_COLORS: Record<string,string> = {
+      ddos: '#ff3333',
+      beaconing: '#ff8800',
+      dga: '#ffcc00',
+      dns_tunnel: '#ffcc00',
+      port_scan: '#aa44ff',
+      exfiltration: '#ff0000',
+      tls_anomaly: '#00ccff',
+      malware: '#ff3333',
+      phishing: '#ff8800',
+    };
+
+    wsAlerts.forEach((alert: Alert) => {
+      const srcIp = (alert.src_ip || '').replace(/\./g, '-');
+      // Find a source node matching this IP
+      let srcNodeId = `src-${srcIp}`;
+      // Check if this IP is in our topology
+      const { nodes } = buildTopology(svgDims.width, svgDims.height);
+      let ipMatch = nodes.find(n => n.ip === alert.src_ip);
+      if (!ipMatch) {
+        const srcNodes = nodes.filter(n => n.type === 'source');
+        ipMatch = srcNodes.find(n => n.ip.startsWith(alert.src_ip.split('.')[0]));
+      }
+
+      if (ipMatch) {
+        srcNodeId = ipMatch.id;
+        const targetNodeId = 'enclave';
+        const color = THREAT_COLORS[alert.threat_type.toLowerCase()] || '#ff3333';
+
+        setDynamicEdges(prev => {
+          // Avoid duplicate edges for the same alert
+          const exists = prev.some(e => e.id === `dyn-${alert.id}`);
+          if (exists) return prev;
+
+          const newEdge: NetEdge = {
+            id: `dyn-${alert.id}`,
+            source: srcNodeId,
+            target: targetNodeId,
+            status: 'attack',
+            packets: 1,
+            bytes: 0,
+            expiresAt: Date.now() + 5000,
+            color,
+            threatType: alert.threat_type,
+          };
+
+          return [...prev, newEdge];
+        });
+      }
+    });
+  }, [wsAlerts, svgDims.width, svgDims.height]);
+
+  // Fade out expired dynamic edges
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDynamicEdges(prev => prev.filter(e => (e.expiresAt || 0) > Date.now()));
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
   const { nodes, edges } = useMemo(() => buildTopology(svgDims.width, svgDims.height), [svgDims.width, svgDims.height]);
+
+  // Merge dynamic edges into base edges
+  const allEdges = useMemo(() => {
+    const merged = [...edges];
+    dynamicEdges.forEach(de => {
+      merged.push(de);
+    });
+    return merged;
+  }, [edges, dynamicEdges]);
 
   useEffect(() => {
     nodeMapRef.current = new Map(nodes.map(n => [n.id, {label:n.label, ip:n.ip, status:n.status}]));
   }, [nodes]);
 
-  const totalFlows = useMemo(() => edges.reduce((s,e) => s + e.packets, 0), [edges]);
-  const blockedConns = useMemo(() => edges.filter(e=>e.status==='attack').reduce((s,e) => s + e.packets, 0), [edges]);
-  const activeThreats = useMemo(() => edges.filter(e=>e.status==='attack').length, [edges]);
+  const totalFlows = useMemo(() => allEdges.reduce((s,e) => s + e.packets, 0), [allEdges]);
+  const blockedConns = useMemo(() => allEdges.filter(e=>e.status==='attack').reduce((s,e) => s + e.packets, 0), [allEdges]);
+  const activeThreats = useMemo(() => allEdges.filter(e=>e.status==='attack').length, [allEdges]);
 
-  const attackEdges = useMemo(() => edges.filter(e=>e.status==='attack'), [edges]);
-  const suspEdges = useMemo(() => edges.filter(e=>e.status==='suspicious'), [edges]);
+  const attackEdges = useMemo(() => allEdges.filter(e=>e.status==='attack'), [allEdges]);
+  const suspEdges = useMemo(() => allEdges.filter(e=>e.status==='suspicious'), [allEdges]);
 
   const statCards = [
     { label:'Total Flows', value: fmt(totalFlows), color: C.accent },
@@ -363,8 +507,8 @@ const NetworkMap: React.FC = () => {
     <div style={{ minHeight:'100%', background: C.bg, color: C.text, fontFamily: '"Inter",system-ui,sans-serif', fontSize: 13, lineHeight: 1.6 }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-        ::selection { background:rgba(0,212,255,0.12); color:${C.text}; }
-        :focus-visible { outline:1.5px solid rgba(0,212,255,0.4); outline-offset:2px; border-radius:3px; }
+        ::selection { background:var(--accent-cyan); color:${C.text}; }
+        :focus-visible { outline:1.5px solid var(--border-active); outline-offset:2px; border-radius:3px; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:${C.border}; border-radius:3px; }
@@ -405,7 +549,7 @@ const NetworkMap: React.FC = () => {
               </svg>
             </div>
             <span style={{ fontSize:13,fontWeight:700,letterSpacing:'3px',color:C.text,fontVariantNumeric:'tabular-nums' }}>
-              WATCHTOWER
+              EKADHARA
             </span>
           </div>
           <div style={{ width:1,height:16,background:C.border,flexShrink:0 }} />
@@ -473,10 +617,16 @@ const NetworkMap: React.FC = () => {
                   { status:'suspicious', label:'Suspicious', color: C.amber },
                   { status:'threat', label:'Threat', color: C.red },
                   { label:'Attack Path', color: C.red, dashed: true },
+                  { label:'WS Attack Path', color: '#ff3333', dashed: true, dot: true },
                 ].map(s => (
                   <div key={s.status || s.label} style={{ display:'flex',alignItems:'center',gap:8,padding:'4px 0' }}>
                     {s.dashed ? (
-                      <svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke={s.color} strokeWidth="1.5" strokeDasharray="4 3" opacity="0.7" /></svg>
+                      s.dot ? (
+                        <svg width="24" height="6"><line x1="0" y1="3" x2="24" y2="3" stroke={s.color} strokeWidth="1.5" strokeDasharray="4 3" opacity="0.7" />
+                          <circle cx="12" cy="3" r="2" fill={s.color} opacity="0.9" /></svg>
+                      ) : (
+                        <svg width="24" height="4"><line x1="0" y1="2" x2="24" y2="2" stroke={s.color} strokeWidth="1.5" strokeDasharray="4 3" opacity="0.7" /></svg>
+                      )
                     ) : (
                       <div style={{ width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0 }} />
                     )}
@@ -499,7 +649,7 @@ const NetworkMap: React.FC = () => {
               </span>
             </div>
             <div ref={containerRef} style={{ position:'relative', marginTop: 12 }}>
-              <NetworkTopologySVG nodes={nodes} edges={edges} width={svgDims.width} height={svgDims.height} />
+              <NetworkTopologySVG nodes={nodes} edges={allEdges} dynamicEdges={dynamicEdges} width={svgDims.width} height={svgDims.height} />
             </div>
           </Panel>
         </section>
@@ -512,7 +662,7 @@ const NetworkMap: React.FC = () => {
               letterSpacing: '2px', color: C.accent, textTransform: 'uppercase',
             }}>Active Flow Table</span>
             <span style={{ fontSize: 11, color: C.textSec }}>
-              {edges.length} flows &middot; {fmt(totalFlows)} total packets
+              {allEdges.length} flows &middot; {fmt(totalFlows)} total packets
             </span>
           </div>
           <div style={{ overflowX:'auto', marginTop: 0 }}>
@@ -648,7 +798,7 @@ const NetworkMap: React.FC = () => {
           display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,
         }}>
           <span style={{ fontSize:11,color:C.textDim }}>
-            WATCHTOWER v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
+            EKADHARA v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
           </span>
           <span style={{ fontSize:11,color:C.textDim,fontVariantNumeric:'tabular-nums' }}>
             {nodes.length} nodes &middot; {edges.length} flows &middot; {fmt(totalFlows)} packets

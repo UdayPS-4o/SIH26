@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { Alert, Flow, Stats } from '../types';
-import { useWebSocket, fetchStats, fetchAlerts } from '../lib/api';
+import { useRealWebSocket, fetchStats, fetchAlerts, isBackendOnline } from '../lib/realBackend';
 
 interface WebSocketContextType {
   alerts: Alert[];
@@ -10,6 +10,7 @@ interface WebSocketContextType {
   connectionStatus: string;
   flowsPerSec: number;
   alertCount: number;
+  backendOnline: boolean;
 }
 
 const WebSocketContext = createContext<WebSocketContextType>({
@@ -20,54 +21,40 @@ const WebSocketContext = createContext<WebSocketContextType>({
   connectionStatus: 'disconnected',
   flowsPerSec: 0,
   alertCount: 0,
+  backendOnline: false,
 });
 
 export const WebSocketProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [flows, setFlows] = useState<Flow[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [flowsPerSec, setFlowsPerSec] = useState(0);
-  const [alertCount, setAlertCount] = useState(0);
+  const [backendOnline, setBackendOnline] = useState(false);
 
-  const handleMessage = useCallback((msg: { type: string; data?: any; payload?: any }) => {
-    const item = msg.data || msg.payload;
-    if (!item) return;
-    if (msg.type === 'alert') {
-      setAlerts((prev) => [item, ...prev].slice(0, 100));
-      setAlertCount((prev) => prev + 1);
-    } else if (msg.type === 'flow') {
-      setFlows((prev) => [item, ...prev].slice(0, 100));
-      setFlowsPerSec((prev) => Math.max(0, prev + Math.floor(Math.random() * 20) - 10));
-    }
+  const handleAlert = useCallback((alert: Alert) => {
+    // Handled by useRealWebSocket internally via its state
   }, []);
 
-  const { isConnected, connectionStatus } = useWebSocket(handleMessage);
+  const wsState = useRealWebSocket(handleAlert);
 
   useEffect(() => {
-    const loadInitialData = async () => {
+    let mounted = true;
+    (async () => {
       try {
-        const [statsData, alertsData] = await Promise.all([fetchStats(), fetchAlerts(50, 0)]);
-        setStats(statsData);
-        setAlerts(alertsData);
-        setAlertCount(statsData.total_alerts ?? statsData.alerts_generated ?? 0);
-        setFlowsPerSec(statsData.flows_per_sec ?? statsData.active_flows ?? 0);
-      } catch (e) {
-        console.error('Failed to load initial data:', e);
-      }
-    };
-    loadInitialData();
+        const online = await fetchStats().then(() => true).catch(() => false);
+        if (mounted) setBackendOnline(online);
+      } catch { /* offline mode */ }
+    })();
+    return () => { mounted = false; };
   }, []);
 
   return (
     <WebSocketContext.Provider
       value={{
-        alerts,
-        flows,
-        stats,
-        isConnected,
-        connectionStatus,
-        flowsPerSec,
-        alertCount,
+        alerts: wsState.alerts,
+        flows: wsState.flows,
+        stats: wsState.stats,
+        isConnected: wsState.isConnected,
+        connectionStatus: wsState.connectionStatus,
+        flowsPerSec: wsState.flowsPerSec,
+        alertCount: wsState.alertCount,
+        backendOnline,
       }}
     >
       {children}

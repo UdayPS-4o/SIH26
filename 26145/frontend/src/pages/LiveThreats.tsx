@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, Search } from 'lucide-react';
-import { Alert } from '../types';
+import { useWebSocketContext } from '../context/WebSocketContext';
 import ValidityChip from '../components/ValidityChip';
+import { ShieldAlert, Search, Zap } from 'lucide-react';
+import { Alert } from '../types';
+import { isThreatTypeInjected, subscribeToAttackChanges, getActiveThreatTypes } from '../lib/attackRegistry';
 
 const C = {
   bg: 'var(--bg-primary)',
@@ -37,10 +39,10 @@ let _aid = 0;
 const nextId = () => `LT-${Date.now().toString(36).toUpperCase()}-${(++_aid).toString(36).toUpperCase()}`;
 
 const SEV_MAP: Record<string, { color: string; bg: string }> = {
-  critical: { color: 'var(--accent-red)', bg: 'rgba(239,68,68,0.08)' },
-  high:     { color: 'var(--accent-orange)', bg: 'rgba(249,115,22,0.08)' },
-  medium:   { color: 'var(--accent-yellow)', bg: 'rgba(234,179,8,0.08)' },
-  low:      { color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.06)' },
+  critical: { color: 'var(--accent-red)', bg: 'var(--sev-critical-bg)' },
+  high:     { color: 'var(--accent-orange)', bg: 'var(--sev-high-bg)' },
+  medium:   { color: 'var(--accent-yellow)', bg: 'var(--sev-medium-bg)' },
+  low:      { color: 'var(--accent-cyan)', bg: 'var(--sev-low-bg)' },
 };
 
 const THREAT_TYPES = ['ddos','beaconing','dga','dns_tunnel','port_scan','exfiltration','tls_anomaly','malware','phishing'] as const;
@@ -109,7 +111,7 @@ const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; children: R
       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
       opacity: ready ? 1 : 0, transform: ready ? 'translateY(0)' : 'translateY(8px)',
       transition: `opacity 0.4s ${EASE} ${delay}s, transform 0.4s ${EASE} ${delay}s`,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      boxShadow: '0 1px 3px var(--shadow-sm)',
       ...style,
     }}>
       <div style={{ padding: '20px 24px' }}>{children}</div>
@@ -182,17 +184,22 @@ const Sparkline: React.FC<{ data: number[]; width?: number; height?: number }> =
 
 const LiveThreats: React.FC = () => {
   const navigate = useNavigate();
-  const [alerts, setAlerts] = useState<Alert[]>(() => {
-    const initial: Alert[] = [];
-    const t = Date.now();
-    for (let i = 0; i < 30; i++) initial.push(makeAlert({ timestamp: t - i * rand(3000, 15000) }));
-    return initial.sort((a, b) => b.timestamp - a.timestamp);
-  });
+  const { alerts: wsAlerts, isConnected, backendOnline, flowsPerSec } = useWebSocketContext();
   const [clock, setClock] = useState(now());
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [throughput, setThroughput] = useState<number[]>(Array.from({ length: 30 }, () => rand(10, 120)));
+  const [showOnlyAttacks, setShowOnlyAttacks] = useState(false);
+  const [activeThreatTypes, setActiveThreatTypes] = useState<string[]>([]);
+
+  /* ── Subscribe to attack registry changes ─────────────────────── */
+  useEffect(() => {
+    const unsub = subscribeToAttackChanges(() => {
+      setActiveThreatTypes(getActiveThreatTypes());
+    });
+    setActiveThreatTypes(getActiveThreatTypes());
+    return unsub;
+  }, []);
 
   /* ── Clock ──────────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -200,33 +207,26 @@ const LiveThreats: React.FC = () => {
     return () => clearInterval(t);
   }, []);
 
-  /* ── Live alert stream (every 2 seconds) ────────────────────────────────── */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const count = rand(1, 4);
-      const newAlerts: Alert[] = [];
-      for (let i = 0; i < count; i++) {
-        newAlerts.push(makeAlert({ timestamp: Date.now() - i * rand(200, 1200) }));
-      }
-      setAlerts(prev => [...newAlerts, ...prev].slice(0, 200));
-      setThroughput(prev => [...prev.slice(1), newAlerts.length * rand(10, 40) + rand(5, 20)]);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
   /* ── Filters ────────────────────────────────────────────────────────────── */
   const filteredAlerts = useMemo(() => {
-    let result = alerts;
+    let result = wsAlerts;
     if (filterSeverity !== 'all') result = result.filter(a => a.severity === filterSeverity);
-    if (filterTypes.length > 0) result = result.filter(a => filterTypes.includes(a.threat_type));
+    if (filterTypes.length > 0) {
+      result = result.filter(a => filterTypes.some(t =>
+        (a.threat_type || '').toLowerCase().includes(t.toLowerCase())
+      ));
+    }
+    if (showOnlyAttacks) {
+      result = result.filter(a => (a.src_ip || '').startsWith('1.') || (a.src_ip || '').startsWith('203.') || (a.src_ip || '').startsWith('45.'));
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(a =>
-        a.src_ip.includes(q) || a.dst_ip.includes(q) || a.threat_type.toLowerCase().includes(q)
+        (a.src_ip || '').includes(q) || (a.dst_ip || '').includes(q) || (a.threat_type || '').toLowerCase().includes(q)
       );
     }
     return result;
-  }, [alerts, filterSeverity, filterTypes, searchQuery]);
+  }, [wsAlerts, filterSeverity, filterTypes, searchQuery, showOnlyAttacks]);
 
   const toggleType = (type: string) => {
     setFilterTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
@@ -234,20 +234,27 @@ const LiveThreats: React.FC = () => {
 
   const severityCounts = useMemo(() => {
     const counts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
-    alerts.forEach(a => { counts[a.severity] = (counts[a.severity] || 0) + 1; });
+    wsAlerts.forEach(a => {
+      const s = (a.severity as string) || 'medium';
+      counts[s] = (counts[s] || 0) + 1;
+    });
     return counts;
-  }, [alerts]);
+  }, [wsAlerts]);
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    alerts.forEach(a => { counts[a.threat_type] = (counts[a.threat_type] || 0) + 1; });
+    wsAlerts.forEach(a => {
+      const t = a.threat_type || 'unknown';
+      counts[t] = (counts[t] || 0) + 1;
+    });
     return counts;
-  }, [alerts]);
+  }, [wsAlerts]);
 
   const clearFilters = useCallback(() => {
     setFilterSeverity('all');
     setFilterTypes([]);
     setSearchQuery('');
+    setShowOnlyAttacks(false);
   }, []);
 
   /* ═══════════════════════════════════════════════════════════════════════════════════
@@ -262,8 +269,8 @@ const LiveThreats: React.FC = () => {
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         @keyframes wt-row-in { from{opacity:0; transform:translateX(-4px);} to{opacity:1; transform:translateX(0);} }
-        ::selection { background: rgba(0,212,255,0.12); color: ${C.text}; }
-        :focus-visible { outline: 1.5px solid rgba(0,212,255,0.4); outline-offset: 2px; border-radius: 3px; }
+        ::selection { background: var(--accent-cyan); color: ${C.text}; }
+        :focus-visible { outline: 1.5px solid var(--border-active); outline-offset: 2px; border-radius: 3px; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 3px; }
@@ -288,7 +295,7 @@ const LiveThreats: React.FC = () => {
             }}>
               <ShieldAlert size={15} color={C.accent} strokeWidth={1.8} />
             </div>
-            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing:'3px', color: C.text }}>WATCHTOWER</span>
+            <span style={{ fontSize: 13, fontWeight: 700, letterSpacing:'3px', color: C.text }}>EKADHARA</span>
           </div>
           <div style={{ width:1, height:16, background: C.border, flexShrink:0 }} />
           <span style={{ fontSize: 10, color: C.textSec, letterSpacing:'0.8px', flexShrink:0 }}>
@@ -297,20 +304,31 @@ const LiveThreats: React.FC = () => {
           <div style={{ flex:1 }} />
           <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px',
-              background: `${C.red}08`, border: `1px solid ${C.red}25`, borderRadius: 4,
+              background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4,
             }}>
-              <span style={{
-                width:6, height:6, borderRadius:'50%', background: C.red,
-                animation:'wt-pulse 1.6s ease-in-out infinite',
-                display:'inline-block',
-              }} />
-              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing:'1.2px', color: C.red }}>STREAMING</span>
+              <span className={isConnected ? 'hud-status-dot status-live' : 'hud-status-dot status-demo'} style={{marginRight: 4}} />
+              <span style={{ fontFamily: '"JetBrains Mono",monospace', fontSize: 10, fontWeight: 600,
+                color: isConnected ? 'var(--color-success)' : 'var(--color-danger)',
+                letterSpacing: '0.6px' }}>
+                {isConnected ? 'LIVE' : 'DEMO'}
+              </span>
+            </div>
+            <div>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing:'1.2px',
+                color: isConnected ? C.green : C.red }}>
+                {isConnected ? 'LIVE DETECTIONS' : 'OFFLINE'}
+              </span>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px',
               border:`1px solid var(--border-color)`, borderRadius:4,
             }}>
-              <span style={{ width:5, height:5, borderRadius:'50%', background:C.green, display:'inline-block' }} />
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'0.5px', color:C.green, fontFamily:'"JetBrains Mono",monospace' }}>DIODE FULL-DUPLEX</span>
+              <span style={{ width:5, height:5, borderRadius:'50%',
+                background: backendOnline ? C.green : 'var(--text-muted)', display:'inline-block' }} />
+              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'0.5px',
+                color: backendOnline ? C.green : 'var(--text-muted)',
+                fontFamily:'"JetBrains Mono",monospace' }}>
+                {backendOnline ? 'DIODE ACTIVE' : 'DIODE STANDBY'}
+              </span>
             </div>
             <span style={{ fontSize: 11, color: C.textSec, letterSpacing:'0.5px', fontVariantNumeric:'tabular-nums' }}>
               {new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })} &middot; {clock}
@@ -328,7 +346,8 @@ const LiveThreats: React.FC = () => {
             Live Threat Feed
           </h1>
           <p style={{ fontSize: 13, color: C.textSec, maxWidth: 600, lineHeight: 1.6, margin: 0 }}>
-            Real-time alert stream — auto-refresh every 2 seconds
+            Real-time alert stream from the backend detection pipeline.
+            Launch attacks from <strong>Attack Lab</strong> — detections arrive here via WebSocket.
           </p>
         </section>
 
@@ -339,12 +358,12 @@ const LiveThreats: React.FC = () => {
               {/* Sparkline */}
               <div style={{ display:'flex', flexDirection:'column', gap: 6 }}>
                 <span style={{ fontSize: 10, fontWeight: 600, color: C.textSec, letterSpacing:'0.5px', textTransform:'uppercase' }}>Throughput</span>
-                <Sparkline data={throughput} width={200} height={48} />
+                <Sparkline data={[flowsPerSec, flowsPerSec * 0.8, flowsPerSec * 1.2, flowsPerSec * 0.9, flowsPerSec]} width={200} height={48} />
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
                   <span style={{ fontSize: 22, fontWeight: 700, color: C.text, fontVariantNumeric:'tabular-nums' }}>
-                    {throughput[throughput.length - 1]}
+                    {flowsPerSec}
                   </span>
-                  <span style={{ fontSize: 10, color: C.textDim }}>alerts/s</span>
+                  <span style={{ fontSize: 10, color: C.textDim }}>flows/s</span>
                 </div>
               </div>
 
@@ -495,7 +514,8 @@ const LiveThreats: React.FC = () => {
                     const tClr = THREAT_CLR[alert.threat_type.toLowerCase()] || C.accent;
                     const sevStyle = SEV_MAP[alert.severity] || SEV_MAP.low;
                     const rowBg = fresh ? `${C.red}06` : (idx % 2 === 0 ? 'transparent' : `${C.accent}02`);
-                    const validity = (alert.confidence > 0.85 ? 'MEASURED' : alert.confidence > 0.6 ? 'ESTIMATED' : 'MISSING') as 'MEASURED' | 'ESTIMATED' | 'MISSING';
+                    const validity = (alert.confidence >= 85 ? 'MEASURED' : alert.confidence >= 60 ? 'ESTIMATED' : 'MISSING') as 'MEASURED' | 'ESTIMATED' | 'MISSING';
+                    const isInjected = isThreatTypeInjected(alert.threat_type);
                     return (
                       <tr key={alert.id} style={{
                         borderBottom: `1px solid ${C.border}30`,
@@ -555,7 +575,40 @@ const LiveThreats: React.FC = () => {
                         </td>
 
                         <td style={{ padding:'10px 14px' }}>
-                          <ValidityChip validity={validity} />
+                          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                            <ValidityChip validity={validity} />
+                            {isInjected && (
+                              <span style={{
+                                padding:'2px 8px', borderRadius:9999,
+                                fontSize:9, fontWeight:700,
+                                fontFamily:'"JetBrains Mono",monospace',
+                                letterSpacing:'0.05em',
+                                background:'var(--sev-critical-bg)',
+                                color:'var(--accent-red)',
+                                border:'1px solid var(--sev-critical-border)',
+                                display:'inline-flex', alignItems:'center', gap:3,
+                                whiteSpace:'nowrap',
+                              }}>
+                                <Zap size={9} strokeWidth={2.5} />
+                                INJECTED
+                              </span>
+                            )}
+                            {!isInjected && (
+                              <span style={{
+                                padding:'2px 8px', borderRadius:9999,
+                                fontSize:9, fontWeight:700,
+                                fontFamily:'"JetBrains Mono",monospace',
+                                letterSpacing:'0.05em',
+                                background:'var(--sev-low-bg)',
+                                color:'var(--accent-cyan)',
+                                border:'1px solid var(--sev-low-border)',
+                                display:'inline-flex', alignItems:'center', gap:3,
+                                whiteSpace:'nowrap',
+                              }}>
+                                MEASURED
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -569,10 +622,10 @@ const LiveThreats: React.FC = () => {
         {/* ── Threat Class Distribution Bar ────────────────────────────────── */}
         <Panel delay={0.15} style={{ marginBottom: 20 }}>
           <span style={{ fontSize: 11, color: C.textDim }}>
-            WATCHTOWER v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
+            EKADHARA v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
           </span>
           <span style={{ fontSize: 11, color: C.textDim, fontVariantNumeric:'tabular-nums' }}>
-            Auto-refresh 2s &middot; {filteredAlerts.length} filtered &middot; {alerts.length} total
+            WebSocket: {isConnected ? 'connected' : 'disconnected'} &middot; {filteredAlerts.length} filtered &middot; {wsAlerts.length} total
           </span>
         </Panel>
 

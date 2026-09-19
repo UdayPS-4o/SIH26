@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════════
-   WATCHTOWER — Activity Log
+   EKADHARA — Activity Log
    ═══════════════════════════════════════════════════════════════════════ */
 
 interface LogEntry {
@@ -15,9 +15,9 @@ interface LogEntry {
 }
 
 const LEVELS: Record<string, { color: string; bg: string; dot: string }> = {
-  critical: { color: 'var(--accent-red)', bg: 'rgba(239,68,68,0.12)', dot: 'var(--accent-red)' },
-  high:     { color: 'var(--accent-orange)', bg: 'rgba(249,115,22,0.12)', dot: 'var(--accent-orange)' },
-  medium:   { color: 'var(--accent-yellow)', bg: 'rgba(234,179,8,0.12)', dot: 'var(--accent-yellow)' },
+  critical: { color: 'var(--accent-red)', bg: 'var(--sev-critical-bg)', dot: 'var(--accent-red)' },
+  high:     { color: 'var(--accent-orange)', bg: 'var(--sev-high-bg)', dot: 'var(--accent-orange)' },
+  medium:   { color: 'var(--accent-yellow)', bg: 'var(--sev-medium-bg)', dot: 'var(--accent-yellow)' },
   low:      { color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.12)', dot: 'var(--accent-cyan)' },
 };
 
@@ -235,7 +235,7 @@ function ActivityPage() {
                     <span style={{ fontFamily: '"JetBrains Mono", monospace', color: bar.color, fontSize: '10px', fontWeight: 600 }}>{bar.label}</span>
                     <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px' }}>{bar.count} ({bar.pct.toFixed(1)}%)</span>
                   </div>
-                  <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(0,212,255,0.06)', overflow: 'hidden' }}>
+                  <div style={{ height: '6px', borderRadius: '3px', background: 'var(--color-info-dim)', overflow: 'hidden' }}>
                     <div style={{ height: '100%', borderRadius: '3px', background: bar.color, width: `${Math.min(bar.pct, 100)}%`, transition: 'width 0.5s ease' }} />
                   </div>
                 </div>
@@ -276,9 +276,9 @@ function ActivityPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {FILTERS.map(f => (
                 <button key={f} onClick={() => setFilter(f)} style={{
-                  background: filter === f ? 'rgba(0,212,255,0.1)' : 'transparent',
+                  background: filter === f ? 'var(--selection-bg)' : 'transparent',
                   color: filter === f ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                  border: `1px solid ${filter === f ? 'rgba(0,212,255,0.3)' : 'rgba(0,212,255,0.08)'}`,
+                  border: `1px solid ${filter === f ? 'var(--border-active)' : 'var(--color-info-dim)'}`,
                   borderRadius: '6px', padding: '6px 10px', cursor: 'pointer',
                   fontFamily: '"JetBrains Mono", monospace', fontSize: '11px', textTransform: 'capitalize',
                   transition: 'all 0.2s',
@@ -295,7 +295,7 @@ function ActivityPage() {
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search events..."
                 style={{
-                  width: '100%', background: 'rgba(6,10,16,0.8)', border: '1px solid rgba(0,212,255,0.12)',
+                  width: '100%', background: 'var(--panel-dark)', border: '1px solid var(--accent-cyan)',
                   borderRadius: '6px', padding: '8px 10px', color: 'var(--text-primary)', fontSize: '12px',
                   fontFamily: '"JetBrains Mono", monospace', outline: 'none',
                 }}
@@ -303,8 +303,8 @@ function ActivityPage() {
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
               <button onClick={() => setPaused(!paused)} style={{
-                flex: 1, background: paused ? 'rgba(255,136,51,0.15)' : 'transparent',
-                color: paused ? 'var(--accent-orange)' : 'var(--text-secondary)', border: `1px solid ${paused ? 'rgba(255,136,51,0.3)' : 'rgba(0,212,255,0.12)'}`,
+                flex: 1, background: paused ? 'var(--status-warning-bg)' : 'transparent',
+                color: paused ? 'var(--accent-orange)' : 'var(--text-secondary)', border: `1px solid ${paused ? 'rgba(255,136,51,0.3)' : 'var(--accent-cyan)'}`,
                 borderRadius: '6px', padding: '6px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
               }}>
                 {paused ? '▶ Resume' : '❚❚ Pause'}
@@ -318,7 +318,7 @@ function ActivityPage() {
                 URL.revokeObjectURL(url);
               }} style={{
                 flex: 1, background: 'transparent', color: 'var(--accent-cyan)',
-                border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px', padding: '6px', cursor: 'pointer',
+                border: '1px solid var(--accent-cyan)', borderRadius: '6px', padding: '6px', cursor: 'pointer',
                 fontFamily: '"JetBrains Mono", monospace', fontSize: '11px',
               }}>Export JSON</button>
             </div>
@@ -347,7 +347,7 @@ function ActivityPage() {
             </div>
 
             <div ref={logsContainerRef} style={{
-              flex: 1, overflowY: 'auto', background: 'rgba(6,10,16,0.6)',
+              flex: 1, overflowY: 'auto', background: 'var(--overlay-md)',
               maxHeight: '400px',
             }}>
               {filtered.length === 0 ? (
@@ -362,8 +362,8 @@ function ActivityPage() {
                     <div key={log.id} onClick={() => setSelectedLog(log)} style={{
                       display: 'flex', alignItems: 'center', gap: '12px',
                       padding: '10px 16px', cursor: 'pointer',
-                      background: selectedLog?.id === log.id ? 'rgba(0,212,255,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(0,212,255,0.02)',
-                      borderBottom: '1px solid rgba(0,212,255,0.04)',
+                      background: selectedLog?.id === log.id ? 'var(--color-info-dim)' : idx % 2 === 0 ? 'transparent' : 'var(--color-info-dim)',
+                      borderBottom: '1px solid var(--color-info-dim)',
                       borderLeft: `3px solid ${ls.color}`,
                       transition: 'background 0.15s',
                     }}>
@@ -414,8 +414,8 @@ function ActivityPage() {
                   <React.Fragment key={step}>
                     <div style={{
                       padding: '8px 14px', borderRadius: '6px', textAlign: 'center', minWidth: '100px',
-                      background: status === 'triggered' ? 'rgba(239,68,68,0.1)' : 'rgba(0,255,65,0.06)',
-                      border: `1px solid ${status === 'triggered' ? 'rgba(239,68,68,0.25)' : 'rgba(0,255,65,0.15)'}`,
+                      background: status === 'triggered' ? 'var(--status-triggered-bg)' : 'var(--color-success-dim)',
+                      border: `1px solid ${status === 'triggered' ? 'var(--sev-critical-border)' : 'var(--color-success-dim)'}`,
                     }}>
                       <div style={{ fontFamily: '"JetBrains Mono", monospace', color: status === 'triggered' ? 'var(--accent-red)' : 'var(--accent-green)', fontSize: '11px', fontWeight: 600 }}>{step}</div>
                       <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', marginTop: '2px' }}>{status}</div>
@@ -430,7 +430,7 @@ function ActivityPage() {
 
             {/* Event Details */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div style={{ background: 'rgba(6,10,16,0.6)', borderRadius: '6px', padding: '12px', border: '1px solid rgba(0,212,255,0.08)' }}>
+              <div style={{ background: 'var(--overlay-md)', borderRadius: '6px', padding: '12px', border: '1px solid var(--color-info-dim)' }}>
                 <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Event Details</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -451,7 +451,7 @@ function ActivityPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ background: 'rgba(6,10,16,0.6)', borderRadius: '6px', padding: '12px', border: '1px solid rgba(0,212,255,0.08)' }}>
+              <div style={{ background: 'var(--overlay-md)', borderRadius: '6px', padding: '12px', border: '1px solid var(--color-info-dim)' }}>
                 <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '8px' }}>Decision Path</div>
                 <pre style={{
                   fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '10px',

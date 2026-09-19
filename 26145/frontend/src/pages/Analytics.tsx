@@ -34,10 +34,10 @@ const FONT = '"JetBrains Mono","Fira Code",monospace';
 const SANS = "'Inter',system-ui,sans-serif";
 
 const SEV_META: Record<string, { c: string; bg: string }> = {
-  critical: { c: 'var(--accent-red)',    bg: 'rgba(239,68,68,0.08)' },
-  high:     { c: 'var(--accent-orange)', bg: 'rgba(249,115,22,0.08)' },
-  medium:   { c: 'var(--accent-yellow)', bg: 'rgba(234,179,8,0.08)' },
-  low:      { c: 'var(--accent-cyan)',   bg: 'rgba(6,182,212,0.06)' },
+  critical: { c: 'var(--accent-red)',    bg: 'var(--sev-critical-bg)' },
+  high:     { c: 'var(--accent-orange)', bg: 'var(--sev-high-bg)' },
+  medium:   { c: 'var(--accent-yellow)', bg: 'var(--sev-medium-bg)' },
+  low:      { c: 'var(--accent-cyan)',   bg: 'var(--sev-low-bg)' },
 };
 
 const SEV_LABEL: Record<string, string> = {
@@ -82,7 +82,7 @@ function Panel({ delay = 0, style, children }: {
       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
       opacity: ready ? 1 : 0, transform: ready ? 'translateY(0)' : 'translateY(8px)',
       transition: `opacity 0.4s ${EASE} ${delay}s, transform 0.4s ${EASE} ${delay}s`,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      boxShadow: '0 1px 3px var(--shadow-sm)',
       ...style,
     }}>
       <div style={{ padding: '20px 24px' }}>{children}</div>
@@ -106,68 +106,66 @@ function SevBadge({ sev }: { sev: string }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
-   1. DONUT CHART — Severity distribution
+   1. DONUT CHART — Severity distribution (SVG stroke-dasharray)
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 function DonutChart({ data }: { data: Array<{ name: string; count: number; severity: string }> }) {
   const size = 200;
   const cx = size / 2, cy = size / 2;
-  const outerR = 80, innerR = 50;
+  const R = 78;
+  const circ = Math.PI * 2 * R;
   const total = data.reduce((s, d) => s + d.count, 0) || 1;
 
-  let angle = -Math.PI / 2;
+  const sevColors: Record<string, string> = {
+    critical: 'var(--accent-red)',
+    high: 'var(--accent-orange)',
+    medium: 'var(--accent-yellow)',
+    low: 'var(--accent-cyan)',
+  };
+
+  let cumOffset = 0;
   const slices = data.map((d) => {
     const frac = d.count / total;
     const sweep = frac * Math.PI * 2;
-    const start = angle;
-    const end = angle + sweep;
-    const large = sweep > Math.PI ? 1 : 0;
-    angle = end;
-
-    const x1 = cx + outerR * Math.cos(start);
-    const y1 = cy + outerR * Math.sin(start);
-    const x2 = cx + outerR * Math.cos(end);
-    const y2 = cy + outerR * Math.sin(end);
-    const ix1 = cx + innerR * Math.cos(end);
-    const iy1 = cy + innerR * Math.sin(end);
-    const ix2 = cx + innerR * Math.cos(start);
-    const iy2 = cy + innerR * Math.sin(start);
-
-    const path = sweep >= 0.001
-      ? `M${x1},${y1} A${outerR},${outerR} 0 ${large},1 ${x2},${y2} L${ix1},${iy1} A${innerR},${innerR} 0 ${large},0 ${ix2},${iy2} Z`
-      : '';
-
-    return { ...d, path, color: SEV_META[d.severity]?.c || C.accent, frac };
+    const dash = frac * circ;
+    const offset = -cumOffset;
+    cumOffset += sweep;
+    return { ...d, dash, offset, color: sevColors[d.severity] || C.accent, frac };
   });
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', justifyContent: 'center' }}>
       <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
         {slices.map((s, i) => (
-          <path key={i} d={s.path} fill={s.color} opacity={0.8} />
+          <circle key={i} cx={cx} cy={cy} r={R}
+            fill="none"
+            stroke={s.color}
+            strokeWidth="16"
+            strokeDasharray={`${s.dash} ${circ - s.dash}`}
+            strokeDashoffset={s.offset}
+            strokeLinecap="butt"
+            opacity={0.7 + (i === 0 ? 0.25 : 0)}
+            style={{ transition: 'opacity 0.3s, stroke-width 0.3s', cursor: 'pointer' }}
+            className="donut-segment"
+          />
         ))}
         {/* Center text */}
-        <text x={cx} y={cy - 4} textAnchor="middle" fill={C.text} fontSize={16} fontWeight={700} fontFamily={FONT}>
+        <text x={cx} y={cy - 6} textAnchor="middle" fill={C.text} fontSize={18} fontWeight={800} fontFamily={FONT}>
           {fmt(total)}
         </text>
-        <text x={cx} y={cy + 10} textAnchor="middle" fill={C.textSec} fontSize="8" fontFamily={FONT} letterSpacing="1.5px">
-          TOTAL
+        <text x={cx} y={cy + 10} textAnchor="middle" fill="var(--text-muted)" fontSize="8" fontFamily={FONT} letterSpacing="1.5px">
+          THREATS
         </text>
       </svg>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
         {data.map((d, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{
-              width: 8, height: 8, borderRadius: 2, background: SEV_META[d.severity]?.c,
-              flexShrink: 0,
-            }} />
-            <span style={{ fontSize: 12, color: C.textSec, fontFamily: SANS, minWidth: 70 }}>
-              {d.name}
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: FONT, fontVariantNumeric: 'tabular-nums', minWidth: 36, textAlign: 'right' }}>
+          <div key={i} className="donut-legend-item" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="donut-legend-dot" style={{ background: sevColors[d.severity] || C.accent }} />
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: SANS, minWidth: 64 }}>{d.name}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: FONT, fontVariantNumeric: 'tabular-nums', minWidth: 32, textAlign: 'right' }}>
               {fmt(d.count)}
             </span>
-            <span style={{ fontSize: 11, color: C.textDim, fontFamily: FONT, minWidth: 36, textAlign: 'right' }}>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: FONT, minWidth: 38, textAlign: 'right' }}>
               {((d.count / total) * 100).toFixed(1)}%
             </span>
           </div>
@@ -178,7 +176,7 @@ function DonutChart({ data }: { data: Array<{ name: string; count: number; sever
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
-   2. SPARKLINE — Alerts per minute, last 30 min
+   2. SPARKLINE — Alerts per minute, last 30 min (SVG)
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }> }) {
@@ -201,7 +199,7 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
     <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', maxHeight: height }}>
       <defs>
         <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={C.accent} stopOpacity="0.12" />
+          <stop offset="0%" stopColor={C.accent} stopOpacity="0.15" />
           <stop offset="100%" stopColor={C.accent} stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -211,17 +209,27 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
         const v = Math.round(maxV - (maxV / 4) * i);
         return (
           <g key={i}>
-            <line x1={pad.left} y1={y} x2={width - pad.right} y2={y} stroke={C.border} strokeWidth="1" opacity="0.5" />
-            <text x={pad.left - 8} y={y + 3} textAnchor="end" fill={C.textDim} fontSize="9" fontFamily={FONT}>{v}</text>
+            <line x1={pad.left} y1={y} x2={width - pad.right} y2={y} stroke={C.border} strokeWidth="1" opacity="0.4" />
+            <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="var(--text-muted)" fontSize="9" fontFamily={FONT}>{v}</text>
           </g>
         );
       })}
-      <path d={area} fill="url(#sparkGrad)" />
-      <path d={line} fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Area fill */}
+      <path d={area} fill="url(#sparkGrad)" className="svg-spark-in" style={{ opacity: 0, animation: 'svg-spark-in 0.6s ease 0.4s forwards' }} />
+      {/* Line */}
+      <path d={line} fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+        strokeDasharray="2000" strokeDashoffset="2000"
+        style={{ animation: 'svg-draw-line 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards' }} />
+      {/* Data points */}
       {pts.filter((_, i) => i % 5 === 0).map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r="2.5" fill={C.surface} stroke={C.accent} strokeWidth="1.5" />
       ))}
-      <circle cx={lastPt.x} cy={lastPt.y} r="3" fill={C.accent} />
+      {/* Last point highlight */}
+      <circle cx={lastPt.x} cy={lastPt.y} r="4" fill={C.accent} opacity="0.15">
+        <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.15;0.05;0.15" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <circle cx={lastPt.x} cy={lastPt.y} r="2.5" fill={C.accent} />
       {/* X labels */}
       {data.filter((_, i) => i % 5 === 0).map((d, i) => {
         const idx = i * 5;
@@ -229,7 +237,7 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
         const x = pts[idx]?.x;
         if (!x) return null;
         return (
-          <text key={i} x={x} y={height - 8} textAnchor="middle" fill={C.textSec} fontSize="9" fontFamily={FONT}>
+          <text key={i} x={x} y={height - 8} textAnchor="middle" fill="var(--text-secondary)" fontSize="9" fontFamily={FONT}>
             {d.time}
           </text>
         );
@@ -239,35 +247,43 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
-   3. HORIZONTAL BAR — Protocol breakdown
+   3. HORIZONTAL BAR — Protocol breakdown (SVG with gradients)
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 function ProtocolChart({ data }: { data: Array<{ name: string; value: number }> }) {
   const max = Math.max(...data.map(d => d.value), 1);
+  const colors = [C.accent, C.purple, C.amber, C.teal, C.green, C.orange];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {data.map((d, i) => {
         const pct = (d.value / max) * 100;
-        const colors = [C.accent, C.purple, C.amber, C.teal, C.green, C.orange];
         const color = colors[i % colors.length];
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{
-              fontSize: 12, color: C.textSec, width: 48, flexShrink: 0,
+              fontSize: 11, color: C.textSec, width: 48, flexShrink: 0,
               letterSpacing: '0.3px', fontFamily: SANS,
             }}>{d.name}</span>
-            <div style={{
-              flex: 1, height: 14, background: C.border, borderRadius: 3, overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%', width: `${Math.max(pct, 0.5)}%`,
-                background: color, borderRadius: 3,
-                transition: 'width 1.2s cubic-bezier(0.22,1,0.36,1)', opacity: 0.8,
-              }} />
-            </div>
+            <svg width="100%" height="16" viewBox="0 0 400 16" preserveAspectRatio="none" style={{ flex:1, display:'block' }}>
+              <defs>
+                <linearGradient id={`prot-grad-${i}`} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor={color} />
+                  <stop offset="100%" stopColor={color} stopOpacity="0.3" />
+                </linearGradient>
+                <filter id={`prot-glow-${i}`}>
+                  <feGaussianBlur stdDeviation="2" result="blur" />
+                  <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                </filter>
+              </defs>
+              <rect x="0" y="3" width="400" height="10" rx="2" fill="var(--bg-elevated)" stroke="var(--border-muted)" strokeWidth="0.5" />
+              <rect x="0" y="3" width={pct * 4} height="10" rx="2"
+                fill={`url(#prot-grad-${i})`} opacity="0.5" filter={`url(#prot-glow-${i})`} />
+              <rect x="0" y="3" width={pct * 4} height="10" rx="2"
+                fill={`url(#prot-grad-${i})`} />
+            </svg>
             <span style={{
-              fontSize: 12, fontWeight: 600, color, width: 48, textAlign: 'right',
+              fontSize: 11, fontWeight: 600, color, width: 48, textAlign: 'right',
               fontVariantNumeric: 'tabular-nums', fontFamily: FONT,
             }}>{fmt(d.value)}</span>
           </div>
@@ -531,8 +547,8 @@ const Analytics: React.FC = () => {
     <div style={{ minHeight: '100%', background: C.bg, color: C.text, fontFamily: SANS, fontSize: 13, lineHeight: 1.6 }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-        ::selection { background: rgba(0,212,255,0.12); color: ${C.text}; }
-        :focus-visible { outline: 1.5px solid rgba(0,212,255,0.4); outline-offset: 2px; border-radius: 3px; }
+        ::selection { background: var(--accent-cyan); color: ${C.text}; }
+        :focus-visible { outline: 1.5px solid var(--border-active); outline-offset: 2px; border-radius: 3px; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 3px; }
@@ -558,7 +574,7 @@ const Analytics: React.FC = () => {
             }}>
               <Activity size={15} color={C.accent} strokeWidth={1.8} />
             </div>
-            <span style={{ fontSize:13, fontWeight:700, letterSpacing:'3px', color:C.text }}>WATCHTOWER</span>
+            <span style={{ fontSize:13, fontWeight:700, letterSpacing:'3px', color:C.text }}>EKADHARA</span>
           </div>
           <div style={{ width:1, height:16, background:C.border, flexShrink:0 }} />
           <span style={{ fontSize:10, color:C.textSec, letterSpacing:'0.8px', flexShrink:0 }}>PS-26145 · ANALYTICS</span>
@@ -704,7 +720,7 @@ const Analytics: React.FC = () => {
           display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8,
         }}>
           <span style={{ fontSize:11,color:C.textDim }}>
-            WATCHTOWER v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
+            EKADHARA v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
           </span>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:5, height:5, borderRadius:'50%', background:'var(--accent-green)', animation:'wt-pulse 1.6s ease-in-out infinite' }} />

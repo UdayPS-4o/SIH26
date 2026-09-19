@@ -23,8 +23,8 @@ const Header: React.FC<HeaderProps> = ({
     <header
       className="h-12 flex items-center justify-between px-5 border-b"
       style={{
-        background: 'linear-gradient(180deg, #0a0f18 0%, #060a10 100%)',
-        borderBottom: '1px solid rgba(0,212,255,0.12)',
+        background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-base) 100%)',
+        borderBottom: '1px solid var(--border-default)',
       }}
     >
       {/* Left: breadcrumb */}
@@ -33,18 +33,18 @@ const Header: React.FC<HeaderProps> = ({
           className="text-sm font-bold tracking-wider"
           style={{
             fontFamily: "'JetBrains Mono','Fira Code','Courier New',monospace",
-            color: '#00d4ff',
-            textShadow: '0 0 8px rgba(0,212,255,0.3)',
+            color: 'var(--accent-cyan)',
+            textShadow: '0 0 8px var(--border-active)',
             letterSpacing: '1.5px',
           }}
         >
           {pageTitle}
         </h2>
-        <span style={{ color: 'rgba(0,212,255,0.25)' }}>|</span>
+        <span style={{ color: 'var(--border-active)' }}>|</span>
         <span
           className="text-xs"
           style={{
-            color: '#5a7a9a',
+            color: 'var(--text-secondary)',
             fontFamily: "'JetBrains Mono','Fira Code',monospace",
           }}
         >
@@ -60,10 +60,10 @@ const Header: React.FC<HeaderProps> = ({
           onChange={(e) => onTimeWindowChange(e.target.value)}
           className="text-xs py-1 pr-8"
           style={{
-            background: 'rgba(0,212,255,0.03)',
-            border: '1px solid rgba(0,212,255,0.1)',
+            background: 'var(--color-accent-dim)',
+            border: '1px solid var(--selection-bg)',
             borderRadius: '3px',
-            color: '#c8d6e5',
+            color: 'var(--text-secondary)',
             fontFamily: "'JetBrains Mono','Fira Code',monospace",
             fontSize: '11px',
           }}
@@ -91,8 +91,8 @@ const Header: React.FC<HeaderProps> = ({
         <div
           className="flex items-center gap-2 px-3 py-1.5 rounded"
           style={{
-            background: 'rgba(0,212,255,0.03)',
-            border: '1px solid rgba(0,212,255,0.08)',
+            background: 'var(--color-accent-dim)',
+            border: '1px solid var(--border-default)',
           }}
         >
           <AlertTriangle size={14} style={{ color: '#f59e0b' }} />
