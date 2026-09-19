@@ -3,31 +3,41 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-route
 import { WebSocketProvider, useWebSocketContext } from './context/WebSocketContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import LiveThreats from './pages/LiveThreats';
 import NetworkMap from './pages/NetworkMap';
 import Analytics from './pages/Analytics';
 import AIAnalyzer from './pages/AIAnalyzer';
-import MaterialsPage from './pages/MaterialsPage';
-import ActivityPage from './pages/ActivityPage';
-import IntegrationPage from './pages/IntegrationPage';
-import AdminPage from './pages/AdminPage';
-import MatchPage from './pages/MatchPage';
+import AttackLab from './pages/AttackLab';
 import DiodeLab from './pages/DiodeLab';
-import EgressTerminal from './pages/EgressTerminal';
-import EvidenceLocker from './pages/EvidenceLocker';
-import AttackPanel from './components/AttackPanel';
-import ReviewPage from './pages/ReviewPage';
 import { Sun, Moon } from 'lucide-react';
 
 const SIDEBAR_WIDTH = 260;
 const HUD_HEIGHT = 56;
 
+const FULLSCREEN_PAGES = ['/attack', '/diode-lab'];
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // All hooks must be at the top — no early returns before them
+  const location = useLocation();
   const { isConnected, flowsPerSec, alertCount } = useWebSocketContext();
   const { isDark, toggleTheme } = useTheme();
-  const location = useLocation();
+  const isFullscreen = FULLSCREEN_PAGES.includes(location.pathname);
+
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [pageKey, setPageKey] = useState(0);
+  const [fadeIn, setFadeIn] = useState(true);
+
+  // Animate page transition on route change
+  useEffect(() => {
+    setFadeIn(false);
+    const t = setTimeout(() => {
+      setPageKey(k => k + 1);
+      setFadeIn(true);
+    }, 80);
+    return () => clearTimeout(t);
+  }, [location.pathname]);
 
   // Scroll to top on every route change
   useEffect(() => {
@@ -48,6 +58,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     year: 'numeric',
   });
 
+  if (isFullscreen) {
+    return (
+      <div className="app-shell">
+        <main className="content-area fullscreen-page">
+          <div className="content-inner" key={location.pathname} style={{
+            opacity: 1,
+            transform: 'none',
+          }}>
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       {/* Sidebar — fixed width, always visible */}
@@ -56,10 +81,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Main column: header + scrollable content */}
       <div className="app-main">
         {/* ── HUD Header ── */}
-        <header className="hud-bar" style={{ height: HUD_HEIGHT }}>
+        <header
+          className="hud-bar hud-bar-scanlines"
+          style={{ height: HUD_HEIGHT }}
+        >
           {/* Left: wordmark + subtitle */}
           <div className="hud-left">
-            <div className="hud-wordmark">WATCHTOWER</div>
+            <div className="hud-wordmark">EKADHARA</div>
             <div className="hud-subtitle">
               <span className="hud-subtitle-project">PS-26145</span>
               <span className="hud-subtitle-sep">·</span>
@@ -70,8 +98,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           {/* Right: telemetry + controls */}
           <div className="hud-right">
             {/* Connection status */}
-            <div className={`hud-status-badge ${isConnected ? 'status-live' : 'status-demo'}`}>
-              <span className="hud-status-dot" />
+            <div
+              className={`hud-status-badge ${isConnected ? 'status-live' : 'status-demo'}`}
+            >
+              <span className="hud-status-dot live-pulse-dot" />
               <span className="hud-status-text">{isConnected ? 'LIVE' : 'DEMO'}</span>
             </div>
 
@@ -108,7 +138,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <span className="hud-clock-time">{timeStr}</span>
             </div>
 
-            {/* Theme toggle */}
+            {/* Theme toggle — remove before final submission */}
             <button
               className="theme-toggle"
               onClick={toggleTheme}
@@ -122,7 +152,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         {/* ── Scrollable Content ── */}
         <main className="content-area">
-          <div className="content-inner">
+          <div className="content-inner" key={pageKey} style={{
+            opacity: fadeIn ? 1 : 0,
+            transform: fadeIn ? 'translateY(0)' : 'translateY(4px)',
+            transition: 'opacity 150ms cubic-bezier(0.22, 1, 0.36, 1), transform 150ms cubic-bezier(0.22, 1, 0.36, 1)',
+          }}>
             {children}
           </div>
         </main>
@@ -138,17 +172,8 @@ const AppContent: React.FC = () => (
     <Route path="/network-map" element={<NetworkMap />} />
     <Route path="/analytics" element={<Analytics />} />
     <Route path="/ai-analyzer" element={<AIAnalyzer />} />
-    <Route path="/materials" element={<MaterialsPage />} />
-    <Route path="/materials/:id" element={<MaterialsPage />} />
-    <Route path="/activity" element={<ActivityPage />} />
-    <Route path="/integrations" element={<IntegrationPage />} />
-    <Route path="/admin" element={<AdminPage />} />
-    <Route path="/match" element={<MatchPage />} />
-    <Route path="/attack" element={<AttackPanel />} />
-    <Route path="/review" element={<ReviewPage />} />
+    <Route path="/attack" element={<AttackLab />} />
     <Route path="/diode-lab" element={<DiodeLab />} />
-    <Route path="/egress-test" element={<EgressTerminal />} />
-    <Route path="/evidence" element={<EvidenceLocker />} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
@@ -157,9 +182,11 @@ const App: React.FC = () => (
   <BrowserRouter>
     <ThemeProvider>
       <WebSocketProvider>
-        <Layout>
-          <AppContent />
-        </Layout>
+        <ErrorBoundary>
+          <Layout>
+            <AppContent />
+          </Layout>
+        </ErrorBoundary>
       </WebSocketProvider>
     </ThemeProvider>
   </BrowserRouter>

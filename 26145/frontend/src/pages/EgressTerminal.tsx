@@ -69,8 +69,8 @@ const EgressTerminal: React.FC = () => {
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         @keyframes wt-pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
-        ::selection { background:rgba(0,212,255,0.12); color:var(--text-primary); }
-        :focus-visible { outline:1.5px solid rgba(0,212,255,0.4); outline-offset:2px; border-radius:3px; }
+        ::selection { background:var(--accent-cyan); color:var(--text-primary); }
+        :focus-visible { outline:1.5px solid var(--border-active); outline-offset:2px; border-radius:3px; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
@@ -95,7 +95,7 @@ const EgressTerminal: React.FC = () => {
                 <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
-            <span style={{ fontSize:13,fontWeight:700,letterSpacing:'3px',color:'var(--text-primary)' }}>WATCHTOWER</span>
+            <span style={{ fontSize:13,fontWeight:700,letterSpacing:'3px',color:'var(--text-primary)' }}>EKADHARA</span>
           </div>
           <div style={{ width:1,height:16,background:'var(--border-color)',flexShrink:0 }} />
           <span style={{ fontSize:10,color:'var(--text-secondary)',letterSpacing:'0.8px',flexShrink:0 }}>
@@ -121,7 +121,7 @@ const EgressTerminal: React.FC = () => {
         <section style={{ marginBottom: 24 }}>
           <div style={{
             padding:'20px 28px', borderRadius:10,
-            border: `1px solid ${verdict === 'pass' ? 'rgba(34,197,94,0.3)' : verdict === 'fail' ? 'rgba(239,68,68,0.3)' : 'var(--border-color)'}`,
+            border: `1px solid ${verdict === 'pass' ? 'var(--mat-approved-border)' : verdict === 'fail' ? 'var(--mat-rejected-border)' : 'var(--border-color)'}`,
             background: verdict === 'pass' ? 'rgba(34,197,94,0.04)' : verdict === 'fail' ? 'rgba(239,68,68,0.04)' : 'var(--bg-secondary)',
             display:'flex', alignItems:'center', gap:20,
           }}>
@@ -181,7 +181,7 @@ const EgressTerminal: React.FC = () => {
           flexWrap:'wrap', gap:8, marginTop: 24,
         }}>
           <span style={{ fontSize:10, color:'var(--text-dim)', letterSpacing:'1px', fontFamily:'"JetBrains Mono",monospace' }}>
-            WATCHTOWER v3.2.1 · EKADHARA · NTRO SIH26
+            EKADHARA v3.2.1 · EKADHARA · NTRO SIH26
           </span>
           <span style={{ fontSize:10, color:'var(--text-dim)', letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace' }}>
             Egress Self-Test · {new Date().toLocaleTimeString('en-US', { hour12:false })}

@@ -62,7 +62,7 @@ const TerminalOutput: React.FC<TerminalOutputProps> = ({ lines, typewriter = fal
       }}>
         <span style={{ width:8, height:8, borderRadius:'50%', background:'#ef4444', display:'inline-block' }} />
         <span style={{ width:8, height:8, borderRadius:'50%', background:'#f59e0b', display:'inline-block' }} />
-        <span style={{ width:8, height:8, borderRadius:'50%', background:'#22c55e', display:'inline-block' }} />
+        <span style={{ width:8, height:8, borderRadius:'50%', background:'var(--accent-green)', display:'inline-block' }} />
         <span style={{ flex:1 }} />
         <span style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'0.5px', textTransform:'uppercase' }}>Self-Test Terminal</span>
       </div>

@@ -1,108 +1,250 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Activity, Network, Crosshair, Eye, Radar, Zap,
-  ArrowRight, ShieldCheck, Cpu, ShieldAlert,
-  TrendingUp, Globe, Lock, Gauge, AlertTriangle, BarChart3,
-} from 'lucide-react';
 import { useDashboardData } from '../lib/useDashboardData';
+import { useWebSocketContext } from '../context/WebSocketContext';
+import DegradationMatrix, { DegradationRow } from '../components/DegradationMatrix';
+import NetworkMap from '../pages/NetworkMap';
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
-   WATCHTOWER — Dashboard (Redesigned)
-   Clean Swiss grid. Light-mode primary. No glow effects.
+   WATCHTOWER — Dashboard v3.0
+   NTRO Operations Center aesthetic: flat dark surfaces, thin cyan borders,
+   terminal alert feed, degradation matrix hero, scanline overlay
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
-const C = {
-  bg:        'var(--bg-primary)',
-  surface:   'var(--bg-secondary)',
-  border:    'var(--border-color)',
-  borderHi:  'var(--border-active)',
-  text:      'var(--text-primary)',
-  textSec:   'var(--text-secondary)',
-  textDim:   'var(--text-muted)',
-  accent:    'var(--accent-cyan)',
-  red:       'var(--accent-red)',
-  orange:    'var(--accent-orange)',
-  amber:     'var(--accent-yellow)',
-  green:     'var(--accent-green)',
-  purple:    'var(--accent-purple)',
-};
-
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
-
-/* ── Helpers ──────────────────────────────────────────────────────────── */
+const MONO = '"JetBrains Mono","Fira Code",monospace';
+const SANS = '"Space Grotesk","Inter",system-ui,sans-serif';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
-const fmtTime = (ts: number) =>
-  new Date(ts).toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
 const fmtUptime = (s: number) => {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
   if (h) return `${h}h ${String(m).padStart(2,'0')}m ${String(sec).padStart(2,'0')}s`;
   if (m) return `${m}m ${String(sec).padStart(2,'0')}s`;
   return `${sec}s`;
 };
-const now = () => new Date().toLocaleTimeString('en-US', { hour12: false });
-const dateNow = () => new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
 
-const THREAT_CLR: Record<string, string> = {
-  ddos: C.red, beaconing: C.orange, dga: C.amber,
-  dns_tunnel: 'var(--accent-cyan)', port_scan: C.purple,
-  exfiltration: C.purple, tls_anomaly: 'var(--accent-teal)', malware: C.red, phishing: 'var(--accent-amber)',
-};
-const THREAT_LBL: Record<string, string> = {
-  ddos:'Volumetric DDoS', beaconing:'C2 Beaconing', dga:'DGA Domains',
-  dns_tunnel:'DNS Tunneling', port_scan:'Port Scanning',
-  exfiltration:'Data Exfiltration', tls_anomaly:'TLS Anomaly',
-  malware:'Malware', phishing:'Phishing',
-};
+/* ── Degradation Matrix static data (mirrors backend model) ──────────────── */
+
+const DEGRADATION_DATA: DegradationRow[] = [
+  { threat_type:'DDoS / SYN Flood',   full_rate:94, diode_rate:41, ack_shadow_rate:78,  features_lost:'ACK validation',      severity:'critical', validity:'MEASURED',  icon:'⚡' },
+  { threat_type:'C2 Beaconing',       full_rate:91, diode_rate:73, ack_shadow_rate:87,  features_lost:'Return volume',        severity:'high',     validity:'MEASURED',  icon:'📡' },
+  { threat_type:'DGA / DNS Tunnel',   full_rate:88, diode_rate:85, ack_shadow_rate:88,  features_lost:'None',                severity:'high',     validity:'ESTIMATED', icon:'🔍' },
+  { threat_type:'TLS Fingerprinting', full_rate:86, diode_rate:55, ack_shadow_rate:72,  features_lost:'JA4S fingerprint',    severity:'critical', validity:'MEASURED',  icon:'🔐' },
+  { threat_type:'Port Scanning',      full_rate:92, diode_rate:84, ack_shadow_rate:91,  features_lost:'RST validation',      severity:'medium',   validity:'MEASURED',  icon:'🎯' },
+  { threat_type:'Data Exfiltration',  full_rate:83, diode_rate:0,  ack_shadow_rate:83,  features_lost:'Entire return channel',severity:'critical', validity:'MEASURED',  icon:'🚨' },
+];
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
-   ATOMIC COMPONENTS
+   COMPONENTS
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Status dot (clean, no glow) ── */
-const Dot: React.FC<{ color?: string; size?: number }> = ({ color = C.green, size = 6 }) => (
-  <span style={{
-    width: size, height: size, borderRadius: '50%', background: color,
-    display: 'inline-block', flexShrink: 0,
-  }} />
+/* ── Top Bar ────────────────────────────────────────────────────────────── */
+
+const TopBar: React.FC<{ isLive: boolean; uptime: number; clock: string }> = ({ isLive, uptime, clock }) => (
+  <header style={{
+    height: 48, flexShrink: 0,
+    background: 'linear-gradient(180deg, var(--color-info-dim) 0%, var(--bg-base) 100%)',
+    borderBottom: '1px solid var(--border-default)',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '0 24px', position: 'relative', zIndex: 40,
+  }}>
+    {/* Branding */}
+    <div style={{ display:'flex', alignItems:'center', gap:16, flexShrink:0 }}>
+      <div style={{
+        fontFamily: SANS, fontSize:18, fontWeight:700, letterSpacing:'0.12em',
+        color: 'var(--color-accent)',
+        textShadow: '0 0 12px var(--text-glow)',
+      }}>WATCHTOWER</div>
+      <div style={{
+        fontFamily: MONO, fontSize:10, color:'var(--text-muted)',
+        letterSpacing:'0.06em', borderLeft:'1px solid var(--border-default)', paddingLeft:12,
+      }}>PS-26145</div>
+    </div>
+
+    {/* Center: LIVE */}
+    <div style={{ position:'absolute', left:'50%', transform:'translateX(-50%)', display:'flex', alignItems:'center', gap:8 }}>
+      <span style={{
+        fontFamily: MONO, fontSize:10, fontWeight:700, letterSpacing:'0.15em',
+        color: isLive ? 'var(--color-success)' : 'var(--color-warning)',
+        textTransform:'uppercase',
+      }}>
+        <span style={{
+          display:'inline-block', width:7, height:7, borderRadius:'50%', marginRight:6,
+          background: isLive ? 'var(--color-success)' : 'var(--color-warning)',
+          boxShadow: `0 0 6px ${isLive ? 'var(--color-success)' : 'var(--color-warning)'}`,
+          animation:'pulse-live 2s ease-in-out infinite', verticalAlign:'middle',
+        }} />
+        {isLive ? 'LIVE' : 'DEMO'}
+      </span>
+    </div>
+
+    {/* Right: clock + uptime */}
+    <div style={{ display:'flex', alignItems:'center', gap:16, flexShrink:0 }}>
+      <div style={{ fontFamily:MONO, fontSize:11, color:'var(--text-secondary)', letterSpacing:'0.06em' }}>
+        {clock}
+      </div>
+      <div style={{
+        fontFamily:MONO, fontSize:9, color:'var(--text-muted)',
+        borderLeft:'1px solid var(--border-default)', paddingLeft:12,
+        letterSpacing:'0.04em',
+      }}>
+        UP {fmtUptime(uptime)}
+      </div>
+    </div>
+  </header>
 );
 
-/* ── Severity badge (flat design) ── */
-const Sev: React.FC<{ sev: string }> = ({ sev }) => {
-  const M: Record<string,{c:string;bg:string}> = {
-    critical:{c:C.red,bg:'rgba(239,68,68,0.08)'},
-    high:{c:C.orange,bg:'rgba(249,115,22,0.08)'},
-    medium:{c:C.amber,bg:'rgba(234,179,8,0.08)'},
-    low:{c:'var(--accent-cyan)',bg:'rgba(6,182,212,0.08)'},
-  };
-  const s = M[sev] || M.low;
+/* ── KPI Card ───────────────────────────────────────────────────────────── */
+
+const KpiCard: React.FC<{
+  label: string; value: string; sub?: string;
+  borderColor: string; pulse?: boolean;
+}> = ({ label, value, sub, borderColor, pulse }) => {
+  const prevRef = useRef(value);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (prevRef.current !== value) {
+      setFlash(true);
+      const t = setTimeout(() => setFlash(false), 400);
+      prevRef.current = value;
+      return () => clearTimeout(t);
+    }
+  }, [value]);
+
   return (
-    <span style={{
-      display:'inline-flex', alignItems:'center', gap:4,
-      padding:'2px 8px', borderRadius:3, fontSize:9, fontWeight:700,
-      letterSpacing:'1px', color:s.c, background:s.bg,
-      fontFamily:'"JetBrains Mono",monospace', textTransform:'uppercase',
+    <div style={{
+      background:'var(--bg-surface)',
+      borderLeft: `2px solid ${borderColor}`,
+      borderTop: '1px solid var(--border-default)',
+      borderRight: '1px solid var(--border-default)',
+      borderBottom: '1px solid var(--border-default)',
+      padding: '16px 20px',
+      position:'relative',
+      overflow:'hidden',
+      animation: pulse ? 'critical-pulse 1.5s ease-in-out infinite' : 'none',
+      ...(flash ? { transition:'background 0.2s', background:'var(--bg-elevated)' } : {}),
     }}>
-      <span style={{width:4,height:4,borderRadius:'50%',background:s.c}} />
-      {sev}
-    </span>
+      <div style={{
+        fontFamily: SANS, fontSize:9, fontWeight:600, color:'var(--text-muted)',
+        textTransform:'uppercase', letterSpacing:'0.12em', marginBottom:8,
+      }}>{label}</div>
+      <div style={{
+        fontFamily: MONO, fontSize:28, fontWeight:800, color:'var(--text-primary)',
+        lineHeight:1.1, letterSpacing:'-0.02em', fontVariantNumeric:'tabular-nums',
+        textShadow: flash ? `0 0 12px ${borderColor}40` : 'none',
+        transition:'text-shadow 0.2s',
+      }}>{value}</div>
+      {sub && (
+        <div style={{
+          fontFamily:MONO, fontSize:9, color:'var(--text-muted)',
+          marginTop:4, letterSpacing:'0.04em',
+        }}>{sub}</div>
+      )}
+    </div>
   );
 };
 
-/* ── Section label (13px uppercase, accent color) ── */
-const SectionLabel: React.FC<{ label: string; right?: React.ReactNode }> = ({ label, right }) => (
-  <div style={{
-    display:'flex', alignItems:'center', justifyContent:'space-between',
-    marginBottom:16,
-  }}>
-    <span style={{
-      fontFamily:'"JetBrains Mono",monospace', fontSize:11, fontWeight:700,
-      letterSpacing:'2px', color:C.textSec, textTransform:'uppercase',
-    }}>{label}</span>
-    {right}
-  </div>
-);
+/* ── Alert Feed Line ────────────────────────────────────────────────────── */
+
+const AlertLine: React.FC<{ alert: {
+  timestamp: number;
+  severity: 'low'|'medium'|'high'|'critical';
+  threat_type: string;
+  src_ip: string;
+  dst_ip: string;
+  confidence: number;
+  evidence: Record<string, any>;
+}; index: number;
+}> = ({ alert, index }) => {
+  const sevColors: Record<string,string> = {
+    critical:'var(--color-danger)', high:'var(--color-warning)',
+    medium:'var(--accent-yellow)', low:'var(--accent-cyan)',
+  };
+  const color = sevColors[alert.severity] || 'var(--text-muted)';
+  const time = new Date(alert.timestamp).toLocaleTimeString('en-US', { hour12:false });
+  const conf = (alert.confidence * 100).toFixed(0);
+  const ev = alert.evidence as any;
+  const evidenceSummary = typeof ev === 'string'
+    ? ev.slice(0, 80)
+    : ev?.summary || ev?.description || '—';
+
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', gap:12,
+      padding:'5px 16px', fontFamily:MONO, fontSize:11,
+      borderLeft: `2px solid ${color}`,
+      background: index < 2 ? `${color}08` : 'transparent',
+      animation:'alert-slide-in 0.35s cubic-bezier(0.22,1,0.36,1) both',
+      animationDelay: `${Math.min(index * 0.03, 0.3)}s`,
+      transition:'background 0.2s',
+    }} className="alert-line">
+      <span style={{ color:'var(--text-muted)', fontSize:10, flexShrink:0, minWidth:72 }}>[{time}]</span>
+      <span style={{
+        color, fontWeight:700, fontSize:9, letterSpacing:'0.1em',
+        textTransform:'uppercase', flexShrink:0, minWidth:68,
+      }}>{alert.severity}</span>
+      <span style={{ color:'var(--text-primary)', fontWeight:600, flexShrink:0, minWidth:100, letterSpacing:'0.3px', textTransform:'uppercase', fontSize:10 }}>
+        {alert.threat_type}
+      </span>
+      <span style={{ color:'var(--text-secondary)', fontSize:10 }}>from</span>
+      <span style={{ color:'var(--accent-cyan)', fontSize:10, flexShrink:0 }}>{alert.src_ip}</span>
+      <span style={{ color:'var(--text-muted)', fontSize:10 }}>→</span>
+      <span style={{ color:'var(--accent-cyan)', fontSize:10, flexShrink:0 }}>{alert.dst_ip}</span>
+      <span style={{ color:'var(--text-muted)', fontSize:9, margin:'0 4px' }}>|</span>
+      <span style={{ color:'var(--text-muted)', fontSize:9 }}>conf:</span>
+      <span style={{
+        color: +conf > 85 ? 'var(--color-danger)' : +conf > 60 ? 'var(--color-warning)' : 'var(--color-info)',
+        fontSize:10, fontWeight:600, flexShrink:0,
+      }}>{conf}%</span>
+      <span style={{
+        color:'var(--text-muted)', fontSize:10, overflow:'hidden', textOverflow:'ellipsis',
+        whiteSpace:'nowrap', flex:1, textAlign:'right',
+      }} title={evidenceSummary}>{evidenceSummary}</span>
+    </div>
+  );
+};
+
+/* ── Throughput Sparkline ───────────────────────────────────────────────── */
+
+const ThroughputSparkline: React.FC<{ data: number[] }> = ({ data }) => {
+  const w = 400, h = 140;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const pad = 8;
+  const pts = data.map((v, i) => ({
+    x: pad + (i / (data.length - 1)) * (w - pad * 2),
+    y: h - pad - ((v - min) / range) * (h - pad * 2),
+  }));
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const area = line + ` L${pts[pts.length-1].x} ${h} L${pts[0].x} ${h} Z`;
+  const last = pts[pts.length - 1];
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} style={{ display:'block' }}>
+      <defs>
+        <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* grid lines */}
+      {[0.25, 0.5, 0.75].map(f => (
+        <line key={f} x1={pad} y1={pad + f * (h - pad*2)} x2={w - pad} y2={pad + f * (h - pad*2)}
+          stroke="var(--border-muted)" strokeWidth="0.5" />
+      ))}
+      <path d={area} fill="url(#spark-grad)" />
+      <path d={line} fill="none" stroke="var(--color-accent)" strokeWidth="1.5"
+        strokeLinecap="round" strokeLinejoin="round" opacity="0.8" />
+      <circle cx={last.x} cy={last.y} r="3" fill="var(--color-accent)" opacity="0.9">
+        <animate attributeName="r" values="2;4;2" dur="2s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite" />
+      </circle>
+      <text x={w - pad} y={h - 2} textAnchor="end" fill="var(--text-muted)"
+        fontFamily={MONO} fontSize="8" letterSpacing="0.5px">flows/s · 60s</text>
+    </svg>
+  );
+};
 
 /* ═══════════════════════════════════════════════════════════════════════════════════
    DASHBOARD
@@ -110,777 +252,428 @@ const SectionLabel: React.FC<{ label: string; right?: React.ReactNode }> = ({ la
 
 const Dashboard: React.FC = () => {
   const data = useDashboardData(3000);
+  const ws = useWebSocketContext();
   const navigate = useNavigate();
-  const [clock, setClock] = useState(now());
+  const [clock, setClock] = useState(new Date().toLocaleTimeString('en-US', { hour12:false }));
+  const [showMap, setShowMap] = useState(false);
 
+  /* Clock tick */
   useEffect(() => {
-    const t = setInterval(() => setClock(now()), 1000);
+    const t = setInterval(() => setClock(new Date().toLocaleTimeString('en-US', { hour12:false })), 1000);
     return () => clearInterval(t);
   }, []);
 
-  /* ── Derived ──────────────────────────────────────────────────────── */
+  /* Throughput history buffer (60s window, 1 sample/sec) */
+  const throughputRef = useRef<number[]>([]);
+  const [throughput, setThroughput] = useState<number[]>([]);
 
-  const threatCounts = useMemo(() => {
-    const m: Record<string, number> = {};
-    data.alerts.forEach(a => {
-      const lbl = THREAT_LBL[a.threat_type.toLowerCase()] || a.threat_type;
-      m[lbl] = (m[lbl] || 0) + 1;
-    });
-    return m;
-  }, [data.alerts]);
+  useEffect(() => {
+    throughputRef.current.push(data.flowsPerSec);
+    if (throughputRef.current.length > 60) throughputRef.current.shift();
+    setThroughput([...throughputRef.current]);
+  }, [data.flowsPerSec]);
 
-  const topThreats = useMemo(() =>
-    Object.entries(threatCounts)
-      .map(([l,v]) => ({ label:l, value:v }))
-      .sort((a,b) => b.value - a.value),
-    [threatCounts]
-  );
+  /* Alert feed — use WebSocket alerts, cap at 50, newest first */
+  const alertFeed = useMemo(() => {
+    const all = [...ws.alerts].reverse().slice(0, 50);
+    return all;
+  }, [ws.alerts]);
 
-  const sev = useMemo(() => {
-    const s: Record<string,number> = { critical:0, high:0, medium:0, low:0 };
-    data.alerts.forEach(a => { s[a.severity] = (s[a.severity] || 0) + 1; });
-    return s;
-  }, [data.alerts]);
+  /* Count-up animation key */
+  const [kpiTick, setKpiTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setKpiTick(k => k + 1), 3000);
+    return () => clearInterval(t);
+  }, []);
 
-  const recent = useMemo(() => data.alerts.slice(0, 25), [data.alerts]);
-
-  const flowsProc   = Math.max(data.alerts.length * 47, 1200);
-  const blocked     = sev.critical * 23 + sev.high * 17 + 47;
-  const activeSess  = data.activeConnections || Math.max(data.alerts.length * 3, 120);
-
-  /* ══════════════════════════════════════════════════════════════════════════════════
-     RENDER
-     ══════════════════════════════════════════════════════════════════════════════════ */
+  const isLive = data.isLive;
 
   return (
     <div style={{
-      minHeight:'100%', background:C.bg, color:C.text,
-      fontFamily:'"Inter",system-ui,sans-serif',
-      fontSize:14, lineHeight:1.6,
+      minHeight:'100vh', background:'var(--bg-base)',
+      fontFamily:'"Inter",system-ui,sans-serif', color:'var(--text-primary)',
     }}>
+      {/* ── Inline animation keyframes (required for ops-center feel) ──── */}
       <style>{`
-        @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
-        @keyframes wt-row-in { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
-
-        ::selection { background: rgba(0,212,255,0.15); }
-        :focus-visible { outline: 1.5px solid rgba(0,212,255,0.4); outline-offset: 2px; border-radius: 2px; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
-
-        .kpi-card { transition: background 0.2s, border-color 0.2s; }
-        .kpi-card:hover { background: var(--bg-card-hover); border-color: var(--border-active); }
-
-        @media (max-width: 1200px) {
-          .kpi-row { flex-wrap: wrap; }
-          .kpi-card { min-width: calc(50% - 10px); }
+        @keyframes pulse-live {
+          0%, 100% { opacity:1; transform:scale(1); }
+          50%      { opacity:0.3; transform:scale(1.3); }
         }
-        @media (max-width: 768px) {
-          .kpi-card { min-width: 100%; }
-          .row-2 { grid-template-columns: 1fr !important; }
-          .row-3 { grid-template-columns: 1fr !important; }
+        @keyframes alert-slide-in {
+          from { opacity:0; transform:translateY(-8px); }
+          to   { opacity:1; transform:translateY(0); }
         }
+        @keyframes alert-flash {
+          0%   { background:var(--flash-color, rgba(239,68,68,0.12)); }
+          100% { background:transparent; }
+        }
+        @keyframes scanline-sweep {
+          0%   { transform:translateY(-100%); }
+          100% { transform:translateY(100vh); }
+        }
+        @keyframes count-glow {
+          0%   { text-shadow:0 0 8px var(--glow-color, var(--color-accent)); }
+          100% { text-shadow:none; }
+        }
+        @keyframes critical-pulse {
+          0%, 100% { box-shadow:inset 0 0 0 rgba(239,68,68,0); }
+        50%      { box-shadow:inset 0 0 20px rgba(239,68,68,0.06); }
+        }
+        @keyframes scanline-h {
+          0%   { top:-4px; }
+          100% { top:100%; }
+        }
+        /* Scrollbar for alert feed */
+        .alert-feed-scroll::-webkit-scrollbar { width:3px; }
+        .alert-feed-scroll::-webkit-scrollbar-track { background:transparent; }
+        .alert-feed-scroll::-webkit-scrollbar-thumb { background:var(--accent-cyan); border-radius:2px; }
+        .alert-feed-scroll { scrollbar-width:thin; scrollbar-color:var(--accent-cyan) transparent; }
+        /* Network map mini */
+        .mini-map canvas { border-radius:4px; }
       `}</style>
 
-      {/* ── STICKY HUD BAR ─────────────────────────────────────────────── */}
-      <header style={{
-        position:'sticky', top:0, zIndex:40,
-        background:'var(--bg-secondary)',
-        borderBottom:`1px solid ${C.border}`,
+      {/* ── TOP BAR ─────────────────────────────────────────────────── */}
+      <TopBar isLive={isLive} uptime={data.uptime} clock={clock} />
+
+      {/* ── SCROLLABLE CONTENT ──────────────────────────────────────── */}
+      <main style={{
+        maxWidth:1440, margin:'0 auto',
+        padding:'20px 24px 80px',
       }}>
-        <div style={{
-          maxWidth:1400, margin:'0 auto', padding:'0 28px',
-          display:'flex', alignItems:'center', height:52, gap:14,
+
+        {/* ══════════════════════════════════════════════════════════════
+             ROW 0 — ALERT FEED (HERO, full width, 320px)
+             ══════════════════════════════════════════════════════════════ */}
+        <section style={{
+          marginBottom:20,
+          background:'var(--bg-base)',
+          border:'1px solid var(--border-default)',
+          position:'relative',
+          overflow:'hidden',
         }}>
-          {/* Brand */}
-          <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-            <div style={{
-              width:28, height:28, borderRadius:6,
-              border:`1px solid ${C.border}`,
-              display:'flex', alignItems:'center', justifyContent:'center',
-            }}>
-              <ShieldAlert size={14} color={C.textSec} strokeWidth={1.8} />
-            </div>
-            <span style={{
-              fontSize:12, fontWeight:700, letterSpacing:'3px', color:C.text,
-              fontFamily:'"JetBrains Mono",monospace',
-            }}>WATCHTOWER</span>
-          </div>
-
-          <div style={{ width:1, height:18, background:C.border, flexShrink:0 }} />
-
-          <span style={{ fontSize:10, color:C.textSec, letterSpacing:'0.8px', flexShrink:0, fontFamily:'"JetBrains Mono",monospace' }}>
-            PS-26145 · NTRO · SIH26
-          </span>
-
-          <div style={{ flex:1 }} />
-
-          {/* Status */}
-          <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-            <div style={{
-              display:'flex', alignItems:'center', gap:5, padding:'3px 10px',
-              border:`1px solid ${C.border}`, borderRadius:4,
-            }}>
-              <Dot color={data.isLive ? C.green : C.amber} size={5} />
-              <span style={{ fontSize:9, fontWeight:700, letterSpacing:'1.5px', color: data.isLive ? C.green : C.amber, fontFamily:'"JetBrains Mono",monospace' }}>
-                {data.isLive ? 'LIVE' : 'DEMO'}
+          {/* Classification banner */}
+          <div style={{
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            padding:'8px 16px',
+            background:'linear-gradient(90deg, var(--color-info-dim) 0%, transparent 60%)',
+            borderBottom:'1px solid var(--border-default)',
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{
+                fontFamily:MONO, fontSize:9, fontWeight:700, letterSpacing:'0.15em',
+                color:'var(--color-accent)', textTransform:'uppercase',
+              }}>
+                ▶ TERMINAL ALERT FEED
+              </span>
+              <span style={{
+                fontFamily:MONO, fontSize:9, color:'var(--text-muted)',
+              }}>
+                {alertFeed.length} EVENTS · AUTO-SCROLL
               </span>
             </div>
-
-            <div style={{
-              display:'flex', alignItems:'center', gap:5, padding:'3px 10px',
-              border:`1px solid ${C.border}`, borderRadius:4,
-            }}>
-              <Activity size={10} color={C.textDim} strokeWidth={2} />
-              <span style={{ fontSize:9, color:C.textSec, letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace' }}>DIODE READ-ONLY</span>
-            </div>
-
-            <span style={{
-              fontSize:11, color:C.textSec, letterSpacing:'0.8px',
-              fontFamily:'"JetBrains Mono",monospace',
-              fontVariantNumeric:'tabular-nums',
-            }}>{dateNow()} · {clock}</span>
-          </div>
-        </div>
-      </header>
-
-      {/* ── MAIN CONTENT ──────────────────────────────────────────────── */}
-      <main style={{ maxWidth:1400, margin:'0 auto', padding:'32px 28px 80px' }}>
-
-        {/* ════════════════════════════════════════════════════════════════
-             PAGE HEADER
-             ════════════════════════════════════════════════════════════════ */}
-        <section style={{ marginBottom:36 }}>
-          <h1 style={{
-            fontSize:28, fontWeight:700, letterSpacing:'-0.5px', color:C.text,
-            marginBottom:8, fontFamily:'"Inter",system-ui,sans-serif',
-          }}>Dashboard</h1>
-          <p style={{
-            fontSize:14, color:C.textSec, maxWidth:680, lineHeight:1.7, margin:0,
-          }}>
-            AI-based detection pipeline for unidirectional IP traffic monitoring.
-            Passive observation — no probes, no decryption, no return path.
-          </p>
-          {/* Hero statement */}
-          <div style={{
-            marginTop:16, padding:'14px 18px',
-            background:'var(--bg-primary)',
-            border:`1px solid var(--border-color)`,
-            borderRadius:8,
-            fontFamily:'"JetBrains Mono",monospace',
-            fontSize:12, color:C.textSec,
-            lineHeight:1.7, letterSpacing:'0.3px',
-          }}>
-            <span style={{ color: C.accent, fontWeight:700 }}>WATCHTOWER</span>
-            {' '}operates in a read-only enclave.
-            <span style={{ color: C.green }}> No probes. No decryption. No return path.</span>
-          </div>
-
-          {/* Quick Actions */}
-          <div style={{
-            marginTop:16, display:'flex', gap:10, flexWrap:'wrap',
-          }}>
-            {[
-              { label:'Launch Attack Simulation', path:'/attack', color: C.red, icon: Crosshair },
-              { label:'Run Egress Test', path:'/egress-test', color: C.green, icon: ShieldCheck },
-              { label:'View Degradation Matrix', path:'/diode-lab', color: C.accent, icon: Activity },
-            ].map((action, i) => {
-              const Icon = action.icon;
-              return (
-                <button key={i} onClick={() => navigate(action.path)} style={{
-                  display:'inline-flex', alignItems:'center', gap:8,
-                  padding:'9px 16px', borderRadius:8, cursor:'pointer',
-                  fontFamily:'"JetBrains Mono",monospace', fontSize:11, fontWeight:700,
-                  textTransform:'uppercase', letterSpacing:'0.5px',
-                  border: `1px solid ${action.color}30`,
-                  background:`${action.color}08`,
-                  color: action.color,
-                  transition:`all 0.2s cubic-bezier(0.22,1,0.36,1)`,
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = `${action.color}14`; e.currentTarget.style.borderColor = `${action.color}50`; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = `${action.color}08`; e.currentTarget.style.borderColor = `${action.color}30`; }}
-                >
-                  <Icon size={13} strokeWidth={1.8} />
-                  {action.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-             ROW 1 — KPI CARDS (6 across)
-             ════════════════════════════════════════════════════════════════ */}
-        <section className="kpi-row" style={{
-          display:'flex', gap:20, marginBottom:24,
-        }}>
-          {[
-            {
-              label:'FLOWS PROCESSED', value:fmt(flowsProc), sub:'+2.4K/s',
-              icon:Globe, color:C.accent, pct:68,
-            },
-            {
-              label:'THREATS BLOCKED', value:fmt(blocked), sub:'countermeasures',
-              icon:ShieldCheck, color:C.red, pct:42,
-            },
-            {
-              label:'ACTIVE SESSIONS', value:fmt(activeSess), sub:'concurrent',
-              icon:Activity, color:C.purple, pct:55,
-            },
-            {
-              label:'DETECTION RATE', value:`${data.detectionRate.toFixed(1)}%`, sub:'confidence',
-              icon:Crosshair, color:C.green, pct:94,
-            },
-            {
-              label:'FALSE POSITIVE', value:`${data.falsePositiveRate.toFixed(1)}%`, sub:'noise filter',
-              icon:AlertTriangle, color:C.amber, pct:8,
-            },
-            {
-              label:'THREATS TODAY', value:fmt(data.alertsToday || data.alerts.length), sub:'events',
-              icon:BarChart3, color:C.orange, pct:35,
-            },
-          ].map((kpi, i) => {
-            const Icon = kpi.icon;
-            return (
-              <div key={i} className="kpi-card" style={{
-                flex:1, minWidth:0,
-                background:'var(--bg-elevated)',
-                border:`1px solid ${C.border}`,
-                borderRadius:12,
-                padding:20,
-                display:'flex', flexDirection:'column', gap:10,
-              }}>
-                {/* Icon */}
-                <div style={{
-                  width:32, height:32, borderRadius:8,
-                  background:`${kpi.color}10`,
-                  border:`1px solid ${kpi.color}20`,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                }}>
-                  <Icon size={16} color={kpi.color} strokeWidth={1.8} />
-                </div>
-
-                {/* Label */}
-                <div style={{
-                  fontSize:10, fontWeight:700, letterSpacing:'1.5px',
-                  color:C.textDim, fontFamily:'"JetBrains Mono",monospace',
-                  textTransform:'uppercase',
-                }}>{kpi.label}</div>
-
-                {/* Value */}
-                <div style={{
-                  fontSize:28, fontWeight:700, color:kpi.color,
-                  fontFamily:'"JetBrains Mono",monospace',
-                  letterSpacing:'-0.5px', lineHeight:1.1,
-                  fontVariantNumeric:'tabular-nums',
-                }}>{kpi.value}</div>
-
-                {/* Sub-detail */}
-                <div style={{
-                  fontSize:12, color:C.textSec,
-                  fontFamily:'"JetBrains Mono",monospace',
-                }}>{kpi.sub}</div>
-
-                {/* Mini progress bar */}
-                <div style={{
-                  height:4, background:'var(--bg-secondary)',
-                  borderRadius:2, marginTop:'auto', overflow:'hidden',
-                }}>
-                  <div style={{
-                    height:'100%', width:`${kpi.pct}%`,
-                    background:kpi.color, opacity:0.6,
-                    borderRadius:1,
-                    transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
-                  }} />
-                </div>
-              </div>
-            );
-          })}
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-             ROW 2 — TWO COLUMNS (60/40)
-             ════════════════════════════════════════════════════════════════ */}
-        <section className="row-2" style={{
-          display:'grid', gridTemplateColumns:'3fr 2fr', gap:20, marginBottom:24,
-        }}>
-          {/* ── Pipeline Diagram (60%) ── */}
-          <div style={{
-            background:'var(--bg-card)',
-            border:`1px solid ${C.border}`,
-            borderRadius:12,
-            padding:24,
-          }}>
-            <SectionLabel
-              label="Detection Pipeline"
-              right={
-                <span style={{ fontSize:10, color:C.textSec, fontFamily:'"JetBrains Mono",monospace', fontVariantNumeric:'tabular-nums' }}>
-                  UPTIME {fmtUptime(data.uptime)}
-                </span>
-              }
-            />
-
-            {/* 4-step pipeline with arrows */}
-            <div style={{
-              display:'flex', alignItems:'stretch', gap:0,
-            }}>
-              {[
-                { label:'INGEST', sub:'PCAP / NetFlow / sFlow', icon:Cpu, color:C.accent },
-                { label:'FEATURES', sub:'JA3 / DNS / Flow metadata', icon:Radar, color:C.purple },
-                { label:'INFERENCE', sub:'Ensemble classifier', icon:Crosshair, color:C.green },
-                { label:'OUTPUT', sub:'WebSocket + REST alerts', icon:Zap, color:C.amber },
-              ].map((step, i, arr) => {
-                const Icon = step.icon;
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              {(['critical','high','medium','low'] as const).map(sev => {
+                const sevColors: Record<string,string> = { critical:'var(--color-danger)', high:'var(--color-warning)', medium:'var(--accent-yellow)', low:'var(--accent-cyan)' };
+                const count = alertFeed.filter(a => a.severity === sev).length;
                 return (
-                  <div key={i} style={{
-                    flex:1, display:'flex', flexDirection:'column', alignItems:'center',
-                    gap:8, padding:'16px 12px',
-                    borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
-                    position:'relative',
+                  <span key={sev} style={{
+                    fontFamily:MONO, fontSize:9, fontWeight:600,
+                    color: sevColors[sev], letterSpacing:'0.08em',
+                    textTransform:'uppercase',
                   }}>
-                    {/* Icon */}
-                    <div style={{
-                      width:32, height:32, borderRadius:8,
-                      background:`${step.color}10`,
-                      border:`1px solid ${step.color}18`,
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>
-                      <Icon size={16} color={step.color} strokeWidth={1.8} />
-                    </div>
-
-                    {/* Step label */}
-                    <div style={{
-                      fontSize:11, fontWeight:700, letterSpacing:'1px',
-                      color:step.color, fontFamily:'"JetBrains Mono",monospace',
-                    }}>{step.label}</div>
-
-                    {/* Sub-text */}
-                    <div style={{
-                      fontSize:10, color:C.textSec, textAlign:'center',
-                      lineHeight:1.5,
-                    }}>{step.sub}</div>
-
-                    {/* Arrow between steps */}
-                    {i < arr.length - 1 && (
-                      <div style={{
-                        position:'absolute', right:-10, top:'50%', transform:'translateY(-50%)',
-                        zIndex:2,
-                      }}>
-                        <ArrowRight size={14} color={C.textDim} />
-                      </div>
-                    )}
-                  </div>
+                    {sev}: {count}
+                  </span>
                 );
               })}
             </div>
           </div>
 
-          {/* ── Enclave Constraints (40%) ── */}
-          <div style={{
-            background:'var(--bg-card)',
-            border:`1px solid ${C.border}`,
-            borderRadius:12,
-            padding:24,
+          {/* Alert lines */}
+          <div className="alert-feed-scroll" style={{
+            height: 280,
+            overflowY:'auto',
+            background:'var(--bg-base)',
+            position:'relative',
           }}>
+            {/* Subtle grid background */}
             <div style={{
-              display:'flex', alignItems:'center', justifyContent:'space-between',
-              marginBottom:16,
-            }}>
-              <SectionLabel label="Enclave Constraints" />
-              <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                <span style={{ width:6, height:6, borderRadius:'50%', background:C.green, display:'inline-block', animation:'wt-pulse 1.5s ease-in-out infinite' }} />
-                <span style={{ fontSize:10, fontWeight:700, letterSpacing:'0.5px', color:C.green, fontFamily:'"JetBrains Mono",monospace' }}>ALL COMPLIANT</span>
-              </div>
-            </div>
-
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {[
-                { label:'Ingest', status:'READ-ONLY', detail:'No return path' },
-                { label:'TLS Analysis', status:'JA3/JA4', detail:'Metadata only' },
-                { label:'Processing', status:'STREAMING', detail:'Bounded latency' },
-                { label:'Payload', status:'DECRYPT OFF', detail:'Disabled' },
-                { label:'Throughput', status:'10K FPS', detail:'Sustained' },
-                { label:'Alert Schema', status:'RFC 8071', detail:'Structured JSON' },
-              ].map((item, i, arr) => (
-                <div key={item.label} style={{
-                  display:'flex', alignItems:'center', justifyContent:'space-between',
-                  padding:'10px 14px',
-                  borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
-                  borderRadius:4,
-                  transition:'background 0.15s',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                >
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ width:5, height:5, borderRadius:'50%', background:C.green, display:'inline-block', animation:'wt-pulse 2s ease-in-out infinite' }} />
-                    <span style={{ fontSize:13, color:C.textSec, fontWeight:500 }}>{item.label}</span>
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                    <span style={{
-                      fontSize:11, fontWeight:700, color:C.green,
-                      fontFamily:'"JetBrains Mono",monospace', letterSpacing:'0.5px',
-                    }}>{item.status}</span>
-                    <span style={{ fontSize:12, color:C.textDim }}>{item.detail}</span>
-                  </div>
+              position:'absolute', inset:0, pointerEvents:'none',
+              backgroundImage:
+                'linear-gradient(var(--color-info-dim) 1px, transparent 1px), linear-gradient(90deg, var(--color-info-dim) 1px, transparent 1px)',
+              backgroundSize:'32px 32px',
+            }} />
+            {alertFeed.length === 0 ? (
+              <div style={{
+                padding:'60px 20px', textAlign:'center',
+                fontFamily:MONO, fontSize:11, color:'var(--text-muted)',
+              }}>
+                <div style={{ marginBottom:8, letterSpacing:'0.1em' }}>AWAITING THREAT STREAM</div>
+                <div style={{ fontSize:9, color:'var(--text-muted)', letterSpacing:'0.5px' }}>
+                  {isLive ? 'Monitoring passive observation enclave...' : 'Launch an attack from the Attack Lab to begin detection'}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div style={{ position:'relative', zIndex:1 }}>
+                {alertFeed.map((alert, i) => (
+                  <AlertLine key={`${alert.id ?? alert.timestamp}-${i}`} alert={alert} index={i} />
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Scanline overlay on feed */}
+          <div style={{
+            position:'absolute', left:0, right:0, height:2, top:0,
+            background:'linear-gradient(180deg, transparent, var(--color-info-dim), transparent)',
+            pointerEvents:'none', zIndex:2,
+            animation:'scanline-h 8s linear infinite',
+          }} />
         </section>
 
-        {/* ════════════════════════════════════════════════════════════════
-             ROW 3 — FULL WIDTH
-             ════════════════════════════════════════════════════════════════ */}
-        <section className="row-3" style={{
-          display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24,
+        {/* ══════════════════════════════════════════════════════════════
+             ROW 1 — KPI STRIP (6 cards)
+             ══════════════════════════════════════════════════════════════ */}
+        <section style={{
+          display:'grid',
+          gridTemplateColumns:'repeat(6, 1fr)',
+          gap:1,
+          marginBottom:20,
+          border:'1px solid var(--border-default)',
         }}>
-          {/* ── Threat Classification Bar ── */}
+          <KpiCard
+            label="Total Flows" value={fmt(data.totalScanned)}
+            sub={`+${data.flowsPerSec}/s`} borderColor="var(--color-accent)"
+          />
+          <KpiCard
+            label="Active Threats" value={fmt(data.threatsBlocked)}
+            sub="detected" borderColor="var(--color-danger)" pulse
+          />
+          <KpiCard
+            label="Detection Rate" value={`${data.detectionRate.toFixed(1)}%`}
+            sub="avg confidence" borderColor="var(--color-warning)"
+          />
+          <KpiCard
+            label="False Positive" value={`${data.falsePositiveRate.toFixed(1)}%`}
+            sub="filtered" borderColor="var(--color-success)"
+          />
+          <KpiCard
+            label="Flows/sec" value={fmt(data.flowsPerSec)}
+            sub="ingest rate" borderColor="var(--color-accent)"
+          />
+          <KpiCard
+            label="Uptime" value={fmtUptime(data.uptime)}
+            sub={isLive ? 'connected' : 'demo mode'} borderColor="var(--text-muted)"
+          />
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════
+             ROW 2 — DEGRADATION MATRIX (50%) + THROUGHPUT TIMELINE (50%)
+             ══════════════════════════════════════════════════════════════ */}
+        <section style={{
+          display:'grid', gridTemplateColumns:'1fr 1fr',
+          gap:1,
+          marginBottom:20,
+        }}>
+          {/* Degradation Matrix — HERO VISUALIZATION */}
           <div style={{
-            background:'var(--bg-card)',
-            border:`1px solid ${C.border}`,
-            borderRadius:12,
-            padding:24,
+            background:'var(--bg-surface)',
+            border:'1px solid var(--border-default)',
+            overflow:'hidden',
           }}>
-            <SectionLabel
-              label="Threat Classification"
-              right={
-                <span style={{ fontSize:10, color:C.textSec, fontFamily:'"JetBrains Mono",monospace' }}>
-                  {Object.values(threatCounts).reduce((a,b)=>a+b,0)} DETECTED
-                </span>
-              }
-            />
-
-            {/* Horizontal stacked bar */}
             <div style={{
-              height:24, borderRadius:6, overflow:'hidden',
-              display:'flex', marginBottom:16,
-              border:`1px solid ${C.border}`,
+              padding:'12px 16px', borderBottom:'1px solid var(--border-default)',
+              display:'flex', alignItems:'center', justifyContent:'space-between',
+              background:'linear-gradient(135deg, var(--color-info-dim), transparent)',
             }}>
-              {topThreats.length > 0 ? topThreats.map((t, i) => {
-                const total = topThreats.reduce((a, b) => a + b.value, 0) || 1;
-                const pct = (t.value / total) * 100;
-                return (
-                  <div key={i} title={`${t.label}: ${t.value}`} style={{
-                    width:`${pct}%`, background: Object.entries(THREAT_CLR).find(([k]) =>
-                      THREAT_LBL[k] === t.label
-                    )?.[1] || C.accent,
-                    opacity:0.8, transition:'width 0.8s cubic-bezier(0.22,1,0.36,1)',
-                    minWidth: topThreats.length > 5 ? 4 : 0,
-                  }} />
-                );
-              }) : (
-                <div style={{ flex:1, background:'var(--bg-secondary)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:C.textDim }}>
-                  Awaiting stream
+              <div>
+                <div style={{
+                  fontFamily:MONO, fontSize:10, fontWeight:700,
+                  color:'var(--text-secondary)', letterSpacing:'0.1em',
+                  textTransform:'uppercase',
+                }}>DEGRADATION MATRIX</div>
+                <div style={{ fontFamily:MONO, fontSize:9, color:'var(--text-muted)', marginTop:2 }}>
+                  F1 score per threat type · diode impact analysis
                 </div>
-              )}
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ display:'flex', alignItems:'center', gap:4 }}>
+                  <span style={{ width:10, height:3, background:'var(--color-success)', display:'inline-block', borderRadius:1 }} />
+                  <span style={{ fontFamily:MONO, fontSize:8, color:'var(--text-muted)', textTransform:'uppercase' }}>Full</span>
+                </span>
+                <span style={{ display:'flex', alignItems:'center', gap:4 }}>
+                  <span style={{ width:10, height:3, background:'var(--color-danger)', display:'inline-block', borderRadius:1 }} />
+                  <span style={{ fontFamily:MONO, fontSize:8, color:'var(--text-muted)', textTransform:'uppercase' }}>Diode</span>
+                </span>
+                <span style={{ display:'flex', alignItems:'center', gap:4 }}>
+                  <span style={{ width:10, height:3, background:'var(--color-purple)', display:'inline-block', borderRadius:1 }} />
+                  <span style={{ fontFamily:MONO, fontSize:8, color:'var(--text-muted)', textTransform:'uppercase' }}>ACK</span>
+                </span>
+              </div>
             </div>
-
-            {/* Legend */}
-            <div style={{
-              display:'flex', flexWrap:'wrap', gap:'8px 16px',
-            }}>
-              {topThreats.length > 0 ? topThreats.map((t, i) => {
-                const color = Object.entries(THREAT_CLR).find(([k]) =>
-                  THREAT_LBL[k] === t.label
-                )?.[1] || C.accent;
-                const total = topThreats.reduce((a, b) => a + b.value, 0) || 1;
-                const pct = ((t.value / total) * 100).toFixed(0);
-                return (
-                  <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <div style={{ width:8, height:8, borderRadius:2, background:color }} />
-                    <span style={{ fontSize:11, color:C.textSec }}>{t.label}</span>
-                    <span style={{ fontSize:10, color:C.textDim, fontFamily:'"JetBrains Mono",monospace' }}>{pct}%</span>
-                  </div>
-                );
-              }) : (
-                <span style={{ fontSize:11, color:C.textDim }}>No threats detected</span>
-              )}
-            </div>
+            <DegradationMatrix data={DEGRADATION_DATA} showWarning />
           </div>
 
-          {/* ── Data Flow Diagram ── */}
+          {/* Throughput Timeline */}
           <div style={{
-            background:'var(--bg-card)',
-            border:`1px solid ${C.border}`,
-            borderRadius:12,
-            padding:24,
+            background:'var(--bg-surface)',
+            border:'1px solid var(--border-default)',
+            overflow:'hidden',
           }}>
-            <SectionLabel label="Data Flow" />
-
             <div style={{
-              display:'flex', alignItems:'center', gap:4, flexWrap:'wrap',
-              justifyContent:'space-between', padding:'8px 0',
+              padding:'12px 16px', borderBottom:'1px solid var(--border-default)',
+              display:'flex', alignItems:'center', justifyContent:'space-between',
             }}>
-              {[
-                { label:'Production', sub:'Encrypted traffic', c:C.textSec },
-                { label:'Data Diode', sub:'One-way', c:C.accent },
-                { label:'Enclave', sub:'Capture', c:C.purple },
-                { label:'AI Engine', sub:'Detect / Classify', c:C.green },
-                { label:'Alerts', sub:'Intelligence', c:C.amber },
-              ].map((n, i, arr) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:4, flex:'1 1 0', minWidth:50 }}>
-                  <div style={{
-                    flex:1, padding:'10px 6px', borderRadius:6, textAlign:'center',
-                    border:`1px solid ${n.c}18`, background:`${n.c}04`,
-                  }}>
-                    <div style={{ fontSize:10, fontWeight:700, color:n.c, letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace' }}>{n.label}</div>
-                    <div style={{ fontSize:9, color:C.textSec, marginTop:2 }}>{n.sub}</div>
-                  </div>
-                  {i < arr.length - 1 && <ArrowRight size={12} color={C.textDim} style={{flexShrink:0, opacity:0.5}} />}
+              <div>
+                <div style={{
+                  fontFamily:MONO, fontSize:10, fontWeight:700,
+                  color:'var(--text-secondary)', letterSpacing:'0.1em',
+                  textTransform:'uppercase',
+                }}>THROUGHPUT</div>
+                <div style={{ fontFamily:MONO, fontSize:9, color:'var(--text-muted)', marginTop:2 }}>
+                  flows/sec · rolling 60s
                 </div>
-              ))}
+              </div>
+              <div style={{
+                fontFamily:MONO, fontSize:11, fontWeight:700,
+                color:'var(--color-accent)', fontVariantNumeric:'tabular-nums',
+              }}>
+                {data.flowsPerSec} <span style={{ fontSize:9, color:'var(--text-muted)', fontWeight:400 }}>fps</span>
+              </div>
+            </div>
+            <div style={{ padding:'12px 8px' }}>
+              {throughput.length < 2 ? (
+                <div style={{
+                  padding:'40px 20px', textAlign:'center',
+                  fontFamily:MONO, fontSize:10, color:'var(--text-muted)',
+                }}>Collecting samples…</div>
+              ) : (
+                <ThroughputSparkline data={throughput} />
+              )}
             </div>
 
-            {/* Severity breakdown */}
+            {/* Mini stats below sparkline */}
             <div style={{
-              borderTop:`1px solid ${C.border}`, paddingTop:16, marginTop:16,
-              display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12,
+              display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:0,
+              borderTop:'1px solid var(--border-muted)',
             }}>
               {[
-                { label:'Critical', val:sev.critical, color:C.red },
-                { label:'High', val:sev.high, color:C.orange },
-                { label:'Medium', val:sev.medium, color:C.amber },
-                { label:'Low', val:sev.low, color:'var(--accent-cyan)' },
+                { label:'PEAK', value: Math.max(...throughput, 0), unit:'fps' },
+                { label:'AVG', value: throughput.length ? Math.round(throughput.reduce((a,b)=>a+b,0)/throughput.length) : 0, unit:'fps' },
+                { label:'MIN', value: Math.min(...throughput.filter(v=>v>0), 0), unit:'fps' },
               ].map(s => (
                 <div key={s.label} style={{
-                  textAlign:'center', padding:'12px 8px',
-                  border:`1px solid ${C.border}`, borderRadius:8,
-                }}>
-                  <div style={{ fontSize:22, fontWeight:700, color:s.color, fontFamily:'"JetBrains Mono",monospace', fontVariantNumeric:'tabular-nums' }}>{s.val}</div>
-                  <div style={{ fontSize:9, color:C.textSec, letterSpacing:'1px', marginTop:4, textTransform:'uppercase', fontWeight:600 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-             LIVE THREAT FEED
-             ════════════════════════════════════════════════════════════════ */}
-        <section style={{
-          background:'var(--bg-card)',
-          border:`1px solid ${C.border}`,
-          borderRadius:12,
-          padding:24,
-          marginBottom:24,
-        }}>
-          <div style={{
-            display:'flex', alignItems:'center', justifyContent:'space-between',
-            marginBottom:16,
-          }}>
-            <SectionLabel label="Live Threat Feed" />
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ display:'flex', alignItems:'center', gap:4, fontSize:9, fontWeight:700, letterSpacing:'1px', color:C.red }}>
-                <span style={{
-                  width:5, height:5, borderRadius:'50%', background:C.red,
-                  animation:'wt-pulse 1.6s ease-in-out infinite',
-                }} />
-                STREAMING
-              </span>
-              <span style={{ fontSize:9, color:C.textSec, fontFamily:'"JetBrains Mono",monospace' }}>{recent.length} EVENTS</span>
-            </div>
-          </div>
-
-          {recent.length === 0 ? (
-            <div style={{
-              padding:'64px 20px', textAlign:'center', color:C.textDim,
-              display:'flex', flexDirection:'column', alignItems:'center', gap:12,
-            }}>
-              <div style={{
-                width:48, height:48, borderRadius:8,
-                border:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'center',
-              }}>
-                <Radar size={24} strokeWidth={1} color={C.textDim} />
-              </div>
-              <div>
-                <div style={{ fontSize:11, color:C.textSec, letterSpacing:'1px', marginBottom:4 }}>
-                  {data.isLive ? 'CONNECTING TO STREAM…' : 'SIMULATION ACTIVE'}
-                </div>
-                <div style={{ fontSize:10, color:C.textDim }}>
-                  {data.isLive
-                    ? 'Establishing WebSocket connection to ingest pipeline'
-                    : 'Use the Attack Panel to inject threat traffic and trigger detection'}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ overflowX:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom:`1px solid ${C.border}` }}>
-                    {['Sev', 'Time', 'Threat Type', 'Source', 'Destination', 'Confidence', 'Evidence'].map(h => (
-                      <th key={h} style={{
-                        padding:'8px 14px', textAlign:'left', fontSize:9, fontWeight:700,
-                        letterSpacing:'1.2px', color:C.textDim,
-                        fontFamily:'"JetBrains Mono",monospace',
-                        textTransform:'uppercase', whiteSpace:'nowrap',
-                      }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {recent.map((alert, idx) => {
-                    const fresh = idx < 3;
-                    const tClr = THREAT_CLR[alert.threat_type.toLowerCase()] || C.text;
-                    const lbl = THREAT_LBL[alert.threat_type.toLowerCase()] || alert.threat_type;
-                    return (
-                      <tr key={alert.id ?? idx} style={{
-                        borderBottom:`1px solid ${C.border}`,
-                        background: fresh ? `${C.red}04` : 'transparent',
-                        animation: `wt-row-in 0.3s ${EASE} ${idx * 0.02}s both`,
-                        transition:'background 0.15s',
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}04`; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = fresh ? `${C.red}04` : 'transparent'; }}
-                      >
-                        <td style={{ padding:'10px 14px' }}><Sev sev={alert.severity} /></td>
-                        <td style={{
-                          padding:'10px 14px', fontSize:11, color:C.textSec,
-                          fontFamily:'"JetBrains Mono",monospace', whiteSpace:'nowrap',
-                          fontVariantNumeric:'tabular-nums',
-                        }}>{fmtTime(alert.timestamp)}</td>
-                        <td style={{
-                          padding:'10px 14px', fontSize:11, fontWeight:600,
-                          fontFamily:'"JetBrains Mono",monospace',
-                          letterSpacing:'0.4px', textTransform:'uppercase', color:tClr,
-                        }}>{lbl}</td>
-                        <td style={{
-                          padding:'10px 14px', fontSize:11,
-                          fontFamily:'"JetBrains Mono",monospace', color:C.text,
-                          whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums',
-                        }}>{alert.src_ip ?? '—'}</td>
-                        <td style={{
-                          padding:'10px 14px', fontSize:11,
-                          fontFamily:'"JetBrains Mono",monospace', color:C.textSec,
-                          whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums',
-                        }}>{alert.dst_ip ?? '—'}</td>
-                        <td style={{
-                          padding:'10px 14px', fontSize:11, fontWeight:700,
-                          fontFamily:'"JetBrains Mono",monospace', color:C.green,
-                          fontVariantNumeric:'tabular-nums',
-                        }}>{(alert.confidence * 100).toFixed(0)}%</td>
-                        <td style={{
-                          padding:'10px 14px', fontSize:10, color:C.textSec,
-                          fontFamily:'"JetBrains Mono",monospace',
-                          maxWidth:340, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
-                        }}>
-                          {typeof alert.evidence === 'string' ? alert.evidence : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        {/* ════════════════════════════════════════════════════════════════
-             ROW 4 — FEATURE EXTRACTION + PERFORMANCE
-             ════════════════════════════════════════════════════════════════ */}
-        <section style={{
-          display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24,
-        }}>
-          {/* Feature Extraction */}
-          <div style={{
-            background:'var(--bg-card)',
-            border:`1px solid ${C.border}`,
-            borderRadius:12,
-            padding:24,
-          }}>
-            <SectionLabel label="Feature Extraction" />
-
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {[
-                { label:'DNS query entropy',  sub:'Shannon entropy + n-gram',     cat:'DGA / Tunneling' },
-                { label:'TLS fingerprint',    sub:'JA3 / JA4 hash matching',       cat:'TLS Anomaly' },
-                { label:'Flow rate stats',    sub:'Source-IP entropy, packet rate', cat:'DDoS / Recon' },
-                { label:'Inter-arrival timing', sub:'Periodicity + CUSUM',        cat:'C2 Beaconing' },
-                { label:'Volume asymmetry',   sub:'Outbound/inbound byte ratio',   cat:'Exfiltration' },
-                { label:'Fan-out analysis',   sub:'Port / host distribution',      cat:'Port Scan' },
-              ].map(f => (
-                <div key={f.label} style={{
-                  display:'flex', alignItems:'center', justifyContent:'space-between',
                   padding:'10px 12px',
-                  borderBottom: f.label !== 'Fan-out analysis' ? `1px solid ${C.border}` : 'none',
+                  borderRight: s.label !== 'MIN' ? '1px solid var(--border-muted)' : 'none',
+                  textAlign:'center',
                 }}>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:500, letterSpacing:'0.2px', color:C.text }}>{f.label}</div>
-                    <div style={{ fontSize:10, color:C.textSec, marginTop:2 }}>{f.sub}</div>
+                  <div style={{ fontFamily:MONO, fontSize:8, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.1em' }}>{s.label}</div>
+                  <div style={{ fontFamily:MONO, fontSize:13, fontWeight:700, color:'var(--text-primary)', fontVariantNumeric:'tabular-nums' }}>
+                    {s.value}<span style={{ fontSize:8, color:'var(--text-muted)', marginLeft:3 }}>{s.unit}</span>
                   </div>
-                  <span style={{
-                    fontSize:9, fontWeight:700, color:C.accent,
-                    border:`1px solid ${C.accent}25`, padding:'3px 8px', borderRadius:4,
-                    fontFamily:'"JetBrains Mono",monospace', letterSpacing:'0.5px',
-                    whiteSpace:'nowrap',
-                  }}>{f.cat}</span>
                 </div>
               ))}
             </div>
           </div>
+        </section>
 
-          {/* Performance */}
+        {/* ══════════════════════════════════════════════════════════════
+             ROW 3 — NETWORK MAP (full width, 300px)
+             ══════════════════════════════════════════════════════════════ */}
+        <section style={{
+          marginBottom:20,
+          background:'var(--bg-surface)',
+          border:'1px solid var(--border-default)',
+          overflow:'hidden',
+        }}>
           <div style={{
-            background:'var(--bg-card)',
-            border:`1px solid ${C.border}`,
-            borderRadius:12,
-            padding:24,
+            padding:'12px 16px', borderBottom:'1px solid var(--border-default)',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
           }}>
-            <SectionLabel
-              label="Performance"
-              right={
-                <span style={{ fontSize:10, color:C.textSec, fontFamily:'"JetBrains Mono",monospace' }}>TARGET 10K FLOWS/SEC</span>
-              }
-            />
-
-            <div style={{ display:'flex', flexDirection:'column', gap:16, paddingTop:4 }}>
-              {[
-                { label:'Current throughput', value:`${data.flowsPerSec} flows/s`, pct: Math.min(data.flowsPerSec, 100), color:C.accent },
-                { label:'Avg confidence',     value:`${data.detectionRate.toFixed(1)}%`, pct: data.detectionRate, color:C.green },
-                { label:'Processing latency', value:'12ms p99', pct: 12, color:C.purple },
-                { label:'Memory footprint',   value:'847 MB', pct: 35, color:C.amber },
-              ].map(m => (
-                <div key={m.label}>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                    <span style={{ fontSize:12, color:C.textSec }}>{m.label}</span>
-                    <span style={{
-                      fontSize:12, fontWeight:600, color:C.text,
-                      fontFamily:'"JetBrains Mono",monospace',
-                      fontVariantNumeric:'tabular-nums',
-                    }}>{m.value}</span>
-                  </div>
-                  <div style={{
-                    height:4, background:'var(--bg-secondary)',
-                    borderRadius:2, overflow:'hidden',
-                  }}>
-                    <div style={{
-                      height:'100%', width:`${Math.min(m.pct, 100)}%`,
-                      background:m.color, opacity:0.6,
-                      borderRadius:1,
-                      transition:'width 1s cubic-bezier(0.22,1,0.36,1)',
-                    }} />
-                  </div>
-                </div>
-              ))}
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{
+                fontFamily:MONO, fontSize:10, fontWeight:700,
+                color:'var(--text-secondary)', letterSpacing:'0.1em',
+                textTransform:'uppercase',
+              }}>NETWORK TOPOLOGY</span>
+              <span style={{
+                fontFamily:MONO, fontSize:9, color:'var(--text-muted)',
+              }}>
+                {isLive ? 'LIVE' : 'DEMO'} · passive observation
+              </span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ display:'flex', alignItems:'center', gap:4 }}>
+                <span style={{ width:8, height:2, background:'var(--color-accent)', display:'inline-block', borderRadius:1 }} />
+                <span style={{ fontFamily:MONO, fontSize:8, color:'var(--text-muted)', textTransform:'uppercase' }}>Normal</span>
+              </span>
+              <span style={{ display:'flex', alignItems:'center', gap:4 }}>
+                <span style={{ width:8, height:2, background:'var(--color-danger)', display:'inline-block', borderRadius:1 }} />
+                <span style={{ fontFamily:MONO, fontSize:8, color:'var(--text-muted)', textTransform:'uppercase' }}>Attack</span>
+              </span>
             </div>
           </div>
+          <div style={{ height: 300, position:'relative' }}>
+            <NetworkMap />
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════
+             ROW 4 — QUICK NAV (compact, horizontal)
+             ══════════════════════════════════════════════════════════════ */}
+        <section style={{
+          display:'flex', gap:1, marginBottom:20,
+        }}>
+          {[
+            { label:'ATTACK LAB', path:'/attack',  color:'var(--color-danger)',   icon:'⚡' },
+            { label:'LIVE THREATS', path:'/live-threats', color:'var(--color-warning)', icon:'◉' },
+            { label:'NETWORK MAP', path:'/network-map', color:'var(--color-accent)',  icon:'◈' },
+            { label:'DIODE LAB', path:'/diode-lab',  color:'var(--color-purple)',  icon:'◎' },
+            { label:'AI ANALYZER', path:'/ai-analyzer', color:'var(--color-info)',   icon:'⌬' },
+            { label:'ANALYTICS', path:'/analytics', color:'var(--text-secondary)', icon:'◫' },
+          ].map(action => (
+            <button key={action.path} onClick={() => navigate(action.path)} style={{
+              flex:1,
+              display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+              padding:'12px 16px',
+              background:'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+              fontFamily:MONO, fontSize:10, fontWeight:600,
+              color: action.color,
+              letterSpacing:'0.1em', textTransform:'uppercase',
+              cursor:'pointer', transition:'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'var(--bg-elevated)';
+              e.currentTarget.style.borderColor = `${action.color}40`;
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'var(--bg-surface)';
+              e.currentTarget.style.borderColor = 'var(--border-default)';
+            }}
+            >
+              <span>{action.icon}</span>
+              {action.label}
+            </button>
+          ))}
         </section>
 
         {/* ── FOOTER ───────────────────────────────────────────────────── */}
         <footer style={{
-          padding:'20px 0', borderTop:`1px solid ${C.border}`,
+          padding:'16px 0', borderTop:'1px solid var(--border-muted)',
           display:'flex', justifyContent:'space-between', alignItems:'center',
           flexWrap:'wrap', gap:8,
         }}>
-          <span style={{ fontSize:10, color:C.textDim, letterSpacing:'1px', fontFamily:'"JetBrains Mono",monospace' }}>
-            WATCHTOWER v3.2.1 · EKADHARA · NTRO SIH26
-          </span>
-          <span style={{ fontSize:10, color:C.textDim, letterSpacing:'0.5px', fontFamily:'"JetBrains Mono",monospace', fontVariantNumeric:'tabular-nums' }}>
-            {data.isLive ? 'REAL-TIME STREAM' : 'SIMULATION'} · {data.alerts.length} ALERTS · {fmtUptime(data.uptime)} UPTIME
+          <span style={{
+            fontFamily:MONO, fontSize:9, color:'var(--text-muted)',
+            letterSpacing:'0.6px',
+          }}>WATCHTOWER · NTRO · SIH26 · PS-26145</span>
+          <span style={{
+            fontFamily:MONO, fontSize:9, color:'var(--text-muted)',
+            letterSpacing:'0.4px', fontVariantNumeric:'tabular-nums',
+          }}>
+            {isLive ? 'REAL-TIME STREAM' : 'SIMULATION'} · {data.alerts.length} ALERTS · {fmtUptime(data.uptime)} UPTIME
           </span>
         </footer>
-
       </main>
     </div>
   );

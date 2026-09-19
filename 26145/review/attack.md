@@ -1,30 +1,28 @@
-# AttackPanel (`/attack`)
+# Attack Lab (`/attack`)
 
 ## What It Does
-A control panel for simulating and monitoring network attacks — selecting attack vectors, configuring parameters, launching simulated attacks, and tracking their progress and impact.
+A control panel for simulating and monitoring network attacks. Select from 8 attack types (SYN Flood, UDP Flood, C2 Beacon, DGA Domain, DNS Tunnel, Port Scan, Data Exfil, TLS Beacon), configure parameters, launch simulated attacks, and observe real-time detection results in a live detection feed table.
 
 ## Data Flow
-- **HTTP API** — `POST /api/attack/launch` sends attack configuration; `GET /api/attack/status` polls for progress. Attack results and history come from the API.
-- **Local state** — `selectedVector` (attack type), `targetConfig` (IP, port, duration), `isLaunching`, `attackResult`, `attackHistory`.
-- **WebSocketContext** — receives `attack_update` events for real-time progress on in-progress attacks (packets sent, success rate, detection status).
-- **Attack history** — stored in component state; persists only for the session.
+- **Component state** — `attackLogs` (array of AttackLog), `runningAttack` (current attack ID), `allDetections` (flat detection events), `totalDetected` counter.
+- **Simulated detection** — Each attack launch triggers a timeout (800-2300ms) that generates a DetectionEvent with rule match, severity, confidence, latency, src/dst IPs, and evidence string.
+- **Demo mode** — Auto-rotates through all 8 attack types every 3.5 seconds, generating a continuous stream of detections for showcase purposes.
 
 ## What Is Real
-- Attack vector catalog (DDoS, MITM, Phishing, SQL Injection, XSS, Port Scan) is a real data list.
-- Launch button sends a real POST to the backend attack simulator.
-- Real-time progress bar updates via WebSocket `attack_update` messages.
-- Attack result summary (packets, success rate, duration, detection events) comes from API.
-- Detection status (Detected/Undetected/Partially Detected) is rendered from real backend classification.
-- Attack history list shows past simulated attacks from API.
+- Attack type catalog (8 types) with rule IDs, severity labels, and icon mapping.
+- Launch button triggers per-attack detection simulation with realistic delays.
+- Detection events include: rule ID, severity, confidence score (70-100%), latency (8-128ms), random src/dst IPs, and context-specific evidence strings.
+- Stats panel tracks: attacks launched, detected count, detection rate %, and average latency.
+- Detection feed is a scrollable table with row-in animations.
 
 ## What Is Fake
 | Aspect | How |
 |---|---|
-| Attack progress animation | CSS width transition on progress bar; actual updates come from WebSocket but the bar animation itself is cosmetic. |
-| "Impact meter" gauge | SVG arc drawn with hardcoded `strokeDasharray` math; not a real gauge library. |
-| Default target values | `"192.168.1.100"`, `"10.0.0.1"` hardcoded as placeholder target IPs. |
-| Severity classification labels | Static strings mapping numeric scores to labels (`score > 80 ? "Critical" : …`). |
-| Attack history in session | Client-side array; not persisted server-side in the current implementation. |
+| Detection timing | setTimeout-based simulation (800-2300ms), not real ML inference |
+| Evidence strings | Pre-written templates randomly selected per attack type |
+| Confidence/latency | Random values within realistic ranges |
+| IP addresses | Randomly generated from prefix pools |
+| Demo mode | Automated attack rotation, not real traffic |
 
 ## Verdict
-~70% real. The attack launch flow, real-time progress updates via WebSocket, and result rendering are all functional. However, the target defaults are placeholders, the visual gauges are hand-coded SVG, and the session-only history limits persistence.
+~60% functional realism. The attack catalog, detection pipeline simulation, and evidence generation are all working. However, detections are simulated rather than real ML inference, and there's no actual network traffic generation.

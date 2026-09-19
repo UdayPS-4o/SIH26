@@ -62,8 +62,8 @@ const EvidenceChain: React.FC<EvidenceChainProps> = ({
             letterSpacing:'0.3px',
           }}>{fmtHash(hash)}</code>
           <button onClick={handleCopy} style={{
-            padding:'5px 10px', background: copied ? 'rgba(34,197,94,0.1)' : 'transparent',
-            border: `1px solid ${copied ? 'rgba(34,197,94,0.3)' : 'var(--border-color)'}`,
+            padding:'5px 10px', background: copied ? 'var(--match-matched-bg)' : 'transparent',
+            border: `1px solid ${copied ? 'var(--mat-approved-border)' : 'var(--border-color)'}`,
             borderRadius: 4, cursor: 'pointer', fontFamily:'"JetBrains Mono",monospace',
             fontSize: 10, fontWeight: 600, color: copied ? 'var(--accent-green)' : 'var(--text-muted)',
             textTransform: 'uppercase', letterSpacing:'0.5px',

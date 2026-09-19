@@ -10,7 +10,7 @@ import { mockBackend } from './mockBackend';
 
 const WS_URL = 'ws://localhost:8000/ws';
 const ALERTS_WS_URL = 'ws://localhost:8000/ws';
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:8000';
 const RECONNECT_DELAY_MS = 3000;
 const PING_INTERVAL_MS = 30_000;
 const FETCH_TIMEOUT_MS = 5000;
@@ -326,4 +326,53 @@ export function formatBytes(bytes: number): string {
 
 export function isBackendOnline(): boolean {
   return backendOnline;
+}
+
+// ── Attack launch ──────────────────────────────────────────────────────────────
+
+const ATTACK_TYPE_MAP: Record<string, string> = {
+  syn_flood: 'syn_flood',
+  udp_flood: 'udp_flood',
+  c2_beacon: 'c2_beaconing',
+  dga_domain: 'dga_domain',
+  dns_tunnel: 'dns_tunnel',
+  port_scan: 'port_scan',
+  data_exfil: 'data_exfiltration',
+  tls_beacon: 'c2_beaconing',
+};
+
+export interface AttackLaunchResult {
+  status: string;
+  attack_id: string;
+  attack_type: string;
+  intensity: number;
+  src_ip: string;
+  message: string;
+  alerts_generated?: number;
+  latency_ms: number;
+}
+
+export async function launchAttack(attackId: string, intensity = 0.7): Promise<AttackLaunchResult> {
+  const backendType = ATTACK_TYPE_MAP[attackId] || attackId;
+  const res = await fetch(`${API_BASE}/api/attack/launch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ attack_type: backendType, intensity }),
+  });
+  if (!res.ok) {
+    // If backend is down, fall back gracefully
+    throw new Error(`Backend returned HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data as AttackLaunchResult;
+}
+
+export async function fetchAttackStatus(): Promise<{ active: any[]; total: number }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/attack/status`);
+    if (!res.ok) throw new Error();
+    return await res.json();
+  } catch {
+    return { active: [], total: 0 };
+  }
 }

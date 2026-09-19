@@ -1,5 +1,5 @@
 /**
- * WATCHTOWER — Review & Compliance Page
+ * EKADHARA — Review & Compliance Page
  * Brutal honest self-assessment for Smart India Hackathon 2026 PS-26145 NTRO
  */
 
@@ -26,9 +26,9 @@ const C = {
 };
 
 const STATUS_META: Record<string, { c: string; bg: string; border: string; label: string }> = {
-  compliant: { c: C.green, bg: 'rgba(34,197,94,0.06)', border: 'rgba(34,197,94,0.2)', label: 'Functional' },
-  partial:   { c: C.amber, bg: 'rgba(234,179,8,0.06)', border: 'rgba(234,179,8,0.2)', label: 'Needs Work' },
-  missing:   { c: C.red,   bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.2)', label: 'Incomplete' },
+  compliant: { c: C.green, bg: 'var(--color-success-dim)', border: 'var(--color-success-dim)', label: 'Functional' },
+  partial:   { c: C.amber, bg: 'var(--chip-estimated-bg)', border: 'var(--chip-estimated-border)', label: 'Needs Work' },
+  missing:   { c: C.red,   bg: 'var(--chip-unverified-bg)', border: 'var(--chip-unverified-border)', label: 'Incomplete' },
 };
 
 interface PageInfo {
@@ -72,7 +72,7 @@ const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 const cardStyle: React.CSSProperties = {
   background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
-  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  boxShadow: '0 1px 3px var(--shadow-sm)',
   transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
 };
 
@@ -89,9 +89,9 @@ const SectionHeader: React.FC<{ label: string; count?: { c: number; p: number; m
     <div style={sectionTitle}>{label}</div>
     {count && (
       <div style={{ display:'flex', gap: 8 }}>
-        {count.c > 0 && <span style={{ fontFamily:MONO, fontSize:10, fontWeight:600, color:C.green, background:'rgba(34,197,94,0.06)', padding:'3px 10px', borderRadius:4, border:`1px solid rgba(34,197,94,0.15)` }}>{count.c} Functional</span>}
-        {count.p > 0 && <span style={{ fontFamily:MONO, fontSize:10, fontWeight:600, color:C.amber, background:'rgba(234,179,8,0.06)', padding:'3px 10px', borderRadius:4, border:`1px solid rgba(234,179,8,0.15)` }}>{count.p} Needs Work</span>}
-        {count.m > 0 && <span style={{ fontFamily:MONO, fontSize:10, fontWeight:600, color:C.red, background:'rgba(239,68,68,0.06)', padding:'3px 10px', borderRadius:4, border:`1px solid rgba(239,68,68,0.15)` }}>{count.m} Incomplete</span>}
+        {count.c > 0 && <span style={{ fontFamily:MONO, fontSize:10, fontWeight:600, color:C.green, background:'var(--color-success-dim)', padding:'3px 10px', borderRadius:4, border:`1px solid rgba(34,197,94,0.15)` }}>{count.c} Functional</span>}
+        {count.p > 0 && <span style={{ fontFamily:MONO, fontSize:10, fontWeight:600, color:C.amber, background:'var(--chip-estimated-bg)', padding:'3px 10px', borderRadius:4, border:`1px solid rgba(234,179,8,0.15)` }}>{count.p} Needs Work</span>}
+        {count.m > 0 && <span style={{ fontFamily:MONO, fontSize:10, fontWeight:600, color:C.red, background:'var(--chip-unverified-bg)', padding:'3px 10px', borderRadius:4, border:`1px solid rgba(239,68,68,0.15)` }}>{count.m} Incomplete</span>}
       </div>
     )}
   </div>
@@ -128,9 +128,9 @@ const PageCard: React.FC<{ page: PageInfo }> = ({ page }) => (
       <div style={{
         display:'inline-flex', alignItems:'center', gap: 6,
         padding: '5px 12px', borderRadius: 5, fontSize: 11, fontWeight: 600,
-        background: page.assessment === 'Functional' ? 'rgba(34,197,94,0.06)' : 'rgba(234,179,8,0.06)',
+        background: page.assessment === 'Functional' ? 'var(--color-success-dim)' : 'var(--chip-estimated-bg)',
         color: page.assessment === 'Functional' ? C.green : C.amber,
-        border: `1px solid ${page.assessment === 'Functional' ? 'rgba(34,197,94,0.2)' : 'rgba(234,179,8,0.2)'}`,
+        border: `1px solid ${page.assessment === 'Functional' ? 'var(--color-success-dim)' : 'var(--chip-estimated-border)'}`,
         fontFamily: MONO, textTransform: 'uppercase', letterSpacing: '0.5px',
       }}>
         {page.assessment === 'Functional' ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
@@ -193,7 +193,7 @@ const ReviewPage = () => {
 
   return (
     <div style={{ minHeight:'100%', background: C.bg, color: C.text, fontFamily: '"Inter",system-ui,sans-serif', fontSize: 13, lineHeight: 1.6 }}>
-      <style>{`::selection{background:rgba(0,212,255,0.12);color:${C.text}}:focus-visible{outline:1.5px solid rgba(0,212,255,0.4);outline-offset:2px;border-radius:3px}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}`}</style>
+      <style>{`::selection{background:var(--accent-cyan);color:${C.text}}:focus-visible{outline:1.5px solid var(--border-active);outline-offset:2px;border-radius:3px}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}`}</style>
 
       {/* HEADER */}
       <header style={{
@@ -203,7 +203,7 @@ const ReviewPage = () => {
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 28px', display:'flex', alignItems:'center', height: 52, gap: 14 }}>
           <ShieldCheck size={18} color={C.accent} />
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '3px', color: C.text }}>WATCHTOWER</span>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '3px', color: C.text }}>EKADHARA</span>
           <div style={{ width:1, height:16, background: C.border }} />
           <span style={{ fontSize: 10, color: C.textDim, letterSpacing: '0.8px' }}>PS-26145 · REVIEW & COMPLIANCE</span>
           <div style={{ flex:1 }} />
@@ -279,9 +279,9 @@ const ReviewPage = () => {
                   display:'inline-flex', alignItems:'center', gap: 6,
                   padding: '4px 10px', borderRadius: 5, fontSize: 10, fontWeight: 700,
                   fontFamily: MONO, textTransform: 'uppercase', letterSpacing: '0.5px',
-                  background: page.assessment === 'Functional' ? 'rgba(34,197,94,0.06)' : 'rgba(234,179,8,0.06)',
+                  background: page.assessment === 'Functional' ? 'var(--color-success-dim)' : 'var(--chip-estimated-bg)',
                   color: page.assessment === 'Functional' ? C.green : C.amber,
-                  border: `1px solid ${page.assessment === 'Functional' ? 'rgba(34,197,94,0.2)' : 'rgba(234,179,8,0.2)'}`,
+                  border: `1px solid ${page.assessment === 'Functional' ? 'var(--color-success-dim)' : 'var(--chip-estimated-border)'}`,
                 }}>
                   {page.assessment === 'Functional' ? <CheckCircle2 size={11} /> : <AlertTriangle size={11} />}
                   {page.assessment}

@@ -53,7 +53,7 @@ const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:Reac
       background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
       opacity:ready?1:0, transform:ready?'translateY(0)':'translateY(8px)',
       transition:`opacity 0.4s ${EASE} ${delay}s, transform 0.4s ${EASE} ${delay}s`,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      boxShadow: '0 1px 3px var(--shadow-sm)',
       ...style,
     }}>
       <div style={{ padding:'20px 24px' }}>{children}</div>
@@ -63,10 +63,10 @@ const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:Reac
 
 const Sev: React.FC<{ sev:string }> = ({ sev }) => {
   const M: Record<string,{c:string;bg:string}> = {
-    critical:{c:C.red,bg:'rgba(239,68,68,0.08)'},
-    high:{c:C.orange,bg:'rgba(249,115,22,0.08)'},
-    medium:{c:C.amber,bg:'rgba(234,179,8,0.08)'},
-    low:{c:'var(--accent-cyan)',bg:'rgba(6,182,212,0.06)'},
+    critical:{c:C.red,bg:'var(--sev-critical-bg)'},
+    high:{c:C.orange,bg:'var(--sev-high-bg)'},
+    medium:{c:C.amber,bg:'var(--sev-medium-bg)'},
+    low:{c:'var(--accent-cyan)',bg:'var(--sev-low-bg)'},
   };
   const s = M[sev] || M.low;
   return (
@@ -142,7 +142,7 @@ const PIPELINE_STAGES = [
   { label:'Ingest',    sub:'PCAP / NetFlow / sFlow',     color:C.accent,  icon:Cpu,
     detail:'10K flows/sec · Zero-copy ring buffer · 12ms p99 latency' },
   { label:'Features',  sub:'JA3 / DNS / Flow metadata',   color:C.purple,  icon:Crosshair,
-    detail:'487 features per flow · Real-time enrichment · Feature store v2' },
+    detail:'127 features per flow · Real-time enrichment · Feature store v2' },
   { label:'Inference', sub:'Ensemble classifier',          color:C.green,   icon:Activity,
     detail:'8 models · Weighted ensemble · GPU-accelerated inference' },
   { label:'Output',    sub:'WebSocket + REST alerts',      color:C.amber,   icon:Zap,
@@ -485,8 +485,8 @@ const AIAnalyzer: React.FC = () => {
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         @keyframes wt-row-in { from{opacity:0;transform:translateX(-4px);} to{opacity:1;transform:translateX(0);} }
-        ::selection { background:rgba(0,212,255,0.12);color:${C.text}; }
-        :focus-visible { outline:1.5px solid rgba(0,212,255,0.4);outline-offset:2px;border-radius:3px; }
+        ::selection { background:var(--accent-cyan);color:${C.text}; }
+        :focus-visible { outline:1.5px solid var(--border-active);outline-offset:2px;border-radius:3px; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:${C.border};border-radius:3px; }
@@ -520,7 +520,7 @@ const AIAnalyzer: React.FC = () => {
               </svg>
             </div>
             <span style={{ fontSize:13,fontWeight:700,letterSpacing:'3px',color:C.text }}>
-              WATCHTOWER
+              EKADHARA
             </span>
           </div>
           <div style={{ width:1,height:16,background:C.border,flexShrink:0 }} />
@@ -596,7 +596,7 @@ const AIAnalyzer: React.FC = () => {
           <div style={{ display:'flex', gap: 16, marginTop: 14, flexWrap:'wrap' }}>
             {[
               { label: 'Training Dataset', value: 'CIC-IDS2017', detail: '2.3M flows' },
-              { label: 'Feature Count', value: '487', detail: 'Per-flow features' },
+              { label: 'Feature Count', value: '127', detail: 'Per-flow features' },
               { label: 'Model Version', value: 'v3.2.1', detail: 'EKADHARA' },
               { label: 'Retraining Schedule', value: 'Weekly', detail: 'Auto on drift > 5%' },
             ].map(m => (
@@ -667,7 +667,7 @@ const AIAnalyzer: React.FC = () => {
                 letterSpacing: '2px', color: C.accent, textTransform: 'uppercase',
               }}>Feature Importance</span>
               <span style={{ fontSize: 11, color: C.textSec }}>
-                487 total features &middot; SHAP-weighted
+                127 total features &middot; SHAP-weighted
               </span>
             </div>
             <FeatureImportanceChart data={FEATURE_IMPORTANCE} />
@@ -715,7 +715,7 @@ const AIAnalyzer: React.FC = () => {
           display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8,
         }}>
           <span style={{ fontSize:11,color:C.textDim }}>
-            WATCHTOWER v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
+            EKADHARA v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
           </span>
           <span style={{ fontSize:11,color:C.textDim,fontVariantNumeric:'tabular-nums' }}>
             {activeModels} models &middot; {fmt(totalSamples)} samples &middot; {clock} local

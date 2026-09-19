@@ -38,9 +38,9 @@ const DetectionFeedback: React.FC<DetectionFeedbackProps> = ({ attack, detection
           padding:'2px 8px', borderRadius:4,
           fontSize:10, fontWeight:700, letterSpacing:'0.5px',
           textTransform:'uppercase',
-          background:'rgba(34,197,94,0.1)',
+          background:'var(--match-matched-bg)',
           color:'var(--accent-green)',
-          border:'1px solid rgba(34,197,94,0.25)',
+          border:'1px solid var(--color-success-dim)',
         }}>
           <span style={{ width:5, height:5, borderRadius:'50%', background:'var(--accent-green)', display:'inline-block' }} />
           DETECTED

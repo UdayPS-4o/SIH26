@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /* ═══════════════════════════════════════════════════════════════════════
-   WATCHTOWER — Integrations
+   EKADHARA — Integrations
    ═══════════════════════════════════════════════════════════════════════ */
 
 interface Integration {
@@ -167,7 +167,7 @@ function IntegrationPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
         {integrations.map(int => (
           <div key={int.id} onClick={() => setSelected(int)} style={{
-            background: 'var(--bg-secondary)', border: `1px solid ${int.status === 'error' ? 'rgba(239,68,68,0.3)' : int.status === 'disconnected' ? 'rgba(255,136,51,0.2)' : 'var(--border-color)'}`,
+            background: 'var(--bg-secondary)', border: `1px solid ${int.status === 'error' ? 'var(--mat-rejected-border)' : int.status === 'disconnected' ? 'rgba(255,136,51,0.2)' : 'var(--border-color)'}`,
             borderRadius: '8px', padding: '16px', cursor: 'pointer', transition: 'border-color 0.2s',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -188,7 +188,7 @@ function IntegrationPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Endpoint</span>
-                <code style={{ color: 'var(--accent-cyan)', fontSize: '11px', background: 'rgba(0,212,255,0.06)', padding: '1px 6px', borderRadius: '3px' }}>{int.endpoint}</code>
+                <code style={{ color: 'var(--accent-cyan)', fontSize: '11px', background: 'var(--color-info-dim)', padding: '1px 6px', borderRadius: '3px' }}>{int.endpoint}</code>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Latency</span>
@@ -201,7 +201,7 @@ function IntegrationPage() {
             </div>
 
             {/* Throughput mini bar */}
-            <div style={{ borderTop: '1px solid rgba(0,212,255,0.08)', paddingTop: '10px' }}>
+            <div style={{ borderTop: '1px solid var(--color-info-dim)', paddingTop: '10px' }}>
               <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Throughput</div>
               <div style={{ height: '20px', display: 'flex', alignItems: 'flex-end', gap: '2px' }}>
                 {Array.from({ length: 20 }, () => Math.floor(Math.random() * 80) + 20).map((val, i) => (
@@ -213,7 +213,7 @@ function IntegrationPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(0,212,255,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-info-dim)' }}>
               <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '10px' }}>{int.id}</span>
               <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-red)', fontSize: '10px' }}>♥ {new Date(int.last_heartbeat).toLocaleTimeString()}</span>
             </div>
@@ -236,7 +236,7 @@ function IntegrationPage() {
                     <span style={{ fontFamily: '"JetBrains Mono", monospace', color: color, fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' }}>{fmt}</span>
                     <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '11px' }}>{count} ({pct.toFixed(0)}%)</span>
                   </div>
-                  <div style={{ height: '8px', borderRadius: '4px', background: 'rgba(0,212,255,0.06)', overflow: 'hidden' }}>
+                  <div style={{ height: '8px', borderRadius: '4px', background: 'var(--color-info-dim)', overflow: 'hidden' }}>
                     <div style={{ height: '100%', borderRadius: '4px', background: color, width: (pct + '%'), transition: 'width 0.5s ease' }} />
                   </div>
                 </div>
@@ -265,7 +265,7 @@ function IntegrationPage() {
               </thead>
               <tbody>
                 {events.slice(0, 12).map(evt => (
-                  <tr key={evt.id} style={{ borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
+                  <tr key={evt.id} style={{ borderBottom: '1px solid var(--color-info-dim)' }}>
                     <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '10px', padding: '7px 12px' }}>
                       {new Date(evt.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </td>
@@ -286,13 +286,13 @@ function IntegrationPage() {
                     <td style={{ padding: '7px 12px' }}>
                       <span style={{
                         fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-red)',
-                        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                        background: 'var(--sev-critical-bg)', border: '1px solid rgba(239,68,68,0.2)',
                         padding: '2px 6px', borderRadius: '4px', fontSize: '9px', textTransform: 'uppercase',
                       }}>{evt.threat_class}</span>
                     </td>
                     <td style={{ padding: '7px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(0,212,255,0.08)', overflow: 'hidden' }}>
+                        <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'var(--color-info-dim)', overflow: 'hidden' }}>
                           <div style={{ height: '100%', borderRadius: '2px', background: evt.confidence > 80 ? 'var(--accent-green)' : evt.confidence > 60 ? 'var(--accent-orange)' : 'var(--accent-cyan)', width: `${evt.confidence}%` }} />
                         </div>
                         <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '10px' }}>{evt.confidence}%</span>
@@ -321,21 +321,21 @@ function IntegrationPage() {
           <div style={{ flex: 1, minWidth: '180px' }}>
             <label style={{ display: 'block', fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>Name</label>
             <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="My SIEM" style={{
-              width: '100%', background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px',
+              width: '100%', background: 'var(--modal-backdrop)', border: '1px solid var(--accent-cyan)', borderRadius: '6px',
               padding: '8px 10px', color: 'var(--text-primary)', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', outline: 'none',
             }} />
           </div>
           <div style={{ flex: 1, minWidth: '200px' }}>
             <label style={{ display: 'block', fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>Endpoint</label>
             <input value={newEndpoint} onChange={e => setNewEndpoint(e.target.value)} placeholder="host:port or https://..." style={{
-              width: '100%', background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px',
+              width: '100%', background: 'var(--modal-backdrop)', border: '1px solid var(--accent-cyan)', borderRadius: '6px',
               padding: '8px 10px', color: 'var(--text-primary)', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', outline: 'none',
             }} />
           </div>
           <div style={{ minWidth: '130px' }}>
             <label style={{ display: 'block', fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '6px' }}>Type</label>
             <select value={newType} onChange={e => setNewType(e.target.value)} style={{
-              width: '100%', background: 'rgba(6,10,16,0.9)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px',
+              width: '100%', background: 'var(--modal-backdrop)', border: '1px solid var(--accent-cyan)', borderRadius: '6px',
               padding: '8px 10px', color: 'var(--text-primary)', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', outline: 'none', cursor: 'pointer',
             }}>
               <option value="siem">SIEM</option>
@@ -347,11 +347,11 @@ function IntegrationPage() {
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button onClick={handleAdd} style={{
-              background: 'rgba(0,212,255,0.15)', color: 'var(--accent-cyan)', border: '1px solid rgba(0,212,255,0.3)',
+              background: 'var(--border-active)', color: 'var(--accent-cyan)', border: '1px solid var(--border-active)',
               borderRadius: '6px', padding: '8px 16px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
             }}>+ Add</button>
             <button onClick={() => setShowAdd(false)} style={{
-              background: 'transparent', color: 'var(--text-secondary)', border: '1px solid rgba(0,212,255,0.12)',
+              background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--accent-cyan)',
               borderRadius: '6px', padding: '8px 16px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
             }}>Cancel</button>
           </div>
@@ -361,7 +361,7 @@ function IntegrationPage() {
       {/* ── DETAIL MODAL ─────────────────────────────────────────── */}
       {selected && (
         <div onClick={() => setSelected(null)} style={{
-          position: 'fixed', inset: 0, background: 'rgba(6,10,16,0.85)', backdropFilter: 'blur(4px)',
+          position: 'fixed', inset: 0, background: 'var(--overlay-strong)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
@@ -384,7 +384,7 @@ function IntegrationPage() {
                 { label: 'Events Sent', value: selected.events_sent.toLocaleString(), color: 'var(--text-primary)' },
                 { label: 'Last Heartbeat', value: new Date(selected.last_heartbeat).toLocaleString(), color: 'var(--text-primary)' },
               ].map(field => (
-                <div key={field.label} style={{ background: 'rgba(6,10,16,0.6)', borderRadius: '6px', padding: '10px', border: '1px solid rgba(0,212,255,0.06)' }}>
+                <div key={field.label} style={{ background: 'var(--overlay-md)', borderRadius: '6px', padding: '10px', border: '1px solid var(--color-info-dim)' }}>
                   <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '4px' }}>{field.label}</div>
                   <div style={{ fontFamily: '"JetBrains Mono", monospace', color: field.color, fontSize: '12px', fontWeight: 600 }}>{field.value}</div>
                 </div>
@@ -395,15 +395,15 @@ function IntegrationPage() {
                 setIntegrations(prev => prev.map(i => i.id === selected.id ? { ...i, status: 'connected' as const, latency_ms: Math.floor(Math.random() * 20) + 1 } : i));
                 setSelected(null);
               }} style={{
-                flex: 1, background: 'rgba(0,255,65,0.12)', color: 'var(--accent-green)', border: '1px solid rgba(0,255,65,0.25)',
+                flex: 1, background: 'var(--status-stopped-bg)', color: 'var(--accent-green)', border: '1px solid rgba(0,255,65,0.25)',
                 borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
               }}>Reconnect</button>
               <button onClick={() => { setIntegrations(prev => prev.filter(i => i.id !== selected.id)); setSelected(null); }} style={{
-                flex: 1, background: 'rgba(239,68,68,0.12)', color: 'var(--accent-red)', border: '1px solid rgba(239,68,68,0.25)',
+                flex: 1, background: 'var(--sev-critical-bg)', color: 'var(--accent-red)', border: '1px solid rgba(239,68,68,0.25)',
                 borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
               }}>Remove</button>
               <button onClick={() => setSelected(null)} style={{
-                flex: 1, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid rgba(0,212,255,0.12)',
+                flex: 1, background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--accent-cyan)',
                 borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
               }}>Close</button>
             </div>

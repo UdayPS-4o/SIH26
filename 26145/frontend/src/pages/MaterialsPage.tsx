@@ -31,17 +31,17 @@ const STATUS_COLORS: Record<string,string> = {
 };
 
 const STATUS_BG: Record<string,string> = {
-  pending:'rgba(234,179,8,0.12)',
-  imported:'rgba(59,130,246,0.12)',
-  approved:'rgba(34,197,94,0.12)',
-  rejected:'rgba(239,68,68,0.12)',
+  pending:'var(--sev-medium-bg)',
+  imported:'var(--mat-imported-bg)',
+  approved:'var(--color-success-dim)',
+  rejected:'var(--sev-critical-bg)',
 };
 
 const STATUS_BORDER: Record<string,string> = {
-  pending:'rgba(234,179,8,0.3)',
-  imported:'rgba(59,130,246,0.3)',
-  approved:'rgba(34,197,94,0.3)',
-  rejected:'rgba(239,68,68,0.3)',
+  pending:'var(--mat-pending-border)',
+  imported:'var(--mat-imported-border)',
+  approved:'var(--mat-approved-border)',
+  rejected:'var(--mat-rejected-border)',
 };
 
 // ── Deterministic-ish hash generator ────────────────────────────────────────
@@ -310,7 +310,7 @@ function MaterialsPage() {
     setNormalizeProgress(0);
     const steps = [
       { text: 'Parsing raw source fields...', progress: 20 },
-      { text: 'Mapping to WATCHTOWER canonical schema...', progress: 40 },
+      { text: 'Mapping to EKADHARA canonical schema...', progress: 40 },
       { text: 'Generating SHA-256 content hash...', progress: 55 },
       { text: 'Computing fuzzy similarity to known samples...', progress: 70 },
       { text: 'Embedding ML feature vector (15-dim)...', progress: 85 },
@@ -402,7 +402,7 @@ function MaterialsPage() {
 
   const ConfidenceBar = ({ value, color = 'var(--accent-cyan)' }: { value: number; color?: string }) => (
     <div className="flex items-center gap-2" style={{ minWidth: '120px' }}>
-      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.06)' }}>
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-info-dim)' }}>
         <div className="h-full rounded-full" style={{
           width: `${value}%`,
           background: `linear-gradient(90deg, ${color}88, ${color})`,
@@ -421,7 +421,7 @@ function MaterialsPage() {
     const offset = circ - (progress / 100) * circ;
     return (
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(0,212,255,0.06)" strokeWidth={strokeWidth} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--color-info-dim)" strokeWidth={strokeWidth} />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--accent-cyan)" strokeWidth={strokeWidth}
           strokeDasharray={`${circ} ${circ}`} strokeDashoffset={offset} strokeLinecap="round"
           style={{ transition: 'stroke-dashoffset 0.35s ease' }} />
@@ -540,7 +540,7 @@ function MaterialsPage() {
             <div className="rounded-full" style={{
               width: `${ingestionPct}%`, height: '100%',
               background: 'linear-gradient(90deg, #00d4ff88, #00d4ff)',
-              boxShadow: '0 0 10px rgba(0,212,255,0.3)',
+              boxShadow: '0 0 10px var(--border-active)',
               transition: 'width 0.4s ease',
             }} />
           </div>
@@ -559,7 +559,7 @@ function MaterialsPage() {
         {/* Search */}
         <div style={{
           flex: '1 1 240px', display: 'flex', alignItems: 'center', gap: '8px',
-          background: 'rgba(0,212,255,0.03)', border: '1px solid #1a2736', borderRadius: '6px', padding: '6px 12px',
+          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px', padding: '6px 12px',
         }}>
           <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>⌕</span>
           <input
@@ -580,7 +580,7 @@ function MaterialsPage() {
         {/* Status filter */}
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{
           fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
-          background: 'rgba(0,212,255,0.03)', border: '1px solid #1a2736', borderRadius: '6px',
+          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
           padding: '6px 10px', outline: 'none', cursor: 'pointer',
         }}>
           <option value="all">All Statuses</option>
@@ -590,7 +590,7 @@ function MaterialsPage() {
         {/* Threat class filter */}
         <select value={threatFilter} onChange={e => setThreatFilter(e.target.value)} style={{
           fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
-          background: 'rgba(0,212,255,0.03)', border: '1px solid #1a2736', borderRadius: '6px',
+          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
           padding: '6px 10px', outline: 'none', cursor: 'pointer',
         }}>
           <option value="all">All Threat Classes</option>
@@ -600,7 +600,7 @@ function MaterialsPage() {
         {/* Type filter */}
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{
           fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
-          background: 'rgba(0,212,255,0.03)', border: '1px solid #1a2736', borderRadius: '6px',
+          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
           padding: '6px 10px', outline: 'none', cursor: 'pointer',
         }}>
           <option value="all">All Types</option>
@@ -616,7 +616,7 @@ function MaterialsPage() {
       {/* ── Bulk Actions ───────────────────────────────────────────────────── */}
       {selectedIds.size > 0 && (
         <div style={{
-          background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.15)', borderRadius: '8px',
+          background: 'var(--color-info-dim)', border: '1px solid var(--border-active)', borderRadius: '8px',
           padding: '10px 16px', marginBottom: '12px',
           display: 'flex', alignItems: 'center', gap: '12px',
         }}>
@@ -710,8 +710,8 @@ function MaterialsPage() {
                 return (
                   <React.Fragment key={m.id}>
                     <tr style={{
-                      borderBottom: isExpanded ? 'none' : '1px solid rgba(0,212,255,0.04)',
-                      background: isSelected ? 'rgba(0,212,255,0.04)' : 'transparent',
+                      borderBottom: isExpanded ? 'none' : '1px solid var(--color-info-dim)',
+                      background: isSelected ? 'var(--color-info-dim)' : 'transparent',
                       transition: 'background 0.15s',
                     }}>
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
@@ -762,7 +762,7 @@ function MaterialsPage() {
                       <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
                           <button onClick={() => setExpandedId(isExpanded ? null : m.id)} title="Details" style={{
-                            background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)',
+                            background: 'var(--color-info-dim)', border: '1px solid var(--border-active)',
                             color: 'var(--accent-cyan)', borderRadius: '4px', padding: '4px 7px', cursor: 'pointer',
                             fontFamily: 'var(--font-mono)', fontSize: '10px',
                           }}>
@@ -770,13 +770,13 @@ function MaterialsPage() {
                           </button>
                           {m.status !== 'approved' && m.status !== 'rejected' && (
                             <button onClick={() => handleNormalize(m.id)} title="Normalize" style={{
-                              background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.2)',
+                              background: 'var(--sev-high-bg)', border: '1px solid rgba(249,115,22,0.2)',
                               color: 'var(--accent-orange)', borderRadius: '4px', padding: '4px 7px', cursor: 'pointer',
                               fontFamily: 'var(--font-mono)', fontSize: '10px',
                             }}>N</button>
                           )}
                           <button onClick={() => handleMatch(m.id)} title="Find Match" style={{
-                            background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)',
+                            background: 'var(--color-purple-dim)', border: '1px solid rgba(139,92,246,0.2)',
                             color: 'var(--accent-purple)', borderRadius: '4px', padding: '4px 7px', cursor: 'pointer',
                             fontFamily: 'var(--font-mono)', fontSize: '10px',
                           }}>M</button>
@@ -785,9 +785,9 @@ function MaterialsPage() {
                     </tr>
                     {isExpanded && (
                       <tr>
-                        <td colSpan={10} style={{ padding: 0, borderBottom: '1px solid rgba(0,212,255,0.04)' }}>
+                        <td colSpan={10} style={{ padding: 0, borderBottom: '1px solid var(--color-info-dim)' }}>
                           <div style={{
-                            background: 'rgba(6,10,16,0.6)', padding: '14px 18px',
+                            background: 'var(--overlay-md)', padding: '14px 18px',
                             display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px',
                           }}>
                             <div>
@@ -850,10 +850,10 @@ function MaterialsPage() {
         padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px',
         fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-secondary)',
       }}>
-        <span>WATCHTOWER v2.1.0</span>
-        <span style={{ color: 'rgba(0,212,255,0.15)' }}>|</span>
+        <span>EKADHARA v3.2.1</span>
+        <span style={{ color: 'var(--border-active)' }}>|</span>
         <span>CLASSIFIED // TLP:WHITE</span>
-        <span style={{ color: 'rgba(0,212,255,0.15)' }}>|</span>
+        <span style={{ color: 'var(--border-active)' }}>|</span>
         <span>{new Date().toISOString().slice(0,10)}</span>
         <span style={{ flex: 1 }} />
         <span>FIXTURE MODE — NO BACKEND</span>
@@ -862,13 +862,13 @@ function MaterialsPage() {
       {/* ── Add Material Modal ──────────────────────────────────────────────── */}
       {showAddModal && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(6,10,16,0.88)', backdropFilter: 'blur(4px)',
+          position: 'fixed', inset: 0, zIndex: 50, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowAddModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'rgba(10,17,26,0.97)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: '10px',
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
             padding: '24px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto',
-            boxShadow: '0 0 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.05)',
+            boxShadow: 'var(--modal-shadow), 0 0 20px rgba(0,212,255,0.05)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>
@@ -887,13 +887,13 @@ function MaterialsPage() {
       {/* ── Detail Modal ───────────────────────────────────────────────────── */}
       {showDetail && !showNormalize && !showMatch && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(6,10,16,0.88)', backdropFilter: 'blur(4px)',
+          position: 'fixed', inset: 0, zIndex: 50, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowDetail(null)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'rgba(10,17,26,0.97)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: '10px',
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
             padding: '24px', width: '100%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto',
-            boxShadow: '0 0 40px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.05)',
+            boxShadow: 'var(--modal-shadow), 0 0 20px rgba(0,212,255,0.05)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700 }}>
@@ -944,13 +944,13 @@ function MaterialsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <code style={{
                   fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '10px',
-                  wordBreak: 'break-all', background: 'rgba(0,212,255,0.03)', padding: '6px 10px', borderRadius: '4px',
+                  wordBreak: 'break-all', background: 'var(--color-accent-dim)', padding: '6px 10px', borderRadius: '4px',
                   border: '1px solid #1a2736', flex: 1,
                 }}>
                   {showDetail.content_hash}
                 </code>
                 <button onClick={() => handleCopyHash(showDetail.content_hash || showDetail.hash)} style={{
-                  background: 'rgba(0,212,255,0.06)', border: '1px solid rgba(0,212,255,0.15)', color: 'var(--accent-cyan)',
+                  background: 'var(--color-info-dim)', border: '1px solid var(--border-active)', color: 'var(--accent-cyan)',
                   borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '10px',
                 }}>
                   {copiedHash === (showDetail.content_hash || showDetail.hash) ? '✓ COPIED' : '⧉ COPY'}
@@ -962,7 +962,7 @@ function MaterialsPage() {
               <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
                 Description
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px', background: 'rgba(0,212,255,0.02)', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2736' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px', background: 'var(--color-info-dim)', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2736' }}>
                 {showDetail.description}
               </div>
             </div>
@@ -973,7 +973,7 @@ function MaterialsPage() {
               </div>
               <code style={{
                 fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '11px', wordBreak: 'break-all',
-                background: 'rgba(0,212,255,0.03)', padding: '8px 12px', borderRadius: '6px',
+                background: 'var(--color-accent-dim)', padding: '8px 12px', borderRadius: '6px',
                 border: '1px solid #1a2736', display: 'block',
               }}>
                 {showDetail.activity_signature}
@@ -990,7 +990,7 @@ function MaterialsPage() {
                 <button onClick={() => {
                   setMaterials(prev => prev.map(m => m.id === showDetail.id ? { ...m, status: 'approved' as const, is_accepted: true } : m));
                   setShowDetail(null);
-                }} className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', background: 'rgba(34,197,94,0.08)', color: 'var(--accent-green)', borderColor: 'rgba(34,197,94,0.3)' }}>
+                }} className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', background: 'rgba(34,197,94,0.08)', color: 'var(--accent-green)', borderColor: 'var(--mat-approved-border)' }}>
                   ✓ Approve
                 </button>
               )}
@@ -1013,13 +1013,13 @@ function MaterialsPage() {
       {/* ── Normalize Modal ────────────────────────────────────────────────── */}
       {showNormalize && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(6,10,16,0.9)', backdropFilter: 'blur(4px)',
+          position: 'fixed', inset: 0, zIndex: 60, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); setNormalizeProgress(0); }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'rgba(10,17,26,0.97)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: '10px',
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
             padding: '24px', width: '100%', maxWidth: '500px',
-            boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
               NORMALIZING: {normalizeId}
@@ -1035,7 +1035,7 @@ function MaterialsPage() {
                 </div>
               </div>
               <div style={{
-                flex: 1, background: 'rgba(6,10,16,0.8)', border: '1px solid rgba(0,212,255,0.12)',
+                flex: 1, background: 'var(--panel-dark)', border: '1px solid var(--accent-cyan)',
                 borderRadius: '6px', padding: '10px 14px', fontFamily: 'var(--font-mono)', fontSize: '11px',
                 minHeight: '60px',
               }}>
@@ -1061,19 +1061,19 @@ function MaterialsPage() {
       {/* ── Match Modal ────────────────────────────────────────────────────── */}
       {showMatch && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(6,10,16,0.9)', backdropFilter: 'blur(4px)',
+          position: 'fixed', inset: 0, zIndex: 60, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'rgba(10,17,26,0.97)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '10px',
+            background: 'var(--modal-surface)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '10px',
             padding: '24px', width: '100%', maxWidth: '500px',
-            boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
               FINDING MATCHES: {normalizeId}
             </h3>
             <div style={{
-              background: 'rgba(6,10,16,0.8)', border: '1px solid rgba(139,92,246,0.12)',
+              background: 'var(--panel-dark)', border: '1px solid rgba(139,92,246,0.12)',
               borderRadius: '6px', padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: '11px',
               minHeight: '80px',
             }}>
@@ -1097,19 +1097,19 @@ function MaterialsPage() {
       {/* ── Upload Modal ───────────────────────────────────────────────────── */}
       {showUpload && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(6,10,16,0.88)', backdropFilter: 'blur(4px)',
+          position: 'fixed', inset: 0, zIndex: 50, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }} onClick={() => setShowUpload(false)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'rgba(10,17,26,0.97)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: '10px',
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
             padding: '24px', width: '100%', maxWidth: '480px',
-            boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+            boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
               IMPORT MATERIALS
             </h3>
             <div onClick={() => document.getElementById('mat-file-input')?.click()} style={{
-              background: 'rgba(6,10,16,0.8)', border: '1px dashed rgba(0,212,255,0.2)', borderRadius: '8px',
+              background: 'var(--panel-dark)', border: '1px dashed var(--border-active)', borderRadius: '8px',
               padding: '32px', textAlign: 'center', cursor: 'pointer',
             }}>
               <div style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '28px', marginBottom: '8px' }}>+</div>
@@ -1129,8 +1129,8 @@ function MaterialsPage() {
                       <span style={{ color: 'var(--text-secondary)' }}>Uploading...</span>
                       <span style={{ color: 'var(--accent-cyan)' }}>{pct}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(0,212,255,0.06)' }}>
-                      <div className="rounded-full" style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-cyan)', boxShadow: '0 0 6px rgba(0,212,255,0.4)', transition: 'width 0.2s' }} />
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-info-dim)' }}>
+                      <div className="rounded-full" style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-cyan)', boxShadow: '0 0 6px var(--border-active)', transition: 'width 0.2s' }} />
                     </div>
                   </div>
                 ))}
@@ -1191,7 +1191,7 @@ function AddMaterialForm({ onSubmit, types, threats, sources }: {
   );
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', background: 'rgba(0,212,255,0.03)', border: '1px solid #1a2736', borderRadius: '6px',
+    width: '100%', background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
     padding: '8px 10px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-primary)',
     outline: 'none',
   };

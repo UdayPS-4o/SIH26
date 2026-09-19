@@ -553,44 +553,51 @@ async def launch_attack_v2(request: Request) -> dict:
 
     start_ts = time.time()
 
-    # Set high attack probability
-    _original_attack_prob = _simulator.attack_probability
-    _simulator.attack_probability = 0.85
+    # Schedule injection in a background task so the HTTP response returns immediately.
+    # Each injected flow triggers ML detection + rule-based detection + WS broadcast,
+    # which is expensive when done synchronously for 20–100 flows.
+    _inject_id = attack_id
+    _inject_attack = attack_type
+    _inject_intensity = intensity
 
-    # Inject attack flows directly via the attack generator
-    injected = 0
-    attack_type_map = {
-        "syn_flood": "syn_flood",
-        "udp_flood": "udp_flood",
-        "c2_beaconing": "beaconing",
-        "dga_domain": "dga",
-        "port_scan": "port_scan",
-        "data_exfiltration": "exfiltration",
-    }
-    sim_attack_type = attack_type_map.get(attack_type, attack_type)
-    num_flows = int(20 + intensity * 80)  # 20–100 attack flows
+    async def _bg_inject():
+        injected = 0
+        sim_attack_type = attack_type_map.get(_inject_attack, _inject_attack)
+        num_flows = int(20 + _inject_intensity * 80)
+        for _ in range(num_flows):
+            flow = _simulator.inject_attack(sim_attack_type)
+            flow["src_ip"] = _attack_src_ip
+            await _handle_flow(flow)
+            injected += 1
+        _attack_active[_inject_id] = {
+            "type": _inject_attack,
+            "start": time.time(),
+            "intensity": _inject_intensity,
+            "src_ip": _attack_src_ip,
+        }
+        logger.info(f"Injected {injected} {sim_attack_type} flows (attack_id={_inject_id})")
 
-    for _ in range(num_flows):
-        flow = _simulator.inject_attack(sim_attack_type)
-        flow["src_ip"] = _attack_src_ip
-        asyncio.create_task(_handle_flow(flow))
-        injected += 1
+        async def _cooldown():
+            await asyncio.sleep(15)
+            _simulator.attack_probability = _original_attack_prob
+            _attack_active.pop(_inject_id, None)
 
-    _attack_active[attack_id] = {
-        "type": attack_type,
-        "start": start_ts,
-        "intensity": intensity,
-        "src_ip": _attack_src_ip,
-    }
+        asyncio.create_task(_cooldown())
 
-    async def _cooldown():
-        await asyncio.sleep(15)
-        _simulator.attack_probability = _original_attack_prob
-        _attack_active.pop(attack_id, None)
-
-    asyncio.create_task(_cooldown())
+    asyncio.create_task(_bg_inject())
 
     latency_ms = (time.time() - start_ts) * 1000
+
+    return {
+        "status": "launched",
+        "attack_id": attack_id,
+        "attack_type": attack_type,
+        "intensity": intensity,
+        "flows_injected": int(20 + intensity * 80),
+        "attacker_ip": _attack_src_ip,
+        "latency_ms": round(latency_ms, 2),
+        "message": f"Launched {attack_type} (intensity={intensity}) from {_attack_src_ip}",
+    }
 
     return {
         "status": "launched",
@@ -602,6 +609,16 @@ async def launch_attack_v2(request: Request) -> dict:
         "latency_ms": round(latency_ms, 2),
         "message": f"Launched {attack_type} (intensity={intensity}) from {_attack_src_ip}",
     }
+
+
+@app.post("/api/attack/stop")
+async def stop_attack() -> dict:
+    """Stop all active attacks and restore normal traffic."""
+    global _simulator, _attack_active
+    _attack_controller.stop_all()
+    _simulator.attack_probability = _original_attack_prob
+    _attack_active.clear()
+    return {"status": "stopped", "attacks_stopped": 0}
 
 
 # ── Legacy attack endpoint (kept for backwards compat) ──────────────────
