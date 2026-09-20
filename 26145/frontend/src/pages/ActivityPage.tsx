@@ -18,7 +18,7 @@ const LEVELS: Record<string, { color: string; bg: string; dot: string }> = {
   critical: { color: 'var(--accent-red)', bg: 'var(--sev-critical-bg)', dot: 'var(--accent-red)' },
   high:     { color: 'var(--accent-orange)', bg: 'var(--sev-high-bg)', dot: 'var(--accent-orange)' },
   medium:   { color: 'var(--accent-yellow)', bg: 'var(--sev-medium-bg)', dot: 'var(--accent-yellow)' },
-  low:      { color: 'var(--accent-cyan)', bg: 'rgba(6,182,212,0.12)', dot: 'var(--accent-cyan)' },
+  low:      { color: 'var(--accent-cyan)', bg: 'var(--color-info-dim)', dot: 'var(--accent-cyan)' },
 };
 
 const FILTERS = ['all', 'alert', 'system', 'detection', 'performance'] as const;
@@ -273,20 +273,24 @@ function ActivityPage() {
           {/* Filters */}
           <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px' }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Filter</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {FILTERS.map(f => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {FILTERS.map(f => {
+                const count = f === 'all' ? logs.length : logs.filter(l => l.type === f).length;
+                return (
                 <button key={f} onClick={() => setFilter(f)} style={{
                   background: filter === f ? 'var(--selection-bg)' : 'transparent',
                   color: filter === f ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                  border: `1px solid ${filter === f ? 'var(--border-active)' : 'var(--color-info-dim)'}`,
-                  borderRadius: '6px', padding: '6px 10px', cursor: 'pointer',
+                  border: `1px solid ${filter === f ? 'var(--border-active)' : 'var(--border-color)'}`,
+                  borderRadius: '6px', padding: '7px 12px', cursor: 'pointer',
                   fontFamily: '"JetBrains Mono", monospace', fontSize: '11px', textTransform: 'capitalize',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.15s ease',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
-                  {f === 'all' ? 'All Events' : f}
-                  {f !== 'all' && <span style={{ marginLeft: '6px', color: 'var(--text-secondary)' }}>{logs.filter(l => l.type === f).length}</span>}
+                  <span>{f === 'all' ? 'All Events' : f}</span>
+                  {f !== 'all' && <span style={{ color: 'var(--text-dim)', fontSize: '10px' }}>{count}</span>}
                 </button>
-              ))}
+              );
+              })}
             </div>
             <div style={{ marginTop: '10px' }}>
               <input
@@ -295,9 +299,10 @@ function ActivityPage() {
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search events..."
                 style={{
-                  width: '100%', background: 'var(--panel-dark)', border: '1px solid var(--accent-cyan)',
+                  width: '100%', background: 'var(--bg-primary)', border: '1px solid var(--border-active)',
                   borderRadius: '6px', padding: '8px 10px', color: 'var(--text-primary)', fontSize: '12px',
                   fontFamily: '"JetBrains Mono", monospace', outline: 'none',
+                  transition: 'border-color 0.15s ease',
                 }}
               />
             </div>
@@ -359,15 +364,15 @@ function ActivityPage() {
                 filtered.map((log, idx) => {
                   const ls = LEVELS[log.severity] || LEVELS.low;
                   return (
-                    <div key={log.id} onClick={() => setSelectedLog(log)} style={{
+                    <div key={log.id} className="act-log-row" onClick={() => setSelectedLog(log)} style={{
                       display: 'flex', alignItems: 'center', gap: '12px',
                       padding: '10px 16px', cursor: 'pointer',
-                      background: selectedLog?.id === log.id ? 'var(--color-info-dim)' : idx % 2 === 0 ? 'transparent' : 'var(--color-info-dim)',
-                      borderBottom: '1px solid var(--color-info-dim)',
+                      background: selectedLog?.id === log.id ? 'var(--table-hover-bg)' : idx % 2 === 0 ? 'transparent' : 'var(--border-opacity-6)',
+                      borderBottom: '1px solid var(--border-row)',
                       borderLeft: `3px solid ${ls.color}`,
-                      transition: 'background 0.15s',
+                      transition: 'background 0.15s ease',
                     }}>
-                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '11px', width: '72px', flexShrink: 0 }}>
+                      <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-dim)', fontSize: '11px', width: '72px', flexShrink: 0 }}>
                         {new Date(log.timestamp).toLocaleTimeString('en-US', { hour12: false })}
                       </span>
                       <span style={{
@@ -463,8 +468,21 @@ function ActivityPage() {
           </div>
         </div>
       )}
+      <ActivityStyles />
     </div>
   );
 }
+
+// ── Activity interaction styles ───────────────────────────────────────────────
+const ActivityStyles = () => (
+  <style>{`
+    .act-log-row { transition: background 0.15s ease; }
+    .act-log-row:hover { background: var(--color-info-dim) !important; }
+    .act-log-row:active { background: var(--overlay-md) !important; }
+    .act-filter-btn { transition: all 0.15s ease; }
+    .act-filter-btn:hover { filter: brightness(1.1); }
+    .act-filter-btn:active { filter: brightness(0.95); }
+  `}</style>
+);
 
 export default ActivityPage;

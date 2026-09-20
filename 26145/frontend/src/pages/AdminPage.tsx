@@ -218,7 +218,7 @@ function AdminPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
       {/* ── HEADER ────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
@@ -236,7 +236,7 @@ function AdminPage() {
       {/* ── TABS ──────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid var(--border-color)' }}>
         {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+          <button key={tab.id} className="admin-tab" onClick={() => setActiveTab(tab.id)} style={{
             background: activeTab === tab.id ? 'var(--color-info-dim)' : 'transparent',
             color: activeTab === tab.id ? 'var(--accent-cyan)' : 'var(--text-secondary)',
             borderBottom: activeTab === tab.id ? '2px solid var(--border-active)' : '2px solid transparent',
@@ -256,7 +256,7 @@ function AdminPage() {
             const trendColor = latencyTrend === '↑' ? 'var(--accent-red)' : latencyTrend === '↓' ? 'var(--accent-green)' : 'var(--text-secondary)';
 
             return (
-              <div key={node.id} style={{
+              <div key={node.id} className="admin-card" style={{
                 background: 'var(--bg-secondary)', border: `1px solid ${node.status === 'error' ? 'var(--mat-rejected-border)' : 'var(--border-color)'}`,
                 borderRadius: '8px', padding: '16px',
               }}>
@@ -339,7 +339,7 @@ function AdminPage() {
             ];
 
             return (
-              <div key={model.name} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
+              <div key={model.name} className="admin-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <div>
                     <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{model.name}</div>
@@ -416,11 +416,15 @@ function AdminPage() {
                   </div>
                 )}
 
-                <button onClick={() => handleRetrain(model.name)} disabled={retrainingModel === model.name} style={{
-                  width: '100%', background: retrainingModel === model.name ? 'var(--color-info-dim)' : 'var(--accent-cyan)',
-                  color: 'var(--accent-cyan)', border: '1px solid var(--border-active)',
+                <button className="admin-btn" onClick={() => handleRetrain(model.name)} disabled={retrainingModel === model.name} style={{
+                  width: '100%',
+                  background: retrainingModel === model.name ? 'var(--color-info-dim)' : 'var(--bg-primary)',
+                  color: retrainingModel === model.name ? 'var(--text-secondary)' : 'var(--accent-cyan)',
+                  border: `1px solid ${retrainingModel === model.name ? 'var(--border-color)' : 'var(--accent-cyan)'}`,
                   borderRadius: '6px', padding: '8px', cursor: retrainingModel === model.name ? 'not-allowed' : 'pointer',
-                  fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', opacity: retrainingModel === model.name ? 0.6 : 1,
+                  fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
+                  opacity: retrainingModel === model.name ? 0.6 : 1,
+                  transition: 'all 0.2s ease',
                 }}>{retrainingModel === model.name ? '⟳ Retraining...' : '↻ Retrain Model'}</button>
               </div>
             );
@@ -458,10 +462,10 @@ function AdminPage() {
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user.id} style={{ borderBottom: '1px solid var(--color-info-dim)' }}>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '12px', padding: '11px 16px' }}>{user.id}</td>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{user.username}</td>
-                    <td style={{ padding: '11px 16px' }}>
+                  <tr key={user.id} className="admin-row" style={{ borderBottom: '1px solid var(--border-row)', background: 'transparent' }}>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '12px', padding: '12px 16px' }}>{user.id}</td>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '12px 16px' }}>{user.username}</td>
+                    <td style={{ padding: '12px 16px' }}>
                       <span style={{
                         background: `${ROLE_COLOR[user.role]}1a`, color: ROLE_COLOR[user.role],
                         border: `1px solid ${ROLE_COLOR[user.role]}44`,
@@ -469,16 +473,16 @@ function AdminPage() {
                         padding: '3px 10px', borderRadius: '9999px', textTransform: 'uppercase', letterSpacing: '0.6px',
                       }}>{user.role}</span>
                     </td>
-                    <td style={{ padding: '11px 16px' }}>
+                    <td style={{ padding: '12px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: STATUS_COLOR[user.status], boxShadow: `0 0 4px ${STATUS_COLOR[user.status]}66` }} />
                         <span style={{ fontFamily: '"JetBrains Mono", monospace', color: STATUS_COLOR[user.status], fontSize: '12px' }}>{user.status}</span>
                       </div>
                     </td>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{new Date(user.last_login).toLocaleString()}</td>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '11px 16px' }}>{user.sessions}</td>
-                    <td style={{ padding: '11px 16px' }}>
-                      <button onClick={() => setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: u.status === 'locked' ? 'active' as const : 'locked' as const, sessions: u.status === 'locked' ? 1 : 0 } : u))} style={{
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '12px 16px' }}>{new Date(user.last_login).toLocaleString()}</td>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '12px', padding: '12px 16px' }}>{user.sessions}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <button onClick={() => setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: u.status === 'locked' ? 'active' as const : 'locked' as const, sessions: u.status === 'locked' ? 1 : 0 } : u))} className="admin-btn" style={{
                         background: user.status === 'locked' ? 'var(--status-stopped-bg)' : 'var(--status-warning-bg)',
                         color: user.status === 'locked' ? 'var(--accent-green)' : 'var(--accent-orange)',
                         border: `1px solid ${user.status === 'locked' ? 'var(--status-stopped-border)' : 'var(--status-warning-border)'}`,
@@ -565,8 +569,25 @@ function AdminPage() {
           </div>
         </div>
       )}
+      <AdminStyles />
     </div>
   );
 }
+
+// ── AdminPage interaction styles ───────────────────────────────────────────────
+const AdminStyles = () => (
+  <style>{`
+    .admin-card { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .admin-card:hover { border-color: var(--border-active) !important; box-shadow: 0 0 12px var(--color-accent-dim); }
+    .admin-btn { transition: all 0.15s ease; }
+    .admin-btn:hover:not(:disabled) { filter: brightness(1.15); }
+    .admin-btn:active:not(:disabled) { filter: brightness(0.95); }
+    .admin-tab { transition: all 0.2s ease; }
+    .admin-tab:hover { background: var(--color-info-dim) !important; }
+    .admin-row { transition: background 0.15s ease; }
+    .admin-row:hover { background: var(--table-hover-bg) !important; }
+    .admin-input:focus { outline: none; border-color: var(--border-active) !important; }
+  `}</style>
+);
 
 export default AdminPage;

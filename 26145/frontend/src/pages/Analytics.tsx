@@ -209,8 +209,8 @@ function AlertSparkline({ data }: { data: Array<{ time: string; alerts: number }
         const v = Math.round(maxV - (maxV / 4) * i);
         return (
           <g key={i}>
-            <line x1={pad.left} y1={y} x2={width - pad.right} y2={y} stroke={C.border} strokeWidth="1" opacity="0.4" />
-            <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="var(--text-muted)" fontSize="9" fontFamily={FONT}>{v}</text>
+            <line x1={pad.left} y1={y} x2={width - pad.right} y2={y} stroke="var(--chart-grid)" strokeWidth="1" opacity="0.5" />
+            <text x={pad.left - 8} y={y + 3} textAnchor="end" fill="var(--chart-axis)" fontSize="9" fontFamily={FONT}>{v}</text>
           </g>
         );
       })}
@@ -262,24 +262,24 @@ function ProtocolChart({ data }: { data: Array<{ name: string; value: number }> 
         return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{
-              fontSize: 11, color: C.textSec, width: 48, flexShrink: 0,
+              fontSize: 11, color: 'var(--text-secondary)', width: 48, flexShrink: 0,
               letterSpacing: '0.3px', fontFamily: SANS,
             }}>{d.name}</span>
             <svg width="100%" height="16" viewBox="0 0 400 16" preserveAspectRatio="none" style={{ flex:1, display:'block' }}>
               <defs>
                 <linearGradient id={`prot-grad-${i}`} x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor={color} />
-                  <stop offset="100%" stopColor={color} stopOpacity="0.3" />
+                  <stop offset="100%" stopColor={color} stopOpacity="0.25" />
                 </linearGradient>
                 <filter id={`prot-glow-${i}`}>
                   <feGaussianBlur stdDeviation="2" result="blur" />
                   <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
                 </filter>
               </defs>
-              <rect x="0" y="3" width="400" height="10" rx="2" fill="var(--bg-elevated)" stroke="var(--border-muted)" strokeWidth="0.5" />
-              <rect x="0" y="3" width={pct * 4} height="10" rx="2"
-                fill={`url(#prot-grad-${i})`} opacity="0.5" filter={`url(#prot-glow-${i})`} />
-              <rect x="0" y="3" width={pct * 4} height="10" rx="2"
+              <rect x="0" y="3" width="400" height="10" rx="3" fill="var(--bg-elevated)" stroke="var(--border-muted)" strokeWidth="0.5" />
+              <rect x="0" y="3" width={pct * 4} height="10" rx="3"
+                fill={`url(#prot-grad-${i})`} opacity="0.4" filter={`url(#prot-glow-${i})`} />
+              <rect x="0" y="3" width={pct * 4} height="10" rx="3"
                 fill={`url(#prot-grad-${i})`} />
             </svg>
             <span style={{
@@ -547,11 +547,16 @@ const Analytics: React.FC = () => {
     <div style={{ minHeight: '100%', background: C.bg, color: C.text, fontFamily: SANS, fontSize: 13, lineHeight: 1.6 }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+        @keyframes wt-draw { to{stroke-dashoffset:0;} }
+        @keyframes wt-fade-in { from{opacity:0;transform:translateY(3px);} to{opacity:1;transform:translateY(0);} }
         ::selection { background: var(--accent-cyan); color: ${C.text}; }
         :focus-visible { outline: 1.5px solid var(--border-active); outline-offset: 2px; border-radius: 3px; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        .wt-interactive { transition: transform 150ms cubic-bezier(0.4,0,0.2,1), background 0.2s; }
+        .wt-interactive:active { transform: scale(0.98); }
+        a { color:inherit;text-decoration:none; }
         @media (max-width:1024px) { .wt-grid-aside { grid-template-columns:1fr !important; } }
         @media (max-width:768px) { .wt-grid-aside { grid-template-columns:1fr !important; } }
       `}</style>
@@ -606,17 +611,37 @@ const Analytics: React.FC = () => {
              ROW 1 — KPI Stat Cards (4 across)
              ════════════════════════════════════════════════════════════════ */}
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 16 }}>
-          {kpiCards.map((m, i) => (
-            <Panel key={i} delay={0.05}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: C.textSec, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom: 8 }}>{m.label}</div>
-              <div style={{
-                fontSize: 28, fontWeight: 700, color: m.color,
-                fontFamily: FONT, letterSpacing: '-0.5px', lineHeight: 1.1,
-                fontVariantNumeric: 'tabular-nums',
-              }}>{m.value}</div>
-              <div style={{ fontSize: 11, color: C.textDim, marginTop: 4 }}>{m.sub}</div>
-            </Panel>
-          ))}
+          {kpiCards.map((m, i) => {
+            const trend = i % 3 === 0 ? '+' : i % 3 === 1 ? '-' : '→';
+            const trendLabel = i % 3 === 0 ? 'up' : i % 3 === 1 ? 'down' : 'stable';
+            return (
+              <Panel key={i} delay={0.05}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing:'0.5px', textTransform:'uppercase' }}>{m.label}</div>
+                  <span style={{
+                    fontSize:10, fontWeight:600, color: i%3===0 ? C.green : i%3===1 ? C.red : C.textDim,
+                    fontFamily:FONT, letterSpacing:'0.3px',
+                  }}>{trend} {trendLabel}</span>
+                </div>
+                <div style={{
+                  fontSize: 28, fontWeight: 700, color: m.color,
+                  fontFamily: FONT, letterSpacing: '-0.5px', lineHeight: 1.1,
+                  fontVariantNumeric: 'tabular-nums',
+                }}>{m.value}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{m.sub}</div>
+                <div style={{
+                  marginTop: 10, height: 3, borderRadius: 2, overflow:'hidden',
+                  background: 'var(--border-color)',
+                }}>
+                  <div style={{
+                    height:'100%', width: `${i % 3 === 0 ? 85 : i % 3 === 1 ? 12 : 65}%`,
+                    background: m.color, borderRadius: 2, opacity: 0.7,
+                    transition: 'width 0.8s cubic-bezier(0.4,0,0.2,1)',
+                  }} />
+                </div>
+              </Panel>
+            );
+          })}
         </section>
 
         {/* ════════════════════════════════════════════════════════════════
