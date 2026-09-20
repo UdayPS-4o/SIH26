@@ -228,13 +228,13 @@ function AdminPage() {
           <h1 style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '20px', letterSpacing: '3px', textTransform: 'uppercase', margin: 0 }}>Administration</h1>
           <p style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>User management · Pipeline control · Model retraining · System monitoring</p>
         </div>
-        <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '12px', background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '6px', padding: '8px 14px' }}>
+        <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px 14px' }}>
           {pipeline.filter(p => p.status === 'running').length}/{pipeline.length} pipelines active
         </div>
       </div>
 
       {/* ── TABS ──────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #1a2736' }}>
+      <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid var(--border-color)' }}>
         {tabs.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
             background: activeTab === tab.id ? 'var(--color-info-dim)' : 'transparent',
@@ -276,7 +276,7 @@ function AdminPage() {
 
                 {/* Throughput bar */}
                 <div style={{ height: '4px', borderRadius: '2px', background: 'var(--color-info-dim)', overflow: 'hidden', marginBottom: '12px' }}>
-                  <div style={{ height: '100%', borderRadius: '2px', background: 'linear-gradient(90deg, #00d4ff, #00ff41)', width: `${node.cpu_pct}%`, transition: 'width 0.5s' }} />
+                  <div style={{ height: '100%', borderRadius: '2px', background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-green))', width: `${node.cpu_pct}%`, transition: 'width 0.5s' }} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '12px' }}>
@@ -339,7 +339,7 @@ function AdminPage() {
             ];
 
             return (
-              <div key={model.name} style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
+              <div key={model.name} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <div>
                     <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{model.name}</div>
@@ -411,7 +411,7 @@ function AdminPage() {
                       <span style={{ color: 'var(--accent-green)' }}>In Progress</span>
                     </div>
                     <div style={{ height: '6px', borderRadius: '3px', background: 'var(--color-info-dim)', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #00d4ff, #00ff41)', width: '60%' }} />
+                      <div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, var(--accent-cyan), var(--accent-green))', width: '60%' }} />
                     </div>
                   </div>
                 )}
@@ -439,7 +439,7 @@ function AdminPage() {
               { label: 'Inactive', value: users.filter(u => u.status === 'inactive').length, color: 'var(--accent-orange)' },
               { label: 'Locked', value: users.filter(u => u.status === 'locked').length, color: 'var(--accent-red)' },
             ].map(card => (
-              <div key={card.label} style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+              <div key={card.label} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{card.label}</div>
                 <div style={{ fontFamily: '"JetBrains Mono", monospace', color: card.color, fontSize: '28px', fontWeight: 700 }}>{card.value}</div>
               </div>
@@ -447,10 +447,10 @@ function AdminPage() {
           </div>
 
           {/* Users table */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #1a2736' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                   {['ID', 'Username', 'Role', 'Status', 'Last Login', 'Sessions', 'Actions'].map(h => (
                     <th key={h} style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '12px 16px', textAlign: 'left', fontWeight: 600 }}>{h}</th>
                   ))}
@@ -493,13 +493,13 @@ function AdminPage() {
           </div>
 
           {/* Login Activity Timeline */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>Login Activity Timeline</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {USER_DATA.filter(u => u.status === 'active').map((entry, i) => (
                 <div key={entry.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '2px' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-green)', boxShadow: '0 0 4px #00ff4166' }} />
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--accent-green)', boxShadow: '0 0 4px var(--accent-green)66' }} />
                     {i < USER_DATA.filter(u => u.status === 'active').length - 1 && <div style={{ width: '1px', height: '24px', background: 'var(--border-color)', marginTop: '4px' }} />}
                   </div>
                   <div style={{ flex: 1 }}>
@@ -521,11 +521,11 @@ function AdminPage() {
       {/* ── TERMINAL ──────────────────────────────────────────────── */}
       {activeTab === 'terminal' && (
         <div style={{
-          background: 'var(--bg-primary)', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden',
+          background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px',
-            borderBottom: '1px solid #1a2736', background: 'var(--bg-secondary)',
+            borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
           }}>
             <div style={{ display: 'flex', gap: '6px' }}>
               <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--accent-red)' }} />
@@ -548,7 +548,7 @@ function AdminPage() {
 
               return <div key={i} style={{ color, whiteSpace: 'pre-wrap' }}>{line}</div>;
             })}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #1a2736' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
               <span style={{ color: 'var(--accent-green)' }}>$</span>
               <input
                 value={terminalInput}
