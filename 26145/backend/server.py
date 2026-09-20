@@ -25,13 +25,29 @@ from simulator import TrafficSimulator
 from detector import ThreatDetector, Alert
 from models import DetectionEnsemble
 from self_test import run_self_test as _run_egress_self_test
-from attack_gen import controller as _attack_controller
 from diode_sim import DiodeMode, DIODE_DEGRADATION_TABLE, global_diode
+from attack_gen import controller as _lab_controller
+from attack_tools import launch_attack as _attack_launch, _ATTACK_FUNCS
 
-_ALLOWED_ATTACK_TYPES = {
-    "syn_flood", "udp_flood", "c2_beaconing", "dga_domain",
-    "port_scan", "data_exfiltration",
-}
+# Attack controller wrapper for compatibility
+class _AttackController:
+    """Thin wrapper around attack_tools.launch_attack for server.py compatibility."""
+    def __init__(self):
+        self._attacks: dict[str, str] = {}
+
+    def launch(self, attack_type: str, **kwargs) -> str:
+        aid = _attack_launch(attack_type, **kwargs)
+        self._attacks[aid] = attack_type
+        return aid
+
+    def stop_all(self):
+        # Daemon threads — clear tracking; threads exit on their own or when func returns
+        self._attacks.clear()
+
+    def active_attacks(self):
+        return [{"id": k, "type": v} for k, v in self._attacks.items()]
+
+_attack_controller = _AttackController()
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +117,8 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Background processing state
-_simulator = TrafficSimulator(attack_probability=0.15)
+# Background processing state — simulator is lazy-created, NOT auto-started.
+_simulator: TrafficSimulator | None = None
 _detector = ThreatDetector(window_sec=60)
 _ensemble = DetectionEnsemble()
 _background_task: asyncio.Task | None = None
@@ -110,45 +126,48 @@ _processing_active: bool = False
 _event_loop: asyncio.AbstractEventLoop | None = None
 
 
+def _get_or_create_simulator() -> TrafficSimulator:
+    """Return the simulator singleton, creating it on first access."""
+    global _simulator
+    if _simulator is None:
+        _simulator = TrafficSimulator()
+    return _simulator
+_demo_mode_enabled: bool = False
+
+
 # ---------------------------------------------------------------------------
 # Background processing
 # ---------------------------------------------------------------------------
 
 async def _process_flows() -> None:
-    """Background task that runs the simulator and processes flows."""
-    global _flows_processed, _alerts_generated, _processing_active
+    """Background task that runs the simulator and processes flows.
 
+    Only active after POST /api/demo/start; not started on server startup.
+    """
+    global _flows_processed, _alerts_generated, _processing_active, _event_loop
     _processing_active = True
     logger.info("Background flow processing started")
 
+    sim = _get_or_create_simulator()
     loop = asyncio.get_event_loop()
 
     def on_flow(flow: dict) -> None:
-        """Callback for each generated flow."""
         global _flows_processed, _alerts_generated
+        loop.call_soon_threadsafe(lambda: asyncio.create_task(_handle_flow(flow)))
 
-        # Schedule async work from sync callback (runs on the simulator's
-        # background thread, so it must use the captured loop, not
-        # asyncio.get_event_loop() which has no running loop on this thread)
-        loop.call_soon_threadsafe(
-            lambda: asyncio.create_task(_handle_flow(flow))
-        )
+    sim.on_flow(on_flow)
+    sim.start()
 
-    _simulator.on_flow(on_flow)
-    _simulator.start()
-
-    # Store loop reference for cross-thread broadcast (used by attack injection)
-    global _event_loop
     _event_loop = loop
 
-    # Periodic stats broadcast
     while _processing_active:
         await asyncio.sleep(5.0)
         stats = _detector.get_stats()
-        stats["simulator"] = _simulator.get_stats()
+        if _simulator is not None:
+            stats["simulator"] = _simulator.get_stats()
         await manager.broadcast({"type": "stats", "data": stats})
 
-    _simulator.stop()
+    sim.stop()
     logger.info("Background flow processing stopped")
 
 
@@ -199,7 +218,7 @@ async def _handle_flow(flow: dict) -> None:
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    """Initialize models and start background processing."""
+    """Initialize models.  Simulator is NOT started here — use POST /api/demo/start."""
     logger.info("Starting threat detection server...")
 
     # Pre-load ML models
@@ -209,10 +228,7 @@ async def on_startup() -> None:
     except Exception as e:
         logger.warning(f"Model loading issue: {e}")
 
-    # Start background task
-    global _background_task
-    _background_task = asyncio.create_task(_process_flows())
-    logger.info("Server startup complete")
+    logger.info("Server startup complete — simulator is idle. POST /api/demo/start to begin.")
 
 
 @app.on_event("shutdown")
@@ -220,7 +236,8 @@ async def on_shutdown() -> None:
     """Clean up on shutdown."""
     global _processing_active
     _processing_active = False
-    _simulator.stop()
+    if _simulator is not None:
+        _simulator.stop()
     logger.info("Server shutdown complete")
 
 
@@ -301,7 +318,7 @@ async def get_stats() -> dict:
         "avg_confidence": detector_stats.get("avg_confidence", 0.0),
         "flows_per_sec": detector_stats.get("flows_per_sec", 0.0),
         "uptime_sec": round(time.time() - _start_time, 1),
-        "simulator_running": _simulator.running,
+        "simulator_running": _simulator.running if _simulator else False,
     }
 
 
@@ -495,35 +512,37 @@ async def get_flows(limit: int = 100, offset: int = 0) -> dict:
     }
 
 
-# Attack Injection Endpoints
-# ---------------------------------------------------------------------------
+# ===================================================================
+# PART E — Explicit attack/demo API (background threads, not dashboard-coupled)
+# ===================================================================
+#
+# These endpoints are the ONLY way to trigger attack traffic.
+# The server does NOT auto-generate attacks on startup or tied to
+# any dashboard state.  All traffic is benign until one of these
+# endpoints is called explicitly.
+# ===================================================================
 
-_attack_active: dict[str, Any] = {}
-_original_attack_prob: float = 0.15
-_attack_src_ip: str = ""
-
-
-# ── New launch endpoint (Task 1) ────────────────────────────────────────
-
-_ALLOWED_ATTACK_TYPES = {
-    "syn_flood", "udp_flood", "c2_beaconing", "dga_domain",
-    "port_scan", "data_exfiltration",
+# Allowed types for POST /api/attack/launch (attack_tools.py keys)
+_ATTACK_TOOL_TYPES = {
+    "syn_flood", "udp_flood", "c2_beaconing",
+    "dns_tunnel", "port_scan", "data_exfiltration",
 }
 
 
 @app.post("/api/attack/launch")
-async def launch_attack_v2(request: Request) -> dict:
-    """Launch an attack and feed generated flows through the detector.
+async def api_attack_launch(request: Request) -> dict:
+    """LAB/DEMO ONLY: Launch an attack tool in a background thread.
 
-    Accepts JSON body with:
-        - attack_type: one of the supported types
-        - intensity: 0.1 to 1.0 (default 0.5)
+    Body (JSON):
+        attack_type  (required): one of the _ATTACK_TOOL_TYPES
+        target       (optional): target IP (default 127.0.0.1)
+        duration     (optional): attack duration in seconds (default 10)
+        rate         (optional): packets-per-second rate (default 100)
+        target_port  (optional): destination port
 
     Returns:
-        {status, alerts_generated, latency_ms, attack_id}
+        {status, attack_id, attack_type, target, duration, message}
     """
-    global _attack_active, _original_attack_prob, _attack_src_ip
-
     body = {}
     try:
         body = await request.json() or {}
@@ -531,151 +550,115 @@ async def launch_attack_v2(request: Request) -> dict:
         pass
 
     attack_type = body.get("attack_type", "syn_flood")
-    intensity = float(body.get("intensity", 0.5))
+    target = body.get("target", "127.0.0.1")
+    duration = float(body.get("duration", 10.0))
+    rate = int(body.get("rate", 100))
 
-    if attack_type not in _ALLOWED_ATTACK_TYPES:
+    if attack_type not in _ATTACK_TOOL_TYPES:
         return {
             "status": "error",
-            "error": f"Invalid attack_type '{attack_type}'. Allowed: {sorted(_ALLOWED_ATTACK_TYPES)}",
+            "error": (
+                f"Invalid attack_type '{attack_type}'. "
+                f"Allowed: {sorted(_ATTACK_TOOL_TYPES)}"
+            ),
             "attack_id": "",
-            "alerts_generated": 0,
-            "latency_ms": 0.0,
         }
 
-    intensity = max(0.1, min(1.0, intensity))
-    attack_id = str(uuid.uuid4())[:8]
+    kwargs: dict[str, Any] = {"target_ip": target, "duration": duration, "rate": rate}
+    if "target_port" in body:
+        kwargs["target_port"] = int(body["target_port"])
 
-    # Use a consistent external attacker IP
-    import ipaddress, random as _rnd
-    _attack_src_ip = str(ipaddress.IPv4Address(
-        int(ipaddress.IPv4Address("1.0.0.0")) + _rnd.randint(0, 0x7FFFFFFF)
-    ))
-
-    start_ts = time.time()
-
-    # Schedule injection in a background task so the HTTP response returns immediately.
-    # Each injected flow triggers ML detection + rule-based detection + WS broadcast,
-    # which is expensive when done synchronously for 20–100 flows.
-    _inject_id = attack_id
-    _inject_attack = attack_type
-    _inject_intensity = intensity
-
-    async def _bg_inject():
-        injected = 0
-        sim_attack_type = attack_type_map.get(_inject_attack, _inject_attack)
-        num_flows = int(20 + _inject_intensity * 80)
-        for _ in range(num_flows):
-            flow = _simulator.inject_attack(sim_attack_type)
-            flow["src_ip"] = _attack_src_ip
-            await _handle_flow(flow)
-            injected += 1
-        _attack_active[_inject_id] = {
-            "type": _inject_attack,
-            "start": time.time(),
-            "intensity": _inject_intensity,
-            "src_ip": _attack_src_ip,
-        }
-        logger.info(f"Injected {injected} {sim_attack_type} flows (attack_id={_inject_id})")
-
-        async def _cooldown():
-            await asyncio.sleep(15)
-            _simulator.attack_probability = _original_attack_prob
-            _attack_active.pop(_inject_id, None)
-
-        asyncio.create_task(_cooldown())
-
-    asyncio.create_task(_bg_inject())
-
-    latency_ms = (time.time() - start_ts) * 1000
+    try:
+        attack_id = _lab_controller.launch(attack_type, **kwargs)
+    except Exception as exc:
+        return {"status": "error", "error": str(exc), "attack_id": ""}
 
     return {
         "status": "launched",
         "attack_id": attack_id,
         "attack_type": attack_type,
-        "intensity": intensity,
-        "flows_injected": int(20 + intensity * 80),
-        "attacker_ip": _attack_src_ip,
-        "latency_ms": round(latency_ms, 2),
-        "message": f"Launched {attack_type} (intensity={intensity}) from {_attack_src_ip}",
-    }
-
-    return {
-        "status": "launched",
-        "attack_id": attack_id,
-        "attack_type": attack_type,
-        "intensity": intensity,
-        "flows_injected": injected,
-        "attacker_ip": _attack_src_ip,
-        "latency_ms": round(latency_ms, 2),
-        "message": f"Launched {attack_type} (intensity={intensity}) from {_attack_src_ip}",
+        "target": target,
+        "duration": duration,
+        "message": (
+            f"Lab attack {attack_type} launched against {target} "
+            f"for {duration}s (id={attack_id}). "
+            "LAB/DEMO USE ONLY."
+        ),
     }
 
 
 @app.post("/api/attack/stop")
-async def stop_attack() -> dict:
-    """Stop all active attacks and restore normal traffic."""
-    global _simulator, _attack_active
+async def api_attack_stop() -> dict:
+    """Stop all active lab attacks."""
+    _lab_controller.stop_all()
     _attack_controller.stop_all()
-    _simulator.attack_probability = _original_attack_prob
-    _attack_active.clear()
-    return {"status": "stopped", "attacks_stopped": 0}
+    return {"status": "stopped", "message": "All attacks stopped"}
 
 
-# ── Legacy attack endpoint (kept for backwards compat) ──────────────────
+@app.post("/api/demo/start")
+async def api_demo_start(request: Request) -> dict:
+    """Start the TrafficSimulator with an optional attack_mix.
 
-@app.post("/api/attack")
-async def launch_attack_legacy(request: Request, attack_type: str = "syn_flood", duration: int = 10) -> dict:
-    """Launch a simulated attack to test detection.
+    Body (JSON, optional):
+        attack_mix: dict mapping attack_type -> relative weight.
+            Example: {"syn_flood": 20, "udp_flood": 10, "dga": 5}
+            Pass {} or omit for benign-only traffic.
 
-    Accepts attack_type and duration as both query params and JSON body.
-
-    Args:
-        request: FastAPI request object.
-        attack_type: Type of attack to simulate.
-        duration: Duration in seconds for the attack.
-
-    Returns:
-        Dictionary with attack status and details.
+    The simulator runs until POST /api/demo/stop is called.
     """
-    global _attack_active, _original_attack_prob, _attack_src_ip
-
-    # Try to read from JSON body first, fall back to query params
+    body = {}
     try:
-        body = await request.json()
-        if isinstance(body, dict):
-            if body.get("attack_type"):
-                attack_type = body["attack_type"]
-            if body.get("duration"):
-                duration = int(body["duration"])
+        body = await request.json() or {}
     except Exception:
-        pass  # Use query params / defaults
+        pass
 
-    # Use a consistent external attacker IP so per-source windows accumulate
-    import ipaddress, random as _rnd
-    _attack_src_ip = str(ipaddress.IPv4Address(
-        int(ipaddress.IPv4Address("1.0.0.0")) + _rnd.randint(0, 0x7FFFFFFF)
-    ))
+    sim = _get_or_create_simulator()
 
-    attack_id = str(uuid.uuid4())[:8]
-    _attack_active[attack_id] = {"type": attack_type, "start": time.time(), "duration": duration, "src_ip": _attack_src_ip}
-    _original_attack_prob = _simulator.attack_probability
-    _simulator.attack_probability = 0.85  # Very high attack rate
+    attack_mix: dict | None = body.get("attack_mix")
+    if attack_mix is not None:
+        sim.set_attack_mix(attack_mix)
 
-    async def _cooldown():
-        """Restore normal attack probability after duration."""
-        await asyncio.sleep(duration)
-        _simulator.attack_probability = _original_attack_prob
-        _attack_active.pop(attack_id, None)
+    # Start simulator + background processing if not already running
+    global _processing_active, _background_task
+    if not _processing_active:
+        _processing_active = True
+        _background_task = asyncio.create_task(_process_flows())
 
-    asyncio.create_task(_cooldown())
-
+    sim.start()
     return {
-        "status": "launched",
-        "attack_id": attack_id,
-        "attack_type": attack_type,
-        "duration_sec": duration,
-        "attacker_ip": _attack_src_ip,
-        "message": f"Launched {attack_type} from {_attack_src_ip} for {duration}s",
+        "status": "started",
+        "simulator_running": sim.running,
+        "attack_mix": sim.attack_mix,
+        "message": "Traffic simulator started. POST /api/demo/stop to halt.",
+    }
+
+
+@app.post("/api/demo/stop")
+async def api_demo_stop() -> dict:
+    """Stop the TrafficSimulator and all active attacks."""
+    global _processing_active
+    sim = _get_or_create_simulator()
+    sim.stop()
+    _processing_active = False
+    _lab_controller.stop_all()
+    _attack_controller.stop_all()
+    return {
+        "status": "stopped",
+        "simulator_running": sim.running,
+        "message": "Simulator and all attacks stopped.",
+    }
+
+
+@app.get("/api/demo/status")
+async def api_demo_status() -> dict:
+    """Return current simulator and attack-tool status."""
+    sim_running = _simulator.running if _simulator else False
+    return {
+        "simulator_running": sim_running,
+        "attack_mix": _simulator.attack_mix if _simulator else {},
+        "lab_attacks": _lab_controller.active_attacks(),
+        "generated_attacks": _attack_controller.active_attacks(),
+        "processing_active": _processing_active,
     }
 
 
@@ -701,7 +684,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
             "data": {
                 "message": "Connected to threat detection stream",
                 "stats": _detector.get_stats(),
-                "simulator": _simulator.get_stats(),
+                "simulator": _simulator.get_stats() if _simulator else {},
             },
         })
     except Exception:

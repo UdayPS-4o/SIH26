@@ -689,7 +689,6 @@ const NetworkMap: React.FC = () => {
                     <tr key={edge.id} style={{
                       borderBottom: `1px solid ${C.border}25`,
                       background: rowBg,
-                      animation:`wt-row-in 0.3s ${EASE} ${idx*0.015}s both`,
                       transition:`background 0.15s ${EASE}`,
                     }}
                       onMouseEnter={e=>{e.currentTarget.style.background=`${C.accent}05`;}}

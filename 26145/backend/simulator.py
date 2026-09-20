@@ -137,6 +137,16 @@ class TrafficSimulator:
     Generates both normal and attack traffic patterns for testing
     the threat detection system. Runs a background thread to continuously
     produce flows at configurable rates.
+
+    Threat class coverage (6 classes):
+        1. syn_flood      — high packet-rate TCP SYN floods
+        2. udp_flood      — high-volume UDP datagram floods
+        3. c2_beaconing   — periodic C2 heartbeat traffic
+        4. dga_domain     — DNS queries with DGA-like domain names
+        5. dns_tunneling  — DNS queries with abnormally long subdomains
+        6. port_scan      — sequential port probes from a single source
+        7. data_exfiltration — large outbound data transfers
+        + benign          — normal traffic
     """
 
     # Well-known JA3 hashes for common clients
@@ -152,14 +162,37 @@ class TrafficSimulator:
         "769,4-5-2-8-10-9-7-6-3-1",
     ]
 
-    def __init__(self, attack_probability: float = 0.05) -> None:
+    # Default attack mix: relative weights for each threat class.
+    # A higher weight means that class appears more frequently in random
+    # attack selection.  Set to {} to disable all attacks by default
+    # (use inject_attack() explicitly for on-demand generation).
+    DEFAULT_ATTACK_MIX: dict[str, float] = {
+        "syn_flood":      1.0,
+        "udp_flood":      0.8,
+        "c2_beaconing":   1.0,
+        "dga_domain":     0.6,
+        "dns_tunneling":  0.5,
+        "port_scan":      0.7,
+        "data_exfiltration": 0.4,
+    }
+
+    # Canonical attack type keys (must match detector._THREAT_CLASS_MAP values)
+    ATTACK_TYPES: list[str] = [
+        "syn_flood", "udp_flood", "c2_beaconing", "dga_domain",
+        "dns_tunneling", "port_scan", "data_exfiltration",
+    ]
+
+    def __init__(self, attack_mix: dict[str, float] | None = None, target_fps: int = 10_000) -> None:
         """Initialize the simulator.
 
         Args:
-            attack_probability: Probability of generating an attack flow
-                instead of benign traffic (0.0 to 1.0).
+            attack_mix: Dict mapping attack_type to per-flow probability (0.0–1.0).
+                When None or empty, only benign traffic is produced.
+                Example: {"syn_flood": 0.03, "dga": 0.02, "udp_flood": 0.02}
+            target_fps: Target flows per second.
         """
-        self.attack_probability = attack_probability
+        self.attack_mix: dict[str, float] = dict(attack_mix) if attack_mix else {}
+        self.target_fps = target_fps
         self.running = False
         self.thread: threading.Thread | None = None
         self._flow_callbacks: list[Any] = []
@@ -271,43 +304,89 @@ class TrafficSimulator:
                 time.sleep(0.1)
 
     def generate_flow(self) -> dict:
-        """Generate a single network flow.
+        """Generate a single flow based on the configured attack_mix.
 
-        Returns either a benign or attack flow based on configured probability.
-        For active attack modes (beaconing, port scanning), may continue
-        generating attack-specific flows.
+        Each attack type in attack_mix has a per-flow probability (0.0–1.0).
+        Probabilities are evaluated in order; the first match wins.
+        When attack_mix is empty, only benign traffic is produced.
 
         Returns:
             Flow dictionary with all required fields.
         """
-        if random.random() < self.attack_probability:
-            return self.inject_attack(random.choice([
-                "syn_flood", "udp_flood", "beaconing", "dga",
-                "dns_tunnel", "port_scan", "exfiltration", "tls_beaconing",
-            ]))
+        if self.attack_mix:
+            r = random.random()
+            cumulative = 0.0
+            for attack_type, prob in self.attack_mix.items():
+                cumulative += prob
+                if r <= cumulative:
+                    return self.inject_attack(attack_type)
         return self._gen_benign_flow()
+
+    def _pick_attack_type(self) -> str:
+        """Choose an attack type weighted by ``attack_mix``."""
+        if not self.attack_mix:
+            return random.choice([
+                "syn_flood", "udp_flood", "c2_beaconing", "dga",
+                "dns_tunnel", "port_scan", "exfiltration", "tls_beaconing",
+            ])
+        types_ = list(self.attack_mix.keys())
+        weights_ = [float(w) for w in self.attack_mix.values()]
+        return random.choices(types_, weights=weights_, k=1)[0]
+
+    def set_attack_mix(self, attack_mix: dict | None) -> None:
+        """Update the attack mix at runtime (thread-safe).
+
+        Args:
+            attack_mix: Dict mapping attack_type -> weight, or None to
+                reset to equal distribution.
+        """
+        with self._lock:
+            self.attack_mix = dict(attack_mix) if attack_mix else {}
 
     def inject_attack(self, attack_type: str) -> dict:
         """Generate an attack-specific flow.
+
+        Accepts canonical detector-aligned keys: syn_flood, udp_flood,
+        c2_beaconing, dga_domain, dns_tunneling, port_scan,
+        data_exfiltration, plus legacy aliases for backwards compat.
 
         Args:
             attack_type: Type of attack to simulate.
 
         Returns:
-            Attack flow dictionary.
+            Attack flow dictionary with attack_type set to the canonical key.
         """
-        generators = {
-            "syn_flood": self._gen_syn_flood,
-            "udp_flood": self._gen_udp_flood,
-            "beaconing": self._gen_beaconing,
-            "dga": self._gen_dga_flow,
-            "dns_tunnel": self._gen_dns_tunnel,
-            "port_scan": self._gen_port_scan,
-            "exfiltration": self._gen_exfiltration,
-            "tls_beaconing": self._gen_tls_beaconing,
+        # Legacy -> canonical mapping
+        _legacy_map = {
+            "beaconing":      "c2_beaconing",
+            "dga":            "dga_domain",
+            "dns_tunnel":     "dns_tunneling",
+            "exfiltration":   "data_exfiltration",
+            "tls_beaconing":  "tls_beaconing",  # kept as-is; same key
         }
-        generator = generators.get(attack_type, self._gen_benign_flow)
-        return generator()
+        canonical = _legacy_map.get(attack_type, attack_type)
+
+        # Generators keyed by the old short names (method names unchanged)
+        generators = {
+            "syn_flood":      self._gen_syn_flood,
+            "udp_flood":      self._gen_udp_flood,
+            "beaconing":      self._gen_beaconing,
+            "dga":            self._gen_dga_flow,
+            "dns_tunnel":     self._gen_dns_tunnel,
+            "port_scan":      self._gen_port_scan,
+            "exfiltration":   self._gen_exfiltration,
+            "tls_beaconing":  self._gen_tls_beaconing,
+        }
+        generator = generators.get(canonical)
+        if generator is None:
+            # Try canonical directly (for keys that match method names)
+            generator = generators.get(attack_type)
+        if generator is None:
+            return self._gen_benign_flow()
+        result = generator()
+        # Normalise attack_type so the detector and attack tools agree
+        result["attack_type"] = canonical
+        return result
 
     def _gen_benign_flow(self) -> dict:
         """Generate a realistic benign network flow.
@@ -710,12 +789,16 @@ class TrafficSimulator:
             "uptime_sec": uptime,
             "flows_generated": self._flows_generated,
             "flows_per_sec": round(fps, 2),
-            "target_flows_per_sec": 10_000,
-            "attack_probability": self.attack_probability,
+            "target_flows_per_sec": self.target_fps,
+            "attack_mix": dict(sorted(self.attack_mix.items())),
         }
 
 
-def generate_sample_data(num_flows: int = 1000, output_path: str | None = None) -> list[dict]:
+def generate_sample_data(
+    num_flows: int = 1000,
+    output_path: str | None = None,
+    attack_mix: dict[str, float] | None = None,
+) -> list[dict]:
     """Generate sample flow data for demo/testing purposes.
 
     Creates a list of flows with a mix of benign and attack traffic
@@ -730,7 +813,18 @@ def generate_sample_data(num_flows: int = 1000, output_path: str | None = None) 
     """
     import json
 
-    sim = TrafficSimulator(attack_probability=0.1)
+    mix = attack_mix or {
+        "syn_flood": 0.03,
+        "udp_flood": 0.02,
+        "c2_beaconing": 0.02,
+        "dga": 0.02,
+        "dns_tunnel": 0.02,
+        "port_scan": 0.02,
+        "exfiltration": 0.01,
+        "tls_beaconing": 0.02,
+    }
+
+    sim = TrafficSimulator(attack_mix=mix)
     flows: list[dict] = []
 
     # Override emit to capture flows

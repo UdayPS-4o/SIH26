@@ -1,4 +1,7 @@
 # EKADHARA — Demo Video Script V2
+
+> **NOTE: This file is superseded by [VIDEO_SCRIPT_FINAL.md](./VIDEO_SCRIPT_FINAL.md).** The final script targets 3 minutes with 4 scenes, refined narration, and updated visual cues. Retain this file for reference only.
+
 **SIH26145 · National Technical Research Organisation**
 **Hard limit: 120 seconds · Screen recording only · No talking head**
 

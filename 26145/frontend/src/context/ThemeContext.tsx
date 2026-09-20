@@ -229,6 +229,13 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     /* Chart grid / bar backgrounds */
     set('--grid-bg', isDark ? 'rgba(0,212,255,0.06)' : 'rgba(37,99,235,0.04)');
     set('--bar-track-bg', isDark ? 'rgba(0,212,255,0.06)' : 'rgba(37,99,235,0.04)');
+    set('--chart-grid', isDark ? '#1e293b' : '#e2e8f0');
+    set('--chart-axis', isDark ? '#94a3b8' : '#475569');
+    set('--chart-tooltip-bg', isDark ? '#111827' : '#ffffff');
+    set('--chart-node-fill', isDark ? '#1e293b' : '#f1f5f9');
+    set('--chart-node-stroke', isDark ? '#334155' : '#cbd5e1');
+    set('--chart-node-text', isDark ? '#94a3b8' : '#475569');
+    set('--chart-link-color', isDark ? 'rgba(148,163,184,0.3)' : 'rgba(71,85,105,0.3)');
 
     /* Evidence validity chip */
     set('--chip-measured-bg', isDark ? 'rgba(34,197,94,0.06)' : 'rgba(22,163,74,0.05)');
@@ -270,6 +277,16 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     set('--admin-running-border', isDark ? 'rgba(239,68,68,0.25)' : 'rgba(220,38,38,0.2)');
     set('--admin-stopped-bg', isDark ? 'rgba(0,255,65,0.12)' : 'rgba(34,197,94,0.08)');
     set('--admin-stopped-border', isDark ? 'rgba(0,255,65,0.25)' : 'rgba(34,197,94,0.2)');
+
+    /* Table row borders and muted text */
+    set('--border-row', isDark ? 'rgba(51,65,85,0.2)' : 'rgba(0,0,0,0.06)');
+    set('--border-row-light', isDark ? 'rgba(51,65,85,0.4)' : 'rgba(0,0,0,0.1)');
+    set('--border-row-header', isDark ? 'rgba(51,65,85,0.6)' : 'rgba(0,0,0,0.12)');
+    set('--text-row-muted', isDark ? '#64748b' : '#475569');
+    set('--text-row', isDark ? '#e2e8f0' : '#0f172a');
+    set('--text-row-alt', isDark ? '#f1f5f9' : '#ffffff');
+    set('--text-dim', isDark ? '#334155' : '#94a3b8');
+    set('--table-hover-bg', isDark ? 'rgba(59,130,246,0.06)' : 'rgba(0,0,0,0.02)');
   }, [isDark, colors]);
 
   const toggleTheme = () => setIsDark((prev) => !prev);

@@ -55,8 +55,9 @@ const ThreatChart: React.FC<ThreatChartProps> = ({ alerts, darkMode }) => {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [alerts]);
 
-  const axisColor = darkMode ? '#94a3b8' : '#475569';
-  const gridColor = darkMode ? '#1e293b' : '#e2e8f0';
+  const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-axis').trim() || (darkMode ? '#94a3b8' : '#475569');
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || (darkMode ? '#1e293b' : '#e2e8f0');
+  const tooltipBg = getComputedStyle(document.documentElement).getPropertyValue('--chart-tooltip-bg').trim() || (darkMode ? '#111827' : '#ffffff');
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -77,7 +78,7 @@ const ThreatChart: React.FC<ThreatChartProps> = ({ alerts, darkMode }) => {
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: darkMode ? '#111827' : '#ffffff',
+                backgroundColor: tooltipBg,
                 border: `1px solid ${gridColor}`,
                 borderRadius: '8px',
                 fontSize: '12px',
@@ -115,7 +116,7 @@ const ThreatChart: React.FC<ThreatChartProps> = ({ alerts, darkMode }) => {
             </Pie>
             <Tooltip
               contentStyle={{
-                backgroundColor: darkMode ? '#111827' : '#ffffff',
+                backgroundColor: tooltipBg,
                 border: `1px solid ${gridColor}`,
                 borderRadius: '8px',
                 fontSize: '12px',
@@ -146,8 +147,9 @@ export const ThreatTypeChart: React.FC<{ alerts: Alert[]; darkMode: boolean }> =
       .slice(0, 10);
   }, [alerts]);
 
-  const axisColor = darkMode ? '#94a3b8' : '#475569';
-  const gridColor = darkMode ? '#1e293b' : '#e2e8f0';
+  const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-axis').trim() || (darkMode ? '#94a3b8' : '#475569');
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid').trim() || (darkMode ? '#1e293b' : '#e2e8f0');
+  const tooltipBg = getComputedStyle(document.documentElement).getPropertyValue('--chart-tooltip-bg').trim() || (darkMode ? '#111827' : '#ffffff');
 
   return (
     <div className="card p-4 h-full">

@@ -4,20 +4,39 @@ import {
   ShieldAlert,
   Network,
   Brain,
-  Crosshair,
   Radar,
+  BarChart3,
+  FileText,
+  Clock,
+  Settings,
+  Plug,
+  Play,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/', icon: LayoutDashboard, key: 'dash' },
+const MONITORING_ITEMS = [
+  { label: 'Operations', path: '/', icon: LayoutDashboard, key: 'ops' },
   { label: 'Live Threats', path: '/live-threats', icon: ShieldAlert, key: 'threats', badge: 'LIVE' },
-  { label: 'Network Map', path: '/network-map', icon: Network, key: 'netmap' },
+  { label: 'Network', path: '/network-map', icon: Network, key: 'netmap' },
   { label: 'AI Analyzer', path: '/ai-analyzer', icon: Brain, key: 'ai' },
-  { label: 'Attack Lab', path: '/attack', icon: Crosshair, key: 'attack' },
   { label: 'Diode Lab', path: '/diode-lab', icon: Radar, key: 'diode' },
 ];
 
+const PLATFORM_ITEMS = [
+  { label: 'Analytics', path: '/analytics', icon: BarChart3, key: 'analytics' },
+  { label: 'Attack Console', path: '/attack-console', icon: Play, key: 'attack' },
+  { label: 'Materials', path: '/materials', icon: FileText, key: 'materials' },
+  { label: 'Activity', path: '/activity', icon: Clock, key: 'activity' },
+  { label: 'Settings', path: '/admin', icon: Settings, key: 'admin' },
+  { label: 'Integrations', path: '/integrations', icon: Plug, key: 'integrations' },
+];
+
+const NAV_ITEMS = [...MONITORING_ITEMS, ...PLATFORM_ITEMS];
+
 const Sidebar: React.FC<{ isOpen?: boolean }> = ({ isOpen: _isOpen }) => {
+  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
 
   return (
@@ -75,7 +94,7 @@ const Sidebar: React.FC<{ isOpen?: boolean }> = ({ isOpen: _isOpen }) => {
 
       {/* ── Diode Status Section ────────────────────────────────────────── */}
       <div style={{
-        padding: '8px 14px 12px',
+        padding: '10px 14px 12px',
         margin: '0 10px',
         borderBottom: '1px solid var(--sidebar-border)',
       }}>
@@ -120,8 +139,7 @@ const Sidebar: React.FC<{ isOpen?: boolean }> = ({ isOpen: _isOpen }) => {
       {/* ── Navigation ─────────────────────────────────────────────────── */}
       <nav className="sidebar-nav">
         <div className="sidebar-section-label">MONITORING</div>
-
-        {NAV_ITEMS.map(item => {
+        {MONITORING_ITEMS.map(item => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
 
@@ -138,6 +156,25 @@ const Sidebar: React.FC<{ isOpen?: boolean }> = ({ isOpen: _isOpen }) => {
               {item.badge && (
                 <span className="nav-badge nav-badge-live">{item.badge}</span>
               )}
+            </Link>
+          );
+        })}
+
+        <div className="sidebar-section-label">PLATFORM</div>
+        {PLATFORM_ITEMS.map(item => {
+          const isActive = location.pathname === item.path;
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`nav-item${isActive ? ' active' : ''}`}
+            >
+              <span className="nav-icon">
+                <Icon size={18} strokeWidth={isActive ? 2.2 : 1.6} />
+              </span>
+              <span className="nav-label">{item.label}</span>
             </Link>
           );
         })}
@@ -170,6 +207,14 @@ const Sidebar: React.FC<{ isOpen?: boolean }> = ({ isOpen: _isOpen }) => {
         }}>
           PS-26145 · NTRO · SIH26
         </div>
+        <button
+          className="theme-toggle"
+          onClick={toggleTheme}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          style={{ marginTop: 10 }}
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
       </div>
     </aside>
   );
