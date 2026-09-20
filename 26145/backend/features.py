@@ -322,9 +322,10 @@ def extract_flow_features(flow: dict) -> FlowFeatures:
     features.dns_query_len = len(dns_query) if dns_query else 0
     features.dns_entropy = compute_entropy(dns_query) if dns_query else 0.0
 
-    # TLS features
-    features.has_tls = 1 if flow.get("tls_fingerprint") else 0
-    features.tls_ja3_hash = str(flow.get("tls_fingerprint", ""))
+    # TLS features — accept both tls_fingerprint and tls_ja3_hash field names
+    tls_hash = flow.get("tls_ja3_hash") or flow.get("tls_fingerprint") or ""
+    features.has_tls = 1 if tls_hash else 0
+    features.tls_ja3_hash = str(tls_hash)
 
     # Byte distribution entropy
     features.entropy_bytes_sent = _estimate_entropy_from_size(features.bytes_sent)

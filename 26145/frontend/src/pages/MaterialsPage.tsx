@@ -199,7 +199,7 @@ function MaterialsPage() {
     let active = true;
     const connectWs = () => {
       try {
-        const ws = new WebSocket('ws://localhost:8000/ws');
+        const ws = new WebSocket('/ws');
         ws.onopen = () => { if (active) setWsConnected(true); };
         ws.onclose = () => { if (active) setWsConnected(false); };
         ws.onmessage = (ev) => {

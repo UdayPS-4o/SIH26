@@ -8,9 +8,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Alert, Flow, Stats, ThreatType } from '../types';
 import { mockBackend } from './mockBackend';
 
-const WS_URL = 'ws://localhost:8000/ws';
-const ALERTS_WS_URL = 'ws://localhost:8000/ws';
-const API_BASE = 'http://localhost:8000';
+const API_BASE = '/api';
+const WS_URL = '/ws';
+const ALERTS_WS_URL = '/ws';
 const RECONNECT_DELAY_MS = 3000;
 const PING_INTERVAL_MS = 30_000;
 const FETCH_TIMEOUT_MS = 5000;
@@ -28,7 +28,7 @@ async function fetchWithTimeout(path: string, opts?: RequestInit): Promise<Respo
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    return await fetch(toAbsoluteUrl(`${API_BASE}${path}`), {
+    return await fetch(`${API_BASE}${path}`, {
       ...opts,
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json', ...(opts?.headers || {}) },
@@ -347,6 +347,7 @@ export interface AttackLaunchResult {
   attack_type: string;
   intensity: number;
   src_ip: string;
+  src_port?: number;
   message: string;
   alerts_generated?: number;
   latency_ms: number;

@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useWebSocketContext } from '../context/WebSocketContext';
 import ValidityChip from '../components/ValidityChip';
-import { ShieldAlert, Search, Zap } from 'lucide-react';
+import { ShieldAlert, Search } from 'lucide-react';
 import { Alert } from '../types';
-import { isThreatTypeInjected, subscribeToAttackChanges, getActiveThreatTypes } from '../lib/attackRegistry';
 
 const C = {
   bg: 'var(--bg-primary)',
@@ -183,23 +181,11 @@ const Sparkline: React.FC<{ data: number[]; width?: number; height?: number }> =
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const LiveThreats: React.FC = () => {
-  const navigate = useNavigate();
   const { alerts: wsAlerts, isConnected, backendOnline, flowsPerSec } = useWebSocketContext();
   const [clock, setClock] = useState(now());
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showOnlyAttacks, setShowOnlyAttacks] = useState(false);
-  const [activeThreatTypes, setActiveThreatTypes] = useState<string[]>([]);
-
-  /* ── Subscribe to attack registry changes ─────────────────────── */
-  useEffect(() => {
-    const unsub = subscribeToAttackChanges(() => {
-      setActiveThreatTypes(getActiveThreatTypes());
-    });
-    setActiveThreatTypes(getActiveThreatTypes());
-    return unsub;
-  }, []);
 
   /* ── Clock ──────────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -216,9 +202,6 @@ const LiveThreats: React.FC = () => {
         (a.threat_type || '').toLowerCase().includes(t.toLowerCase())
       ));
     }
-    if (showOnlyAttacks) {
-      result = result.filter(a => (a.src_ip || '').startsWith('1.') || (a.src_ip || '').startsWith('203.') || (a.src_ip || '').startsWith('45.'));
-    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(a =>
@@ -226,7 +209,7 @@ const LiveThreats: React.FC = () => {
       );
     }
     return result;
-  }, [wsAlerts, filterSeverity, filterTypes, searchQuery, showOnlyAttacks]);
+  }, [wsAlerts, filterSeverity, filterTypes, searchQuery]);
 
   const toggleType = (type: string) => {
     setFilterTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
@@ -254,7 +237,6 @@ const LiveThreats: React.FC = () => {
     setFilterSeverity('all');
     setFilterTypes([]);
     setSearchQuery('');
-    setShowOnlyAttacks(false);
   }, []);
 
   /* ═══════════════════════════════════════════════════════════════════════════════════
@@ -267,8 +249,6 @@ const LiveThreats: React.FC = () => {
       fontFamily: '"Inter",system-ui,sans-serif', fontSize: 13, lineHeight: 1.6,
     }}>
       <style>{`
-        @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-        @keyframes wt-row-in { from{opacity:0; transform:translateX(-4px);} to{opacity:1; transform:translateX(0);} }
         ::selection { background: var(--accent-cyan); color: ${C.text}; }
         :focus-visible { outline: 1.5px solid var(--border-active); outline-offset: 2px; border-radius: 3px; }
         ::-webkit-scrollbar { width: 6px; }
@@ -285,7 +265,7 @@ const LiveThreats: React.FC = () => {
       }}>
         <div style={{
           maxWidth: 1400, margin: '0 auto', padding: '0 28px',
-          display:'flex', alignItems:'center', height: 52, gap: 14,
+          display:'flex', alignItems:'center', height: 52, gap: 16,
         }}>
           <div style={{ display:'flex', alignItems:'center', gap: 10, flexShrink:0 }}>
             <div style={{
@@ -341,18 +321,17 @@ const LiveThreats: React.FC = () => {
       <main style={{ maxWidth:1400, margin:'0 auto', padding:'24px 28px 64px' }}>
 
         {/* Page title */}
-        <section style={{ marginBottom: 24 }}>
+        <section style={{ marginBottom: 28 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 4 }}>
             Live Threat Feed
           </h1>
           <p style={{ fontSize: 13, color: C.textSec, maxWidth: 600, lineHeight: 1.6, margin: 0 }}>
             Real-time alert stream from the backend detection pipeline.
-            Launch attacks from <strong>Attack Lab</strong> — detections arrive here via WebSocket.
           </p>
         </section>
 
         {/* ── SECTION 1 — Throughput + Severity Summary + Filters ─────────── */}
-        <section style={{ display:'grid', gridTemplateColumns:'1fr', gap: 12, marginBottom: 20 }}>
+        <section style={{ display:'grid', gridTemplateColumns:'1fr', gap: 16, marginBottom: 24 }}>
           <Panel delay={0.05}>
             <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', gap: 20, alignItems:'center' }}>
               {/* Sparkline */}
@@ -477,7 +456,7 @@ const LiveThreats: React.FC = () => {
         </section>
 
         {/* ── SECTION 2 — Threat Feed Table ─────────────────────────────────── */}
-        <Panel delay={0.1} style={{ marginBottom: 20 }}>
+        <Panel delay={0.1} style={{ marginBottom: 24 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 0, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
             <span style={{
               fontFamily:'"JetBrains Mono",monospace', fontSize: 11, fontWeight: 600,
@@ -515,18 +494,16 @@ const LiveThreats: React.FC = () => {
                     const sevStyle = SEV_MAP[alert.severity] || SEV_MAP.low;
                     const rowBg = fresh ? `${C.red}06` : (idx % 2 === 0 ? 'transparent' : `${C.accent}02`);
                     const validity = (alert.confidence >= 85 ? 'MEASURED' : alert.confidence >= 60 ? 'ESTIMATED' : 'MISSING') as 'MEASURED' | 'ESTIMATED' | 'MISSING';
-                    const isInjected = isThreatTypeInjected(alert.threat_type);
                     return (
                       <tr key={alert.id} style={{
                         borderBottom: `1px solid ${C.border}30`,
                         background: rowBg,
-                        animation: `wt-row-in 0.3s ${EASE} ${Math.min(idx * 0.005, 0.3)}s both`,
                         transition: `background 0.15s ${EASE}`,
                         cursor:'pointer',
                       }}
                         onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}06`; }}
                         onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
-                        onClick={() => navigate(`/evidence?alertId=${encodeURIComponent(alert.id)}`)}
+                        onClick={() => {}}
                       >
                         <td style={{
                           padding:'10px 14px', fontSize: 12, color: C.textSec,
@@ -577,23 +554,6 @@ const LiveThreats: React.FC = () => {
                         <td style={{ padding:'10px 14px' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                             <ValidityChip validity={validity} />
-                            {isInjected && (
-                              <span style={{
-                                padding:'2px 8px', borderRadius:9999,
-                                fontSize:9, fontWeight:700,
-                                fontFamily:'"JetBrains Mono",monospace',
-                                letterSpacing:'0.05em',
-                                background:'var(--sev-critical-bg)',
-                                color:'var(--accent-red)',
-                                border:'1px solid var(--sev-critical-border)',
-                                display:'inline-flex', alignItems:'center', gap:3,
-                                whiteSpace:'nowrap',
-                              }}>
-                                <Zap size={9} strokeWidth={2.5} />
-                                INJECTED
-                              </span>
-                            )}
-                            {!isInjected && (
                               <span style={{
                                 padding:'2px 8px', borderRadius:9999,
                                 fontSize:9, fontWeight:700,
@@ -607,7 +567,6 @@ const LiveThreats: React.FC = () => {
                               }}>
                                 MEASURED
                               </span>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -620,7 +579,7 @@ const LiveThreats: React.FC = () => {
         </Panel>
 
         {/* ── Threat Class Distribution Bar ────────────────────────────────── */}
-        <Panel delay={0.15} style={{ marginBottom: 20 }}>
+        <Panel delay={0.15} style={{ marginBottom: 24 }}>
           <span style={{ fontSize: 11, color: C.textDim }}>
             EKADHARA v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
           </span>

@@ -78,15 +78,19 @@ frontend/
 │   │   ├── NetworkMap.tsx   # Network topology visualization
 │   │   ├── Analytics.tsx    # Threat analytics & charts
 │   │   ├── AIAnalyzer.tsx   # Model performance dashboard
-│   │   └── ...
+│   │   ├── DiodeLab.tsx     # Data-diode mode switcher + degradation demo
+│   │   └── LiveThreats.tsx  # Real-time WebSocket alert feed
 │   ├── components/
-│   │   ├── AttackPanel.tsx  # Attack simulation control panel
-│   │   └── Sidebar.tsx      # Navigation sidebar
+│   │   ├── Sidebar.tsx      # Navigation sidebar with diode status
+│   │   ├── DegradationMatrix.tsx  # Detection confidence by diode mode
+│   │   ├── ThreatFeed.tsx   # Live alert stream component
+│   │   └── BootScreen.tsx   # Terminal-style boot sequence
 │   ├── lib/
-│   │   ├── realBackend.ts   # Backend API client
-│   │   └── useDashboardData.ts  # WebSocket data hook
+│   │   ├── realBackend.ts   # Backend API + WebSocket client
+│   │   ├── mockBackend.ts   # In-browser demo simulator (no backend needed)
+│   │   └── attackRegistry.ts # In-memory attack tracking for demo
 │   └── types/
-│       └── index.ts         # TypeScript types
+│       └── index.ts         # TypeScript interfaces
 ├── package.json
 └── vite.config.ts
 ```
@@ -95,13 +99,26 @@ frontend/
 
 ## Quick Start
 
+### One-Click Demo
+
+```bash
+# From the repo root — starts backend + frontend + opens browser
+python scripts/demo_launcher.py
+
+# With a specific attack after 5 seconds
+python scripts/demo_launcher.py --attack syn --duration 30
+
+# Frontend only (mock mode, no backend needed)
+python scripts/demo_launcher.py --frontend-only
+```
+
 ### Prerequisites
 
 - Python 3.10+
 - Node.js 18+
 - npm or pnpm
 
-### Backend
+### Backend (Manual)
 
 ```bash
 cd backend
@@ -120,14 +137,27 @@ python main.py --self-test-egress
 # API docs: http://localhost:8000/docs
 ```
 
-### Frontend
+### Frontend (Manual)
 
 ```bash
 cd frontend
 npm install
 npm run dev
 
-# Dashboard opens at http://localhost:3000
+# Dashboard opens at http://localhost:5178
+```
+
+### Attack Scripts (Demo)
+
+```bash
+# Launch attacks from the repo root
+python scripts/attack_sim.py syn              # SYN flood for 30s
+python scripts/attack_sim.py beacon -d 60     # C2 beaconing for 60s
+python scripts/attack_sim.py scan -t 10.0.0.1 # Port scan
+python scripts/attack_sim.py chain -d 120     # Full APT chain
+python scripts/attack_sim.py all              # Run all attacks sequentially
+
+# Available: syn, udp, beacon, scan, dns, tls, exfil, chain, all
 ```
 
 ### Docker (Production)
