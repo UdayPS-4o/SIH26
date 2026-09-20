@@ -62,18 +62,18 @@ const Panel: React.FC<{ delay?:number; style?:React.CSSProperties; children:Reac
 };
 
 const Sev: React.FC<{ sev:string }> = ({ sev }) => {
-  const M: Record<string,{c:string;bg:string}> = {
-    critical:{c:C.red,bg:'var(--sev-critical-bg)'},
-    high:{c:C.orange,bg:'var(--sev-high-bg)'},
-    medium:{c:C.amber,bg:'var(--sev-medium-bg)'},
-    low:{c:'var(--accent-cyan)',bg:'var(--sev-low-bg)'},
+  const M: Record<string,{c:string;bg:string;border:string}> = {
+    critical:{c:C.red,bg:'var(--sev-critical-bg)',border:'var(--sev-critical-border)'},
+    high:{c:C.orange,bg:'var(--sev-high-bg)',border:'var(--sev-high-border)'},
+    medium:{c:C.amber,bg:'var(--sev-medium-bg)',border:'var(--sev-medium-border)'},
+    low:{c:'var(--accent-cyan)',bg:'var(--sev-low-bg)',border:'var(--sev-low-border)'},
   };
   const s = M[sev] || M.low;
   return (
     <span style={{
       display:'inline-flex', alignItems:'center', gap: 5,
       padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
-      letterSpacing: '0.8px', color: s.c, background: s.bg, border: `1px solid ${s.c}30`,
+      letterSpacing: '0.8px', color: s.c, background: s.bg, border: `1px solid ${s.border}`,
       fontFamily: MONO, textTransform: 'uppercase',
     }}>
       <span style={{width:4,height:4,borderRadius:'50%',background:s.c}} />
@@ -155,19 +155,24 @@ const PIPELINE_STAGES = [
 
 function PipelineStages() {
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap: 10 }}>
+    <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap: 10 }} className="wt-pipeline-grid">
       {PIPELINE_STAGES.map((stage, i) => (
         <div key={i} style={{
           padding:'14px 16px', background: C.bg,
-          border:`1px solid ${C.border}`, borderRadius: 6, cursor:'default',
+          border:`1px solid ${C.border}`, borderRadius: 8, cursor:'default',
           display:'flex', flexDirection:'column', gap: 6,
-          transition:`border-color 0.2s ${EASE}`,
+          transition:`border-color 150ms cubic-bezier(0.4,0,0.2,1), box-shadow 150ms cubic-bezier(0.4,0,0.2,1)`,
         }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = `${stage.color}35`; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = `${stage.color}35`;
+            e.currentTarget.style.boxShadow = `0 0 12px ${stage.color}08`; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border;
+            e.currentTarget.style.boxShadow = 'none'; }}
         >
           <div style={{ display:'flex', alignItems:'center', gap: 6 }}>
-            <span style={{ width:6, height:6, borderRadius:'50%', background:stage.color, display:'inline-block' }} />
+            <span style={{
+              width:7, height:7, borderRadius:'50%', background:stage.color,
+              display:'inline-block', boxShadow: `0 0 6px ${stage.color}50`
+            }} />
             <span style={{ fontSize:11, fontWeight:700, letterSpacing:'1px', color:stage.color, fontFamily:MONO }}>{stage.label}</span>
           </div>
           <span style={{ fontSize:12, color:C.textSec, lineHeight:1.5 }}>{stage.sub}</span>
@@ -183,52 +188,52 @@ function ThreatModelTable({ models }: { models: ThreatModel[] }) {
     <div style={{ overflowX:'auto' }}>
       <table style={{ width:'100%', borderCollapse:'collapse' }}>
         <thead>
-          <tr style={{ borderBottom:`1px solid ${C.border}` }}>
+          <tr style={{ borderBottom:`1px solid var(--border-row-header)` }}>
             {['Category','Model','Accuracy','Precision','Recall','F1','Samples','Status'].map(h => (
               <th key={h} style={{
-                padding:'9px 14px', textAlign:'left', fontSize:10, fontWeight:600,
-                letterSpacing:'0.8px', color:C.textSec, fontFamily:MONO,
+                padding:'10px 16px', textAlign:'left', fontSize:10, fontWeight:600,
+                letterSpacing:'0.8px', color:'var(--text-secondary)', fontFamily:MONO,
                 textTransform:'uppercase', whiteSpace:'nowrap',
               }}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {models.map((m) => {
+          {models.map((m, idx) => {
             const sc = m.status==='active' ? C.green : m.status==='training' ? C.amber : C.red;
             const f1Color = m.f1 >= 93 ? C.green : m.f1 >= 89 ? C.amber : C.red;
             return (
               <tr key={m.category} style={{
-                borderBottom:`1px solid ${C.border}25`,
+                borderBottom:`1px solid var(--border-row)`,
                 background: m.status==='training' ? `${C.amber}04` : 'transparent',
-                transition:`background 0.15s ${EASE}`,
+                transition:'background 150ms cubic-bezier(0.4,0,0.2,1)',
               }}
-                onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}04`; }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}05`; }}
                 onMouseLeave={e => { e.currentTarget.style.background = m.status==='training' ? `${C.amber}04` : 'transparent'; }}
               >
-                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.text, letterSpacing:'0.3px', textTransform:'uppercase' }}>
+                <td style={{ padding:'10px 16px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.text, letterSpacing:'0.3px', textTransform:'uppercase' }}>
                   {m.category}
                 </td>
-                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:11, color:C.textSec, maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
+                <td style={{ padding:'10px 16px', fontFamily:MONO, fontSize:11, color:C.textSec, maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}
                   title={m.modelType}>
                   {m.modelType}
                 </td>
-                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.accent, fontVariantNumeric:'tabular-nums' }}>
+                <td style={{ padding:'10px 16px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.accent, fontVariantNumeric:'tabular-nums' }}>
                   {m.accuracy.toFixed(1)}%
                 </td>
-                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.green, fontVariantNumeric:'tabular-nums' }}>
+                <td style={{ padding:'10px 16px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.green, fontVariantNumeric:'tabular-nums' }}>
                   {m.precision.toFixed(1)}%
                 </td>
-                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.purple, fontVariantNumeric:'tabular-nums' }}>
+                <td style={{ padding:'10px 16px', fontFamily:MONO, fontSize:12, fontWeight:600, color:C.purple, fontVariantNumeric:'tabular-nums' }}>
                   {m.recall.toFixed(1)}%
                 </td>
-                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:12, fontWeight:600, color:f1Color, fontVariantNumeric:'tabular-nums' }}>
+                <td style={{ padding:'10px 16px', fontFamily:MONO, fontSize:12, fontWeight:600, color:f1Color, fontVariantNumeric:'tabular-nums' }}>
                   {m.f1.toFixed(1)}%
                 </td>
-                <td style={{ padding:'9px 14px', fontFamily:MONO, fontSize:11, color:C.textSec, fontVariantNumeric:'tabular-nums' }}>
+                <td style={{ padding:'10px 16px', fontFamily:MONO, fontSize:11, color:C.textSec, fontVariantNumeric:'tabular-nums' }}>
                   {fmt(m.samples)}
                 </td>
-                <td style={{ padding:'9px 14px' }}>
+                <td style={{ padding:'10px 16px' }}>
                   <span style={{
                     display:'inline-flex', alignItems:'center', gap: 5,
                     padding:'2px 8px', borderRadius:4, fontSize:10, fontWeight:600,
@@ -252,7 +257,7 @@ function FeatureImportanceChart({ data }: { data: { name:string; importance:numb
   const max = Math.max(...data.map(d => d.importance));
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
       {data.map((d, i) => {
         const pct = (d.importance / max) * 100;
         const colors = [C.accent, C.purple, C.green, C.amber, C.teal, C.pink, C.orange, C.red, C.accent, C.purple];
@@ -266,12 +271,12 @@ function FeatureImportanceChart({ data }: { data: { name:string; importance:numb
               fontFamily:MONO,
             }}>{d.name}</span>
             <div style={{
-              flex:1, height:14, background: C.border, borderRadius:3, overflow:'hidden',
+              flex:1, height:14, background:'var(--border-color)', borderRadius:3, overflow:'hidden',
             }}>
               <div style={{
                 height:'100%', width:`${Math.max(pct, 0.5)}%`,
-                background: color, borderRadius:3,
-                transition:'width 1.2s cubic-bezier(0.22,1,0.36,1)', opacity: 0.75,
+                background: `linear-gradient(90deg, ${color}dd, ${color}66)`, borderRadius:3,
+                transition:'width 1s cubic-bezier(0.4,0,0.2,1)', opacity: 0.85,
               }} />
             </div>
             <span style={{
@@ -485,12 +490,14 @@ const AIAnalyzer: React.FC = () => {
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         @keyframes wt-row-in { from{opacity:0;transform:translateX(-4px);} to{opacity:1;transform:translateX(0);} }
+        @keyframes wt-fade-in { from{opacity:0;transform:translateY(3px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes wt-draw { to{stroke-dashoffset:0;} }
         ::selection { background:var(--accent-cyan);color:${C.text}; }
-        :focus-visible { outline:1.5px solid var(--border-active);outline-offset:2px;border-radius:3px; }
+        :focus-visible { outline:1.5px solid var(--border-active); outline-offset:2px; border-radius:3px; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:${C.border};border-radius:3px; }
-        .wt-interactive { transition:transform 160ms cubic-bezier(0.22,1,0.36,1), background 0.2s; }
+        .wt-interactive { transition:transform 150ms cubic-bezier(0.4,0,0.2,1), background 0.2s; }
         .wt-interactive:active { transform:scale(0.98); }
         a { color:inherit;text-decoration:none; }
         @media (max-width:1024px) { .wt-grid-aside { grid-template-columns:1fr !important; } .wt-pipeline-grid { grid-template-columns:repeat(2,1fr) !important; } }

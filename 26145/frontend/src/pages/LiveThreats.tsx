@@ -1,29 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useWebSocketContext } from '../context/WebSocketContext';
+import { useTheme } from '../context/ThemeContext';
 import ValidityChip from '../components/ValidityChip';
-import { ShieldAlert, Search } from 'lucide-react';
+import { ShieldAlert, Search, AlertTriangle } from 'lucide-react';
 import { Alert } from '../types';
 
-const C = {
-  bg: 'var(--bg-primary)',
-  surface: 'var(--bg-secondary)',
-  surfaceHi: 'var(--bg-card-hover)',
-  border: 'var(--border-color)',
-  borderHi: 'var(--border-active)',
-  text: 'var(--text-primary)',
-  textSec: 'var(--text-secondary)',
-  textDim: 'var(--text-muted)',
-  accent: 'var(--accent-cyan)',
-  red: 'var(--accent-red)',
-  orange: 'var(--accent-orange)',
-  amber: 'var(--accent-yellow)',
-  green: 'var(--accent-green)',
-  purple: 'var(--accent-purple)',
-  pink: 'var(--accent-pink)',
-  teal: 'var(--accent-teal)',
-};
-
+const MONO = '"JetBrains Mono",monospace';
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const TRANS = 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)';
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
 
@@ -36,32 +20,26 @@ const randIP = () => [rand(1,223), rand(0,255), rand(0,255), rand(1,254)].join('
 let _aid = 0;
 const nextId = () => `LT-${Date.now().toString(36).toUpperCase()}-${(++_aid).toString(36).toUpperCase()}`;
 
-const SEV_MAP: Record<string, { color: string; bg: string }> = {
-  critical: { color: 'var(--accent-red)', bg: 'var(--sev-critical-bg)' },
-  high:     { color: 'var(--accent-orange)', bg: 'var(--sev-high-bg)' },
-  medium:   { color: 'var(--accent-yellow)', bg: 'var(--sev-medium-bg)' },
-  low:      { color: 'var(--accent-cyan)', bg: 'var(--sev-low-bg)' },
-};
-
-const THREAT_TYPES = ['ddos','beaconing','dga','dns_tunnel','port_scan','exfiltration','tls_anomaly','malware','phishing'] as const;
-
-const THREAT_CLR: Record<string,string> = {
-  ddos: C.red, beaconing: C.orange, dga: C.amber,
-  dns_tunnel: C.teal, port_scan: C.purple,
-  exfiltration: C.pink, tls_anomaly: C.teal, malware: C.red, phishing: C.amber,
-};
-const THREAT_LBL: Record<string,string> = {
-  ddos:'DDoS', beaconing:'Beaconing', dga:'DGA',
-  dns_tunnel:'DNS Tunnel', port_scan:'Port Scan',
-  exfiltration:'Exfiltration', tls_anomaly:'TLS Anomaly',
-  malware:'Malware', phishing:'Phishing',
-};
-
 const COMMON_PORTS = [22,23,25,53,80,110,143,443,445,993,3306,3389,5432,5900,8080,8443,1433,6379,9200,27017];
 const PROTOCOLS = ['TCP','UDP','ICMP','DNS','TLS','HTTP','HTTPS'] as const;
 
-function makeAlert(overrides?: Partial<Alert>): Alert {
-  const threat_type = overrides?.threat_type ?? pick([...THREAT_TYPES]);
+interface AlertData {
+  id: string;
+  timestamp: number;
+  threat_type: string;
+  severity: 'critical'|'high'|'medium'|'low';
+  confidence: number;
+  src_ip: string;
+  dst_ip: string;
+  dst_port: number;
+  src_port: number;
+  protocol: string;
+  evidence: Record<string, any>;
+  flow_count: number;
+}
+
+function makeAlert(overrides?: Partial<AlertData>): AlertData {
+  const threat_type = overrides?.threat_type ?? pick(['ddos','beaconing','dga','dns_tunnel','port_scan','exfiltration','tls_anomaly','malware','phishing']);
   let severity: 'critical'|'high'|'medium'|'low' = 'low';
   if (!overrides?.severity) {
     const r = Math.random();
@@ -106,7 +84,7 @@ const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; children: R
   useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
   return (
     <div style={{
-      background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8,
+      border: `1px solid var(--border-color)`, borderRadius: 10,
       opacity: ready ? 1 : 0, transform: ready ? 'translateY(0)' : 'translateY(8px)',
       transition: `opacity 0.4s ${EASE} ${delay}s, transform 0.4s ${EASE} ${delay}s`,
       boxShadow: '0 1px 3px var(--shadow-sm)',
@@ -120,27 +98,33 @@ const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; children: R
 const SH: React.FC<{ label: string; right?: React.ReactNode }> = ({ label, right }) => (
   <div style={{
     display:'flex', alignItems:'center', justifyContent:'space-between',
-    paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid ${C.border}`,
+    paddingBottom: 12, marginBottom: 16, borderBottom: `1px solid var(--border-color)`,
   }}>
     <span style={{
-      fontFamily:'"JetBrains Mono",monospace', fontSize: 11, fontWeight: 600,
-      letterSpacing: '2px', color: C.accent, textTransform: 'uppercase',
+      fontFamily: MONO, fontSize: 11, fontWeight: 600,
+      letterSpacing: '2px', color: 'var(--accent-cyan)', textTransform: 'uppercase',
     }}>{label}</span>
     {right}
   </div>
 );
 
 const Sev: React.FC<{ sev: string }> = ({ sev }) => {
-  const s = SEV_MAP[sev] || SEV_MAP.low;
+  const M: Record<string,{c:string;bg:string}> = {
+    critical:{c:'var(--accent-red)',bg:'var(--sev-critical-bg)'},
+    high:{c:'var(--accent-orange)',bg:'var(--sev-high-bg)'},
+    medium:{c:'var(--accent-yellow)',bg:'var(--sev-medium-bg)'},
+    low:{c:'var(--accent-cyan)',bg:'var(--sev-low-bg)'},
+  };
+  const s = M[sev] || M.low;
   return (
     <span style={{
       display:'inline-flex', alignItems:'center', gap: 5,
-      padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 600,
-      letterSpacing: '0.8px', color: s.color, background: s.bg,
-      border: `1px solid ${s.color}30`,
-      fontFamily:'"JetBrains Mono",monospace', textTransform:'uppercase',
+      padding: '3px 10px', borderRadius: 5, fontSize: 10, fontWeight: 600,
+      letterSpacing: '0.8px', color: s.c, background: s.bg,
+      border: `1px solid var(--sev-${sev === 'critical' ? 'critical' : sev === 'high' ? 'high' : sev === 'medium' ? 'medium' : 'low'}-border, ${s.c}30)`,
+      fontFamily: MONO, textTransform: 'uppercase',
     }}>
-      <span style={{width:4,height:4,borderRadius:'50%',background:s.color}} />
+      <span style={{width:4,height:4,borderRadius:'50%',background:s.c}} />
       {sev}
     </span>
   );
@@ -164,14 +148,14 @@ const Sparkline: React.FC<{ data: number[]; width?: number; height?: number }> =
     <svg width={width} height={height} style={{ display:'block' }}>
       <defs>
         <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={C.accent} stopOpacity="0.15" />
-          <stop offset="100%" stopColor={C.accent} stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--accent-cyan)" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="var(--accent-cyan)" stopOpacity="0" />
         </linearGradient>
       </defs>
       <polygon points={areaPts} fill="url(#spark-grad)" />
-      <polyline points={pts} fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={pts} fill="none" stroke="var(--accent-cyan)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={data.length - 1} cy={height - ((data[data.length - 1] - min) / range) * (height - 4) - 2}
-        r="2.5" fill={C.accent} stroke={C.bg} strokeWidth="1.5" />
+        r="2.5" fill="var(--accent-cyan)" stroke="var(--bg-primary)" strokeWidth="1.5" />
     </svg>
   );
 };
@@ -181,17 +165,27 @@ const Sparkline: React.FC<{ data: number[]; width?: number; height?: number }> =
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
 const LiveThreats: React.FC = () => {
+  const { C } = useTheme();
   const { alerts: wsAlerts, isConnected, backendOnline, flowsPerSec } = useWebSocketContext();
   const [clock, setClock] = useState(now());
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [autoScroll, setAutoScroll] = useState(true);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   /* ── Clock ──────────────────────────────────────────────────────────────── */
   useEffect(() => {
     const t = setInterval(() => setClock(now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  /* ── Auto-scroll ────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    if (autoScroll && tableRef.current) {
+      tableRef.current.scrollTop = 0;
+    }
+  }, [wsAlerts.length, autoScroll]);
 
   /* ── Filters ────────────────────────────────────────────────────────────── */
   const filteredAlerts = useMemo(() => {
@@ -233,11 +227,24 @@ const LiveThreats: React.FC = () => {
     return counts;
   }, [wsAlerts]);
 
-  const clearFilters = useCallback(() => {
+  const clearFilters = () => {
     setFilterSeverity('all');
     setFilterTypes([]);
     setSearchQuery('');
-  }, []);
+  };
+
+  const THREAT_TYPES = ['ddos','beaconing','dga','dns_tunnel','port_scan','exfiltration','tls_anomaly','malware','phishing'];
+  const THREAT_CLR: Record<string,string> = {
+    ddos: C.red, beaconing: C.orange, dga: C.amber,
+    dns_tunnel: C.teal, port_scan: C.purple,
+    exfiltration: C.pink, tls_anomaly: C.teal, malware: C.red, phishing: C.amber,
+  };
+  const THREAT_LBL: Record<string,string> = {
+    ddos:'DDoS', beaconing:'Beaconing', dga:'DGA',
+    dns_tunnel:'DNS Tunnel', port_scan:'Port Scan',
+    exfiltration:'Exfiltration', tls_anomaly:'TLS Anomaly',
+    malware:'Malware', phishing:'Phishing',
+  };
 
   /* ═══════════════════════════════════════════════════════════════════════════════════
      RENDER
@@ -255,6 +262,7 @@ const LiveThreats: React.FC = () => {
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: ${C.textSec}; }
+        @keyframes hud-pulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
       `}</style>
 
       {/* ── STICKY HEADER ─────────────────────────────────────────────────── */}
@@ -270,10 +278,10 @@ const LiveThreats: React.FC = () => {
           <div style={{ display:'flex', alignItems:'center', gap: 10, flexShrink:0 }}>
             <div style={{
               width: 30, height: 30, borderRadius: 6,
-              background: `${C.accent}10`, border: `1px solid ${C.accent}25`,
+              background: `var(--accent-cyan)10`, border: `1px solid var(--accent-cyan)25`,
               display:'flex', alignItems:'center', justifyContent:'center',
             }}>
-              <ShieldAlert size={15} color={C.accent} strokeWidth={1.8} />
+              <ShieldAlert size={15} color="var(--accent-cyan)" strokeWidth={1.8} />
             </div>
             <span style={{ fontSize: 13, fontWeight: 700, letterSpacing:'3px', color: C.text }}>EKADHARA</span>
           </div>
@@ -284,29 +292,25 @@ const LiveThreats: React.FC = () => {
           <div style={{ flex:1 }} />
           <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px',
-              background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4,
+              background: C.surface, border: `1px solid ${C.border}`, borderRadius: 5,
             }}>
-              <span className={isConnected ? 'hud-status-dot status-live' : 'hud-status-dot status-demo'} style={{marginRight: 4}} />
-              <span style={{ fontFamily: '"JetBrains Mono",monospace', fontSize: 10, fontWeight: 600,
-                color: isConnected ? 'var(--color-success)' : 'var(--color-danger)',
-                letterSpacing: '0.6px' }}>
+              <span style={{ width:5, height:5, borderRadius:'50%', background: C.green,
+                boxShadow: `0 0 4px ${C.green}`,
+                animation: isConnected ? 'hud-pulse 1.5s ease-in-out infinite' : 'none',
+                display:'inline-block' }} />
+              <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 600,
+                color: 'var(--color-success)', letterSpacing: '0.6px' }}>
                 {isConnected ? 'LIVE' : 'DEMO'}
               </span>
             </div>
-            <div>
-              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing:'1.2px',
-                color: isConnected ? C.green : C.red }}>
-                {isConnected ? 'LIVE DETECTIONS' : 'OFFLINE'}
-              </span>
-            </div>
             <div style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px',
-              border:`1px solid var(--border-color)`, borderRadius:4,
+              border:`1px solid var(--border-color)`, borderRadius:5,
             }}>
               <span style={{ width:5, height:5, borderRadius:'50%',
                 background: backendOnline ? C.green : 'var(--text-muted)', display:'inline-block' }} />
               <span style={{ fontSize:9, fontWeight:700, letterSpacing:'0.5px',
                 color: backendOnline ? C.green : 'var(--text-muted)',
-                fontFamily:'"JetBrains Mono",monospace' }}>
+                fontFamily: MONO }}>
                 {backendOnline ? 'DIODE ACTIVE' : 'DIODE STANDBY'}
               </span>
             </div>
@@ -346,67 +350,80 @@ const LiveThreats: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ display:'flex', flexDirection:'column', gap: 12 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap: 14 }}>
                 {/* Severity count badges */}
-                <div style={{ display:'flex', gap: 6, alignItems:'center', flexWrap:'wrap' }}>
+                <div style={{ display:'flex', gap: 4, alignItems:'center', flexWrap:'wrap' }}>
                   {([
                     { k:'critical', label:'Critical', c: C.red },
                     { k:'high', label:'High', c: C.orange },
                     { k:'medium', label:'Medium', c: C.amber },
                     { k:'low', label:'Low', c: C.accent },
-                  ]).map(s => (
-                    <button key={s.k} onClick={() => setFilterSeverity(filterSeverity === s.k ? 'all' : s.k)}
-                      style={{
-                        padding: '5px 12px', borderRadius: 6, cursor: 'pointer', border: 'none',
-                        background: filterSeverity === s.k ? `${s.c}15` : 'transparent',
-                        color: s.c, fontSize: 12, fontWeight: 600,
-                        fontFamily: '"Inter",system-ui,sans-serif',
-                        transition: `all 0.2s ${EASE}`,
-                        display:'flex', alignItems:'center', gap: 6,
-                      }}>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>{severityCounts[s.k]}</span>
-                      <span style={{ fontSize: 11 }}>{s.label}</span>
-                    </button>
-                  ))}
+                  ]).map(s => {
+                    const isActive = filterSeverity === s.k;
+                    return (
+                      <button key={s.k} onClick={() => setFilterSeverity(filterSeverity === s.k ? 'all' : s.k)}
+                        style={{
+                          padding: '5px 12px', borderRadius: 6, cursor: 'pointer',
+                          border: `1px solid ${isActive ? `${s.c}30` : 'var(--border-color)'}`,
+                          background: isActive ? `var(--color-${s.k === 'critical' ? 'danger' : s.k === 'high' ? 'warning' : s.k === 'medium' ? 'warning' : 'info'}-dim, ${s.c}10)` : 'transparent',
+                          color: s.c, fontSize: 12, fontWeight: isActive ? 700 : 500,
+                          transition: TRANS,
+                          display:'inline-flex', alignItems:'center', gap: 6,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = `${s.c}12`; e.currentTarget.style.borderColor = `${s.c}30`; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = isActive ? `${s.c}10` : 'transparent'; e.currentTarget.style.borderColor = isActive ? `${s.c}30` : 'var(--border-color)'; }}
+                      >
+                        <span style={{ fontSize: 13, fontWeight: 700 }}>{severityCounts[s.k]}</span>
+                        <span style={{ fontSize: 11 }}>{s.label}</span>
+                      </button>
+                    );
+                  })}
                   <div style={{ padding: '5px 12px', borderRadius: 6,
-                    border: `1px solid ${C.border}`,
-                    display:'flex', alignItems:'center', gap: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: C.textSec, textTransform:'uppercase' }}>Total</span>
+                    border: `1px solid var(--border-color)`,
+                    display:'inline-flex', alignItems:'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: C.textSec, textTransform:'uppercase', letterSpacing:'0.5px' }}>Total</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontVariantNumeric:'tabular-nums' }}>
                       {filteredAlerts.length}
                     </span>
                   </div>
                 </div>
 
-                {/* Filter controls */}
+                {/* Filter controls row */}
                 <div style={{ display:'flex', alignItems:'center', gap: 10, flexWrap:'wrap' }}>
-                  {/* Threat type chips */}
-                  <div style={{ display:'flex', gap: 4, flexWrap:'wrap', alignItems:'center' }}>
-                    {THREAT_TYPES.slice(0, 5).map(type => (
-                      <button key={type} onClick={() => toggleType(type)}
-                        style={{
-                          display:'inline-flex', alignItems:'center', gap: 4, padding:'4px 10px',
-                          borderRadius: 6, border: `1px solid ${filterTypes.includes(type) ? C.accent + '40' : C.border}`,
-                          background: filterTypes.includes(type) ? `${C.accent}08` : 'transparent',
-                          cursor:'pointer', transition: `all 0.2s ${EASE}`,
-                          color: filterTypes.includes(type) ? C.text : C.textSec,
-                          fontSize: 11, fontWeight: filterTypes.includes(type) ? 600 : 400,
-                          fontFamily: '"Inter",system-ui,sans-serif',
-                          textTransform:'capitalize',
-                        }}>
-                        {THREAT_LBL[type]}
-                      </button>
-                    ))}
-                  </div>
+                  {/* Auto-scroll toggle */}
+                  <button
+                    onClick={() => setAutoScroll(!autoScroll)}
+                    style={{
+                      display:'inline-flex', alignItems:'center', gap: 6,
+                      padding: '4px 10px', borderRadius: 5,
+                      border: `1px solid ${autoScroll ? 'var(--accent-cyan)30' : 'var(--border-color)'}`,
+                      background: autoScroll ? 'var(--accent-cyan)10' : 'transparent',
+                      color: autoScroll ? 'var(--accent-cyan)' : C.textSec,
+                      fontSize: 10, fontWeight: 600, cursor: 'pointer',
+                      transition: TRANS,
+                      fontFamily: MONO, letterSpacing:'0.5px',
+                    }}
+                    title="Auto-scroll to newest alerts"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                    AUTO-SCROLL
+                    <span style={{
+                      width: 6, height: 6, borderRadius: '50%',
+                      background: autoScroll ? 'var(--accent-cyan)' : C.textDim,
+                      boxShadow: autoScroll ? `0 0 4px var(--accent-cyan)` : 'none',
+                    }} />
+                  </button>
 
-                  <div style={{ width:1, height:20, background: C.border, flexShrink:0 }} />
+                  <div style={{ width:1, height:18, background: C.border, flexShrink:0 }} />
 
                   {/* Severity dropdown */}
                   <select
                     value={filterSeverity}
                     onChange={e => setFilterSeverity(e.target.value)}
                     style={{
-                      padding:'5px 10px', background: C.surface, border: `1px solid ${C.border}`,
+                      padding:'5px 10px', background: C.surface, border: `1px solid var(--border-color)`,
                       borderRadius: 6, color: C.text, fontSize: 12,
                       cursor:'pointer', outline:'none',
                     }}
@@ -426,28 +443,29 @@ const LiveThreats: React.FC = () => {
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
                       style={{
-                        padding:'5px 10px 5px 30px', background: C.surface,
-                        border: `1px solid ${C.border}`, borderRadius: 6, color: C.text,
-                        fontSize: 12, width: 180, outline:'none',
+                        padding:'6px 10px 6px 28px', background: C.surface,
+                        border: `1px solid var(--border-color)`, borderRadius: 6, color: C.text,
+                        fontSize: 12, width: 170, outline:'none',
                         transition: `border-color 0.2s ${EASE}`,
                       }}
-                      onFocus={e => { e.currentTarget.style.borderColor = `${C.accent}40`; }}
-                      onBlur={e => { e.currentTarget.style.borderColor = C.border; }}
+                      onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent-cyan)40'; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
                     />
-                    <Search size={14} color={C.textDim} strokeWidth={1.8} style={{
-                      position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+                    <Search size={13} color={C.textDim} strokeWidth={1.8} style={{
+                      position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
                   </div>
 
+                  {/* Reset */}
                   <button
                     onClick={clearFilters}
                     style={{
                       padding:'5px 12px', background: 'transparent',
-                      border: `1px solid ${C.border}`, borderRadius: 6,
+                      border: `1px solid var(--border-color)`, borderRadius: 6,
                       color: C.textSec, fontSize: 12, fontWeight: 500,
-                      cursor:'pointer', transition: `all 0.2s ${EASE}`,
+                      cursor:'pointer', transition: TRANS,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${C.accent}40`; e.currentTarget.style.color = C.text; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.textSec; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent-cyan)40'; e.currentTarget.style.color = C.text; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = C.textSec; }}
                   >Reset</button>
                 </div>
               </div>
@@ -456,24 +474,58 @@ const LiveThreats: React.FC = () => {
         </section>
 
         {/* ── SECTION 2 — Threat Feed Table ─────────────────────────────────── */}
-        <Panel delay={0.1} style={{ marginBottom: 24 }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 0, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
+        <Panel delay={0.1} style={{ marginBottom: 24, overflow: 'hidden' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', paddingBottom: 12, marginBottom: 0, borderBottom: `1px solid ${C.border}` }}>
             <span style={{
-              fontFamily:'"JetBrains Mono",monospace', fontSize: 11, fontWeight: 600,
-              letterSpacing: '2px', color: C.accent, textTransform: 'uppercase',
+              fontFamily: MONO, fontSize: 11, fontWeight: 600,
+              letterSpacing: '2px', color: 'var(--accent-cyan)', textTransform: 'uppercase',
             }}>Live Threat Feed</span>
-            <span style={{ fontSize: 11, color: C.textSec, letterSpacing:'0.3px' }}>{filteredAlerts.length} events &middot; auto-scroll on</span>
+            <span style={{ fontSize: 11, color: C.textSec, letterSpacing:'0.3px' }}>
+              {filteredAlerts.length} events &middot;
+              <span style={{
+                display:'inline-flex', alignItems:'center', gap:4, marginLeft:6,
+                color: autoScroll ? 'var(--color-success)' : C.textDim,
+              }}>
+                <span style={{
+                  width:5, height:5, borderRadius:'50%',
+                  background: autoScroll ? 'var(--color-success)' : C.textDim,
+                  boxShadow: autoScroll ? `0 0 4px var(--color-success)` : 'none',
+                }} />
+                auto-scroll {autoScroll ? 'on' : 'off'}
+              </span>
+            </span>
           </div>
 
           {filteredAlerts.length === 0 ? (
+            /* ── Empty state ── */
             <div style={{
-              padding:'60px 20px', textAlign:'center', color: C.textDim,
-              display:'flex', flexDirection:'column', alignItems:'center', gap: 12,
+              padding:'60px 20px', textAlign:'center',
+              display:'flex', flexDirection:'column', alignItems:'center', gap: 14,
             }}>
-              <div style={{ fontSize: 24, opacity: 0.5 }}>No alerts match the current filters</div>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14,
+                background: C.surfaceHi, border: `1px solid ${C.border}`,
+                display:'flex', alignItems:'center', justifyContent:'center',
+              }}>
+                <AlertTriangle size={24} color={C.textDim} strokeWidth={1.5} />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 4 }}>No alerts match the current filters</div>
+                <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.5 }}>Try adjusting your severity, threat type, or search criteria to see results.</div>
+              </div>
+              <button onClick={clearFilters} style={{
+                padding:'7px 18px', borderRadius: 6,
+                border: `1px solid var(--accent-cyan)30`,
+                background: 'var(--accent-cyan)10',
+                color: 'var(--accent-cyan)', fontSize: 12, fontWeight: 600,
+                cursor:'pointer', transition: TRANS,
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-cyan)18'; e.currentTarget.style.borderColor = 'var(--accent-cyan)50'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent-cyan)10'; e.currentTarget.style.borderColor = 'var(--accent-cyan)30'; }}
+              >Clear all filters</button>
             </div>
           ) : (
-            <div style={{ overflowX:'auto', marginTop: 0 }}>
+            <div ref={tableRef} style={{ overflowX:'auto', marginTop: 0, maxHeight: 520, overflowY: 'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${C.border}` }}>
@@ -481,8 +533,9 @@ const LiveThreats: React.FC = () => {
                       <th key={h} style={{
                         padding:'10px 14px', textAlign:'left', fontSize: 10, fontWeight: 600,
                         letterSpacing:'0.8px', color: C.textSec,
-                        fontFamily:'"JetBrains Mono",monospace',
+                        fontFamily: MONO,
                         textTransform:'uppercase', whiteSpace:'nowrap',
+                        background: C.surfaceHi,
                       }}>{h}</th>
                     ))}
                   </tr>
@@ -490,10 +543,13 @@ const LiveThreats: React.FC = () => {
                 <tbody>
                   {filteredAlerts.map((alert, idx) => {
                     const fresh = idx < 5;
-                    const tClr = THREAT_CLR[alert.threat_type.toLowerCase()] || C.accent;
-                    const sevStyle = SEV_MAP[alert.severity] || SEV_MAP.low;
-                    const rowBg = fresh ? `${C.red}06` : (idx % 2 === 0 ? 'transparent' : `${C.accent}02`);
+                    const tClr = THREAT_CLR[alert.threat_type?.toLowerCase()] || 'var(--accent-cyan)';
+                    const sevStyle = { critical: { c: 'var(--accent-red)', bg: 'var(--sev-critical-bg)' }, high: { c: 'var(--accent-orange)', bg: 'var(--sev-high-bg)' }, medium: { c: 'var(--accent-yellow)', bg: 'var(--sev-medium-bg)' }, low: { c: 'var(--accent-cyan)', bg: 'var(--sev-low-bg)' } }[alert.severity] || { c: 'var(--accent-cyan)', bg: 'var(--sev-low-bg)' };
                     const validity = (alert.confidence >= 85 ? 'MEASURED' : alert.confidence >= 60 ? 'ESTIMATED' : 'MISSING') as 'MEASURED' | 'ESTIMATED' | 'MISSING';
+                    /* alternating subtle row backgrounds */
+                    const rowBg = fresh
+                      ? `var(--color-danger-dim, rgba(220,38,38,0.04))`
+                      : idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)';
                     return (
                       <tr key={alert.id} style={{
                         borderBottom: `1px solid ${C.border}30`,
@@ -501,50 +557,49 @@ const LiveThreats: React.FC = () => {
                         transition: `background 0.15s ${EASE}`,
                         cursor:'pointer',
                       }}
-                        onMouseEnter={e => { e.currentTarget.style.background = `${C.accent}06`; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--table-hover-bg, rgba(37,99,235,0.04))'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
-                        onClick={() => {}}
                       >
                         <td style={{
                           padding:'10px 14px', fontSize: 12, color: C.textSec,
-                          fontFamily:'"JetBrains Mono",monospace', whiteSpace:'nowrap',
+                          fontFamily: MONO, whiteSpace:'nowrap',
                           fontVariantNumeric:'tabular-nums', letterSpacing:'0.2px',
                         }}>{fmtTime(alert.timestamp)}</td>
 
                         <td style={{
                           padding:'10px 14px', fontSize: 12, fontWeight: 600,
-                          fontFamily:'"JetBrains Mono",monospace',
+                          fontFamily: MONO,
                           letterSpacing:'0.3px', textTransform:'uppercase', color: tClr,
                         }}>
                           <span style={{
                             display:'inline-block', width:5, height:5, borderRadius:'50%',
                             background: tClr, marginRight: 7, verticalAlign:'middle',
                           }} />
-                          {THREAT_LBL[alert.threat_type] || alert.threat_type}
+                          {(THREAT_LBL as Record<string,string>)[alert.threat_type] || alert.threat_type}
                         </td>
 
                         <td style={{
                           padding:'10px 14px', fontSize: 12,
-                          fontFamily:'"JetBrains Mono",monospace', color: C.accent,
+                          fontFamily: MONO, color: C.accent,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums', letterSpacing:'0.2px',
                         }}>{alert.src_ip}</td>
 
                         <td style={{
                           padding:'10px 14px', fontSize: 12,
-                          fontFamily:'"JetBrains Mono",monospace', color: C.textSec,
+                          fontFamily: MONO, color: C.textSec,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums', letterSpacing:'0.2px',
                         }}>{alert.dst_ip}</td>
 
                         <td style={{
                           padding:'10px 14px', fontSize: 12,
-                          fontFamily:'"JetBrains Mono",monospace', color: C.text,
+                          fontFamily: MONO, color: C.text,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums',
                         }}>{alert.dst_port}</td>
 
                         <td style={{
                           padding:'10px 14px', fontSize: 12, fontWeight: 600,
-                          fontFamily:'"JetBrains Mono",monospace', color: C.green,
-                          fontVariantNumeric:'tabular-nums',
+                          fontFamily: MONO,
+                          color: C.green, fontVariantNumeric:'tabular-nums',
                         }}>{alert.confidence.toFixed(1)}%</td>
 
                         <td style={{ padding:'10px 14px' }}>
@@ -552,22 +607,7 @@ const LiveThreats: React.FC = () => {
                         </td>
 
                         <td style={{ padding:'10px 14px' }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
-                            <ValidityChip validity={validity} />
-                              <span style={{
-                                padding:'2px 8px', borderRadius:9999,
-                                fontSize:9, fontWeight:700,
-                                fontFamily:'"JetBrains Mono",monospace',
-                                letterSpacing:'0.05em',
-                                background:'var(--sev-low-bg)',
-                                color:'var(--accent-cyan)',
-                                border:'1px solid var(--sev-low-border)',
-                                display:'inline-flex', alignItems:'center', gap:3,
-                                whiteSpace:'nowrap',
-                              }}>
-                                MEASURED
-                              </span>
-                          </div>
+                          <ValidityChip validity={validity} />
                         </td>
                       </tr>
                     );
@@ -578,15 +618,18 @@ const LiveThreats: React.FC = () => {
           )}
         </Panel>
 
-        {/* ── Threat Class Distribution Bar ────────────────────────────────── */}
-        <Panel delay={0.15} style={{ marginBottom: 24 }}>
-          <span style={{ fontSize: 11, color: C.textDim }}>
-            EKADHARA v3.2.1 &middot; EKADHARA &middot; NTRO SIH26
+        {/* ── Footer ─────────────────────────────────────────────────────────── */}
+        <div style={{
+          padding:'16px 0', borderTop: `1px solid ${C.border}`,
+          display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8,
+        }}>
+          <span style={{ fontSize:11, color: C.textDim }}>
+            EKADHARA v3.2.1 &middot; NTRO SIH26
           </span>
-          <span style={{ fontSize: 11, color: C.textDim, fontVariantNumeric:'tabular-nums' }}>
+          <span style={{ fontSize:11, color: C.textDim, fontVariantNumeric:'tabular-nums' }}>
             WebSocket: {isConnected ? 'connected' : 'disconnected'} &middot; {filteredAlerts.length} filtered &middot; {wsAlerts.length} total
           </span>
-        </Panel>
+        </div>
 
       </main>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, type ElementType } from 'react';
 import { useWebSocketContext } from '../context/WebSocketContext';
+import { useTheme } from '../context/ThemeContext';
 import DegradationMatrix from '../components/DegradationMatrix';
 import ThreatFeed from '../components/ThreatFeed';
 import {
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react';
 
 const MONO = '"JetBrains Mono","Fira Code",monospace';
+const TRANS = 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)';
 
 const fmt = (n: number) => n.toLocaleString('en-US');
 const fmtUptime = (s: number) => {
@@ -24,6 +26,7 @@ const fmtUptime = (s: number) => {
    ═══════════════════════════════════════════════════════════════════════ */
 
 const OperationsTab: React.FC = () => {
+  const { C } = useTheme();
   const { alerts, stats, isConnected, flowsPerSec, alertCount, backendOnline } = useWebSocketContext();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [throughputHistory, setThroughputHistory] = useState<number[]>([]);
@@ -57,10 +60,10 @@ const OperationsTab: React.FC = () => {
 
   /* severity helpers */
   const sevColor = (sev: string) => {
-    if (sev === 'critical') return { bg: 'rgba(239,68,68,0.12)', text: '#f87171', border: 'rgba(239,68,68,0.25)' };
-    if (sev === 'high') return { bg: 'rgba(249,115,22,0.12)', text: '#fb923c', border: 'rgba(249,115,22,0.25)' };
-    if (sev === 'medium') return { bg: 'rgba(234,179,8,0.12)', text: '#facc15', border: 'rgba(234,179,8,0.25)' };
-    return { bg: 'rgba(59,130,246,0.12)', text: '#60a5fa', border: 'rgba(59,130,246,0.25)' };
+    if (sev === 'critical') return { bg: 'var(--sev-critical-bg)', text: 'var(--accent-red)', border: 'var(--sev-critical-border)' };
+    if (sev === 'high') return { bg: 'var(--sev-high-bg)', text: 'var(--accent-orange)', border: 'var(--sev-high-border)' };
+    if (sev === 'medium') return { bg: 'var(--sev-medium-bg)', text: 'var(--accent-yellow)', border: 'var(--sev-medium-border)' };
+    return { bg: 'var(--sev-low-bg)', text: 'var(--accent-cyan)', border: 'var(--sev-low-border)' };
   };
 
   const IconWrap: React.FC<{ icon: ElementType; color: string }> = ({ icon: Icon, color }) => (
@@ -93,7 +96,7 @@ const OperationsTab: React.FC = () => {
   };
 
   return (
-    <div style={{ animation: 'fade-in 0.25s ease-out' }}>
+    <div style={{ animation: 'fade-in 0.25s ease-out', padding: '24px 28px' }}>
       {/* ── Top status bar ───────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -101,29 +104,29 @@ const OperationsTab: React.FC = () => {
       }}>
         <div>
           <h2 style={{
-            fontFamily: MONO, fontSize: 18, fontWeight: 700, color: 'var(--text-primary)',
+            fontFamily: MONO, fontSize: 18, fontWeight: 700, color: C.text,
             letterSpacing: '0.5px',
           }}>Operations Center</h2>
-          <p style={{ fontSize: 12, color: 'var(--text-row-muted)', marginTop: 2 }}>Real-time network operations overview</p>
+          <p style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>Real-time network operations overview</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '5px 14px', borderRadius: 4, fontFamily: MONO,
+            padding: '5px 14px', borderRadius: 6, fontFamily: MONO,
             fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase',
-            border: `1px solid ${isLive ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)'}`,
-            background: isLive ? 'rgba(34,197,94,0.06)' : 'rgba(245,158,11,0.06)',
-            color: isLive ? '#22c55e' : '#f59e0b',
+            border: `1px solid ${isLive ? 'var(--color-success-border, rgba(34,197,94,0.25))' : 'var(--color-warning-border, rgba(245,158,11,0.25))'}`,
+            background: isLive ? 'var(--color-success-dim, rgba(34,197,94,0.06))' : 'var(--color-warning-dim, rgba(245,158,11,0.06))',
+            color: C.green,
           }}>
             <span style={{
               width: 7, height: 7, borderRadius: '50%',
-              background: isLive ? '#22c55e' : '#f59e0b',
-              boxShadow: `0 0 6px ${isLive ? '#22c55e' : '#f59e0b'}`,
+              background: C.green,
+              boxShadow: `0 0 6px ${C.green}`,
               animation: 'live-pulse 1.5s ease-in-out infinite',
             }} />
             {isLive ? 'LIVE' : 'DEGRADED'}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: '#94a3b8' }}>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: C.textSec }}>
             {dateStr} &nbsp;|&nbsp; {timeStr}
           </div>
         </div>
@@ -136,31 +139,31 @@ const OperationsTab: React.FC = () => {
         gap: 18, marginBottom: 28,
       }}>
         {[
-          { label: 'Active Connections', value: fmt(kpis.activeConnections), sub: '+12% vs last hour', color: '#3b82f6', icon: Wifi, trend: 'up' as const, bg: 'rgba(59,130,246,0.08)' },
-          { label: 'Threats Blocked', value: fmt(kpis.threatsBlocked), sub: `${alertCount} alerts today`, color: '#22c55e', icon: ShieldCheck, trend: 'up' as const, bg: 'rgba(34,197,94,0.08)' },
-          { label: 'Total Flows', value: fmt(kpis.totalFlows), sub: `${(flowsPerSec).toFixed(0)} flows/s`, color: '#06b6d4', icon: Activity, trend: 'up' as const, bg: 'rgba(6,182,212,0.08)' },
-          { label: 'Throughput', value: `${(flowsPerSec).toFixed(0)}/s`, sub: 'Packets analyzed', color: '#8b5cf6', icon: Gauge, trend: 'neutral' as const, bg: 'rgba(139,92,246,0.08)' },
-          { label: 'Threat Alerts', value: fmt(alertCount), sub: prevAlertCount.current < alertCount ? 'New detections' : 'No new alerts', color: '#f59e0b', icon: AlertOctagon, trend: prevAlertCount.current < alertCount ? 'up' as const : 'down' as const, bg: 'rgba(245,158,11,0.08)' },
-          { label: 'System Uptime', value: fmtUptime(kpis.uptime), sub: 'All systems operational', color: '#10b981', icon: Shield, trend: 'up' as const, bg: 'rgba(16,185,129,0.08)' },
+          { label: 'Active Connections', value: fmt(kpis.activeConnections), sub: '+12% vs last hour', color: C.accent, icon: Wifi, trend: 'up' as const, bg: 'var(--color-info-dim)' },
+          { label: 'Threats Blocked', value: fmt(kpis.threatsBlocked), sub: `${alertCount} alerts today`, color: C.green, icon: ShieldCheck, trend: 'up' as const, bg: 'var(--color-success-dim)' },
+          { label: 'Total Flows', value: fmt(kpis.totalFlows), sub: `${(flowsPerSec).toFixed(0)} flows/s`, color: C.teal, icon: Activity, trend: 'up' as const, bg: 'var(--color-info-dim)' },
+          { label: 'Throughput', value: `${(flowsPerSec).toFixed(0)}/s`, sub: 'Packets analyzed', color: C.purple, icon: Gauge, trend: 'neutral' as const, bg: 'var(--color-purple-dim)' },
+          { label: 'Threat Alerts', value: fmt(alertCount), sub: prevAlertCount.current < alertCount ? 'New detections' : 'No new alerts', color: C.amber, icon: AlertOctagon, trend: prevAlertCount.current < alertCount ? 'up' as const : 'down' as const, bg: 'var(--color-warning-dim)' },
+          { label: 'System Uptime', value: fmtUptime(kpis.uptime), sub: 'All systems operational', color: C.green, icon: Shield, trend: 'up' as const, bg: 'var(--color-success-dim)' },
         ].map((kpi, i) => (
           <div key={i} style={{
             background: kpi.bg,
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            border: `1px solid ${kpi.color}20`,
-            borderRadius: 14, padding: '22px 24px',
-            transition: 'all 0.15s ease',
+            border: `1px solid ${kpi.color}25`,
+            borderRadius: 12, padding: '20px 22px',
+            transition: TRANS,
             cursor: 'default',
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = kpi.color + '35'; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = kpi.color + '20'; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = `${kpi.color}35`; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = `${kpi.color}25`; e.currentTarget.style.transform = 'translateY(0)'; }}
           >
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 10,
-                background: `${kpi.color}18`,
-                border: `1px solid ${kpi.color}25`,
+                background: `${kpi.color}12`,
+                border: `1px solid ${kpi.color}20`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <IconWrap icon={kpi.icon as React.ElementType} color={kpi.color} />
@@ -168,9 +171,9 @@ const OperationsTab: React.FC = () => {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 3,
                 padding: '3px 8px', borderRadius: 6,
-                background: kpi.trend === 'up' ? 'rgba(34,197,94,0.1)' : kpi.trend === 'down' ? 'rgba(245,158,11,0.1)' : 'rgba(148,163,184,0.1)',
+                background: kpi.trend === 'up' ? 'var(--color-success-dim)' : kpi.trend === 'down' ? 'var(--color-warning-dim)' : 'rgba(148,163,184,0.08)',
                 fontFamily: MONO, fontSize: 9, fontWeight: 700,
-                color: kpi.trend === 'up' ? '#22c55e' : kpi.trend === 'down' ? '#f59e0b' : 'var(--text-row-muted)',
+                color: kpi.trend === 'up' ? C.green : kpi.trend === 'down' ? C.amber : C.textSec,
                 letterSpacing: '0.5px',
               }}>
                 {kpi.trend === 'up' ? <ArrowUpRight size={10} /> : kpi.trend === 'down' ? <ArrowDownRight size={10} /> : null}
@@ -178,15 +181,15 @@ const OperationsTab: React.FC = () => {
               </div>
             </div>
             <div style={{
-              fontFamily: MONO, fontSize: 28, fontWeight: 800, color: 'var(--text-row-alt)',
+              fontFamily: MONO, fontSize: 26, fontWeight: 800, color: C.text,
               lineHeight: 1.1, letterSpacing: '-0.02em',
             }}>{kpi.value}</div>
             <div style={{
-              fontFamily: 'Inter,system-ui,sans-serif', fontSize: 11, fontWeight: 500,
-              color: 'var(--text-row-muted)', marginTop: 4,
+              fontFamily: '"Inter",system-ui,sans-serif', fontSize: 11, fontWeight: 500,
+              color: C.textSec, marginTop: 4,
             }}>{kpi.label}</div>
             <div style={{
-              fontFamily: MONO, fontSize: 10, color: 'var(--text-row-muted)', marginTop: 6,
+              fontFamily: MONO, fontSize: 10, color: C.textDim, marginTop: 6,
             }}>{kpi.sub}</div>
           </div>
         ))}
@@ -199,10 +202,10 @@ const OperationsTab: React.FC = () => {
         gap: 20, marginBottom: 24,
       }}>
         <div style={{
-          background: 'var(--bg-elevated)',
+          background: C.surface,
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          border: '1px solid var(--border-row-header)',
+          border: `1px solid ${C.border}`,
           borderRadius: 12, padding: 24,
         }}>
           <DegradationMatrix data={[
@@ -215,21 +218,21 @@ const OperationsTab: React.FC = () => {
           ]} showWarning />
         </div>
         <div style={{
-          background: 'var(--bg-elevated)',
+          background: C.surface,
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          border: '1px solid var(--border-row-header)',
+          border: `1px solid ${C.border}`,
           borderRadius: 12, padding: 24,
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border-row-header)',
+            marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${C.border}`,
           }}>
             <span style={{
               fontFamily: MONO, fontSize: 11, fontWeight: 600,
-              letterSpacing: '1.5px', color: '#3b82f6', textTransform: 'uppercase',
+              letterSpacing: '1.5px', color: C.accent, textTransform: 'uppercase',
             }}>Throughput Timeline</span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--text-row-muted)' }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: C.textDim }}>
               Last 30 samples
             </span>
           </div>
@@ -248,18 +251,18 @@ const OperationsTab: React.FC = () => {
                   <>
                     <defs>
                       <linearGradient id="tgrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                        <stop offset="0%" stopColor={C.accent} stopOpacity="0.25" />
+                        <stop offset="100%" stopColor={C.accent} stopOpacity="0" />
                       </linearGradient>
                     </defs>
                     <polygon fill="url(#tgrad)" points={area} />
-                    <polyline fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinejoin="round" points={pts} />
+                    <polyline fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinejoin="round" points={pts} />
                   </>
                 );
               })()}
             </svg>
           ) : (
-            <div style={{ color: 'var(--text-row-muted)', fontFamily: MONO, fontSize: 11, textAlign: 'center', padding: 24 }}>
+            <div style={{ color: C.textDim, fontFamily: MONO, fontSize: 11, textAlign: 'center', padding: 24 }}>
               Collecting throughput data...
             </div>
           )}
@@ -268,10 +271,10 @@ const OperationsTab: React.FC = () => {
 
       {/* ── Live Threat Feed ─────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--bg-elevated)',
+        background: C.surface,
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        border: '1px solid var(--border-row-header)',
+        border: `1px solid ${C.border}`,
         borderRadius: 12, padding: 20,
       }}>
         <ThreatFeed alerts={alerts} maxVisible={12} />

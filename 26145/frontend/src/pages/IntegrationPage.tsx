@@ -125,7 +125,7 @@ function IntegrationPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
       {/* ── TOP STAT CARDS ─────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
         {[
@@ -166,18 +166,18 @@ function IntegrationPage() {
       {/* ── INTEGRATION CARDS ────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
         {integrations.map(int => (
-          <div key={int.id} onClick={() => setSelected(int)} style={{
-            background: 'var(--bg-secondary)', border: `1px solid ${int.status === 'error' ? 'var(--mat-rejected-border)' : int.status === 'disconnected' ? 'rgba(255,136,51,0.2)' : 'var(--border-color)'}`,
-            borderRadius: '8px', padding: '16px', cursor: 'pointer', transition: 'border-color 0.2s',
+          <div key={int.id} onClick={() => setSelected(int)} className="int-card" style={{
+            background: 'var(--bg-secondary)', border: `1px solid ${int.status === 'error' ? 'var(--mat-rejected-border)' : int.status === 'disconnected' ? 'var(--sev-high-border)' : 'var(--border-color)'}`,
+            borderRadius: '8px', padding: '16px', cursor: 'pointer',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div>
                 <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{int.name}</div>
-                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '10px', marginTop: '2px' }}>{int.id}</div>
+                <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-dim)', fontSize: '10px', marginTop: '2px' }}>{int.id}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: STATUS_COLOR[int.status] || 'var(--border-active)', boxShadow: `0 0 6px ${STATUS_COLOR[int.status] || 'var(--border-active)'}66` }} />
-                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: STATUS_COLOR[int.status] || 'var(--border-active)', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' }}>{int.status}</span>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: STATUS_COLOR[int.status] || 'var(--text-dim)', boxShadow: `0 0 6px ${STATUS_COLOR[int.status] || 'var(--text-dim)'}66` }} />
+                <span style={{ fontFamily: '"JetBrains Mono", monospace', color: STATUS_COLOR[int.status] || 'var(--text-dim)', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase' }}>{int.status}</span>
               </div>
             </div>
 
@@ -201,11 +201,11 @@ function IntegrationPage() {
             </div>
 
             {/* Throughput mini bar */}
-            <div style={{ borderTop: '1px solid var(--color-info-dim)', paddingTop: '10px' }}>
+            <div style={{ borderTop: '1px solid var(--border-row)', paddingTop: '10px' }}>
               <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Throughput</div>
               <div style={{ height: '20px', display: 'flex', alignItems: 'flex-end', gap: '2px' }}>
                 {Array.from({ length: 20 }, () => Math.floor(Math.random() * 80) + 20).map((val, i) => (
-                  <div key={i} style={{
+                  <div key={i} className="int-bar" style={{
                     flex: 1, height: `${val}%`, borderRadius: '1px',
                     background: int.status === 'connected' ? 'var(--accent-green)' : 'var(--accent-orange)', opacity: 0.5 + (val / 200),
                   }} />
@@ -213,8 +213,8 @@ function IntegrationPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-info-dim)' }}>
-              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '10px' }}>{int.id}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-row)' }}>
+              <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-dim)', fontSize: '10px' }}>{int.id}</span>
               <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-red)', fontSize: '10px' }}>♥ {new Date(int.last_heartbeat).toLocaleTimeString()}</span>
             </div>
           </div>
@@ -257,21 +257,21 @@ function IntegrationPage() {
           <div ref={eventsRef} style={{ maxHeight: '200px', overflowY: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <tr style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
                   {['Time', 'Format', 'Target', 'Class', 'Confidence', 'Status'].map(h => (
-                    <th key={h} style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>
+                    <th key={h} style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {events.slice(0, 12).map(evt => (
-                  <tr key={evt.id} style={{ borderBottom: '1px solid var(--color-info-dim)' }}>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--border-active)', fontSize: '10px', padding: '7px 12px' }}>
+                  <tr key={evt.id} className="int-row" style={{ borderBottom: '1px solid var(--border-row)' }}>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-dim)', fontSize: '10px', padding: '8px 12px' }}>
                       {new Date(evt.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </td>
-                    <td style={{ padding: '7px 12px' }}>
+                    <td style={{ padding: '8px 12px' }}>
                       {(() => {
-                        const fc = FORMAT_COLORS[evt.format] || 'var(--border-active)';
+                        const fc = FORMAT_COLORS[evt.format] || 'var(--accent-cyan)';
                         return (
                           <span style={{
                             fontFamily: '"JetBrains Mono", monospace', color: fc,
@@ -282,15 +282,13 @@ function IntegrationPage() {
                         );
                       })()}
                     </td>
-                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '11px', padding: '7px 12px', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{evt.target}</td>
-                    <td style={{ padding: '7px 12px' }}>
+                    <td style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '11px', padding: '8px 12px', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{evt.target}</td>
+                    <td style={{ padding: '8px 12px' }}>
                       <span style={{
                         fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-red)',
-                        background: 'var(--sev-critical-bg)', border: '1px solid rgba(239,68,68,0.2)',
-                        padding: '2px 6px', borderRadius: '4px', fontSize: '9px', textTransform: 'uppercase',
                       }}>{evt.threat_class}</span>
                     </td>
-                    <td style={{ padding: '7px 12px' }}>
+                    <td style={{ padding: '8px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'var(--color-info-dim)', overflow: 'hidden' }}>
                           <div style={{ height: '100%', borderRadius: '2px', background: evt.confidence > 80 ? 'var(--accent-green)' : evt.confidence > 60 ? 'var(--accent-orange)' : 'var(--accent-cyan)', width: `${evt.confidence}%` }} />
@@ -298,7 +296,7 @@ function IntegrationPage() {
                         <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '10px' }}>{evt.confidence}%</span>
                       </div>
                     </td>
-                    <td style={{ padding: '7px 12px' }}>
+                    <td style={{ padding: '8px 12px' }}>
                       <span style={{
                         fontFamily: '"JetBrains Mono", monospace', fontSize: '9px', textTransform: 'uppercase', fontWeight: 600,
                         color: evt.status === 'sent' ? 'var(--accent-green)' : evt.status === 'queued' ? 'var(--accent-yellow)' : 'var(--accent-red)',
@@ -395,11 +393,11 @@ function IntegrationPage() {
                 setIntegrations(prev => prev.map(i => i.id === selected.id ? { ...i, status: 'connected' as const, latency_ms: Math.floor(Math.random() * 20) + 1 } : i));
                 setSelected(null);
               }} style={{
-                flex: 1, background: 'var(--status-stopped-bg)', color: 'var(--accent-green)', border: '1px solid rgba(0,255,65,0.25)',
+                flex: 1, background: 'var(--status-stopped-bg)', color: 'var(--accent-green)', border: '1px solid var(--status-stopped-border)',
                 borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
               }}>Reconnect</button>
               <button onClick={() => { setIntegrations(prev => prev.filter(i => i.id !== selected.id)); setSelected(null); }} style={{
-                flex: 1, background: 'var(--sev-critical-bg)', color: 'var(--accent-red)', border: '1px solid rgba(239,68,68,0.25)',
+                flex: 1, background: 'var(--sev-critical-bg)', color: 'var(--accent-red)', border: '1px solid var(--accent-red)',
                 borderRadius: '6px', padding: '8px', cursor: 'pointer', fontFamily: '"JetBrains Mono", monospace', fontSize: '12px',
               }}>Remove</button>
               <button onClick={() => setSelected(null)} style={{
@@ -410,8 +408,22 @@ function IntegrationPage() {
           </div>
         </div>
       )}
+      <IntegrationStyles />
     </div>
   );
 }
+
+// ── Integration interaction styles ────────────────────────────────────────────
+const IntegrationStyles = () => (
+  <style>{`
+    .int-card { transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease; }
+    .int-card:hover { border-color: var(--border-active) !important; box-shadow: 0 0 12px var(--color-accent-dim); transform: translateY(-1px); }
+    .int-card:active { transform: translateY(0); }
+    .int-card button:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 1px; }
+    .int-row { transition: background 0.15s ease; }
+    .int-row:hover { background: var(--table-hover-bg) !important; }
+    .int-bar { transition: opacity 0.2s ease; }
+  `}</style>
+);
 
 export default IntegrationPage;

@@ -29,18 +29,30 @@ function DataFlowDiagram({ mode }: { mode: string }) {
   const isAck = mode === 'ack-shadow';
 
   return (
-    <svg viewBox="0 0 600 64" width="100%" style={{ maxWidth:600, display:'block', margin:'0 auto 20px' }}>
+    <svg viewBox="0 0 600 68" width="100%" style={{ maxWidth:600, display:'block', margin:'0 auto 4px' }}>
       <defs>
         <linearGradient id="flowGradFwd" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={C.red} stopOpacity="0.9" />
-          <stop offset="100%" stopColor={C.green} stopOpacity="0.9" />
+          <stop offset="0%" stopColor={C.red} stopOpacity="0.85" />
+          <stop offset="100%" stopColor={C.green} stopOpacity="0.85" />
         </linearGradient>
         <linearGradient id="flowGradRet" x1="1" y1="0" x2="0" y2="0">
           <stop offset="0%" stopColor={C.accent} stopOpacity="0.15" />
           <stop offset="100%" stopColor={C.accent} stopOpacity="0.05" />
         </linearGradient>
+        <linearGradient id="nodeGradAtk" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={C.red} stopOpacity="0.08" />
+          <stop offset="100%" stopColor={C.red} stopOpacity="0.02" />
+        </linearGradient>
+        <linearGradient id="nodeGradDiode" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={C.accent} stopOpacity="0.08" />
+          <stop offset="100%" stopColor={C.accent} stopOpacity="0.02" />
+        </linearGradient>
+        <linearGradient id="nodeGradEnclave" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={C.green} stopOpacity="0.08" />
+          <stop offset="100%" stopColor={C.green} stopOpacity="0.02" />
+        </linearGradient>
         <filter id="flowGlow">
-          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
         <marker id="arrowFwd" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -53,17 +65,17 @@ function DataFlowDiagram({ mode }: { mode: string }) {
 
       {/* Forward path — attacker to enclave */}
       <line x1="50" y1="32" x2="550" y2="32" stroke="url(#flowGradFwd)" strokeWidth="1.5"
-        opacity={isDiode ? 0.4 : 0.7} strokeDasharray={isDiode ? "6 4" : "none"}
+        opacity={isDiode ? 0.5 : 0.75} strokeDasharray={isDiode ? "6 4" : "none"}
         markerEnd="url(#arrowFwd)" />
 
       {/* Return path — enclave to attacker (blocked/dimmed in diode mode) */}
       <line x1="550" y1="44" x2="50" y2="44" stroke="url(#flowGradRet)" strokeWidth="1"
-        opacity={isDiode ? 0.15 : 0.25} strokeDasharray={isDiode ? "4 6" : "8 4"}
+        opacity={isDiode ? 0.12 : 0.2} strokeDasharray={isDiode ? "4 6" : "8 4"}
         markerEnd="url(#arrowRet)" />
 
       {/* Animated flowing dots on forward path */}
       {[0, 1, 2, 3].map(i => (
-        <circle key={`fwd-${i}`} r="2.5" fill={isDiode ? C.orange : C.green} opacity="0.6" filter="url(#flowGlow)">
+        <circle key={`fwd-${i}`} r="2.5" fill={isDiode ? C.orange : C.green} opacity="0.65" filter="url(#flowGlow)">
           <animate attributeName="cx" values="50;550" dur={`${2 + i * 0.4}s`} repeatCount="indefinite"
             begin={`${i * 0.5}s`} />
           <animate attributeName="opacity" values="0;0.8;0.8;0" dur={`${2 + i * 0.4}s`} repeatCount="indefinite"
@@ -73,30 +85,30 @@ function DataFlowDiagram({ mode }: { mode: string }) {
 
       {/* Return path dots (dimmed in diode mode) */}
       {isDiode ? null : [0, 1, 2].map(i => (
-        <circle key={`ret-${i}`} r="2" fill={C.accent} opacity="0.12">
+        <circle key={`ret-${i}`} r="2" fill={C.accent} opacity="0.15">
           <animate attributeName="cx" values="550;50" dur={`${2.5 + i * 0.5}s`} repeatCount="indefinite"
             begin={`${i * 0.8 + 0.3}s`} />
-          <animate attributeName="opacity" values="0;0.12;0.12;0" dur={`${2.5 + i * 0.5}s`} repeatCount="indefinite"
+          <animate attributeName="opacity" values="0;0.15;0.15;0" dur={`${2.5 + i * 0.5}s`} repeatCount="indefinite"
             begin={`${i * 0.8 + 0.3}s`} />
         </circle>
       ))}
 
       {/* Nodes */}
       {/* Attacker */}
-      <rect x="8" y="16" width="82" height="32" rx="6" fill="var(--bg-elevated)"
-        stroke={C.red} strokeWidth="0.8" opacity="0.8" />
+      <rect x="8" y="16" width="82" height="32" rx="6" fill="url(#nodeGradAtk)"
+        stroke={C.red} strokeWidth="0.8" opacity="0.85" />
       <text x="49" y="29" textAnchor="middle" fill={C.red} fontSize="8" fontWeight={700}
         fontFamily='"JetBrains Mono",monospace' letterSpacing="0.8px">ATTACKER</text>
       <text x="49" y="42" textAnchor="middle" fill="var(--text-muted)" fontSize="7"
         fontFamily='"JetBrains Mono",monospace'>EXTERNAL NETWORK</text>
 
       {/* Diode node */}
-      <rect x="244" y="16" width="112" height="32" rx="6" fill="var(--bg-elevated)"
+      <rect x="244" y="16" width="112" height="32" rx="6" fill="url(#nodeGradDiode)"
         stroke={isDiode ? C.orange : C.accent} strokeWidth={isDiode ? 1.2 : 0.8}
-        opacity={isDiode ? 1 : 0.7} />
+        opacity={isDiode ? 1 : 0.75} />
       {isDiode && (
         <rect x="244" y="16" width="112" height="32" rx="6" fill="none"
-          stroke={C.orange} strokeWidth="0.5" opacity="0.3">
+          stroke={C.orange} strokeWidth="0.5" opacity="0.35">
           <animate attributeName="opacity" values="0.15;0.4;0.15" dur="2s" repeatCount="indefinite" />
         </rect>
       )}
@@ -106,8 +118,8 @@ function DataFlowDiagram({ mode }: { mode: string }) {
         fontFamily='"JetBrains Mono",monospace'>{isDiode ? 'READ-ONLY' : isAck ? 'ACK-SHADOW' : 'FULL-DUPLEX'}</text>
 
       {/* Enclave */}
-      <rect x="510" y="16" width="82" height="32" rx="6" fill="var(--bg-elevated)"
-        stroke={C.green} strokeWidth="0.8" opacity="0.8" />
+      <rect x="510" y="16" width="82" height="32" rx="6" fill="url(#nodeGradEnclave)"
+        stroke={C.green} strokeWidth="0.8" opacity="0.85" />
       <text x="551" y="29" textAnchor="middle" fill={C.green} fontSize="8" fontWeight={700}
         fontFamily='"JetBrains Mono",monospace' letterSpacing="0.8px">ENCLAVE</text>
       <text x="551" y="42" textAnchor="middle" fill="var(--text-muted)" fontSize="7"
@@ -116,22 +128,22 @@ function DataFlowDiagram({ mode }: { mode: string }) {
       {/* Block indicator in diode mode */}
       {isDiode && (
         <g>
-          <text x="300" y="58" textAnchor="middle" fill={C.red} fontSize="7" fontWeight={600}
-            fontFamily='"JetBrains Mono",monospace' letterSpacing="0.5px" opacity="0.8">
+          <text x="300" y="60" textAnchor="middle" fill={C.red} fontSize="7" fontWeight={600}
+            fontFamily='"JetBrains Mono",monospace' letterSpacing="0.5px" opacity="0.85">
             ◄── RETURN PATH BLOCKED
           </text>
-          <line x1="195" y1="48" x2="245" y2="48" stroke={C.red} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.4" />
-          <line x1="355" y1="48" x2="405" y2="48" stroke={C.red} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.4" />
+          <line x1="195" y1="50" x2="245" y2="50" stroke={C.red} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.4" />
+          <line x1="355" y1="50" x2="405" y2="50" stroke={C.red} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.4" />
         </g>
       )}
       {isAck && (
         <g>
-          <text x="300" y="58" textAnchor="middle" fill={C.accent} fontSize="7" fontWeight={600}
-            fontFamily='"JetBrains Mono",monospace' letterSpacing="0.5px" opacity="0.6">
+          <text x="300" y="60" textAnchor="middle" fill={C.accent} fontSize="7" fontWeight={600}
+            fontFamily='"JetBrains Mono",monospace' letterSpacing="0.5px" opacity="0.65">
             ◄── SHADOW ACK CHANNEL
           </text>
-          <line x1="195" y1="48" x2="245" y2="48" stroke={C.accent} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.2" />
-          <line x1="355" y1="48" x2="405" y2="48" stroke={C.accent} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.2" />
+          <line x1="195" y1="50" x2="245" y2="50" stroke={C.accent} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.2" />
+          <line x1="355" y1="50" x2="405" y2="50" stroke={C.accent} strokeWidth="0.5" strokeDasharray="3 3" opacity="0.2" />
         </g>
       )}
     </svg>
@@ -291,13 +303,17 @@ const DiodeLab: React.FC = () => {
     }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-        @keyframes wt-row-in { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+        @keyframes wt-row-in { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes wt-fade-in { from{opacity:0;transform:translateY(3px);} to{opacity:1;transform:translateY(0);} }
+        @keyframes wt-spin { from{transform:rotate(0);} to{transform:rotate(360deg);} }
         ::selection { background:var(--accent-cyan); color:${C.text}; }
         :focus-visible { outline:1.5px solid var(--border-active); outline-offset:2px; border-radius:3px; }
         ::-webkit-scrollbar { width:6px; }
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
         @keyframes pulse-border { 0%,100%{border-color: rgba(234,179,8,0.15);} 50%{border-color: rgba(234,179,8,0.4);} }
+        .wt-interactive { transition:transform 150ms cubic-bezier(0.4,0,0.2,1), background 0.2s; }
+        .wt-interactive:active { transform:scale(0.98); }
       `}</style>
 
       <header style={{
@@ -324,7 +340,7 @@ const DiodeLab: React.FC = () => {
         </div>
       </header>
 
-      <main style={{ maxWidth:1400, margin:'0 auto', padding:'28px 28px 80px' }}>
+      <main style={{ maxWidth:1400, margin:'0 auto', padding:'24px 28px 80px' }}>
 
         {/* ── PAGE HEADER ── */}
         <section style={{ marginBottom: 32 }}>

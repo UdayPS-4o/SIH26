@@ -25,7 +25,7 @@ const THREAT_CLASS_COLORS: Record<string,string> = {
 
 const STATUS_COLORS: Record<string,string> = {
   pending:'var(--accent-yellow)',
-  imported:'var(--accent-blue)',
+  imported:'var(--accent-cyan)',
   approved:'var(--accent-green)',
   rejected:'var(--accent-red)',
 };
@@ -405,8 +405,8 @@ function MaterialsPage() {
       <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-info-dim)' }}>
         <div className="h-full rounded-full" style={{
           width: `${value}%`,
-          background: `linear-gradient(90deg, ${color}88, ${color})`,
-          boxShadow: `0 0 6px ${color}44`,
+          background: `linear-gradient(90deg, ${color}, ${color})`,
+          boxShadow: `0 0 6px ${color}`,
           transition: 'width 0.4s ease',
         }} />
       </div>
@@ -433,7 +433,7 @@ function MaterialsPage() {
 
   if (loading) {
     return (
-      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '13px', letterSpacing: '2px' }}>LOADING EVIDENCE REGISTRY...</div>
       </div>
     );
@@ -441,14 +441,14 @@ function MaterialsPage() {
 
   if (error) {
     return (
-      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-red)', fontSize: '13px' }}>{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%' }}>
+    <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', padding: '24px' }}>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
@@ -559,7 +559,8 @@ function MaterialsPage() {
         {/* Search */}
         <div style={{
           flex: '1 1 240px', display: 'flex', alignItems: 'center', gap: '8px',
-          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '6px 12px',
+          background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '6px 12px',
+          transition: 'border-color 0.15s ease',
         }}>
           <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>⌕</span>
           <input
@@ -573,7 +574,7 @@ function MaterialsPage() {
             }}
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px' }}>✕</button>
+            <button onClick={() => setSearchQuery('')} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '2px' }}>✕</button>
           )}
         </div>
 
@@ -652,8 +653,8 @@ function MaterialsPage() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <th style={{ padding: '10px 12px', textAlign: 'center', width: '40px' }}>
+              <tr style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
+                <th style={{ padding: '12px 14px', textAlign: 'center', width: '40px' }}>
                   <input
                     type="checkbox"
                     checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -662,33 +663,9 @@ function MaterialsPage() {
                     style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
                   />
                 </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600 }}>
-                  ID
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600 }}>
-                  Name
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600 }}>
-                  Type
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600 }}>
-                  Threat Class
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600 }}>
-                  Status
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600, minWidth: '140px' }}>
-                  Confidence
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600 }}>
-                  Source
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'left', fontWeight: 600 }}>
-                  Date
-                </th>
-                <th style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '10px 12px', textAlign: 'center', fontWeight: 600, width: '90px' }}>
-                  Actions
-                </th>
+                {['ID', 'Name', 'Type', 'Threat Class', 'Status', 'Confidence', 'Source', 'Date', 'Actions'].map(h => (
+                  <th key={h} style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '12px 14px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -709,18 +686,19 @@ function MaterialsPage() {
 
                 return (
                   <React.Fragment key={m.id}>
-                    <tr style={{
-                      borderBottom: isExpanded ? 'none' : '1px solid var(--color-info-dim)',
-                      background: isSelected ? 'var(--color-info-dim)' : 'transparent',
-                      transition: 'background 0.15s',
+                    <tr className="mat-table-row" style={{
+                      borderBottom: isExpanded ? 'none' : '1px solid var(--border-row)',
+                      background: isSelected ? 'var(--table-hover-bg)' : 'transparent',
+                      transition: 'background 0.15s ease',
+                      cursor: 'pointer',
                     }}>
-                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                         <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(m.id)} style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }} />
                       </td>
-                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '10px 12px', fontWeight: 500 }}>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '12px 14px', fontWeight: 500 }}>
                         {m.id}
                       </td>
-                      <td style={{ padding: '10px 12px' }}>
+                      <td style={{ padding: '12px 14px' }}>
                         <button onClick={() => setShowDetail(m)} style={{
                           fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '12px',
                           background: 'none', border: 'none', cursor: 'pointer', padding: 0,
@@ -729,56 +707,59 @@ function MaterialsPage() {
                           {m.name}
                         </button>
                       </td>
-                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '11px', padding: '10px 12px' }}>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '11px', padding: '12px 14px' }}>
                         {m.type}
                       </td>
-                      <td style={{ padding: '10px 12px' }}>
+                      <td style={{ padding: '12px 14px' }}>
                         <span style={{
                           fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px',
                           color: tcColor, background: `${tcColor}18`, border: `1px solid ${tcColor}33`,
-                          padding: '3px 8px', borderRadius: '4px',
+                          padding: '3px 10px', borderRadius: '4px',
                         }}>
                           {m.threat_class}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 12px' }}>
+                      <td style={{ padding: '12px 14px' }}>
                         <span style={{
                           fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase',
                           color: stColor, background: stBg, border: `1px solid ${stBorder}`,
-                          padding: '3px 8px', borderRadius: '4px',
+                          padding: '3px 10px', borderRadius: '4px',
                         }}>
                           {m.status}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 12px' }}>
+                      <td style={{ padding: '12px 14px' }}>
                         <ConfidenceBar value={m.confidence} color={confColor} />
                       </td>
-                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '10px 12px' }}>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '12px 14px' }}>
                         {m.source}
                       </td>
-                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '10px 12px' }}>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '12px 14px' }}>
                         {m.created_at}
                       </td>
-                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
                           <button onClick={() => setExpandedId(isExpanded ? null : m.id)} title="Details" style={{
                             background: 'var(--color-info-dim)', border: '1px solid var(--border-active)',
-                            color: 'var(--accent-cyan)', borderRadius: '4px', padding: '4px 7px', cursor: 'pointer',
+                            color: 'var(--accent-cyan)', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer',
                             fontFamily: 'var(--font-mono)', fontSize: '10px',
+                            transition: 'all 0.15s ease',
                           }}>
                             {isExpanded ? '▼' : '▶'}
                           </button>
                           {m.status !== 'approved' && m.status !== 'rejected' && (
                             <button onClick={() => handleNormalize(m.id)} title="Normalize" style={{
-                              background: 'var(--sev-high-bg)', border: '1px solid rgba(249,115,22,0.2)',
-                              color: 'var(--accent-orange)', borderRadius: '4px', padding: '4px 7px', cursor: 'pointer',
+                              background: 'var(--sev-high-bg)', border: `1px solid var(--sev-high-border)`,
+                              color: 'var(--accent-orange)', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer',
                               fontFamily: 'var(--font-mono)', fontSize: '10px',
+                              transition: 'all 0.15s ease',
                             }}>N</button>
                           )}
                           <button onClick={() => handleMatch(m.id)} title="Find Match" style={{
-                            background: 'var(--color-purple-dim)', border: '1px solid rgba(139,92,246,0.2)',
-                            color: 'var(--accent-purple)', borderRadius: '4px', padding: '4px 7px', cursor: 'pointer',
+                            background: 'var(--color-purple-dim)', border: `1px solid var(--purple-dim-border, rgba(139,92,246,0.3))`,
+                            color: 'var(--accent-purple)', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer',
                             fontFamily: 'var(--font-mono)', fontSize: '10px',
+                            transition: 'all 0.15s ease',
                           }}>M</button>
                         </div>
                       </td>
@@ -868,7 +849,7 @@ function MaterialsPage() {
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
             padding: '24px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto',
-            boxShadow: 'var(--modal-shadow), 0 0 20px rgba(0,212,255,0.05)',
+            boxShadow: 'var(--modal-shadow), 0 0 20px var(--color-accent-dim)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>
@@ -893,7 +874,7 @@ function MaterialsPage() {
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
             padding: '24px', width: '100%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto',
-            boxShadow: 'var(--modal-shadow), 0 0 20px rgba(0,212,255,0.05)',
+            boxShadow: 'var(--modal-shadow), 0 0 20px var(--color-accent-dim)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700 }}>
@@ -1144,6 +1125,7 @@ function MaterialsPage() {
           </div>
         </div>
       )}
+      <MaterialStyles />
     </div>
   );
 }
@@ -1254,5 +1236,16 @@ function AddMaterialForm({ onSubmit, types, threats, sources }: {
     </form>
   );
 }
+
+// ── Table interaction styles ───────────────────────────────────────────────────
+const MaterialStyles = () => (
+  <style>{`
+    .mat-table-row:hover { background: var(--color-info-dim) !important; }
+    .mat-table-row:active { background: var(--overlay-md) !important; }
+    .mat-table-row input[type="checkbox"]:focus { outline: 2px solid var(--border-active); outline-offset: 2px; border-radius: 2px; }
+    .mat-table-row button:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 1px; }
+    .mat-table-row button:hover { filter: brightness(1.2); }
+  `}</style>
+);
 
 export default MaterialsPage;

@@ -24,9 +24,9 @@ const ATTACK_TYPES = [
 ];
 
 const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  critical: { bg: 'rgba(239,68,68,0.1)', text: '#ef4444', border: 'rgba(239,68,68,0.3)' },
-  high: { bg: 'rgba(245,158,11,0.1)', text: '#f59e0b', border: 'rgba(245,158,11,0.3)' },
-  medium: { bg: 'rgba(59,130,246,0.1)', text: '#3b82f6', border: 'rgba(59,130,246,0.3)' },
+  critical: { bg: 'var(--sev-critical-bg)', text: 'var(--accent-red)', border: 'var(--sev-critical-border)' },
+  high: { bg: 'var(--sev-high-bg)', text: 'var(--accent-orange)', border: 'var(--sev-high-border)' },
+  medium: { bg: 'var(--sev-medium-bg)', text: 'var(--accent-cyan)', border: 'var(--sev-medium-border)' },
 };
 
 const AttackConsole: React.FC = () => {
@@ -321,7 +321,8 @@ const AttackConsole: React.FC = () => {
                     onClick={handleStop}
                     style={{
                       padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
-                      background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+                      background: selectedType ? selectedType.severity === 'critical' ? 'var(--sev-critical-bg)' : selectedType.severity === 'high' ? 'var(--sev-high-bg)' : 'var(--sev-medium-bg)' : 'var(--sev-medium-bg)',
+                      border: `1px solid ${selectedType ? SEVERITY_COLORS[selectedType.severity].border : 'var(--sev-medium-border)'}`,
                       color: C.red, fontSize: 11, fontWeight: 600,
                     }}
                   >
@@ -335,14 +336,14 @@ const AttackConsole: React.FC = () => {
           {lastResult && (
             <div style={{
               padding: 16, borderRadius: 8,
-              background: lastResult.status === 'success' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-              border: `1px solid ${lastResult.status === 'success' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+              background: lastResult.status === 'success' ? 'var(--color-success-dim)' : 'var(--color-danger-dim)',
+              border: `1px solid ${lastResult.status === 'success' ? 'var(--color-success)' : 'var(--color-danger)'}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <span style={{
                   padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
                   textTransform: 'uppercase',
-                  background: lastResult.status === 'success' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
+                  background: lastResult.status === 'success' ? 'var(--color-success-dim)' : 'var(--color-danger-dim)',
                   color: lastResult.status === 'success' ? C.green : C.red,
                 }}>
                   {lastResult.status}
