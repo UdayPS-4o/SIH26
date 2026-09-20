@@ -170,6 +170,7 @@ const AttackConsole: React.FC = () => {
                   <button
                     key={attack.id}
                     onClick={() => setForm(f => ({ ...f, attackType: attack.id }))}
+                    className="attack-type-btn"
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       padding: '8px 12px', borderRadius: 8, cursor: 'pointer',
@@ -417,6 +418,18 @@ const AttackConsole: React.FC = () => {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
+        .attack-type-btn:hover:not(:disabled) {
+          filter: brightness(1.1);
+          box-shadow: 0 0 6px var(--color-accent-dim);
+        }
+        .attack-type-btn:active:not(:disabled) {
+          filter: brightness(0.95);
+          transform: scale(0.98);
+        }
+        .attack-type-btn:focus-visible {
+          outline: 2px solid var(--border-active);
+          outline-offset: 1px;
+        }
         input[type="range"] {
           -webkit-appearance: none;
           height: 4px;
@@ -431,6 +444,10 @@ const AttackConsole: React.FC = () => {
           background: ${C.accent};
           border-radius: 50%;
           cursor: pointer;
+          transition: box-shadow 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+          box-shadow: 0 0 6px var(--color-accent-dim);
         }
       `}</style>
     </div>
