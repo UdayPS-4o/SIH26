@@ -483,7 +483,7 @@ function MaterialsPage() {
         ].map((card) => (
           <div key={card.label} style={{
             background: 'var(--bg-secondary)',
-            border: '1px solid #1a2736',
+            border: '1px solid var(--border-color)',
             borderRadius: '8px',
             padding: '16px 18px',
             display: 'flex',
@@ -519,7 +519,7 @@ function MaterialsPage() {
 
       {/* ── Ingestion Progress ─────────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
         padding: '14px 18px', marginBottom: '16px',
         display: 'flex', alignItems: 'center', gap: '16px',
       }}>
@@ -539,7 +539,7 @@ function MaterialsPage() {
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-color)' }}>
             <div className="rounded-full" style={{
               width: `${ingestionPct}%`, height: '100%',
-              background: 'linear-gradient(90deg, #00d4ff88, #00d4ff)',
+              background: 'linear-gradient(90deg, var(--accent-cyan)88, var(--accent-cyan))',
               boxShadow: '0 0 10px var(--border-active)',
               transition: 'width 0.4s ease',
             }} />
@@ -552,14 +552,14 @@ function MaterialsPage() {
 
       {/* ── Filters ────────────────────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
         padding: '12px 16px', marginBottom: '16px',
         display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
       }}>
         {/* Search */}
         <div style={{
           flex: '1 1 240px', display: 'flex', alignItems: 'center', gap: '8px',
-          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px', padding: '6px 12px',
+          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '6px 12px',
         }}>
           <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>⌕</span>
           <input
@@ -580,7 +580,7 @@ function MaterialsPage() {
         {/* Status filter */}
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{
           fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
-          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
+          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
           padding: '6px 10px', outline: 'none', cursor: 'pointer',
         }}>
           <option value="all">All Statuses</option>
@@ -590,7 +590,7 @@ function MaterialsPage() {
         {/* Threat class filter */}
         <select value={threatFilter} onChange={e => setThreatFilter(e.target.value)} style={{
           fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
-          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
+          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
           padding: '6px 10px', outline: 'none', cursor: 'pointer',
         }}>
           <option value="all">All Threat Classes</option>
@@ -600,7 +600,7 @@ function MaterialsPage() {
         {/* Type filter */}
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{
           fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
-          background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
+          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
           padding: '6px 10px', outline: 'none', cursor: 'pointer',
         }}>
           <option value="all">All Types</option>
@@ -646,13 +646,13 @@ function MaterialsPage() {
 
       {/* ── Main Table ─────────────────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
         overflow: 'hidden', marginBottom: '16px',
       }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #1a2736' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                 <th style={{ padding: '10px 12px', textAlign: 'center', width: '40px' }}>
                   <input
                     type="checkbox"
@@ -846,7 +846,7 @@ function MaterialsPage() {
 
       {/* ── Footer bar ─────────────────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
         padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px',
         fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-secondary)',
       }}>
@@ -945,7 +945,7 @@ function MaterialsPage() {
                 <code style={{
                   fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '10px',
                   wordBreak: 'break-all', background: 'var(--color-accent-dim)', padding: '6px 10px', borderRadius: '4px',
-                  border: '1px solid #1a2736', flex: 1,
+                  border: '1px solid var(--border-color)', flex: 1,
                 }}>
                   {showDetail.content_hash}
                 </code>
@@ -962,7 +962,7 @@ function MaterialsPage() {
               <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
                 Description
               </div>
-              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px', background: 'var(--color-info-dim)', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1a2736' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px', background: 'var(--color-info-dim)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                 {showDetail.description}
               </div>
             </div>
@@ -974,7 +974,7 @@ function MaterialsPage() {
               <code style={{
                 fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '11px', wordBreak: 'break-all',
                 background: 'var(--color-accent-dim)', padding: '8px 12px', borderRadius: '6px',
-                border: '1px solid #1a2736', display: 'block',
+                border: '1px solid var(--border-color)', display: 'block',
               }}>
                 {showDetail.activity_signature}
               </code>
@@ -1191,7 +1191,7 @@ function AddMaterialForm({ onSubmit, types, threats, sources }: {
   );
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', background: 'var(--color-accent-dim)', border: '1px solid #1a2736', borderRadius: '6px',
+    width: '100%', background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
     padding: '8px 10px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-primary)',
     outline: 'none',
   };

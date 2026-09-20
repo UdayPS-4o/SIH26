@@ -188,7 +188,7 @@ function ActivityPage() {
           { label: 'Warnings', value: stats.warnings, color: 'var(--accent-yellow)', icon: '◌' },
         ].map(card => (
           <div key={card.label} style={{
-            background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
@@ -210,7 +210,7 @@ function ActivityPage() {
         {/* SIDEBAR */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Event Rate */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px' }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Event Rate</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '10px' }}>
               <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-green)', fontSize: '24px', fontWeight: 700 }}>{eventsPerSec}</span>
@@ -226,7 +226,7 @@ function ActivityPage() {
           </div>
 
           {/* Severity Distribution */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px' }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Severity Distribution</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {severityBars.map(bar => (
@@ -244,7 +244,7 @@ function ActivityPage() {
           </div>
 
           {/* Category Donut */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px' }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Categories</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <svg viewBox="0 0 36 36" style={{ width: '80px', height: '80px', transform: 'rotate(-90deg)', flexShrink: 0 }}>
@@ -271,7 +271,7 @@ function ActivityPage() {
           </div>
 
           {/* Filters */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px' }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '10px' }}>Filter</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {FILTERS.map(f => (
@@ -328,12 +328,12 @@ function ActivityPage() {
         {/* LOG FEED */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{
-            background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
             overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1,
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 16px', borderBottom: '1px solid #1a2736',
+              padding: '12px 16px', borderBottom: '1px solid var(--border-color)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ color: 'var(--accent-green)', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
@@ -392,11 +392,11 @@ function ActivityPage() {
       {/* ── SELECTED LOG DETAIL ────────────────────────────────────── */}
       {selectedLog && (
         <div style={{
-          background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden',
+          background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden',
         }}>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 16px', borderBottom: '1px solid #1a2736',
+            padding: '12px 16px', borderBottom: '1px solid var(--border-color)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '13px', fontWeight: 600 }}>

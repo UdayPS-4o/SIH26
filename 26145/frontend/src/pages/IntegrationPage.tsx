@@ -137,7 +137,7 @@ function IntegrationPage() {
           { label: 'Success Rate', value: `${successRate.toFixed(1)}%`, color: 'var(--accent-cyan)' },
         ].map(card => (
           <div key={card.label} style={{
-            background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px',
           }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>{card.label}</div>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: card.color, fontSize: '22px', fontWeight: 700, lineHeight: 1 }}>{card.value}</div>
@@ -147,7 +147,7 @@ function IntegrationPage() {
 
       {/* ── THROUGHPUT SPARKLINE ─────────────────────────────────── */}
       <div style={{
-        background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '14px',
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '14px',
         display: 'flex', alignItems: 'center', gap: '20px',
       }}>
         <div>
@@ -224,7 +224,7 @@ function IntegrationPage() {
       {/* ── FORMAT DISTRIBUTION + EVENT STREAM ───────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         {/* Format Distribution */}
-        <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px' }}>
+        <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
           <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>Format Distribution</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {Object.entries(FORMAT_COLORS).map(([fmt, color]) => {
@@ -246,10 +246,10 @@ function IntegrationPage() {
         </div>
 
         {/* Event Stream */}
-        <div style={{ background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '10px',
-            padding: '12px 16px', borderBottom: '1px solid #1a2736',
+            padding: '12px 16px', borderBottom: '1px solid var(--border-color)',
           }}>
             <span style={{ color: 'var(--accent-green)', fontFamily: '"JetBrains Mono", monospace', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
             <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--accent-cyan)', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>Outgoing Events</span>
@@ -257,7 +257,7 @@ function IntegrationPage() {
           <div ref={eventsRef} style={{ maxHeight: '200px', overflowY: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #1a2736' }}>
+                <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
                   {['Time', 'Format', 'Target', 'Class', 'Confidence', 'Status'].map(h => (
                     <th key={h} style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>
                   ))}
@@ -315,7 +315,7 @@ function IntegrationPage() {
       {/* ── ADD INTEGRATION FORM ─────────────────────────────────── */}
       {showAdd && (
         <div style={{
-          background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '8px', padding: '16px',
+          background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px',
           display: 'flex', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap',
         }}>
           <div style={{ flex: 1, minWidth: '180px' }}>
@@ -365,7 +365,7 @@ function IntegrationPage() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
         }}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--bg-secondary)', border: '1px solid #1a2736', borderRadius: '10px',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px',
             padding: '24px', maxWidth: '480px', width: '90%',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
