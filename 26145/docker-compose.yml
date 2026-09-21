@@ -1,42 +1,19 @@
 version: '3.8'
 
 services:
-  backend:
-    build:
-      context: ..
-      dockerfile: docker/backend/Dockerfile
-    container_name: watchtower-backend
+  ekadhara:
+    build: .
+    container_name: ekadhara
     ports:
       - "8000:8000"
     environment:
-      - WATCHTOWER_CAPTURE_MODE=simulator
-      - WATCHTOWER_MAX_FLOWS=1000000
-      - HOST=0.0.0.0
+      - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=production
     volumes:
-      - ../backend:/app/backend  # live reload during dev
+      - ./logs:/app/logs
     restart: unless-stopped
-    networks:
-      - watchtower-net
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 3
-
-  frontend:
-    build:
-      context: ..
-      dockerfile: docker/frontend/Dockerfile
-    container_name: watchtower-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      backend:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - watchtower-net
-
-networks:
-  watchtower-net:
-    driver: bridge

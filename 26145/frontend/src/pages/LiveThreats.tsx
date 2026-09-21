@@ -325,7 +325,7 @@ const LiveThreats: React.FC = () => {
       <main style={{ maxWidth:1400, margin:'0 auto', padding:'24px 28px 64px' }}>
 
         {/* Page title */}
-        <section style={{ marginBottom: 28 }}>
+        <section style={{ marginBottom: 20 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 4 }}>
             Live Threat Feed
           </h1>
