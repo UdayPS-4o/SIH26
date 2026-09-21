@@ -79,7 +79,7 @@ function makeAlert(overrides?: Partial<AlertData>): AlertData {
    ATOMIC COMPONENTS
    ═══════════════════════════════════════════════════════════════════════════════════ */
 
-const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; children: React.ReactNode }> = ({ delay = 0, style, children }) => {
+const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; padding?: string; children: React.ReactNode }> = ({ delay = 0, style, padding, children }) => {
   const [ready, setReady] = useState(false);
   useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
   return (
@@ -90,7 +90,7 @@ const Panel: React.FC<{ delay?: number; style?: React.CSSProperties; children: R
       boxShadow: '0 1px 3px var(--shadow-sm)',
       ...style,
     }}>
-      <div style={{ padding: '20px 24px' }}>{children}</div>
+      <div style={{ padding: padding || '20px 24px' }}>{children}</div>
     </div>
   );
 };
@@ -336,7 +336,7 @@ const LiveThreats: React.FC = () => {
 
         {/* ── SECTION 1 — Throughput + Severity Summary + Filters ─────────── */}
         <section style={{ display:'grid', gridTemplateColumns:'1fr', gap: 16, marginBottom: 24 }}>
-          <Panel delay={0.05}>
+          <Panel delay={0.05} padding="14px 18px">
             <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', gap: 20, alignItems:'center' }}>
               {/* Sparkline */}
               <div style={{ display:'flex', flexDirection:'column', gap: 6 }}>
@@ -531,7 +531,7 @@ const LiveThreats: React.FC = () => {
                   <tr style={{ borderBottom: `1px solid ${C.border}` }}>
                     {['Time','Threat Class','Source IP','Dest IP','Port','Confidence','Severity','Validity'].map(h => (
                       <th key={h} style={{
-                        padding:'10px 14px', textAlign:'left', fontSize: 10, fontWeight: 600,
+                        padding:'8px 12px', textAlign:'left', fontSize: 10, fontWeight: 600,
                         letterSpacing:'0.8px', color: C.textSec,
                         fontFamily: MONO,
                         textTransform:'uppercase', whiteSpace:'nowrap',
@@ -544,69 +544,73 @@ const LiveThreats: React.FC = () => {
                   {filteredAlerts.map((alert, idx) => {
                     const fresh = idx < 5;
                     const tClr = THREAT_CLR[alert.threat_type?.toLowerCase()] || 'var(--accent-cyan)';
-                    const sevStyle = { critical: { c: 'var(--accent-red)', bg: 'var(--sev-critical-bg)' }, high: { c: 'var(--accent-orange)', bg: 'var(--sev-high-bg)' }, medium: { c: 'var(--accent-yellow)', bg: 'var(--sev-medium-bg)' }, low: { c: 'var(--accent-cyan)', bg: 'var(--sev-low-bg)' } }[alert.severity] || { c: 'var(--accent-cyan)', bg: 'var(--sev-low-bg)' };
                     const validity = (alert.confidence >= 85 ? 'MEASURED' : alert.confidence >= 60 ? 'ESTIMATED' : 'MISSING') as 'MEASURED' | 'ESTIMATED' | 'MISSING';
-                    /* alternating subtle row backgrounds */
+                    const sevClr = { critical: 'var(--accent-red)', high: 'var(--accent-orange)', medium: 'var(--accent-yellow)', low: 'var(--accent-cyan)' }[alert.severity] || 'var(--accent-cyan)';
                     const rowBg = fresh
                       ? `var(--color-danger-dim, rgba(220,38,38,0.04))`
-                      : idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)';
+                      : idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)';
                     return (
                       <tr key={alert.id} style={{
-                        borderBottom: `1px solid ${C.border}30`,
+                        borderBottom: '1px solid var(--border-color)30',
                         background: rowBg,
                         transition: `background 0.15s ${EASE}`,
                         cursor:'pointer',
                       }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--table-hover-bg, rgba(37,99,235,0.04))'; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--table-hover-bg)'; }}
                         onMouseLeave={e => { e.currentTarget.style.background = rowBg; }}
                       >
                         <td style={{
-                          padding:'10px 14px', fontSize: 12, color: C.textSec,
+                          padding:'8px 12px', fontSize: 11, color: C.textSec,
                           fontFamily: MONO, whiteSpace:'nowrap',
                           fontVariantNumeric:'tabular-nums', letterSpacing:'0.2px',
                         }}>{fmtTime(alert.timestamp)}</td>
 
                         <td style={{
-                          padding:'10px 14px', fontSize: 12, fontWeight: 600,
+                          padding:'8px 12px', fontSize: 11, fontWeight: 600,
                           fontFamily: MONO,
                           letterSpacing:'0.3px', textTransform:'uppercase', color: tClr,
                         }}>
                           <span style={{
-                            display:'inline-block', width:5, height:5, borderRadius:'50%',
-                            background: tClr, marginRight: 7, verticalAlign:'middle',
+                            display:'inline-block', width:4, height:4, borderRadius:'50%',
+                            background: tClr, marginRight: 5, verticalAlign:'middle',
                           }} />
                           {(THREAT_LBL as Record<string,string>)[alert.threat_type] || alert.threat_type}
                         </td>
 
                         <td style={{
-                          padding:'10px 14px', fontSize: 12,
+                          padding:'8px 12px', fontSize: 11,
                           fontFamily: MONO, color: C.accent,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums', letterSpacing:'0.2px',
                         }}>{alert.src_ip}</td>
 
                         <td style={{
-                          padding:'10px 14px', fontSize: 12,
+                          padding:'8px 12px', fontSize: 11,
                           fontFamily: MONO, color: C.textSec,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums', letterSpacing:'0.2px',
                         }}>{alert.dst_ip}</td>
 
                         <td style={{
-                          padding:'10px 14px', fontSize: 12,
+                          padding:'8px 12px', fontSize: 11,
                           fontFamily: MONO, color: C.text,
                           whiteSpace:'nowrap', fontVariantNumeric:'tabular-nums',
                         }}>{alert.dst_port}</td>
 
                         <td style={{
-                          padding:'10px 14px', fontSize: 12, fontWeight: 600,
+                          padding:'8px 12px', fontSize: 11,
                           fontFamily: MONO,
-                          color: C.green, fontVariantNumeric:'tabular-nums',
-                        }}>{alert.confidence.toFixed(1)}%</td>
+                          color: C.textSec, fontVariantNumeric:'tabular-nums',
+                        }}>{alert.confidence.toFixed(1)}</td>
 
-                        <td style={{ padding:'10px 14px' }}>
-                          <Sev sev={alert.severity} />
+                        <td style={{ padding:'6px 10px' }}>
+                          <span style={{
+                            display:'inline-flex', alignItems:'center', gap: 4,
+                          }}>
+                            <span style={{ width:4, height:4, borderRadius:'50%', background: sevClr }} />
+                            <span style={{ fontSize: 9, fontFamily: MONO, fontWeight: 600, letterSpacing:'0.5px', textTransform:'uppercase', color: sevClr }}>{alert.severity}</span>
+                          </span>
                         </td>
 
-                        <td style={{ padding:'10px 14px' }}>
+                        <td style={{ padding:'6px 10px' }}>
                           <ValidityChip validity={validity} />
                         </td>
                       </tr>

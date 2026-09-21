@@ -1,339 +1,257 @@
-#!/usr/bin/env python3
-"""
-EKADHARA Attack Script — Port Scanner
-PS-26145 | SIH 2026 Hackathon Prototype
-
-Scans target ports using SYN or connect probes.
-Generates real port scan traffic detectable by the EKADHARA monitoring pipeline.
-
-Usage:
-    python port_scan.py --target <ip> [--ports <range>] [--speed <fast|normal|slow>] [--verbose]
-"""
-
+"""Port scanner — scans target ports."""
 import argparse
 import ipaddress
 import socket
+import string
 import struct
 import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from typing import List, Optional, Tuple
 
-# ============================================================
-# ANSI Color Codes (Windows Terminal compatible)
-# ============================================================
-RED = "\033[91m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-BLUE = "\033[94m"
-MAGENTA = "\033[95m"
-CYAN = "\033[96m"
-WHITE = "\033[97m"
-BOLD = "\033[1m"
-DIM = "\033[2m"
-RESET = "\033[0m"
+# ── ANSI Colors ─────────────────────────────────────────────────────────────
+class Color:
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
 
-# ============================================================
-# Constants
-# ============================================================
-BANNER = f"""{BOLD}{MAGENTA}
-╔══════════════════════════════════════════════════╗
-║   EKADHARA Attack Traffic Generator             ║
-║   Port Scanner — PS-26145 | SIH 2026            ║
-╚══════════════════════════════════════════════════╝{RESET}"""
+def banner():
+    print(f"""{Color.BOLD}{Color.CYAN}
+╔══════════════════════════════════════════╗
+║  [EKADHARA] Port Scanner — PS-26145     ║
+╚══════════════════════════════════════════╝{Color.RESET}""")
 
-LEGAL_WARNING = (
-    f"\n{RED}{BOLD}[!] LEGAL WARNING:{RESET}\n"
-    f"    This tool performs REAL port scanning.\n"
-    f"    Only use against localhost (127.0.0.1) or IPs you OWN.\n"
-    f"    Unauthorized port scanning is ILLEGAL.{RESET}\n"
-)
-
-# ============================================================
-# Global state
-# ============================================================
-scan_stats = {
-    'scanned': 0,
-    'open': 0,
-    'closed': 0,
-    'filtered': 0,
-    'total': 0,
-    'start_time': 0,
-    'running': False,
-    'open_ports': [],
-}
-
-
-# ============================================================
-# Safety Checks
-# ============================================================
-def is_safe_target(ip_str):
-    """Check if target is localhost or a private IP address."""
+def is_private(target: str) -> bool:
     try:
-        ip = ipaddress.ip_address(ip_str)
-        return ip.is_loopback or ip.is_private
+        addr = ipaddress.ip_address(target)
+        return addr.is_private or addr.is_loopback
     except ValueError:
-        return False
+        try:
+            addr = socket.gethostbyname(target)
+            return ipaddress.ip_address(addr).is_private or ipaddress.ip_address(addr).is_loopback
+        except socket.gaierror:
+            return False
 
-
-def warn_external_target(ip_str):
-    """Print warning if targeting an external IP."""
-    if not is_safe_target(ip_str):
-        print(f"\n{RED}{BOLD}[!!!] EXTERNAL TARGET DETECTED: {ip_str}{RESET}")
-        print(f"    {YELLOW}This tool is intended for localhost or private networks only.{RESET}")
-        print(f"    {YELLOW}Ensure you have EXPLICIT WRITTEN PERMISSION from the target owner.{RESET}")
-        confirm = input(f"\n    {BOLD}Type 'I HAVE PERMISSION' to proceed: {RESET}")
-        if confirm.strip() != "I HAVE PERMISSION":
-            print(f"{RED}Aborted.{RESET}")
+def safety_check(target: str):
+    if not is_private(target):
+        print(f"{Color.YELLOW}[!] WARNING: Target {target} is NOT a private/local IP!{Color.RESET}")
+        print(f"{Color.YELLOW}[!] Only scan systems you own or have explicit permission to test.{Color.RESET}")
+        confirm = input(f"{Color.YELLOW}[?] Type 'YES' to continue: {Color.RESET}")
+        if confirm != "YES":
+            print(f"{Color.RED}[!] Aborted.{Color.RESET}")
             sys.exit(0)
-        print(f"{YELLOW}Proceeding with external target...{RESET}\n")
+        print(f"{Color.GREEN}[*] Proceeding with external target...{Color.RESET}")
 
-
-# ============================================================
-# Port Scanning Functions
-# ============================================================
-def parse_port_range(port_range_str):
-    """Parse port range string like '80', '80-100', '80,443,8080', or '1-1024'."""
+def parse_ports(port_spec: str) -> List[int]:
+    """Parse port specification: '80', '22-100', '80,443,8080', 'common'."""
+    if port_spec.lower() == "common":
+        return [21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 143, 443,
+                445, 993, 995, 1723, 3306, 3389, 5432, 5900, 8000, 8080, 8443, 8888]
     ports = set()
-    for part in port_range_str.split(','):
+    for part in port_spec.split(","):
         part = part.strip()
-        if '-' in part:
-            start, end = part.split('-', 1)
-            start, end = int(start), int(end)
-            ports.update(range(max(1, start), min(65535, end) + 1))
+        if "-" in part:
+            start, end = part.split("-", 1)
+            ports.update(range(int(start), int(end) + 1))
         else:
             ports.add(int(part))
     return sorted(ports)
 
+def get_service_name(port: int, proto: str = "tcp") -> str:
+    """Get common service name for a port."""
+    services = {
+        21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP", 53: "DNS",
+        80: "HTTP", 110: "POP3", 111: "RPC", 135: "MSRPC", 139: "NetBIOS",
+        143: "IMAP", 443: "HTTPS", 445: "SMB", 993: "IMAPS", 995: "POP3S",
+        1723: "PPTP", 3306: "MySQL", 3389: "RDP", 5432: "PostgreSQL",
+        5900: "VNC", 8000: "HTTP-Alt", 8080: "HTTP-Proxy", 8443: "HTTPS-Alt",
+        8888: "HTTP-Alt2", 27017: "MongoDB", 6379: "Redis"
+    }
+    return services.get(port, "")
 
-COMMON_PORTS = {
-    21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP", 53: "DNS",
-    80: "HTTP", 110: "POP3", 143: "IMAP", 443: "HTTPS", 445: "SMB",
-    465: "SMTPS", 993: "IMAPS", 995: "POP3S", 1433: "MSSQL",
-    1521: "Oracle", 3306: "MySQL", 3389: "RDP", 5432: "PostgreSQL",
-    5900: "VNC", 6379: "Redis", 8000: "HTTP-ALT", 8080: "HTTP-PROXY",
-    8443: "HTTPS-ALT", 27017: "MongoDB"
-}
+# ── Scan Methods ────────────────────────────────────────────────────────────
 
-
-def syn_scan_port(target_ip, port, timeout=1.0):
-    """
-    Attempt a TCP SYN scan on a single port.
-    Returns: ('open', port, service) | ('closed', port, None) | ('filtered', port, None)
-    """
+def tcp_connect_scan(target_ip: str, port: int, timeout: float) -> Tuple[int, str]:
+    """TCP connect scan — uses OS connect()."""
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         result = sock.connect_ex((target_ip, port))
         sock.close()
-
         if result == 0:
-            service = COMMON_PORTS.get(port, "unknown")
-            return ('open', port, service)
-        elif result == 10061:  # Connection refused (Windows)
-            return ('closed', port, None)
-        elif result == 111:  # Connection refused (Linux)
-            return ('closed', port, None)
+            return port, "open"
+        elif result in (61, 111):  # ECONNREFUSED
+            return port, "closed"
         else:
-            return ('filtered', port, None)
+            return port, "filtered"
     except socket.timeout:
-        return ('filtered', port, None)
+        return port, "filtered"
     except Exception:
-        return ('filtered', port, None)
+        return port, "filtered"
 
-
-def scan_worker(target_ip, ports, timeout, speed_label):
-    """Worker function for scanning ports in a thread pool."""
-    results = []
-    for port in ports:
-        if not scan_stats['running']:
-            break
-        result = syn_scan_port(target_ip, port, timeout)
-        results.append(result)
-
-        with threading.Lock():
-            scan_stats['scanned'] += 1
-            status, p, svc = result
-            if status == 'open':
-                scan_stats['open'] += 1
-                scan_stats['open_ports'].append((p, svc))
-            elif status == 'closed':
-                scan_stats['closed'] += 1
-            else:
-                scan_stats['filtered'] += 1
-
-    return results
-
-
-# ============================================================
-# Stats Display
-# ============================================================
-def display_progress(stop_event, target_ip, total_ports):
-    """Display real-time scanning progress."""
-    while not stop_event.is_set():
-        time.sleep(0.5)
-        s = scan_stats
-        pct = (s['scanned'] / total_ports * 100) if total_ports > 0 else 0
-        elapsed = time.time() - s['start_time'] if s['start_time'] > 0 else 0
-        rate = s['scanned'] / elapsed if elapsed > 0 else 0
-        eta = (total_ports - s['scanned']) / rate if rate > 0 else 0
-
-        tgt_str = f"{BOLD}{GREEN}{target_ip}{RESET}"
-        sc_str = f"{BOLD}{WHITE}{s['scanned']}{RESET}/{BOLD}{WHITE}{total_ports}{RESET}"
-        pct_str = f"{BOLD}{CYAN}{pct:.1f}%{RESET}"
-        rate_str = f"{BOLD}{YELLOW}{rate:.0f}{RESET}"
-        open_str = f"{BOLD}{GREEN}{s['open']}{RESET}"
-
-        print(
-            f"\r{BOLD}[SCAN]{RESET} {tgt_str} | "
-            f"Scanned: {sc_str} ({pct_str}) | "
-            f"Rate: {rate_str} p/s | "
-            f"Open: {open_str} | ETA: {BOLD}{YELLOW}{eta:.0f}s{RESET}   ",
-            end="",
-            flush=True
-        )
-
-
-# ============================================================
-# Main Entry Point
-# ============================================================
-def run_attack(**kwargs):
+def syn_scan_socket(target_ip: str, port: int, timeout: float) -> Tuple[int, str]:
     """
-    Main entry point for the port scanner.
-
-    Accepts kwargs dict with keys:
-        target (str): Target IP address
-        ports (str): Port range string (e.g., '1-1024', '80,443,8080')
-        speed (str): Scan speed 'fast', 'normal', or 'slow'
-        verbose (bool): Enable verbose output
+    Attempt a SYN scan via raw socket (requires root/Administrator).
+    Falls back to connect scan if raw socket unavailable.
     """
-    target = kwargs.get('target', '127.0.0.1')
-    ports_str = kwargs.get('ports', '1-1024')
-    speed = kwargs.get('speed', 'normal')
-    verbose = kwargs.get('verbose', False)
-
-    print(BANNER)
-    print(LEGAL_WARNING)
-
-    warn_external_target(target)
-
-    # Parse speed settings
-    speed_config = {
-        'fast': {'workers': 100, 'timeout': 0.5},
-        'normal': {'workers': 20, 'timeout': 1.0},
-        'slow': {'workers': 5, 'timeout': 2.0},
-    }
-    config = speed_config.get(speed, speed_config['normal'])
-
-    # Parse ports
-    ports = parse_port_range(ports_str)
-    if not ports:
-        print(f"{RED}[ERROR] No valid ports specified.{RESET}")
-        return
-
-    total_ports = len(ports)
-    scan_stats['total'] = total_ports
-    scan_stats['running'] = True
-    scan_stats['start_time'] = time.time()
-
-    print(f"\n{BOLD}[*] Target:{RESET}    {target}")
-    print(f"{BOLD}[*] Ports:{RESET}     {total_ports} ports ({ports[0]}-{ports[-1]})")
-    print(f"{BOLD}[*] Speed:{RESET}     {speed} ({config['workers']} workers, {config['timeout']}s timeout)")
-    print(f"{BOLD}[*] Start:{RESET}     {datetime.now().strftime('%H:%M:%S')}")
-    print(f"\n{BOLD}{RED}Press Ctrl+C to stop.{RESET}\n")
-
-    stop_event = threading.Event()
-
-    # Progress display
-    progress_thread = threading.Thread(
-        target=display_progress,
-        args=(stop_event, target, total_ports),
-        daemon=True
-    )
-    progress_thread.start()
-
-    # Split ports into chunks for workers
-    chunk_size = max(1, total_ports // config['workers'])
-    port_chunks = [ports[i:i + chunk_size] for i in range(0, total_ports, chunk_size)]
+    try:
+        # Try raw socket for SYN scan
+        sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
+        sock.settimeout(timeout)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+    except PermissionError:
+        return tcp_connect_scan(target_ip, port, timeout)
 
     try:
-        with ThreadPoolExecutor(max_workers=config['workers']) as executor:
-            futures = {
-                executor.submit(scan_worker, target, chunk, config['timeout'], speed): chunk
-                for chunk in port_chunks
-            }
-            for future in as_completed(futures):
-                try:
-                    future.result()
-                except Exception as e:
-                    if verbose:
-                        print(f"\n{RED}Worker error: {e}{RESET}")
+        src_port = random.randint(1024, 65535)
+        seq = random.randint(0, 0xFFFFFFFF)
+        window = random.randint(1024, 65535)
 
-    except KeyboardInterrupt:
-        print(f"\n\n{BOLD}{YELLOW}[*] Stopping scan...{RESET}")
-        scan_stats['running'] = False
+        # IP header
+        saddr = socket.inet_aton("10.0.1.100")
+        daddr = socket.inet_aton(target_ip)
+        ip_header = struct.pack("!BBHHHBBH4s4s",
+            69, 0, 40, random.randint(1, 65535), 0, 64,
+            socket.IPPROTO_TCP, 0, saddr, daddr)
 
-    scan_stats['running'] = False
-    time.sleep(0.5)
+        # TCP header (SYN flag = 0x02)
+        tcp_header = struct.pack("!HHLLBBHHH",
+            src_port, port, seq, 0, 5 << 4, 0x02, window, 0, 0)
 
-    # Results
-    s = scan_stats
-    elapsed = time.time() - s['start_time']
+        # TCP checksum
+        psh = saddr + daddr + struct.pack("!BBH", 0, socket.IPPROTO_TCP, len(tcp_header))
+        tcp_checksum = _checksum(psh + tcp_header)
+        tcp_header = struct.pack("!HHLLBBHHH",
+            src_port, port, seq, 0, 5 << 4, 0x02, window, tcp_checksum, 0)
 
-    print(f"\n\n{BOLD}{GREEN}{'='*60}{RESET}")
-    print(f"{BOLD}{GREEN}  PORT SCAN RESULTS{RESET}")
-    print(f"{BOLD}{GREEN}{'='*60}{RESET}")
-    print(f"  Target:          {target}")
-    print(f"  Ports scanned:   {s['scanned']}/{total_ports}")
-    print(f"  Open ports:      {BOLD}{GREEN}{s['open']}{RESET}")
-    print(f"  Closed ports:    {s['closed']}")
-    print(f"  Filtered:        {s['filtered']}")
-    print(f"  Duration:        {elapsed:.1f}s")
+        sock.sendto(ip_header + tcp_header, (target_ip, 0))
 
-    if s['open_ports']:
-        print(f"\n  {BOLD}{GREEN}Open Ports:{RESET}")
-        print(f"  {'Port':<10} {'Service':<20} {'State'}")
-        print(f"  {'-'*45}")
-        for port, service in sorted(s['open_ports']):
-            print(f"  {BOLD}{GREEN}{port:<10}{RESET} {service:<20} {GREEN}open{RESET}")
-    else:
-        print(f"\n  {YELLOW}No open ports found.{RESET}")
+        # Try to receive response
+        data, _ = sock.recvfrom(1024)
+        # If we get here, the port is likely open (responded with SYN+ACK)
+        return port, "open"
+    except socket.timeout:
+        return port, "filtered"
+    except Exception:
+        return port, "filtered"
+    finally:
+        sock.close()
 
-    print(f"{BOLD}{GREEN}{'='*60}{RESET}")
+def _checksum(data: bytes) -> int:
+    if len(data) % 2:
+        data += b'\x00'
+    s = sum(struct.unpack(f'!{len(data)//2}H', data))
+    s = (s >> 16) + (s & 0xFFFF)
+    s += s >> 16
+    return (~s) & 0xFFFF
+
+# ── Scan Orchestrator ───────────────────────────────────────────────────────
+
+def run_port_scan(target_ip: str, ports: List[int], speed: str, method: str,
+                   timeout: float, stats: dict, results: dict):
+    """Run the port scan with controlled concurrency."""
+    speed_workers = {"slow": 5, "normal": 20, "fast": 100}
+    workers = speed_workers.get(speed, 20)
+    scanned = 0
+    open_ports = []
+    closed_ports = []
+
+    scan_func = syn_scan_socket if method == "syn" else tcp_connect_scan
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(scan_func, target_ip, p, timeout): p for p in ports}
+
+        for future in as_completed(futures):
+            port, status = future.result()
+            scanned += 1
+
+            if status == "open":
+                open_ports.append(port)
+                svc = get_service_name(port)
+                print(f"  {Color.GREEN}[OPEN]{Color.RESET}   Port {port:>5}  {Color.CYAN}{svc:>15}{Color.RESET}")
+            elif status == "closed":
+                closed_ports.append(port)
+
+            stats["scanned"] = scanned
+            stats["open"] = len(open_ports)
+            stats["total"] = len(ports)
+
+    results["open"] = sorted(open_ports)
+    results["closed"] = sorted(closed_ports)
 
 
-# ============================================================
-# CLI
-# ============================================================
-def main():
-    parser = argparse.ArgumentParser(
-        description="EKADHARA Port Scanner — PS-26145",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python port_scan.py --target 127.0.0.1
-  python port_scan.py --target 127.0.0.1 --ports 1-1024 --speed fast
-  python port_scan.py --target 127.0.0.1 --ports 80,443,8080 --speed slow
-  python port_scan.py --target 127.0.0.1 --ports 3389,5900 --verbose
-        """
-    )
-    parser.add_argument('--target', required=True, help='Target IP address')
-    parser.add_argument('--ports', default='1-1024', help='Port range (default: 1-1024)')
-    parser.add_argument(
-        '--speed', choices=['fast', 'normal', 'slow'], default='normal',
-        help='Scan speed: fast (100 workers), normal (20), slow (5)'
-    )
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
+def run_attack(target: str, ports: str = "common", speed: str = "normal",
+               method: str = "connect", timeout: float = 2.0, **kwargs):
+    """
+    Run a port scan on the target.
 
+    Args:
+        target:    Target IP or hostname
+        ports:     Port specification (default: common well-known ports)
+        speed:     Scan speed: slow, normal, fast
+        method:    Scan method: connect (default), syn
+        timeout:   Per-port timeout in seconds (default: 2.0)
+    """
+    banner()
+    parsed_ports = parse_ports(ports)
+    print(f"{Color.BLUE}[*] Target: {target}{Color.RESET}")
+    print(f"{Color.BLUE}[*] Ports: {len(parsed_ports)} ({parsed_ports[0]}-{parsed_ports[-1]}){Color.RESET}")
+    print(f"{Color.BLUE}[*] Method: {method} | Speed: {speed} | Timeout: {timeout}s{Color.RESET}")
+
+    safety_check(target)
+
+    try:
+        target_ip = socket.gethostbyname(target)
+    except socket.gaierror:
+        print(f"{Color.RED}[!] Could not resolve {target}{Color.RESET}")
+        return None, {}
+
+    print(f"{Color.GREEN}[+] Resolved {target} -> {target_ip}{Color.RESET}\n")
+
+    print(f"{Color.CYAN}{'─'*55}{Color.RESET}")
+    print(f"  {Color.WHITE}{'Port':>10}  {'Status':>12}  {'Service':>20}{Color.RESET}")
+    print(f"{Color.CYAN}{'─'*55}{Color.RESET}")
+
+    stats = {"scanned": 0, "open": 0, "total": len(parsed_ports)}
+    results = {"open": [], "closed": []}
+
+    t = threading.Thread(target=run_port_scan,
+                         args=(target_ip, parsed_ports, speed, method, timeout, stats, results),
+                         daemon=True)
+    t.start()
+    return t, stats
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Port Scanner — EKADHARA PS-26145")
+    parser.add_argument("--target", required=True, help="Target IP or hostname")
+    parser.add_argument("--ports", default="common",
+                        help="Ports to scan: 'common', '80', '1-1000', '22,80,443' (default: common)")
+    parser.add_argument("--speed", choices=["slow", "normal", "fast"], default="normal",
+                        help="Scan speed/concurrency (default: normal)")
+    parser.add_argument("--method", choices=["connect", "syn"], default="connect",
+                        help="Scan method (default: connect)")
+    parser.add_argument("--timeout", type=float, default=2.0, help="Per-port timeout in seconds (default: 2.0)")
     args = parser.parse_args()
-    run_attack(
-        target=args.target,
-        ports=args.ports,
-        speed=args.speed,
-        verbose=args.verbose
-    )
 
+    banner()
+    t, stats = run_attack(args.target, args.ports, args.speed, args.method, args.timeout)
 
-if __name__ == '__main__':
-    main()
+    try:
+        while t.is_alive():
+            print(f"\r{Color.DIM}  Scanning: {stats['scanned']}/{stats['total']} ports...{Color.RESET}", end="", flush=True)
+            time.sleep(0.3)
+    except KeyboardInterrupt:
+        pass
+
+    t.join(timeout=5)
+    print(f"\n\n{Color.GREEN}[+] Scan complete.{Color.RESET}")
+    print(f"  {Color.WHITE}Open ports: {stats['open']}{Color.RESET}")
+    print(f"  {Color.DIM}Scanned: {stats['scanned']}/{stats['total']}{Color.RESET}")
