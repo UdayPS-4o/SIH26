@@ -108,28 +108,6 @@ const SH: React.FC<{ label: string; right?: React.ReactNode }> = ({ label, right
   </div>
 );
 
-const Sev: React.FC<{ sev: string }> = ({ sev }) => {
-  const M: Record<string,{c:string;bg:string}> = {
-    critical:{c:'var(--accent-red)',bg:'var(--sev-critical-bg)'},
-    high:{c:'var(--accent-orange)',bg:'var(--sev-high-bg)'},
-    medium:{c:'var(--accent-yellow)',bg:'var(--sev-medium-bg)'},
-    low:{c:'var(--accent-cyan)',bg:'var(--sev-low-bg)'},
-  };
-  const s = M[sev] || M.low;
-  return (
-    <span style={{
-      display:'inline-flex', alignItems:'center', gap: 5,
-      padding: '3px 10px', borderRadius: 5, fontSize: 10, fontWeight: 600,
-      letterSpacing: '0.8px', color: s.c, background: s.bg,
-      border: `1px solid var(--sev-${sev === 'critical' ? 'critical' : sev === 'high' ? 'high' : sev === 'medium' ? 'medium' : 'low'}-border, ${s.c}30)`,
-      fontFamily: MONO, textTransform: 'uppercase',
-    }}>
-      <span style={{width:4,height:4,borderRadius:'50%',background:s.c}} />
-      {sev}
-    </span>
-  );
-};
-
 /* ═══════════════════════════════════════════════════════════════════════════════════
    SPARKLINE COMPONENT
    ═══════════════════════════════════════════════════════════════════════════════════ */
@@ -551,7 +529,7 @@ const LiveThreats: React.FC = () => {
                       : idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)';
                     return (
                       <tr key={alert.id} style={{
-                        borderBottom: '1px solid var(--border-color)30',
+                        borderBottom: '1px solid var(--border-color)',
                         background: rowBg,
                         transition: `background 0.15s ${EASE}`,
                         cursor:'pointer',
