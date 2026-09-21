@@ -84,7 +84,7 @@ const AttackConsole: React.FC = () => {
           <AlertTriangle size={22} style={{ color: C.accent }} />
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.text, margin: 0 }}>Attack Console</h1>
         </div>
-        <p style={{ fontSize: 13, color: C.textSec, margin: 0 }}>
+        <p style={{ fontSize: 12, color: C.textSec, margin: 0 }}>
           Generate controlled attack traffic for detection pipeline testing. All attacks target localhost by default.
         </p>
       </div>

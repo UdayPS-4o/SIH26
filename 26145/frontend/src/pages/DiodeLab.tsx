@@ -299,7 +299,7 @@ const DiodeLab: React.FC = () => {
   return (
     <div style={{
       minHeight:'100%', background: C.bg, color: C.text,
-      fontFamily: '"Inter",system-ui,sans-serif', fontSize: 13, lineHeight: 1.6,
+      fontFamily: '"Inter",system-ui,sans-serif', fontSize: 12, lineHeight: 1.6,
     }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
@@ -343,9 +343,9 @@ const DiodeLab: React.FC = () => {
       <main style={{ maxWidth:1400, margin:'0 auto', padding:'24px 28px 80px' }}>
 
         {/* ── PAGE HEADER ── */}
-        <section style={{ marginBottom: 32 }}>
+        <section style={{ marginBottom: 12 }}>
           <h1 style={{
-            fontSize: 28, fontWeight: 700, letterSpacing:'-0.5px', color: C.text, marginBottom: 8,
+            fontSize: 20, fontWeight: 700, letterSpacing:'-0.3px', color: C.text, marginBottom: 8,
           }}>Diode Lab</h1>
           <p style={{
             fontSize: 14, color: C.textSec, maxWidth: 640, lineHeight: 1.7, margin: 0,
@@ -363,7 +363,7 @@ const DiodeLab: React.FC = () => {
             borderRadius: 10, padding: '20px 24px',
           }}>
             <div style={{
-              display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap: 16,
+              display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap: 12,
             }}>
               <div>
                 <div style={{

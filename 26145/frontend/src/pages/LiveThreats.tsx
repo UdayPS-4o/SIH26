@@ -251,7 +251,7 @@ const LiveThreats: React.FC = () => {
       }}>
         <div style={{
           maxWidth: 1400, margin: '0 auto', padding: '0 28px',
-          display:'flex', alignItems:'center', height: 52, gap: 16,
+          display:'flex', alignItems:'center', height: 52, gap: 12,
         }}>
           <div style={{ display:'flex', alignItems:'center', gap: 10, flexShrink:0 }}>
             <div style={{
@@ -304,16 +304,16 @@ const LiveThreats: React.FC = () => {
 
         {/* Page title */}
         <section style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 4 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 4 }}>
             Live Threat Feed
           </h1>
-          <p style={{ fontSize: 13, color: C.textSec, maxWidth: 600, lineHeight: 1.6, margin: 0 }}>
+          <p style={{ fontSize: 12, color: C.textSec, maxWidth: 600, lineHeight: 1.6, margin: 0 }}>
             Real-time alert stream from the backend detection pipeline.
           </p>
         </section>
 
         {/* ── SECTION 1 — Throughput + Severity Summary + Filters ─────────── */}
-        <section style={{ display:'grid', gridTemplateColumns:'1fr', gap: 16, marginBottom: 24 }}>
+        <section style={{ display:'grid', gridTemplateColumns:'1fr', gap: 12, marginBottom: 24 }}>
           <Panel delay={0.05} padding="14px 18px">
             <div style={{ display:'grid', gridTemplateColumns:'200px 1fr', gap: 20, alignItems:'center' }}>
               {/* Sparkline */}

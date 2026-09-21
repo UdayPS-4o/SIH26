@@ -188,7 +188,7 @@ function ActivityPage() {
           { label: 'Warnings', value: stats.warnings, color: 'var(--accent-yellow)', icon: '◌' },
         ].map(card => (
           <div key={card.label} style={{
-            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px',
+            background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px 14px',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
@@ -197,7 +197,7 @@ function ActivityPage() {
               </div>
               <span style={{ fontSize: '18px', opacity: 0.6 }}>{card.icon}</span>
             </div>
-            <div style={{ height: '3px', borderRadius: '2px', background: 'var(--border-color)', marginTop: '10px', overflow: 'hidden' }}>
+            <div style={{ height: '2px', borderRadius: '2px', background: 'var(--border-color)', marginTop: '10px', overflow: 'hidden' }}>
               <div style={{ height: '100%', borderRadius: '2px', background: `linear-gradient(90deg, ${card.color}, ${card.color}88)`, width: `${Math.min((card.value / Math.max(stats.total, 1)) * 100, 100)}%` }} />
             </div>
           </div>
@@ -410,7 +410,7 @@ function ActivityPage() {
             </div>
             <button onClick={() => setSelectedLog(null)} style={{ background: 'none', border: 'none', color: 'var(--border-active)', cursor: 'pointer', fontSize: '16px', fontFamily: '"JetBrains Mono", monospace' }}>✕</button>
           </div>
-          <div style={{ padding: '16px' }}>
+          <div style={{ padding: '12px 14px' }}>
             {/* Pipeline Steps */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', marginBottom: '16px' }}>
               {PIPELINE_STEPS.map((step, i) => {
