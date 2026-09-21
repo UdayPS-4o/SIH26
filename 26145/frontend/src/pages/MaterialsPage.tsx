@@ -433,7 +433,7 @@ function MaterialsPage() {
 
   if (loading) {
     return (
-      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px' }}>
         <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '13px', letterSpacing: '2px' }}>LOADING EVIDENCE REGISTRY...</div>
       </div>
     );
@@ -441,14 +441,14 @@ function MaterialsPage() {
 
   if (error) {
     return (
-      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px' }}>
         <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-red)', fontSize: '13px' }}>{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', padding: '24px' }}>
+    <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', padding: '16px 20px' }}>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div>
@@ -848,7 +848,7 @@ function MaterialsPage() {
         }} onClick={() => setShowAddModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
-            padding: '24px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto',
+            padding: '16px 20px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto',
             boxShadow: 'var(--modal-shadow), 0 0 20px var(--color-accent-dim)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -873,7 +873,7 @@ function MaterialsPage() {
         }} onClick={() => setShowDetail(null)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
-            padding: '24px', width: '100%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto',
+            padding: '16px 20px', width: '100%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto',
             boxShadow: 'var(--modal-shadow), 0 0 20px var(--color-accent-dim)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -999,7 +999,7 @@ function MaterialsPage() {
         }} onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); setNormalizeProgress(0); }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
-            padding: '24px', width: '100%', maxWidth: '500px',
+            padding: '16px 20px', width: '100%', maxWidth: '500px',
             boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
@@ -1047,7 +1047,7 @@ function MaterialsPage() {
         }} onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--modal-surface)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '10px',
-            padding: '24px', width: '100%', maxWidth: '500px',
+            padding: '16px 20px', width: '100%', maxWidth: '500px',
             boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
@@ -1083,7 +1083,7 @@ function MaterialsPage() {
         }} onClick={() => setShowUpload(false)}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
-            padding: '24px', width: '100%', maxWidth: '480px',
+            padding: '16px 20px', width: '100%', maxWidth: '480px',
             boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>

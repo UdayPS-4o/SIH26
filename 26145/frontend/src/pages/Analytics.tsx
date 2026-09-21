@@ -327,15 +327,15 @@ function TopIPsTable({ data }: { data: Array<{ ip: string; packets: number; atta
                 }}>{i + 1}</span>
               </td>
               <td style={{ padding: '10px 14px' }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT }}>{row.ip}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: FONT }}>{row.ip}</span>
               </td>
               <td style={{ padding: '10px 14px' }}>
-                <span style={{ fontSize: 13, color: C.accent, fontFamily: FONT, fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                <span style={{ fontSize: 12, color: C.accent, fontFamily: FONT, fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
                   {fmt(row.packets)}
                 </span>
               </td>
               <td style={{ padding: '10px 14px' }}>
-                <span style={{ fontSize: 13, color: C.text, fontFamily: FONT, fontVariantNumeric: 'tabular-nums' }}>
+                <span style={{ fontSize: 12, color: C.text, fontFamily: FONT, fontVariantNumeric: 'tabular-nums' }}>
                   {fmt(row.attacks)}
                 </span>
               </td>
@@ -544,7 +544,7 @@ const Analytics: React.FC = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100%', background: C.bg, color: C.text, fontFamily: SANS, fontSize: 13, lineHeight: 1.6 }}>
+    <div style={{ minHeight: '100%', background: C.bg, color: C.text, fontFamily: SANS, fontSize: 12, lineHeight: 1.6 }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         @keyframes wt-draw { to{stroke-dashoffset:0;} }
@@ -595,14 +595,14 @@ const Analytics: React.FC = () => {
       </header>
 
       {/* ── MAIN CONTENT ──────────────────────────────────────────────── */}
-      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 28px 64px' }}>
+      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '16px 20px 48px' }}>
 
         {/* Header */}
         <section style={{ marginBottom: 28 }}>
           <h1 style={{
-            fontSize: 24, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 4,
+            fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 4,
           }}>Analytics</h1>
-          <p style={{ fontSize: 13, color: C.textSec, lineHeight: 1.6, margin: 0 }}>
+          <p style={{ fontSize: 12, color: C.textSec, lineHeight: 1.6, margin: 0 }}>
             Detection accuracy, protocol distribution, and attack source intelligence &middot; Auto-refresh 3s
           </p>
         </section>
@@ -624,7 +624,7 @@ const Analytics: React.FC = () => {
                   }}>{trend} {trendLabel}</span>
                 </div>
                 <div style={{
-                  fontSize: 28, fontWeight: 700, color: m.color,
+                  fontSize: 20, fontWeight: 700, color: m.color,
                   fontFamily: FONT, letterSpacing: '-0.5px', lineHeight: 1.1,
                   fontVariantNumeric: 'tabular-nums',
                 }}>{m.value}</div>
@@ -647,7 +647,7 @@ const Analytics: React.FC = () => {
         {/* ════════════════════════════════════════════════════════════════
              ROW 2 — Donut + Sparkline
              ════════════════════════════════════════════════════════════════ */}
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 16 }} className="wt-grid-aside">
+        <section style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12, marginBottom: 16 }} className="wt-grid-aside">
 
           {/* Severity donut */}
           <Panel delay={0.1}>
@@ -677,7 +677,7 @@ const Analytics: React.FC = () => {
         {/* ════════════════════════════════════════════════════════════════
              ROW 3 — Protocol breakdown + Model performance
              ════════════════════════════════════════════════════════════════ */}
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }} className="wt-grid-aside">
+        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }} className="wt-grid-aside">
 
           {/* Protocol breakdown */}
           <Panel delay={0.2}>
@@ -720,7 +720,7 @@ const Analytics: React.FC = () => {
         {/* ════════════════════════════════════════════════════════════════
              ROW 4 — Top IPs + Detection accuracy metrics
              ════════════════════════════════════════════════════════════════ */}
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }} className="wt-grid-aside">
+        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }} className="wt-grid-aside">
 
           {/* Top attacking IPs */}
           <Panel delay={0.3}>

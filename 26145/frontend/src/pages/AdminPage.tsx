@@ -218,7 +218,7 @@ function AdminPage() {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px 20px' }}>
       {/* ── HEADER ────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
@@ -258,7 +258,7 @@ function AdminPage() {
             return (
               <div key={node.id} className="admin-card" style={{
                 background: 'var(--bg-secondary)', border: `1px solid ${node.status === 'error' ? 'var(--mat-rejected-border)' : 'var(--border-color)'}`,
-                borderRadius: '8px', padding: '16px',
+                borderRadius: '8px', padding: '12px 14px',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <div>
@@ -339,7 +339,7 @@ function AdminPage() {
             ];
 
             return (
-              <div key={model.name} className="admin-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
+              <div key={model.name} className="admin-card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px 14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                   <div>
                     <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{model.name}</div>
@@ -497,7 +497,7 @@ function AdminPage() {
           </div>
 
           {/* Login Activity Timeline */}
-          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
+          <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px 14px' }}>
             <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>Login Activity Timeline</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {USER_DATA.filter(u => u.status === 'active').map((entry, i) => (
@@ -539,7 +539,7 @@ function AdminPage() {
             <span style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '12px' }}>watchtower@admin:~</span>
           </div>
           <div ref={terminalRef} style={{
-            padding: '16px', maxHeight: '400px', overflowY: 'auto',
+            padding: '12px 14px', maxHeight: '400px', overflowY: 'auto',
             fontFamily: '"JetBrains Mono", monospace', fontSize: '13px', lineHeight: 1.8,
           }}>
             {terminalLines.map((line, i) => {

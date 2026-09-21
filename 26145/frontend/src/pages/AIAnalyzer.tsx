@@ -485,7 +485,7 @@ const AIAnalyzer: React.FC = () => {
   return (
     <div style={{
       minHeight:'100%', background:C.bg, color:C.text,
-      fontFamily: '"Inter",system-ui,sans-serif', fontSize: 13, lineHeight: 1.6,
+      fontFamily: '"Inter",system-ui,sans-serif', fontSize: 12, lineHeight: 1.6,
     }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
@@ -547,11 +547,11 @@ const AIAnalyzer: React.FC = () => {
       <main style={{ maxWidth:1400,margin:'0 auto',padding:'24px 28px 64px' }}>
 
         {/* Hero context */}
-        <section style={{ marginBottom: 32 }}>
+        <section style={{ marginBottom: 12 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 6 }}>
             AI Threat Analyzer
           </h1>
-          <p style={{ fontSize: 13, color: C.textSec, maxWidth: 680, lineHeight: 1.65, margin: 0 }}>
+          <p style={{ fontSize: 12, color: C.textSec, maxWidth: 680, lineHeight: 1.65, margin: 0 }}>
             ML Pipeline performance dashboard — {THREAT_MODELS.length} threat-specific models with streaming inference at 10K flows/sec sustained throughput.
           </p>
         </section>
@@ -600,7 +600,7 @@ const AIAnalyzer: React.FC = () => {
               Last retrained: Jan 2026
             </span>
           </div>
-          <div style={{ display:'flex', gap: 16, marginTop: 14, flexWrap:'wrap' }}>
+          <div style={{ display:'flex', gap: 12, marginTop: 14, flexWrap:'wrap' }}>
             {[
               { label: 'Training Dataset', value: 'CIC-IDS2017', detail: '2.3M flows' },
               { label: 'Feature Count', value: '127', detail: 'Per-flow features' },

@@ -90,7 +90,7 @@ function Panel({ delay = 0, style, children }: {
       boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
       ...style,
     }}>
-      <div style={{ padding: '20px 24px' }}>{children}</div>
+      <div style={{ padding: '14px 18px' }}>{children}</div>
     </div>
   );
 }
@@ -99,7 +99,7 @@ function SectionHeader({ label, right }: { label: string; right?: React.ReactNod
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      paddingBottom: 14, marginBottom: 16, borderBottom: `1px solid var(--border-default)`,
+      paddingBottom: 10, marginBottom: 12, borderBottom: `1px solid var(--border-default)`,
     }}>
       <span style={{
         fontFamily: SANS, fontSize: 11, fontWeight: 700,
@@ -424,7 +424,7 @@ const Dashboard: React.FC = () => {
      ═══════════════════════════════════════════════════════════════════════════════ */
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: C.text, fontFamily: SANS, fontSize: 13, lineHeight: 1.6 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: C.text, fontFamily: SANS, fontSize: 12, lineHeight: 1.6 }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         * { font-family: 'Inter', system-ui, -apple-system, sans-serif; box-sizing: border-box; }
@@ -448,7 +448,7 @@ const Dashboard: React.FC = () => {
         }
         .kpi-card {
           background: var(--bg-elevated); border: 1px solid var(--border-default);
-          border-radius: 16px; backdrop-filter: blur(12px); padding: 20px 22px;
+          border-radius: 12px; backdrop-filter: blur(12px); padding: 12px 14px;
           transition: all 0.2s ease;
           box-shadow: 0 1px 3px rgba(0,0,0,0.15);
         }
@@ -478,7 +478,7 @@ const Dashboard: React.FC = () => {
       }}>
         <div style={{
           maxWidth: 1440, margin: '0 auto', padding: '0 24px',
-          display: 'flex', alignItems: 'center', height: 56, gap: 16,
+          display: 'flex', alignItems: 'center', height: 56, gap: 12,
         }}>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -538,11 +538,11 @@ const Dashboard: React.FC = () => {
       </header>
 
       {/* ── MAIN CONTENT ───────────────────────────────────────────────────── */}
-      <main style={{ maxWidth: 1440, margin: '0 auto', padding: '20px 24px 64px' }}>
+      <main style={{ maxWidth: 1440, margin: '0 auto', padding: '16px 20px 48px' }}>
 
         {/* Page title area */}
-        <section style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, margin: '0 0 4px 0' }}>
+        <section style={{ marginBottom: 16 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, margin: '0 0 4px 0' }}>
             Operations Dashboard
           </h1>
           <p style={{ fontSize: 12, color: C.textSec, margin: 0 }}>
@@ -625,13 +625,13 @@ const OperationsTab: React.FC<OperationsTabProps> = ({
   flowsPerSec, uptimeStr, throughputData, throughputAreaData, alerts,
 }) => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
       {/* ── ROW 1 — 6 KPI Cards ─────────────────────────────────────────── */}
       <section className="kpi-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(6, 1fr)',
-        gap: 12,
+        gap: 10,
       }}>
         <KpiCard label="Total Flows" value={fmt(totalFlows)} color={C.accent} icon={<Globe size={16} />} />
         <KpiCard label="Active Threats" value={fmt(activeThreats)} color={C.red} icon={<Shield size={16} />} />
@@ -645,7 +645,7 @@ const OperationsTab: React.FC<OperationsTabProps> = ({
       <section className="ops-row" style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 16,
+        gap: 12,
       }}>
         <Panel delay={0.1}>
           <SectionHeader
@@ -670,7 +670,7 @@ const OperationsTab: React.FC<OperationsTabProps> = ({
       <section className="ops-row" style={{
         display: 'grid',
         gridTemplateColumns: '1.2fr 1fr',
-        gap: 16,
+        gap: 12,
       }}>
         <Panel delay={0.2}>
           <SectionHeader
@@ -703,16 +703,16 @@ function KpiCard({ label, value, color, icon }: {
     <div className="kpi-card">
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 10,
+        marginBottom: 8,
       }}>
         <span style={{
-          fontSize: 10, fontWeight: 600, color: C.textSec,
+          fontSize: 9, fontWeight: 600, color: C.textSec,
           letterSpacing: '0.8px', textTransform: 'uppercase',
         }}>{label}</span>
         <span style={{ color, opacity: 0.7 }}>{icon}</span>
       </div>
       <div style={{
-        fontSize: 26, fontWeight: 700, color,
+        fontSize: 20, fontWeight: 700, color,
         fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.5px', lineHeight: 1.1,
       }}>{value}</div>
     </div>
@@ -772,7 +772,7 @@ function AIAnalyzerInline() {
   ], [tick]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
 
       {/* ── Feature Validity Matrix ─────────────────────────────────────── */}
       <section>
@@ -793,7 +793,7 @@ function AIAnalyzerInline() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: '140px 1fr 1fr 1fr 120px',
-            gap: 0, padding: '12px 20px',
+            gap: 0, padding: '10px 14px',
             borderBottom: '1px solid var(--border-default)',
             background: 'var(--bg-elevated)',
           }}>
@@ -818,7 +818,7 @@ function AIAnalyzerInline() {
             <div key={i} style={{
               display: 'grid',
               gridTemplateColumns: '140px 1fr 1fr 1fr 120px',
-              gap: 0, padding: '11px 20px',
+              gap: 0, padding: '9px 14px',
               borderBottom: '1px solid rgba(255,255,255,0.03)',
               transition: `background 0.15s ${EASE}`,
               alignItems: 'center',
@@ -860,7 +860,7 @@ function AIAnalyzerInline() {
       <section className="analytics-row" style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 16,
+        gap: 12,
       }}>
         {/* AI/ML Confidence per threat class */}
         <Panel delay={0.1}>
@@ -876,7 +876,7 @@ function AIAnalyzerInline() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'baseline' }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{item.label}</span>
                     <span style={{
-                      fontSize: 13, fontWeight: 700, color: barColor,
+                      fontSize: 12, fontWeight: 700, color: barColor,
                       fontVariantNumeric: 'tabular-nums',
                     }}>{item.value}%</span>
                   </div>
@@ -1049,9 +1049,9 @@ function NetworkTopologyInline() {
   }, [nodes]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* ── Row 1: Stats + Network Topology ─────────────────────────────── */}
-      <section style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16 }} className="analytics-row">
+      <section style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 12 }} className="analytics-row">
         {/* Stats sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {statCards.map((s, i) => (
@@ -1179,7 +1179,7 @@ function NetworkTopologyInline() {
       </section>
 
       {/* ── Row 2: Source Assessment + Flow Timeline ────────────────────── */}
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="analytics-row">
+      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="analytics-row">
         <Panel delay={0.2}>
           <SectionHeader
             label="Source Assessment"

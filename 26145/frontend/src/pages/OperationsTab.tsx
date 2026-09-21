@@ -96,7 +96,7 @@ const OperationsTab: React.FC = () => {
   };
 
   return (
-    <div style={{ animation: 'fade-in 0.25s ease-out', padding: '24px 28px' }}>
+    <div style={{ animation: 'fade-in 0.25s ease-out', padding: '16px 20px' }}>
       {/* ── Top status bar ───────────────────────────────────────────── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',

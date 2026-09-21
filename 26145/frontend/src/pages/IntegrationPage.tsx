@@ -125,7 +125,7 @@ function IntegrationPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px 20px' }}>
       {/* ── TOP STAT CARDS ─────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
         {[
@@ -168,7 +168,7 @@ function IntegrationPage() {
         {integrations.map(int => (
           <div key={int.id} onClick={() => setSelected(int)} className="int-card" style={{
             background: 'var(--bg-secondary)', border: `1px solid ${int.status === 'error' ? 'var(--mat-rejected-border)' : int.status === 'disconnected' ? 'var(--sev-high-border)' : 'var(--border-color)'}`,
-            borderRadius: '8px', padding: '16px', cursor: 'pointer',
+            borderRadius: '8px', padding: '12px 14px', cursor: 'pointer',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
               <div>
@@ -224,7 +224,7 @@ function IntegrationPage() {
       {/* ── FORMAT DISTRIBUTION + EVENT STREAM ───────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         {/* Format Distribution */}
-        <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
+        <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px 14px' }}>
           <div style={{ fontFamily: '"JetBrains Mono", monospace', color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '14px' }}>Format Distribution</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {Object.entries(FORMAT_COLORS).map(([fmt, color]) => {
@@ -313,7 +313,7 @@ function IntegrationPage() {
       {/* ── ADD INTEGRATION FORM ─────────────────────────────────── */}
       {showAdd && (
         <div style={{
-          background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px',
+          background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px 14px',
           display: 'flex', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap',
         }}>
           <div style={{ flex: 1, minWidth: '180px' }}>
@@ -364,7 +364,7 @@ function IntegrationPage() {
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px',
-            padding: '24px', maxWidth: '480px', width: '90%',
+            padding: '16px 20px', maxWidth: '480px', width: '90%',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>

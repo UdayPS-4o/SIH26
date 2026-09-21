@@ -424,7 +424,7 @@ const NetworkMap: React.FC = () => {
   ];
 
   return (
-    <div style={{ minHeight:'100%', background: C.bg, color: C.text, fontFamily: '"Inter",system-ui,sans-serif', fontSize: 13, lineHeight: 1.6 }}>
+    <div style={{ minHeight:'100%', background: C.bg, color: C.text, fontFamily: '"Inter",system-ui,sans-serif', fontSize: 12, lineHeight: 1.6 }}>
       <style>{`
         @keyframes wt-pulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
         ::selection { background:var(--accent-cyan); color:${C.text}; }
@@ -489,7 +489,7 @@ const NetworkMap: React.FC = () => {
           <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px', color: C.text, marginBottom: 6 }}>
             Network Topology
           </h1>
-          <p style={{ fontSize: 13, color: C.textSec, maxWidth: 640, lineHeight: 1.65, margin: 0 }}>
+          <p style={{ fontSize: 12, color: C.textSec, maxWidth: 640, lineHeight: 1.65, margin: 0 }}>
             Real-time visualization of flow topology across the enclave. {nodes.filter(n=>n.type==='source').length} source segments connected to {nodes.filter(n=>n.type==='dest').length} destination clusters. Attack paths highlighted with animated indicators.
           </p>
         </section>
@@ -508,7 +508,7 @@ const NetworkMap: React.FC = () => {
               }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: C.textSec, letterSpacing:'0.5px', textTransform:'uppercase', marginBottom: 6 }}>{s.label}</div>
                 <div style={{
-                  fontSize: 28, fontWeight: 700, color: s.color,
+                  fontSize: 20, fontWeight: 700, color: s.color,
                   fontFamily: MONO, letterSpacing: '-0.5px', lineHeight: 1.1,
                   fontVariantNumeric: 'tabular-nums',
                 }}>{s.value}</div>
