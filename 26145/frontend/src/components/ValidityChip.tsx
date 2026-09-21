@@ -3,7 +3,7 @@
 const VALIDITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   MEASURED:  { bg: 'var(--mat-approved-bg)',  text: 'var(--accent-green)',  border: 'var(--color-success-dim)' },
   ESTIMATED: { bg: 'var(--mat-pending-bg)',   text: 'var(--accent-yellow)', border: 'rgba(234,179,8,0.25)' },
-  MISSING:   { bg: 'var(--chip-unverified-border)',   text: '#ffffff',             border: 'var(--sev-critical-border)' },
+  MISSING:   { bg: 'var(--chip-unverified-border)',   text: 'var(--accent-red)',             border: 'var(--sev-critical-border)' },
 };
 
 const ValidityChip: React.FC<{ validity: string; label?: string }> = ({ validity, label }) => {
