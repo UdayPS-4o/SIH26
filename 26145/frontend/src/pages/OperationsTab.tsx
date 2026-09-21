@@ -135,8 +135,8 @@ const OperationsTab: React.FC = () => {
       {/* ── 6 KPI Cards ──────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: 18, marginBottom: 28,
+        gridTemplateColumns: 'repeat(5, 1fr)',
+        gap: 10, marginBottom: 16,
       }}>
         {[
           { label: 'Active Connections', value: fmt(kpis.activeConnections), sub: '+12% vs last hour', color: C.accent, icon: Wifi, trend: 'up' as const, bg: 'var(--color-info-dim)' },
@@ -144,7 +144,6 @@ const OperationsTab: React.FC = () => {
           { label: 'Total Flows', value: fmt(kpis.totalFlows), sub: `${(flowsPerSec).toFixed(0)} flows/s`, color: C.teal, icon: Activity, trend: 'up' as const, bg: 'var(--color-info-dim)' },
           { label: 'Throughput', value: `${(flowsPerSec).toFixed(0)}/s`, sub: 'Packets analyzed', color: C.purple, icon: Gauge, trend: 'neutral' as const, bg: 'var(--color-purple-dim)' },
           { label: 'Threat Alerts', value: fmt(alertCount), sub: prevAlertCount.current < alertCount ? 'New detections' : 'No new alerts', color: C.amber, icon: AlertOctagon, trend: prevAlertCount.current < alertCount ? 'up' as const : 'down' as const, bg: 'var(--color-warning-dim)' },
-          { label: 'System Uptime', value: fmtUptime(kpis.uptime), sub: 'All systems operational', color: C.green, icon: Shield, trend: 'up' as const, bg: 'var(--color-success-dim)' },
         ].map((kpi, i) => (
           <div key={i} style={{
             background: kpi.bg,

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWebSocketContext } from '../context/WebSocketContext';
 import mockBackend from '../lib/mockBackend';
 import type { Stats, Alert, Flow } from '../types';
-import { Activity, Shield, Zap, Radio, Globe, Clock, Server } from 'lucide-react';
+import { Activity, Shield, Zap, Radio, Globe, Server } from 'lucide-react';
 
 const C = {
   bg:        'var(--bg-primary)',
@@ -630,7 +630,7 @@ const OperationsTab: React.FC<OperationsTabProps> = ({
       {/* ── ROW 1 — 6 KPI Cards ─────────────────────────────────────────── */}
       <section className="kpi-grid" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(6, 1fr)',
+        gridTemplateColumns: 'repeat(5, 1fr)',
         gap: 10,
       }}>
         <KpiCard label="Total Flows" value={fmt(totalFlows)} color={C.accent} icon={<Globe size={16} />} />
@@ -638,7 +638,6 @@ const OperationsTab: React.FC<OperationsTabProps> = ({
         <KpiCard label="Detection Rate" value={`${detectionRate.toFixed(1)}%`} color={C.green} icon={<Activity size={16} />} />
         <KpiCard label="False Positive Rate" value={`${falsePositiveRate.toFixed(1)}%`} color={C.amber} icon={<Zap size={16} />} />
         <KpiCard label="Flows/sec" value={fmt(flowsPerSec)} color={C.teal} icon={<Radio size={16} />} />
-        <KpiCard label="Uptime" value={uptimeStr} color={C.purple} icon={<Clock size={16} />} />
       </section>
 
       {/* ── ROW 2 — Degradation Matrix + Throughput Line Chart ─────────── */}
