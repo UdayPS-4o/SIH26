@@ -30,9 +30,9 @@ class Color:
 
 def banner():
     print(f"""{Color.BOLD}{Color.CYAN}
-╔══════════════════════════════════════════╗
-║  [EKADHARA] SYN Flood — PS-26145        ║
-╚══════════════════════════════════════════╝{Color.RESET}""")
++========================================+
+|  [EKADHARA] SYN Flood - PS-26145      |
++========================================+{Color.RESET}""")
 
 def is_private(target: str) -> bool:
     """Check if target is a private/local IP."""

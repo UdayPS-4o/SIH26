@@ -1,464 +1,286 @@
 #!/usr/bin/env python3
 """
-EKADHARA Unified Attack Launcher
-PS-26145 | SIH 2026 Hackathon Prototype
-
-Main entry point for all attack traffic generators.
-Manages background attack threads, lists active attacks, and stops them.
+Unified launcher — dispatches to attack scripts.
+EKADHARA PS-26145
 
 Usage:
-    python launcher.py <attack_type> --target <ip> [options]
-    python launcher.py list                    # List all active attacks
-    python launcher.py stop                    # Stop all attacks
-    python launcher.py stop <attack_id>        # Stop specific attack
+    python launcher.py <attack> --target <ip> [options]
+    python launcher.py list            # show active attacks
+    python launcher.py stop            # stop all attacks
+    python launcher.py stop <id>       # stop specific attack
 """
-
 import argparse
 import importlib
 import os
-import random
-import signal
-import string
-import subprocess
 import sys
 import threading
 import time
 from datetime import datetime
-from pathlib import Path
+from typing import Dict, Optional, Tuple
 
-# ============================================================
-# Constants
-# ============================================================
-SCRIPT_DIR = Path(__file__).parent
+# ── ANSI Colors ─────────────────────────────────────────────────────────────
+class Color:
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    BLUE = "\033[94m"
+    MAGENTA = "\033[95m"
+    CYAN = "\033[96m"
+    WHITE = "\033[97m"
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
 
-ATTACK_MODULES = {
-    'syn_flood': {
-        'script': 'syn_flood.py',
-        'module': 'syn_flood',
-        'name': 'SYN Flood',
-        'description': 'TCP SYN flood with spoofed source IPs',
+# ── Attack Registry ─────────────────────────────────────────────────────────
+ATTACKS = {
+    "syn_flood": {
+        "module": "syn_flood",
+        "description": "SYN Flood — sends spoofed TCP SYN packets",
+        "args": ["target", "port", "count", "rate"],
     },
-    'udp_flood': {
-        'script': 'udp_flood.py',
-        'module': 'udp_flood',
-        'name': 'UDP Flood',
-        'description': 'UDP flood with DNS amplification payloads',
+    "udp_flood": {
+        "module": "udp_flood",
+        "description": "UDP Flood — sends large UDP packets (DNS amplification)",
+        "args": ["target", "port", "count", "size", "rate", "mode"],
     },
-    'dns_tunnel': {
-        'script': 'dns_tunnel.py',
-        'module': 'dns_tunnel',
-        'name': 'DNS Tunnel',
-        'description': 'DNS tunneling with DGA subdomains',
+    "dns_tunnel": {
+        "module": "dns_tunnel",
+        "description": "DNS Tunneling / DGA — sends high-entropy DNS queries",
+        "args": ["target", "count"],
     },
-    'port_scan': {
-        'script': 'port_scan.py',
-        'module': 'port_scan',
-        'name': 'Port Scanner',
-        'description': 'TCP port scanning with concurrent probes',
+    "port_scan": {
+        "module": "port_scan",
+        "description": "Port Scanner — scans target ports",
+        "args": ["target", "ports", "speed", "method", "timeout"],
     },
-    'beacon': {
-        'script': 'beacon.py',
-        'module': 'beacon',
-        'name': 'C2 Beacon',
-        'description': 'C2 beaconing with periodic TCP connections',
+    "beacon": {
+        "module": "beacon",
+        "description": "C2 Beaconing — periodic TCP connections with jitter",
+        "args": ["target", "port", "interval", "jitter", "count", "timeout"],
     },
 }
 
-# ============================================================
-# ANSI Colors
-# ============================================================
-RED = "\033[91m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-BLUE = "\033[94m"
-MAGENTA = "\033[95m"
-CYAN = "\033[96m"
-WHITE = "\033[97m"
-BOLD = "\033[1m"
-DIM = "\033[2m"
-RESET = "\033[0m"
-
-# ============================================================
-# Active Attack Manager
-# ============================================================
+# ── Active Attack Manager ───────────────────────────────────────────────────
 class AttackManager:
-    """Manages running attack processes and threads."""
-
     def __init__(self):
-        self.attacks = {}  # attack_id -> {process, info}
-        self.lock = threading.Lock()
-        self._id_counter = 0
+        self.attacks: Dict[str, dict] = {}
+        self._counter = 0
+        self._lock = threading.Lock()
 
-    def _generate_id(self):
-        """Generate a unique attack ID."""
-        with self.lock:
-            self._id_counter += 1
-            return f"atk_{self._id_counter:03d}"
-
-    def start_attack(self, attack_type, args):
-        """Start an attack in a subprocess and return the attack ID."""
-        if attack_type not in ATTACK_MODULES:
-            print(f"{RED}[ERROR] Unknown attack type: {attack_type}{RESET}")
-            return None
-
-        module_info = ATTACK_MODULES[attack_type]
-        script_path = SCRIPT_DIR / module_info['script']
-
-        if not script_path.exists():
-            print(f"{RED}[ERROR] Script not found: {script_path}{RESET}")
-            return None
-
-        # Build command
-        cmd = [sys.executable, str(script_path)] + args
-
-        attack_id = self._generate_id()
-        start_time = datetime.now()
-
-        # Start process
-        try:
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                bufsize=1,
-                text=True,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0,
-            )
-        except Exception as e:
-            print(f"{RED}[ERROR] Failed to start attack: {e}{RESET}")
-            return None
-
-        with self.lock:
+    def register(self, name: str, thread, stats: dict, kwargs: dict) -> str:
+        """Register a new attack and return its ID."""
+        with self._lock:
+            self._counter += 1
+            attack_id = f"{name}_{self._counter}"
             self.attacks[attack_id] = {
-                'process': process,
-                'type': attack_type,
-                'name': module_info['name'],
-                'description': module_info['description'],
-                'script': module_info['script'],
-                'args': ' '.join(args),
-                'pid': process.pid,
-                'start_time': start_time,
-                'status': 'running',
+                "name": name,
+                "thread": thread,
+                "stats": stats,
+                "kwargs": kwargs,
+                "started": datetime.now().strftime("%H:%M:%S"),
             }
+            return attack_id
 
-        print(f"{GREEN}[+] Started attack {attack_id}: {module_info['name']} (PID: {process.pid}){RESET}")
-        return attack_id
+    def unregister(self, attack_id: str):
+        with self._lock:
+            self.attacks.pop(attack_id, None)
 
-    def stop_attack(self, attack_id):
-        """Stop a specific attack by ID."""
-        with self.lock:
-            if attack_id not in self.attacks:
-                print(f"{YELLOW}[!] Attack not found: {attack_id}{RESET}")
-                return False
-
-            attack = self.attacks[attack_id]
-            process = attack['process']
-
-            if process.poll() is not None:
-                # Already terminated
-                attack['status'] = 'terminated'
-                print(f"{YELLOW}[!] Attack {attack_id} already stopped.{RESET}")
-                return True
-
-            # Try graceful stop first
-            try:
-                if sys.platform == 'win32':
-                    process.send_signal(signal.CTRL_BREAK_EVENT)
-                else:
-                    process.send_signal(signal.SIGTERM)
-
-                # Wait up to 3 seconds
-                try:
-                    process.wait(timeout=3)
-                except subprocess.TimeoutExpired:
-                    # Force kill
-                    process.kill()
-                    process.wait()
-            except Exception as e:
-                print(f"{RED}[ERROR] Failed to stop attack: {e}{RESET}")
-                # Force kill as fallback
-                try:
-                    process.kill()
-                    process.wait()
-                except Exception:
-                    pass
-
-            attack['status'] = 'stopped'
-            print(f"{GREEN}[+] Stopped attack {attack_id}: {attack['name']}{RESET}")
-            return True
+    def stop(self, attack_id: str) -> bool:
+        """Stop a specific attack."""
+        if attack_id not in self.attacks:
+            return False
+        attack = self.attacks[attack_id]
+        if "stop_event" in attack["stats"]:
+            attack["stats"]["stop_event"].set()
+        attack["thread"].join(timeout=3)
+        self.unregister(attack_id)
+        return True
 
     def stop_all(self):
-        """Stop all running attacks."""
-        with self.lock:
-            attack_ids = list(self.attacks.keys())
+        """Stop all active attacks."""
+        for attack_id in list(self.attacks.keys()):
+            self.stop(attack_id)
 
-        stopped = 0
-        for attack_id in attack_ids:
-            if self.stop_attack(attack_id):
-                stopped += 1
+    def list_active(self) -> dict:
+        with self._lock:
+            return {k: v for k, v in self.attacks.items()
+                    if v["thread"].is_alive()}
 
-        print(f"\n{GREEN}[+] Stopped {stopped} attack(s).{RESET}")
-
-    def list_attacks(self):
-        """List all active attacks with their details."""
-        with self.lock:
-            running = {
-                k: v for k, v in self.attacks.items()
-                if v['status'] == 'running'
-            }
-
-        if not running:
-            print(f"{YELLOW}No active attacks.{RESET}")
-            return
-
-        now = datetime.now()
-        print(f"\n{BOLD}{'='*70}{RESET}")
-        print(f"{BOLD}{GREEN}  ACTIVE ATTACKS{RESET}")
-        print(f"{BOLD}{'='*70}{RESET}")
-        print(f"  {BOLD}{'ID':<10} {'Type':<14} {'PID':<8} {'Target':<20} {'Duration'}{RESET}")
-        print(f"  {'-'*66}")
-
-        for attack_id, info in sorted(running.items()):
-            # Refresh status
-            if info['process'].poll() is not None:
-                info['status'] = 'terminated'
-                continue
-
-            duration = now - info['start_time']
-            dur_str = f"{int(duration.total_seconds())}s"
-
-            # Extract target from args
-            target = "N/A"
-            args_list = info['args'].split()
-            for i, arg in enumerate(args_list):
-                if arg == '--target' and i + 1 < len(args_list):
-                    target = args_list[i + 1]
-                    break
-
-            id_str = f"{BOLD}{CYAN}{attack_id}{RESET}"
-            type_str = f"{BOLD}{WHITE}{info['name']:<14}{RESET}"
-            pid_str = f"{YELLOW}{info['pid']}{RESET}"
-
-            print(f"  {id_str:<10} {type_str} {pid_str:<8} {target:<20} {dur_str}")
-
-        print(f"{BOLD}{'='*70}{RESET}")
-        print(f"  Total active: {BOLD}{GREEN}{len(running)}{RESET}\n")
-
-    def cleanup(self):
-        """Stop all attacks and clean up."""
-        with self.lock:
-            for attack_id, info in list(self.attacks.items()):
-                if info['status'] == 'running':
-                    try:
-                        info['process'].kill()
-                        info['process'].wait(timeout=2)
-                    except Exception:
-                        pass
-
-
-# ============================================================
-# Launcher Banner
-# ============================================================
-LAUNCHER_BANNER = f"""{BOLD}{MAGENTA}
-╔══════════════════════════════════════════════════════════╗
-║                                                          ║
-║   ██████╗  █████╗ ██╗    ██╗███╗   ██╗██╗██████╗  ██╗  ║
-║   ██╔══██╗██╔══██╗██║    ██║████╗  ██║██║██╔══██╗██║  ║
-║   ██████╔╝███████║██║ █╗ ██║██╔██╗ ██║██║██║  ██║██║  ║
-║   ██╔═══╝ ██╔══██║██║███╗██║██║╚██╗██║██║██║  ██║██║  ║
-║   ██║     ██║  ██║╚███╔███╔╝██║ ╚████║██║██████╔╝██║  ║
-║   ╚═╝     ╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═══╝╚═╝╚═════╝ ╚═╝  ║
-║                                                          ║
-║   Attack Traffic Generator — PS-26145 | SIH 2026        ║
-║   Unified Launcher                                       ║
-╚══════════════════════════════════════════════════════════╝{RESET}"""
-
-
-# ============================================================
-# Main
-# ============================================================
 manager = AttackManager()
 
-
-def cmd_list(args):
-    """List all attacks."""
-    manager.list_attacks()
-
-
-def cmd_stop(args):
-    """Stop attacks."""
-    if args.attack_id:
-        manager.stop_attack(args.attack_id)
-    else:
-        manager.stop_all()
+# ── Banner ──────────────────────────────────────────────────────────────────
+def banner():
+    print(f"""{Color.BOLD}{Color.CYAN}
++================================================+
+|  [EKADHARA] Attack Launcher - PS-26145        |
+|  Unified Traffic Generator Interface           |
++================================================+{Color.RESET}""")
 
 
-def cmd_launch(attack_type, attack_args):
-    """Launch an attack."""
-    if attack_type not in ATTACK_MODULES:
-        print(f"{RED}[ERROR] Unknown attack type: {attack_type}{RESET}")
-        print(f"    Available: {', '.join(ATTACK_MODULES.keys())}")
+# ── Dispatch Logic ──────────────────────────────────────────────────────────
+
+def load_attack_module(attack_type: str):
+    """Dynamically load an attack module."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+
+    if attack_type not in ATTACKS:
+        print(f"{Color.RED}[!] Unknown attack type: {attack_type}{Color.RESET}")
+        print(f"{Color.YELLOW}[*] Available attacks: {', '.join(ATTACKS.keys())}{Color.RESET}")
+        sys.exit(1)
+
+    module_name = ATTACKS[attack_type]["module"]
+    try:
+        module = importlib.import_module(module_name)
+        return module
+    except ImportError as e:
+        print(f"{Color.RED}[!] Failed to load {module_name}: {e}{Color.RESET}")
+        sys.exit(1)
+
+
+def launch_attack(attack_type: str, args) -> Optional[str]:
+    """Launch an attack and return its ID."""
+    module = load_attack_module(attack_type)
+    run_fn = getattr(module, "run_attack", None)
+    if not run_fn:
+        print(f"{Color.RED}[!] Module {attack_type} has no run_attack() function.{Color.RESET}")
+        sys.exit(1)
+
+    # Build kwargs from argparse namespace, filtering to only valid args
+    valid_args = set(ATTACKS[attack_type]["args"])
+    kwargs = {k: v for k, v in vars(args).items()
+              if k in valid_args and v is not None}
+
+    print(f"\n{Color.MAGENTA}{'─'*55}{Color.RESET}")
+    thread, stats = run_fn(**kwargs)
+
+    if thread and thread.is_alive():
+        attack_id = manager.register(attack_type, thread, stats, kwargs)
+        print(f"{Color.GREEN}[+] Attack started with ID: {attack_id}{Color.RESET}")
+        print(f"{Color.GREEN}[+] Use 'python launcher.py stop {attack_id}' to stop.{Color.RESET}")
+        return attack_id
+    return None
+
+
+def list_attacks():
+    """List all active attacks."""
+    active = manager.list_active()
+    if not active:
+        print(f"{Color.YELLOW}[*] No active attacks.{Color.RESET}")
         return
 
-    module_info = ATTACK_MODULES[attack_type]
-    print(f"\n{BOLD}[*] Launching {BOLD}{module_info['name']}{RESET} — {module_info['description']}{RESET}")
-    attack_id = manager.start_attack(attack_type, attack_args)
+    print(f"\n{Color.CYAN}{'─'*70}{Color.RESET}")
+    print(f"  {Color.WHITE}{'ID':<25}  {'Type':<15}  {'Target':<20}  {'Started':>8}{Color.RESET}")
+    print(f"{Color.CYAN}{'─'*70}{Color.RESET}")
+
+    for attack_id, info in active.items():
+        target = info["kwargs"].get("target", "?")
+        if "port" in info["kwargs"]:
+            target += f":{info['kwargs']['port']}"
+        started = info["started"]
+        print(f"  {Color.YELLOW}{attack_id:<25}{Color.RESET}  "
+              f"{Color.CYAN}{info['name']:<15}{Color.RESET}  "
+              f"{Color.WHITE}{target:<20}{Color.RESET}  "
+              f"{Color.DIM}{started:>8}{Color.RESET}")
+
+    print(f"{Color.CYAN}{'─'*70}{Color.RESET}")
+    print(f"  {Color.GREEN}Total: {len(active)} active attack(s){Color.RESET}\n")
+
+
+def stop_attacks(attack_id: Optional[str] = None):
+    """Stop all or specific attacks."""
     if attack_id:
-        print(f"    {DIM}Use 'python launcher.py list' to see active attacks{RESET}")
-        print(f"    {DIM}Use 'python launcher.py stop {attack_id}' to stop this attack{RESET}")
-        print(f"    {DIM}Use 'python launcher.py stop' to stop all attacks{RESET}\n")
+        if manager.stop(attack_id):
+            print(f"{Color.GREEN}[+] Stopped attack: {attack_id}{Color.RESET}")
+        else:
+            print(f"{Color.RED}[!] Attack not found: {attack_id}{Color.RESET}")
+    else:
+        count = len(manager.list_active())
+        manager.stop_all()
+        print(f"{Color.GREEN}[+] Stopped {count} attack(s).{Color.RESET}")
 
 
-def cmd_info(args):
-    """Show information about available attacks."""
-    print(f"\n{BOLD}{GREEN}Available Attack Types:{RESET}\n")
-    for key, info in ATTACK_MODULES.items():
-        print(f"  {BOLD}{CYAN}{key:<14}{RESET} {info['name']:<16} — {info['description']}")
-        print(f"  {DIM}  Script: {info['script']}{RESET}")
-    print()
-
+# ── Main Entry ──────────────────────────────────────────────────────────────
 
 def main():
+    if len(sys.argv) < 2:
+        banner()
+        print(f"""
+{Color.WHITE}Usage:{Color.RESET}
+  {Color.CYAN}python launcher.py{Color.RESET} <attack> --target <ip> [options]
+  {Color.CYAN}python launcher.py{Color.RESET} {Color.YELLOW}list{Color.RESET}              Show active attacks
+  {Color.CYAN}python launcher.py{Color.RESET} {Color.YELLOW}stop{Color.RESET}              Stop all attacks
+  {Color.CYAN}python launcher.py{Color.RESET} {Color.YELLOW}stop <id>{Color.RESET}        Stop specific attack
+
+{Color.WHITE}Attacks:{Color.RESET}""")
+        for name, info in ATTACKS.items():
+            print(f"  {Color.CYAN}{name:<15}{Color.RESET}  {info['description']}")
+
+        print(f"""
+{Color.WHITE}Examples:{Color.RESET}
+  {Color.DIM}python launcher.py syn_flood --target 127.0.0.1 --port 80{Color.RESET}
+  {Color.DIM}python launcher.py udp_flood --target 127.0.0.1 --port 53 --rate 500{Color.RESET}
+  {Color.DIM}python launcher.py dns_tunnel --target 127.0.0.1 --count 200{Color.RESET}
+  {Color.DIM}python launcher.py port_scan --target 127.0.0.1 --ports 1-1000{Color.RESET}
+  {Color.DIM}python launcher.py beacon --target 127.0.0.1 --port 8080 --interval 5{Color.RESET}
+{Color.RESET}""")
+        sys.exit(0)
+
+    command = sys.argv[1].lower()
+
+    if command == "list":
+        banner()
+        list_attacks()
+        return
+    elif command == "stop":
+        banner()
+        attack_id = sys.argv[2] if len(sys.argv) > 2 else None
+        stop_attacks(attack_id)
+        return
+    elif command not in ATTACKS:
+        banner()
+        print(f"{Color.RED}[!] Unknown command: {command}{Color.RESET}")
+        print(f"{Color.YELLOW}[*] Available: {', '.join(list(ATTACKS.keys()) + ['list', 'stop'])}{Color.RESET}")
+        sys.exit(1)
+
+    # Parse attack-specific args
     parser = argparse.ArgumentParser(
-        description="EKADHARA Unified Attack Launcher — PS-26145",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=f"""
-{BOLD}Attack Types:{RESET}
-  syn_flood    SYN Flood attack
-  udp_flood    UDP flood with DNS amplification
-  dns_tunnel   DNS tunneling simulator
-  port_scan    TCP port scanner
-  beacon       C2 beaconing simulator
-
-{BOLD}Examples:{RESET}
-  python launcher.py syn_flood --target 127.0.0.1 --port 8080
-  python launcher.py udp_flood --target 127.0.0.1 --port 53 --size 4096
-  python launcher.py dns_tunnel --target 127.0.0.1 --domain example.com
-  python launcher.py port_scan --target 127.0.0.1 --ports 1-1024 --speed fast
-  python launcher.py beacon --target 127.0.0.1 --port 8080 --interval 3
-  python launcher.py list
-  python launcher.py stop
-  python launcher.py stop atk_001
-        """
+        prog=f"launcher.py {command}",
+        description=f"EKADHARA {command} attack launcher",
     )
+    parser.add_argument("--target", required=True, help="Target IP or hostname")
 
-    # Subcommands
-    subparsers = parser.add_subparsers(dest='command', help='Command to run')
-
-    # Attack type commands (pass-through to individual scripts)
-    for attack_key, module_info in ATTACK_MODULES.items():
-        sub = subparsers.add_parser(attack_key, help=f"Launch {module_info['name']}")
-        sub.add_argument('--target', required=True, help='Target IP address')
-        # We'll collect remaining args
-        sub.add_argument('extra', nargs='*', help='Additional arguments passed to the attack script')
-
-    # List command
-    subparsers.add_parser('list', help='List active attacks')
-
-    # Stop command
-    stop_parser = subparsers.add_parser('stop', help='Stop attacks')
-    stop_parser.add_argument('attack_id', nargs='?', default=None, help='Attack ID to stop (omit to stop all)')
-
-    # Info command
-    subparsers.add_parser('info', help='Show available attack types')
-
-    # Launcher banner
-    print(LAUNCHER_BANNER)
-    print(f"\n{RED}{BOLD}[!] LEGAL WARNING:{RESET} Only use against localhost or systems you OWN.\n")
+    # Add attack-specific arguments
+    attack_info = ATTACKS[command]
+    if "port" in attack_info["args"]:
+        parser.add_argument("--port", type=int, default=80, help="Target port")
+    if "count" in attack_info["args"]:
+        parser.add_argument("--count", type=int, default=0, help="Number of packets/beacons (0=unlimited)")
+    if "rate" in attack_info["args"]:
+        parser.add_argument("--rate", type=float, default=100, help="Packets per second")
+    if "size" in attack_info["args"]:
+        parser.add_argument("--size", type=int, default=1024, help="Payload size in bytes")
+    if "mode" in attack_info["args"]:
+        parser.add_argument("--mode", default="random", help="Payload mode")
+    if "ports" in attack_info["args"]:
+        parser.add_argument("--ports", default="common", help="Port specification")
+    if "speed" in attack_info["args"]:
+        parser.add_argument("--speed", choices=["slow", "normal", "fast"], default="normal")
+    if "method" in attack_info["args"]:
+        parser.add_argument("--method", choices=["connect", "syn"], default="connect")
+    if "timeout" in attack_info["args"]:
+        parser.add_argument("--timeout", type=float, default=2.0, help="Timeout in seconds")
+    if "interval" in attack_info["args"]:
+        parser.add_argument("--interval", type=float, default=10.0, help="Beacon interval in seconds")
+    if "jitter" in attack_info["args"]:
+        parser.add_argument("--jitter", type=float, default=0.3, help="Jitter percentage 0.0-1.0")
 
     args = parser.parse_args()
 
-    if not args.command:
-        parser.print_help()
-        return
-
-    if args.command == 'list':
-        cmd_list(args)
-    elif args.command == 'stop':
-        cmd_stop(args)
-    elif args.command == 'info':
-        cmd_info(args)
-    elif args.command in ATTACK_MODULES:
-        # Launch the attack — pass all known args + extras
-        extra_args = args.extra if hasattr(args, 'extra') else []
-
-        # Build the kwargs for run_attack()
-        kwargs = {
-            'target': args.target,
-        }
-
-        # Parse extra args for common parameters
-        i = 0
-        while i < len(extra_args):
-            arg = extra_args[i]
-            if arg == '--port' and i + 1 < len(extra_args):
-                kwargs['port'] = int(extra_args[i + 1])
-                i += 2
-            elif arg == '--count' and i + 1 < len(extra_args):
-                kwargs['count'] = int(extra_args[i + 1])
-                i += 2
-            elif arg == '--size' and i + 1 < len(extra_args):
-                kwargs['size'] = int(extra_args[i + 1])
-                i += 2
-            elif arg == '--interval' and i + 1 < len(extra_args):
-                kwargs['interval'] = float(extra_args[i + 1])
-                i += 2
-            elif arg == '--jitter' and i + 1 < len(extra_args):
-                kwargs['jitter'] = int(extra_args[i + 1])
-                i += 2
-            elif arg == '--domain' and i + 1 < len(extra_args):
-                kwargs['domain'] = extra_args[i + 1]
-                i += 2
-            elif arg == '--ports' and i + 1 < len(extra_args):
-                kwargs['ports'] = extra_args[i + 1]
-                i += 2
-            elif arg == '--speed' and i + 1 < len(extra_args):
-                kwargs['speed'] = extra_args[i + 1]
-                i += 2
-            elif arg == '--rate' and i + 1 < len(extra_args):
-                kwargs['rate'] = int(extra_args[i + 1])
-                i += 2
-            elif arg == '--verbose':
-                kwargs['verbose'] = True
-                i += 1
-            else:
-                i += 1
-
-        # Set defaults for known attacks
-        if args.command == 'port_scan':
-            kwargs.setdefault('ports', '1-1024')
-            kwargs.setdefault('speed', 'normal')
-        elif args.command == 'dns_tunnel':
-            kwargs.setdefault('domain', 'example.com')
-        elif args.command == 'beacon':
-            kwargs.setdefault('port', 8080)
-            kwargs.setdefault('interval', 5.0)
-            kwargs.setdefault('jitter', 20)
-        elif args.command == 'udp_flood':
-            kwargs.setdefault('port', 53)
-            kwargs.setdefault('size', 512)
-        elif args.command == 'syn_flood':
-            kwargs.setdefault('port', 80)
-
-        cmd_launch(args.command, extra_args if extra_args else [])
-
-        # Now run directly by importing and calling run_attack
-        sys.path.insert(0, str(SCRIPT_DIR))
-        try:
-            mod = importlib.import_module(ATTACK_MODULES[args.command]['module'])
-            mod.run_attack(**kwargs)
-        except KeyboardInterrupt:
-            print(f"\n\n{YELLOW}[*] Attack interrupted by user.{RESET}")
-        except Exception as e:
-            print(f"{RED}[ERROR] {e}{RESET}")
-    else:
-        parser.print_help()
+    banner()
+    launch_attack(command, args)
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        print(f"\n\n{YELLOW}[*] Cleaning up...{RESET}")
-        manager.cleanup()
-        print(f"{GREEN}[+] Done.{RESET}")
+if __name__ == "__main__":
+    main()
