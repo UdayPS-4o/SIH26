@@ -1,0 +1,54 @@
+/* AnimatedDiode — 2D SVG visual of a data diode:
+   packets (small circles) enter from the LEFT, pass through the
+   diode (vertical bar with a chevron indicating direction),
+   and exit to the RIGHT.  Attack packets are RED, benign are CYAN.
+   Uses pure CSS keyframes — no extra deps. */
+
+.diode-wrap {
+  position: relative;
+  width: 220px;
+  height: 44px;
+  overflow: visible;
+}
+
+.diode-bar {
+  fill: none;
+  stroke: #22d3ee;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.diode-valve {
+  fill: #0e7490;
+  stroke: #22d3ee;
+  stroke-width: 1.5;
+}
+
+.diode-flow {
+  animation: flowRight 2.2s linear infinite;
+}
+.diode-flow-reverse {
+  animation: flowLeft 3.8s linear infinite;
+}
+.diode-attack {
+  animation: flowAttack 1.6s linear infinite;
+}
+
+@keyframes flowRight {
+  0%   { transform: translateX(-28px); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateX(28px); opacity: 0; }
+}
+@keyframes flowLeft {
+  0%   { transform: translateX(28px); opacity: 0; }
+  10%  { opacity: 0.5; }
+  90%  { opacity: 0.5; }
+  100% { transform: translateX(-28px); opacity: 0; }
+}
+@keyframes flowAttack {
+  0%   { transform: translateX(-28px); opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(28px); opacity: 0; }
+}
