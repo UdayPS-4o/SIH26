@@ -10,10 +10,7 @@ import {
   Clock,
   Settings,
   Plug,
-  Sun,
-  Moon,
 } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 
 const MONITORING_ITEMS = [
   { label: 'Operations', path: '/', icon: LayoutDashboard, key: 'ops' },
@@ -34,7 +31,6 @@ const PLATFORM_ITEMS = [
 const NAV_ITEMS = [...MONITORING_ITEMS, ...PLATFORM_ITEMS];
 
 const Sidebar: React.FC<{ isOpen?: boolean }> = ({ isOpen: _isOpen }) => {
-  const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
 
   return (
@@ -125,14 +121,6 @@ const Sidebar: React.FC<{ isOpen?: boolean }> = ({ isOpen: _isOpen }) => {
         }}>
           PS-26145 · NTRO · SIH26
         </div>
-        <button
-          className="theme-toggle"
-          onClick={toggleTheme}
-          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          style={{ marginTop: 10 }}
-        >
-          {isDark ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
       </div>
     </aside>
   );

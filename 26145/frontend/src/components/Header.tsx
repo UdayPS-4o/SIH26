@@ -1,4 +1,4 @@
-import { Wifi, WifiOff, Activity, AlertTriangle, Clock } from 'lucide-react';
+import { Wifi, WifiOff, Activity, AlertTriangle, Clock, Sun, Moon } from 'lucide-react';
 
 interface HeaderProps {
   isConnected: boolean;
@@ -8,6 +8,8 @@ interface HeaderProps {
   timeWindow: string;
   onTimeWindowChange: (window: string) => void;
   pageTitle: string;
+  isDark?: boolean;
+  onToggleTheme?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -18,6 +20,8 @@ const Header: React.FC<HeaderProps> = ({
   timeWindow,
   onTimeWindowChange,
   pageTitle,
+  isDark,
+  onToggleTheme,
 }) => {
   return (
     <header
@@ -143,6 +147,28 @@ const Header: React.FC<HeaderProps> = ({
             </>
           )}
         </div>
+
+        {/* Dark mode toggle */}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            className="theme-toggle"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              background: 'none',
+              border: '1px solid var(--border-default)',
+              borderRadius: '4px',
+              padding: '4px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            {isDark ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+        )}
       </div>
     </header>
   );

@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useWebSocketContext } from '../context/WebSocketContext';
+import { useTheme } from '../context/ThemeContext';
 import mockBackend from '../lib/mockBackend';
 import type { Stats, Alert, Flow } from '../types';
-import { Activity, Shield, Zap, Radio, Globe, Server } from 'lucide-react';
+import { Activity, Shield, Zap, Radio, Globe, Server, Sun, Moon } from 'lucide-react';
 
 const C = {
   bg:        'var(--bg-primary)',
@@ -361,6 +362,7 @@ function LiveThreatFeed({ alerts }: { alerts: any[] }) {
 
 const Dashboard: React.FC = () => {
   const { alerts: wsAlerts, isConnected, flowsPerSec, stats } = useWebSocketContext();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [clock, setClock] = useState(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }));
   const [activeTab, setActiveTab] = useState<TabId>('operations');
@@ -534,6 +536,21 @@ const Dashboard: React.FC = () => {
               letterSpacing: '0.4px', fontWeight: 500,
             }}>{clock}</span>
           </div>
+
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '4px 8px', borderRadius: 8,
+              background: isDark ? 'rgba(59,130,246,0.08)' : 'rgba(0,0,0,0.04)',
+              border: '1px solid var(--border-default)',
+              cursor: 'pointer', color: 'inherit',
+            }}
+          >
+            {isDark ? <Sun size={14} style={{ color: '#f59e0b' }} /> : <Moon size={14} style={{ color: '#6366f1' }} />}
+          </button>
         </div>
       </header>
 
