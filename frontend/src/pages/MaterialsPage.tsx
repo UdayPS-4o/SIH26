@@ -1,0 +1,1251 @@
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Material } from '../types';
+
+// ── Constants ──────────────────────────────────────────────────────────────
+
+const STATUSES: Array<'pending' | 'imported' | 'approved' | 'rejected'> = ['pending', 'imported', 'approved', 'rejected'];
+
+const MALWARE_NAMES = ['Emotet','TrickBot','QakBot','CobaltStrike','Mirai','Mozi','Sality','Gozi','Phorphiex','Spora','LockBit','Ryuk','Conti','BlackCat','Cl0p','Void','Bazar','IcedID','BuerLoader','Snake'];
+const C2_NAMES = ['CobaltBeacon','EmpireC2','MythicC2','SliverC2','VenusC2','PoshC2','Covenant','Socat','Malleable'];
+const DDOS_NAMES = ['Mirai-Botnet','Mozi-Botnet','DDoS-Toolkit','Flooder-X','UDP-Flooder','SYN-Flooder','XOR-DDoS','Gafgyt','Bashlite'];
+const RECON_NAMES = ['Nmap-Script','Masscan-Config','Shodan-Query','Zmap-Probe','Recon-Suite','Amass-Enum','Sublist3r','Fierce'];
+const DNS_NAMES = ['DGA-Domain','DNS-Tunnel','DNS-Exfil','DynDNS-Config','DNS-Hijack','DNS-Tx','DNS-Channel'];
+const PHISHING_NAMES = ['Phish-Kit-01','Phish-Kit-02','Phish-Kit-03','CredHarvest','MFA-Stealer','Link-Masq'];
+
+const ALL_TYPES = ['Malware Sample','C2 Config','DDoS Tool','Recon Script','DNS Malware','Phishing Kit','Crypto-Miner','Backdoor','RAT','Rootkit'];
+const ALL_THREAT_CLASSES = ['DDoS','Beaconing','DGA','DNS Tunneling','TLS Anomaly','Port Scan','Exfiltration','Command Shell','Data Obfuscation','Privilege Escalation'];
+const SOURCES = ['DNS-Detect','Hybrid-Analysis','VirusTotal','AbuseIPDB','ThreatFox','OTX-AlienVault','MISP','Anomali','ReversingLabs','Any.Run'];
+const SEVERITIES: string[] = ['critical','high','medium','low'];
+
+const THREAT_CLASS_COLORS: Record<string,string> = {
+  'DDoS':'var(--accent-red)','Beaconing':'var(--accent-orange)','DGA':'var(--accent-yellow)','DNS Tunneling':'var(--accent-cyan)',
+  'TLS Anomaly':'var(--accent-purple)','Port Scan':'var(--accent-pink)','Exfiltration':'var(--accent-teal)',
+  'Command Shell':'var(--accent-red)','Data Obfuscation':'var(--accent-purple)','Privilege Escalation':'var(--accent-orange)',
+};
+
+const STATUS_COLORS: Record<string,string> = {
+  pending:'var(--accent-yellow)',
+  imported:'var(--accent-cyan)',
+  approved:'var(--accent-green)',
+  rejected:'var(--accent-red)',
+};
+
+const STATUS_BG: Record<string,string> = {
+  pending:'var(--sev-medium-bg)',
+  imported:'var(--mat-imported-bg)',
+  approved:'var(--color-success-dim)',
+  rejected:'var(--sev-critical-bg)',
+};
+
+const STATUS_BORDER: Record<string,string> = {
+  pending:'var(--mat-pending-border)',
+  imported:'var(--mat-imported-border)',
+  approved:'var(--mat-approved-border)',
+  rejected:'var(--mat-rejected-border)',
+};
+
+// ── Deterministic-ish hash generator ────────────────────────────────────────
+
+function fakeHash(seed: number): string {
+  let h = 0x9e3779b9 ^ (seed * 2654435761);
+  const chars = '0123456789abcdef';
+  let out = '';
+  for (let i = 0; i < 64; i++) {
+    h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
+    h ^= h >>> 12;
+    h = Math.imul(h, 0x297a2d39);
+    h ^= h >>> 15;
+    out += chars[h & 0xf];
+  }
+  return out;
+}
+
+function fakeSig(seed: number): string {
+  const chars = 'abcdef0123456789';
+  let out = 'sig_';
+  let h = seed * 0x9e3779b9;
+  for (let i = 0; i < 16; i++) {
+    h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d);
+    h ^= h >>> 12;
+    h = Math.imul(h, 0x297a2d39);
+    h ^= h >>> 15;
+    out += chars[h & 0xf];
+  }
+  return out;
+}
+
+function generateMaterials(): Material[] {
+  const items: Material[] = [];
+  let id = 1;
+  const cats = [
+    { cat: 'Malware', names: MALWARE_NAMES },
+    { cat: 'C2', names: C2_NAMES },
+    { cat: 'DDoS', names: DDOS_NAMES },
+    { cat: 'Recon', names: RECON_NAMES },
+    { cat: 'DNS', names: DNS_NAMES },
+    { cat: 'Phishing', names: PHISHING_NAMES },
+  ];
+
+  for (const { cat, names } of cats) {
+    for (const name of names) {
+      const ver = (id % 5) + 1;
+      const status = STATUSES[(id * 7 + 3) % 4];
+      const threatIdx = (id * 13 + 5) % ALL_THREAT_CLASSES.length;
+      const typeIdx = (id * 17 + 3) % ALL_TYPES.length;
+      const sevIdx = (id * 23 + 7) % SEVERITIES.length;
+      const srcIdx = (id * 31) % SOURCES.length;
+
+      items.push({
+        id: `MAT-${String(id).padStart(4,'0')}`,
+        name: `${name}-v${ver}`,
+        type: ALL_TYPES[typeIdx],
+        threat_class: ALL_THREAT_CLASSES[threatIdx],
+        category: cat,
+        status,
+        confidence: 55 + ((id * 37) % 45),
+        source: SOURCES[srcIdx],
+        created_at: new Date(Date.now() - ((id * 86400000) % (30 * 86400000))).toISOString().split('T')[0],
+        hash: fakeHash(id),
+        size: `${(10 + ((id * 47) % 500)).toFixed(1)}KB`,
+        severity: SEVERITIES[sevIdx],
+        content_hash: fakeHash(id + 9999),
+        description: `${name} v${ver} — known ${cat.toLowerCase()} threat variant with ${ALL_THREAT_CLASSES[threatIdx].toLowerCase()} capabilities.`,
+        activity_signature: fakeSig(id),
+        is_accepted: status === 'approved',
+      });
+      id++;
+      if (id > 40) break;
+    }
+    if (id > 40) break;
+  }
+  return items;
+}
+
+// ── Icons ────────────────────────────────────────────────────────────────────
+
+const IconBox = ({ children, color = 'var(--accent-cyan)' }: { children: React.ReactNode; color?: string }) => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ color, flexShrink: 0 }}>
+    {children}
+  </svg>
+);
+
+const TotalIcon = () => (
+  <IconBox color="var(--accent-cyan)">
+    <rect x="2" y="2" width="7" height="7" rx="1" fill="currentColor" opacity="0.8" />
+    <rect x="11" y="2" width="7" height="7" rx="1" fill="currentColor" opacity="0.6" />
+    <rect x="2" y="11" width="7" height="7" rx="1" fill="currentColor" opacity="0.5" />
+    <rect x="11" y="11" width="7" height="7" rx="1" fill="currentColor" opacity="0.3" />
+  </IconBox>
+);
+const PendingIcon = () => (
+  <IconBox color="var(--accent-yellow)">
+    <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.8" fill="none" />
+    <polyline points="7,10 10,13 14,7" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </IconBox>
+);
+const ApprovedIcon = () => (
+  <IconBox color="var(--accent-green)">
+    <polyline points="4,10 8,14 16,6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  </IconBox>
+);
+const RejectedIcon = () => (
+  <IconBox color="var(--accent-red)">
+    <line x1="6" y1="6" x2="14" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <line x1="14" y1="6" x2="6" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </IconBox>
+);
+
+// ── Component ───────────────────────────────────────────────────────────────
+
+function MaterialsPage() {
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [threatFilter, setThreatFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+
+  // Selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // Modals
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDetail, setShowDetail] = useState<Material | null>(null);
+  const [showNormalize, setShowNormalize] = useState(false);
+  const [showMatch, setShowMatch] = useState(false);
+  const [normalizeId, setNormalizeId] = useState<string | null>(null);
+  const [normalizeProgress, setNormalizeProgress] = useState(0);
+  const [normalizing, setNormalizing] = useState(false);
+  const [normalizedResult, setNormalizedResult] = useState<any>(null);
+  const [matchingItems, setMatchingItems] = useState<Record<string,string>>({});
+
+  // Upload
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [processingItems, setProcessingItems] = useState<Record<string, string>>({});
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);
+
+  // Live counter
+  const [processedCount, setProcessedCount] = useState(0);
+  const wsRef = useRef<WebSocket | null>(null);
+  const [wsConnected, setWsConnected] = useState(false);
+
+  // Load data
+  useEffect(() => {
+    let active = true;
+    const connectWs = () => {
+      try {
+        const ws = new WebSocket('/ws');
+        ws.onopen = () => { if (active) setWsConnected(true); };
+        ws.onclose = () => { if (active) setWsConnected(false); };
+        ws.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg.type === 'material_update' && active) {
+              setMaterials(prev => prev.map(m => m.id === msg.material.id ? { ...m, ...msg.material } : m));
+            }
+          } catch {}
+        };
+        wsRef.current = ws;
+      } catch { if (active) setWsConnected(false); }
+    };
+    connectWs();
+    return () => {
+      active = false;
+      wsRef.current?.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setTimeout(() => {
+      if (!active) return;
+      setMaterials(generateMaterials());
+      setProcessedCount(0);
+      setLoading(false);
+      setError(null);
+    }, 400);
+    return () => { active = false; };
+  }, []);
+
+  // Simulated WS ingestion tick
+  useEffect(() => {
+    if (materials.length === 0) return;
+    const total = materials.length;
+    const interval = setInterval(() => {
+      setProcessedCount(prev => {
+        const next = prev + Math.floor(Math.random() * 3) + 1;
+        return next >= total ? total : next;
+      });
+    }, 600);
+    return () => clearInterval(interval);
+  }, [materials.length]);
+
+  // Filtered materials
+  const filtered = useMemo(() => {
+    return materials.filter(m => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const match = m.name.toLowerCase().includes(q)
+          || m.id.toLowerCase().includes(q)
+          || (m.content_hash || '').toLowerCase().includes(q)
+          || m.threat_class.toLowerCase().includes(q)
+          || m.source.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      if (statusFilter !== 'all' && m.status !== statusFilter) return false;
+      if (threatFilter !== 'all' && m.threat_class !== threatFilter) return false;
+      if (typeFilter !== 'all' && m.type !== typeFilter) return false;
+      return true;
+    });
+  }, [materials, searchQuery, statusFilter, threatFilter, typeFilter]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const total = materials.length;
+    const pending = materials.filter(m => m.status === 'pending').length;
+    const approved = materials.filter(m => m.status === 'approved').length;
+    const rejected = materials.filter(m => m.status === 'rejected').length;
+    const avgConf = total > 0 ? Math.round(materials.reduce((s, m) => s + m.confidence, 0) / total) : 0;
+    return { total, pending, approved, rejected, avgConf };
+  }, [materials]);
+
+  const ingestionPct = stats.total > 0 ? Math.round((processedCount / stats.total) * 100) : 0;
+
+  // Unique filter options
+  const uniqueThreats = useMemo(() => [...new Set(materials.map(m => m.threat_class))].sort(), [materials]);
+  const uniqueTypes = useMemo(() => [...new Set(materials.map(m => m.type))].sort(), [materials]);
+
+  // Handlers
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filtered.length && filtered.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(m => m.id)));
+    }
+  };
+
+  const setStatusForSelected = (status: 'approved' | 'rejected') => {
+    setMaterials(prev => prev.map(m => selectedIds.has(m.id) ? { ...m, status, is_accepted: status === 'approved' } : m));
+    setSelectedIds(new Set());
+  };
+
+  const handleNormalize = (id: string) => {
+    setNormalizeId(id);
+    setNormalizedResult(null);
+    setShowNormalize(true);
+    setNormalizing(true);
+    setNormalizeProgress(0);
+    const steps = [
+      { text: 'Parsing raw source fields...', progress: 20 },
+      { text: 'Mapping to EKADHARA canonical schema...', progress: 40 },
+      { text: 'Generating SHA-256 content hash...', progress: 55 },
+      { text: 'Computing fuzzy similarity to known samples...', progress: 70 },
+      { text: 'Embedding ML feature vector (15-dim)...', progress: 85 },
+      { text: 'Validation passed. Normalized.', progress: 100 },
+    ];
+    let i = 0;
+    const tick = () => {
+      if (i >= steps.length) {
+        setNormalizing(false);
+        setMaterials(prev => prev.map(m => m.id === id ? { ...m, status: 'imported' as const } : m));
+        return;
+      }
+      const step = steps[i++];
+      setNormalizeProgress(step.progress);
+      setNormalizedResult((prev: any) => ({ ...prev, currentStep: step.text }));
+      setTimeout(tick, 350 + Math.random() * 250);
+    };
+    tick();
+  };
+
+  const handleMatch = (id: string) => {
+    setNormalizeId(id);
+    setShowMatch(true);
+    setMatchingItems({});
+    const steps = [
+      { text: 'Normalizing input...', progress: 15 },
+      { text: 'Building LSH index...', progress: 30 },
+      { text: 'Scanning 500K registry entries...', progress: 50 },
+      { text: 'Computing Jaccard similarity...', progress: 70 },
+      { text: 'Finding best matches...', progress: 85 },
+      { text: 'Done. 3 candidates.', progress: 100 },
+    ];
+    let i = 0;
+    const tick = () => {
+      if (i >= steps.length) return;
+      setMatchingItems((prev: Record<string,string>) => ({ ...prev, [id]: steps[i].text }));
+      setTimeout(tick, 400 + Math.random() * 300);
+      i++;
+    };
+    tick();
+  };
+
+  const handleCopyHash = (hash: string) => {
+    navigator.clipboard.writeText(hash).then(() => {
+      setCopiedHash(hash);
+      setTimeout(() => setCopiedHash(null), 2000);
+    });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach(file => {
+      const uid = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setUploadProgress(prev => ({ ...prev, [uid]: 0 }));
+      setProcessingItems(prev => ({ ...prev, [uid]: 'Uploading...' }));
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 25;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+          setUploadProgress(prev => ({ ...prev, [uid]: 100 }));
+          setProcessingItems(prev => { const n = { ...prev }; delete n[uid]; return n; });
+        } else {
+          setUploadProgress(prev => ({ ...prev, [uid]: Math.floor(progress) }));
+        }
+      }, 250);
+    });
+    setShowUpload(false);
+  };
+
+  const handleAddMaterial = (newMat: Omit<Material, 'id' | 'created_at' | 'hash' | 'content_hash' | 'activity_signature'>) => {
+    const id = `MAT-${String(materials.length + 1).padStart(4,'0')}`;
+    const seed = materials.length + 1;
+    const mat: Material = {
+      ...newMat,
+      id,
+      created_at: new Date().toISOString().split('T')[0],
+      hash: fakeHash(seed),
+      content_hash: fakeHash(seed + 9999),
+      activity_signature: fakeSig(seed),
+    } as Material;
+    setMaterials(prev => [mat, ...prev]);
+    setShowAddModal(false);
+  };
+
+  // ── Confidence bar ────────────────────────────────────────────────────────
+
+  const ConfidenceBar = ({ value, color = 'var(--accent-cyan)' }: { value: number; color?: string }) => (
+    <div className="flex items-center gap-2" style={{ minWidth: '120px' }}>
+      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-info-dim)' }}>
+        <div className="h-full rounded-full" style={{
+          width: `${value}%`,
+          background: `linear-gradient(90deg, ${color}, ${color})`,
+          boxShadow: `0 0 6px ${color}`,
+          transition: 'width 0.4s ease',
+        }} />
+      </div>
+      <span style={{ fontFamily: 'var(--font-mono)', color, fontSize: '11px', fontWeight: 600, minWidth: '34px', textAlign: 'right' }}>{value}%</span>
+    </div>
+  );
+
+  // ── Progress ring SVG helper ───────────────────────────────────────────────
+  const ProgressRing = ({ progress, size = 72, strokeWidth = 5 }: { progress: number; size?: number; strokeWidth?: number }) => {
+    const r = (size - strokeWidth) / 2;
+    const circ = 2 * Math.PI * r;
+    const offset = circ - (progress / 100) * circ;
+    return (
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--color-info-dim)" strokeWidth={strokeWidth} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--accent-cyan)" strokeWidth={strokeWidth}
+          strokeDasharray={`${circ} ${circ}`} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transition: 'stroke-dashoffset 0.35s ease' }} />
+      </svg>
+    );
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '13px', letterSpacing: '2px' }}>LOADING EVIDENCE REGISTRY...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 20px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-red)', fontSize: '13px' }}>{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page" style={{ background: 'var(--bg-primary)', minHeight: '100%', padding: '16px 20px' }}>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <header className="page-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span style={{ color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', fontSize: '10px', letterSpacing: '1px' }} className="animate-pulse">● LIVE</span>
+            <span style={{ color: wsConnected ? 'var(--accent-green)' : 'var(--accent-red)', fontFamily: 'var(--font-mono)', fontSize: '10px' }}>WS {wsConnected ? 'CONNECTED' : 'OFFLINE'}</span>
+          </div>
+          <h1 className="page-title" style={{ color: 'var(--accent-cyan)', letterSpacing: '3px', fontSize: '22px' }}>
+            ◈ EVIDENCE REGISTRY
+          </h1>
+          <p className="page-subtitle" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', marginTop: '4px' }}>
+            FORENSIC MATERIAL MANAGEMENT — STIX NORMATIVE / MACHINE-VERIFIABLE
+          </p>
+        </div>
+        <div className="header-actions" style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-primary" onClick={() => setShowUpload(true)} style={{ fontFamily: 'var(--font-mono)' }}>
+            + Import Material
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowAddModal(true)} style={{ fontFamily: 'var(--font-mono' }}>
+            + Add Material
+          </button>
+        </div>
+      </header>
+
+      {/* ── Stat Cards ─────────────────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px' }}>
+        {[
+          { label: 'TOTAL MATERIALS', value: stats.total, icon: <TotalIcon />, color: 'var(--accent-cyan)', trend: '+12%', trendUp: true },
+          { label: 'PENDING REVIEW', value: stats.pending, icon: <PendingIcon />, color: 'var(--accent-yellow)', trend: `${stats.pending} awaiting`, trendUp: stats.pending > 0 },
+          { label: 'APPROVED', value: stats.approved, icon: <ApprovedIcon />, color: 'var(--accent-green)', trend: `${stats.total > 0 ? Math.round((stats.approved/stats.total)*100) : 0}% rate`, trendUp: true },
+          { label: 'REJECTED', value: stats.rejected, icon: <RejectedIcon />, color: 'var(--accent-red)', trend: `${stats.total > 0 ? Math.round((stats.rejected/stats.total)*100) : 0}% rate`, trendUp: false },
+        ].map((card) => (
+          <div key={card.label} style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            padding: '16px 18px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Subtle glow */}
+            <div style={{
+              position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%',
+              background: card.color, opacity: 0.04, filter: 'blur(20px)',
+            }} />
+            <div style={{ marginTop: '2px' }}>{card.icon}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', color: card.color, fontSize: '28px', fontWeight: 700, lineHeight: 1.1, letterSpacing: '-0.5px' }}>
+                {card.value}
+              </div>
+              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1.5px', marginTop: '4px' }}>
+                {card.label}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: '10px', marginTop: '6px',
+                color: card.trendUp ? 'var(--accent-green)' : 'var(--accent-red)',
+                display: 'flex', alignItems: 'center', gap: '4px',
+              }}>
+                <span style={{ fontSize: '9px' }}>{card.trendUp ? '▲' : '▼'}</span> {card.trend}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Ingestion Progress ─────────────────────────────────────────────── */}
+      <div style={{
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
+        padding: '14px 18px', marginBottom: '16px',
+        display: 'flex', alignItems: 'center', gap: '16px',
+      }}>
+        <div style={{ position: 'relative', width: 48, height: 48, flexShrink: 0 }}>
+          <ProgressRing progress={ingestionPct} size={48} strokeWidth={4} />
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '11px', fontWeight: 700,
+          }}>
+            {ingestionPct}%
+          </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '10px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '6px' }}>
+            ◈ MATERIAL INGESTION PIPELINE
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-color)' }}>
+            <div className="rounded-full" style={{
+              width: `${ingestionPct}%`, height: '100%',
+              background: 'linear-gradient(90deg, var(--accent-cyan)88, var(--accent-cyan))',
+              boxShadow: '0 0 10px var(--border-active)',
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', flexShrink: 0 }}>
+          {processedCount} / {stats.total} processed
+        </div>
+      </div>
+
+      {/* ── Filters ────────────────────────────────────────────────────────── */}
+      <div style={{
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
+        padding: '12px 16px', marginBottom: '16px',
+        display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+      }}>
+        {/* Search */}
+        <div style={{
+          flex: '1 1 240px', display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '6px 12px',
+          transition: 'border-color 0.15s ease',
+        }}>
+          <span style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>⌕</span>
+          <input
+            type="text"
+            placeholder="Search by name, ID, hash, threat..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              flex: 1, background: 'transparent', border: 'none', outline: 'none',
+              fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px',
+            }}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', padding: '2px' }}>✕</button>
+          )}
+        </div>
+
+        {/* Status filter */}
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{
+          fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
+          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
+          padding: '6px 10px', outline: 'none', cursor: 'pointer',
+        }}>
+          <option value="all">All Statuses</option>
+          {STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+        </select>
+
+        {/* Threat class filter */}
+        <select value={threatFilter} onChange={e => setThreatFilter(e.target.value)} style={{
+          fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
+          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
+          padding: '6px 10px', outline: 'none', cursor: 'pointer',
+        }}>
+          <option value="all">All Threat Classes</option>
+          {uniqueThreats.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+
+        {/* Type filter */}
+        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={{
+          fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)',
+          background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
+          padding: '6px 10px', outline: 'none', cursor: 'pointer',
+        }}>
+          <option value="all">All Types</option>
+          {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+
+        {/* Results count */}
+        <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', whiteSpace: 'nowrap' }}>
+          {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {/* ── Bulk Actions ───────────────────────────────────────────────────── */}
+      {selectedIds.size > 0 && (
+        <div style={{
+          background: 'var(--color-info-dim)', border: '1px solid var(--border-active)', borderRadius: '8px',
+          padding: '10px 16px', marginBottom: '12px',
+          display: 'flex', alignItems: 'center', gap: '12px',
+        }}>
+          <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '12px' }}>
+            {selectedIds.size} selected
+          </span>
+          <button onClick={() => setStatusForSelected('approved')} className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', padding: '4px 12px' }}>
+            ✓ Approve Selected
+          </button>
+          <button onClick={() => setStatusForSelected('rejected')} className="btn btn-danger" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', padding: '4px 12px' }}>
+            ✕ Reject Selected
+          </button>
+          <button onClick={() => {
+            setMaterials(prev => prev.map(m => ({ ...m, status: 'imported' as const })));
+            setSelectedIds(new Set());
+          }} className="btn btn-secondary" style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', padding: '4px 12px' }}>
+            ↻ Normalize All
+          </button>
+          <button onClick={() => setSelectedIds(new Set())} style={{
+            marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: '11px',
+            color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer',
+          }}>
+            Clear selection
+          </button>
+        </div>
+      )}
+
+      {/* ── Main Table ─────────────────────────────────────────────────────── */}
+      <div style={{
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
+        overflow: 'hidden', marginBottom: '16px',
+      }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
+                <th style={{ padding: '12px 14px', textAlign: 'center', width: '40px' }}>
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                    ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < filtered.length; }}
+                    onChange={toggleSelectAll}
+                    style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
+                  />
+                </th>
+                {['ID', 'Name', 'Type', 'Threat Class', 'Status', 'Confidence', 'Source', 'Date', 'Actions'].map(h => (
+                  <th key={h} style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '1.5px', padding: '12px 14px', textAlign: 'left', fontWeight: 700, whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '40px 20px', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                    No materials match current filters
+                  </td>
+                </tr>
+              ) : filtered.map(m => {
+                const tcColor = THREAT_CLASS_COLORS[m.threat_class] || 'var(--text-secondary)';
+                const stColor = STATUS_COLORS[m.status] || 'var(--text-secondary)';
+                const stBg = STATUS_BG[m.status] || 'transparent';
+                const stBorder = STATUS_BORDER[m.status] || 'transparent';
+                const isExpanded = expandedId === m.id;
+                const isSelected = selectedIds.has(m.id);
+                const confColor = m.confidence >= 85 ? 'var(--accent-green)' : m.confidence >= 70 ? 'var(--accent-cyan)' : m.confidence >= 55 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+
+                return (
+                  <React.Fragment key={m.id}>
+                    <tr className="mat-table-row" style={{
+                      borderBottom: isExpanded ? 'none' : '1px solid var(--border-row)',
+                      background: isSelected ? 'var(--table-hover-bg)' : 'transparent',
+                      transition: 'background 0.15s ease',
+                      cursor: 'pointer',
+                    }}>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(m.id)} style={{ accentColor: 'var(--accent-cyan)', cursor: 'pointer' }} />
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '12px 14px', fontWeight: 500 }}>
+                        {m.id}
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <button onClick={() => setShowDetail(m)} style={{
+                          fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '12px',
+                          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                          textDecoration: 'none',
+                        }}>
+                          {m.name}
+                        </button>
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '11px', padding: '12px 14px' }}>
+                        {m.type}
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px',
+                          color: tcColor, background: `${tcColor}18`, border: `1px solid ${tcColor}33`,
+                          padding: '3px 10px', borderRadius: '4px',
+                        }}>
+                          {m.threat_class}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase',
+                          color: stColor, background: stBg, border: `1px solid ${stBorder}`,
+                          padding: '3px 10px', borderRadius: '4px',
+                        }}>
+                          {m.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <ConfidenceBar value={m.confidence} color={confColor} />
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '12px 14px' }}>
+                        {m.source}
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '11px', padding: '12px 14px' }}>
+                        {m.created_at}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                          <button onClick={() => setExpandedId(isExpanded ? null : m.id)} title="Details" style={{
+                            background: 'var(--color-info-dim)', border: '1px solid var(--border-active)',
+                            color: 'var(--accent-cyan)', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer',
+                            fontFamily: 'var(--font-mono)', fontSize: '10px',
+                            transition: 'all 0.15s ease',
+                          }}>
+                            {isExpanded ? '▼' : '▶'}
+                          </button>
+                          {m.status !== 'approved' && m.status !== 'rejected' && (
+                            <button onClick={() => handleNormalize(m.id)} title="Normalize" style={{
+                              background: 'var(--sev-high-bg)', border: `1px solid var(--sev-high-border)`,
+                              color: 'var(--accent-orange)', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer',
+                              fontFamily: 'var(--font-mono)', fontSize: '10px',
+                              transition: 'all 0.15s ease',
+                            }}>N</button>
+                          )}
+                          <button onClick={() => handleMatch(m.id)} title="Find Match" style={{
+                            background: 'var(--color-purple-dim)', border: `1px solid var(--purple-dim-border, rgba(139,92,246,0.3))`,
+                            color: 'var(--accent-purple)', borderRadius: '4px', padding: '4px 8px', cursor: 'pointer',
+                            fontFamily: 'var(--font-mono)', fontSize: '10px',
+                            transition: 'all 0.15s ease',
+                          }}>M</button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={10} style={{ padding: 0, borderBottom: '1px solid var(--color-info-dim)' }}>
+                          <div style={{
+                            background: 'var(--overlay-md)', padding: '14px 18px',
+                            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px',
+                          }}>
+                            <div>
+                              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                                SHA-256 Hash
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '10px', wordBreak: 'break-all' }}>
+                                  {(m.content_hash || m.hash).slice(0, 32)}...
+                                </code>
+                                <button onClick={() => handleCopyHash(m.content_hash || m.hash)} style={{
+                                  background: 'none', border: 'none', color: copiedHash === (m.content_hash || m.hash) ? 'var(--accent-green)' : 'var(--text-secondary)',
+                                  cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '10px', padding: 0,
+                                }} title="Copy hash">
+                                  {copiedHash === (m.content_hash || m.hash) ? '✓' : '⧉'}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                                Size
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px' }}>{m.size}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                                Severity
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-mono)', color: m.severity === 'critical' ? 'var(--accent-red)' : m.severity === 'high' ? 'var(--accent-orange)' : m.severity === 'medium' ? 'var(--accent-yellow)' : 'var(--accent-cyan)', fontSize: '12px', textTransform: 'uppercase', fontWeight: 600 }}>
+                                {m.severity}
+                              </div>
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                                Description
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '11px' }}>{m.description}</div>
+                            </div>
+                            <div style={{ gridColumn: '1 / -1' }}>
+                              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                                Activity Signature
+                              </div>
+                              <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '11px' }}>{m.activity_signature}</code>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Footer bar ─────────────────────────────────────────────────────── */}
+      <div style={{
+        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px',
+        padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px',
+        fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-secondary)',
+      }}>
+        <span>EKADHARA v3.2.1</span>
+        <span style={{ color: 'var(--border-active)' }}>|</span>
+        <span>CLASSIFIED // TLP:WHITE</span>
+        <span style={{ color: 'var(--border-active)' }}>|</span>
+        <span>{new Date().toISOString().slice(0,10)}</span>
+        <span style={{ flex: 1 }} />
+        <span>FIXTURE MODE — NO BACKEND</span>
+      </div>
+
+      {/* ── Add Material Modal ──────────────────────────────────────────────── */}
+      {showAddModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowAddModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
+            padding: '16px 20px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto',
+            boxShadow: 'var(--modal-shadow), 0 0 20px var(--color-accent-dim)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '14px', fontWeight: 700, letterSpacing: '1px' }}>
+                ◈ ADD NEW MATERIAL
+              </h3>
+              <button onClick={() => setShowAddModal(false)} style={{
+                background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '16px',
+                fontFamily: 'var(--font-mono)',
+              }}>✕</button>
+            </div>
+            <AddMaterialForm onSubmit={handleAddMaterial} types={uniqueTypes} threats={uniqueThreats} sources={SOURCES} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Detail Modal ───────────────────────────────────────────────────── */}
+      {showDetail && !showNormalize && !showMatch && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowDetail(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
+            padding: '16px 20px', width: '100%', maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto',
+            boxShadow: 'var(--modal-shadow), 0 0 20px var(--color-accent-dim)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700 }}>
+                {showDetail.name}
+              </h3>
+              <button onClick={() => setShowDetail(null)} style={{
+                background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '16px',
+                fontFamily: 'var(--font-mono)',
+              }}>✕</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              {[
+                { label: 'ID', value: showDetail.id },
+                { label: 'Type', value: showDetail.type },
+                { label: 'Threat Class', value: showDetail.threat_class, highlight: true, color: THREAT_CLASS_COLORS[showDetail.threat_class] || 'var(--text-secondary)' },
+                { label: 'Status', value: showDetail.status, highlight: true, color: STATUS_COLORS[showDetail.status] || 'var(--text-secondary)' },
+                { label: 'Severity', value: showDetail.severity, color: showDetail.severity === 'critical' ? 'var(--accent-red)' : showDetail.severity === 'high' ? 'var(--accent-orange)' : showDetail.severity === 'medium' ? 'var(--accent-yellow)' : 'var(--accent-cyan)' },
+                { label: 'Confidence', value: `${showDetail.confidence}%` },
+                { label: 'Source', value: showDetail.source },
+                { label: 'Date Added', value: showDetail.created_at },
+                { label: 'Size', value: showDetail.size },
+                { label: 'Description', value: showDetail.description || '—' },
+              ].map((field, i) => (
+                <div key={i}>
+                  <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                    {field.label}
+                  </div>
+                  <div style={{
+                    fontFamily: 'var(--font-mono)', fontSize: '12px', color: field.color || 'var(--text-primary)',
+                    ...(field.highlight ? {
+                      color: field.color,
+                      background: `${field.color}15`,
+                      border: `1px solid ${field.color}33`,
+                      padding: '3px 8px', borderRadius: '4px', display: 'inline-block',
+                    } : {}),
+                  }}>
+                    {field.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+                SHA-256 Content Hash
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <code style={{
+                  fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '10px',
+                  wordBreak: 'break-all', background: 'var(--color-accent-dim)', padding: '6px 10px', borderRadius: '4px',
+                  border: '1px solid var(--border-color)', flex: 1,
+                }}>
+                  {showDetail.content_hash}
+                </code>
+                <button onClick={() => handleCopyHash(showDetail.content_hash || showDetail.hash)} style={{
+                  background: 'var(--color-info-dim)', border: '1px solid var(--border-active)', color: 'var(--accent-cyan)',
+                  borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: '10px',
+                }}>
+                  {copiedHash === (showDetail.content_hash || showDetail.hash) ? '✓ COPIED' : '⧉ COPY'}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+                Description
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px', background: 'var(--color-info-dim)', padding: '10px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                {showDetail.description}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+                Activity Signature
+              </div>
+              <code style={{
+                fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '11px', wordBreak: 'break-all',
+                background: 'var(--color-accent-dim)', padding: '8px 12px', borderRadius: '6px',
+                border: '1px solid var(--border-color)', display: 'block',
+              }}>
+                {showDetail.activity_signature}
+              </code>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              {showDetail.status === 'imported' && (
+                <button onClick={() => { handleNormalize(showDetail.id); setShowDetail(null); }} className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                  Normalize
+                </button>
+              )}
+              {showDetail.status !== 'rejected' && (
+                <button onClick={() => {
+                  setMaterials(prev => prev.map(m => m.id === showDetail.id ? { ...m, status: 'approved' as const, is_accepted: true } : m));
+                  setShowDetail(null);
+                }} className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', background: 'rgba(34,197,94,0.08)', color: 'var(--accent-green)', borderColor: 'var(--mat-approved-border)' }}>
+                  ✓ Approve
+                </button>
+              )}
+              {showDetail.status !== 'approved' && showDetail.status !== 'rejected' && (
+                <button onClick={() => {
+                  setMaterials(prev => prev.map(m => m.id === showDetail.id ? { ...m, status: 'rejected' as const } : m));
+                  setShowDetail(null);
+                }} className="btn btn-danger" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                  ✕ Reject
+                </button>
+              )}
+              <button onClick={() => setShowDetail(null)} className="btn btn-secondary" style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Normalize Modal ────────────────────────────────────────────────── */}
+      {showNormalize && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 60, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); setNormalizeProgress(0); }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
+            padding: '16px 20px', width: '100%', maxWidth: '500px',
+            boxShadow: 'var(--modal-shadow)',
+          }}>
+            <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+              NORMALIZING: {normalizeId}
+            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
+                <ProgressRing progress={normalizeProgress} size={72} strokeWidth={5} />
+                <div style={{
+                  position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', fontSize: '14px', fontWeight: 700,
+                }}>
+                  {normalizeProgress}%
+                </div>
+              </div>
+              <div style={{
+                flex: 1, background: 'var(--panel-dark)', border: '1px solid var(--accent-cyan)',
+                borderRadius: '6px', padding: '10px 14px', fontFamily: 'var(--font-mono)', fontSize: '11px',
+                minHeight: '60px',
+              }}>
+                <div style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>&gt; Loading material: {normalizeId}</div>
+                {normalizedResult?.currentStep && (
+                  <div style={{ color: 'var(--accent-cyan)' }}>&gt; {normalizedResult.currentStep}</div>
+                )}
+                {normalizing && <span style={{ color: 'var(--accent-cyan)' }}>█</span>}
+                {!normalizing && <div style={{ color: 'var(--accent-green)' }}>&gt; ✓ Normalization complete. Material ready for approval.</div>}
+              </div>
+            </div>
+            {!normalizing && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={() => { setShowNormalize(false); setNormalizeId(null); setNormalizedResult(null); setNormalizeProgress(0); }} className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)' }}>
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Match Modal ────────────────────────────────────────────────────── */}
+      {showMatch && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 60, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--modal-surface)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '10px',
+            padding: '16px 20px', width: '100%', maxWidth: '500px',
+            boxShadow: 'var(--modal-shadow)',
+          }}>
+            <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+              FINDING MATCHES: {normalizeId}
+            </h3>
+            <div style={{
+              background: 'var(--panel-dark)', border: '1px solid rgba(139,92,246,0.12)',
+              borderRadius: '6px', padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: '11px',
+              minHeight: '80px',
+            }}>
+              <div style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>&gt; Material: {normalizeId}</div>
+              <div style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>&gt; Running LSH-based similarity search...</div>
+              {Object.entries(matchingItems).map(([id, text]) => (
+                <div key={id} style={{ color: 'var(--accent-purple)' }}>&gt; {text}</div>
+              ))}
+            </div>
+            {String(Object.values(matchingItems)[Object.values(matchingItems).length - 1])?.includes('Done') && (
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button onClick={() => { setShowMatch(false); setNormalizeId(null); setMatchingItems({}); }} className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)', borderColor: 'rgba(139,92,246,0.3)', color: 'var(--accent-purple)' }}>
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Upload Modal ───────────────────────────────────────────────────── */}
+      {showUpload && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50, background: 'var(--modal-backdrop)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowUpload(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--modal-surface)', border: '1px solid var(--border-active)', borderRadius: '10px',
+            padding: '16px 20px', width: '100%', maxWidth: '480px',
+            boxShadow: 'var(--modal-shadow)',
+          }}>
+            <h3 style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 700, marginBottom: '16px' }}>
+              IMPORT MATERIALS
+            </h3>
+            <div onClick={() => document.getElementById('mat-file-input')?.click()} style={{
+              background: 'var(--panel-dark)', border: '1px dashed var(--border-active)', borderRadius: '8px',
+              padding: '32px', textAlign: 'center', cursor: 'pointer',
+            }}>
+              <div style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '28px', marginBottom: '8px' }}>+</div>
+              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: '12px', marginBottom: '4px' }}>
+                Drop files here or click to browse
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', fontSize: '10px' }}>
+                Accepts: STIX JSON, PCAP, PCAPNG, ZIP, CSV
+              </div>
+              <input id="mat-file-input" type="file" multiple accept=".json,.pcap,.pcapng,.zip,.csv" style={{ display: 'none' }} onChange={handleFileSelect} />
+            </div>
+            {Object.entries(uploadProgress).length > 0 && (
+              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {Object.entries(uploadProgress).map(([id, pct]) => (
+                  <div key={id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontFamily: 'var(--font-mono)', fontSize: '10px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Uploading...</span>
+                      <span style={{ color: 'var(--accent-cyan)' }}>{pct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-info-dim)' }}>
+                      <div className="rounded-full" style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-cyan)', boxShadow: '0 0 6px var(--border-active)', transition: 'width 0.2s' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+              <button onClick={() => setShowUpload(false)} className="btn btn-secondary" style={{ fontFamily: 'var(--font-mono)' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <MaterialStyles />
+    </div>
+  );
+}
+
+// ── Add Material Form Component ──────────────────────────────────────────────
+
+function AddMaterialForm({ onSubmit, types, threats, sources }: {
+  onSubmit: (data: Omit<Material, 'id' | 'created_at' | 'hash' | 'content_hash' | 'activity_signature'>) => void;
+  types: string[];
+  threats: string[];
+  sources: string[];
+}) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState(types[0] || 'Malware Sample');
+  const [threatClass, setThreatClass] = useState(threats[0] || 'DDoS');
+  const [status, setStatus] = useState<'pending' | 'imported'>('pending');
+  const [confidence, setConfidence] = useState(80);
+  const [source, setSource] = useState(sources[0] || 'DNS-Detect');
+  const [severity, setSeverity] = useState('medium');
+  const [description, setDescription] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onSubmit({
+      name: name.trim(),
+      type,
+      threat_class: threatClass,
+      category: type,
+      status,
+      confidence,
+      source,
+      severity,
+      size: '—',
+      description: description.trim() || `${name} — imported forensic material.`,
+      is_accepted: false,
+    });
+  };
+
+  const fieldLabel = (label: string) => (
+    <label style={{
+      display: 'block', fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', fontSize: '9px',
+      fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px',
+    }}>{label}</label>
+  );
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', background: 'var(--color-accent-dim)', border: '1px solid var(--border-color)', borderRadius: '6px',
+    padding: '8px 10px', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-primary)',
+    outline: 'none',
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div>
+        {fieldLabel('Material Name')}
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Emotet-v4" required style={inputStyle} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div>
+          {fieldLabel('Type')}
+          <select value={type} onChange={e => setType(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            {types.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div>
+          {fieldLabel('Threat Class')}
+          <select value={threatClass} onChange={e => setThreatClass(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            {threats.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div>
+          {fieldLabel('Status')}
+          <select value={status} onChange={e => setStatus(e.target.value as any)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            <option value="pending">Pending</option>
+            <option value="imported">Imported</option>
+          </select>
+        </div>
+        <div>
+          {fieldLabel('Source')}
+          <select value={source} onChange={e => setSource(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            {sources.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div>
+          {fieldLabel('Confidence')}
+          <input type="number" value={confidence} onChange={e => setConfidence(Number(e.target.value))} min={0} max={100} style={inputStyle} />
+        </div>
+        <div>
+          {fieldLabel('Severity')}
+          <select value={severity} onChange={e => setSeverity(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+            {['critical','high','medium','low'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        {fieldLabel('Description')}
+        <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief forensic description..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+      </div>
+      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
+        <button type="button" onClick={() => {}} className="btn btn-secondary" style={{ fontFamily: 'var(--font-mono)' }}>Cancel</button>
+        <button type="submit" className="btn btn-primary" style={{ fontFamily: 'var(--font-mono)' }}>+ Add Material</button>
+      </div>
+    </form>
+  );
+}
+
+// ── Table interaction styles ───────────────────────────────────────────────────
+const MaterialStyles = () => (
+  <style>{`
+    .mat-table-row:hover { background: var(--color-info-dim) !important; }
+    .mat-table-row:active { background: var(--overlay-md) !important; }
+    .mat-table-row input[type="checkbox"]:focus { outline: 2px solid var(--border-active); outline-offset: 2px; border-radius: 2px; }
+    .mat-table-row button:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 1px; }
+    .mat-table-row button:hover { filter: brightness(1.2); }
+  `}</style>
+);
+
+export default MaterialsPage;
