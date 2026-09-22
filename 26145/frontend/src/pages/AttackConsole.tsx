@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Play, Square, AlertTriangle, Shield, Activity, Globe, Lock, Network, Zap, RefreshCw } from 'lucide-react';
 import { useWebSocketContext } from '../context/WebSocketContext';
-import { launchAttack, fetchAttackStatus, type AttackLaunchResult } from '../lib/realBackend';
+import { launchAttack, fetchAttackStatus, injectDemoAlert, type AttackLaunchResult } from '../lib/realBackend';
 import { useTheme } from '../context/ThemeContext';
 
 interface AttackForm {
@@ -47,10 +47,24 @@ const AttackConsole: React.FC = () => {
     setLaunching(true);
     setLastResult(null);
     try {
-      const result = await launchAttack(form.attackType, form.intensity);
-      setLastResult(result);
-      const status = await fetchAttackStatus();
-      setActiveAttacks(status.active || []);
+      const [result, _] = await Promise.allSettled([
+        launchAttack(form.attackType, form.intensity),
+        injectDemoAlert(form.attackType, 1).catch(() => ({ status: 'no-api' }) as any),
+      ]);
+      const launchResult = result.status === 'fulfilled' ? result.value : {
+        status: 'error',
+        attack_id: '',
+        attack_type: form.attackType,
+        intensity: form.intensity,
+        src_ip: '',
+        message: result.reason?.message || 'Launch failed',
+        latency_ms: 0,
+      };
+      setLastResult(launchResult as AttackLaunchResult);
+      try {
+        const status = await fetchAttackStatus();
+        setActiveAttacks(status.active || []);
+      } catch { /* ignore */ }
     } catch (err) {
       setLastResult({
         status: 'error',
