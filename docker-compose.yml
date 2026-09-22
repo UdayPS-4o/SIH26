@@ -3,8 +3,7 @@ services:
   ekadhara:
     build:
       context: .
-      dockerfile: 26145/Dockerfile
-    container_name: ekadhara
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     environment:
