@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Play, Square, AlertTriangle, Shield, Activity, Globe, Lock, Network, Zap, RefreshCw, Radio } from 'lucide-react';
 import { useWebSocketContext } from '../context/WebSocketContext';
-import { launchAttack, fetchAttackStatus, launchSimulator, stopSimulator, fetchSimulatorStatus, type SimulatorStartResult } from '../lib/realBackend';
+import { launchAttack, fetchAttackStatus, launchSimulator, stopSimulator, fetchSimulatorStatus, type LaunchResult } from '../lib/realBackend';
 import { useTheme } from '../context/ThemeContext';
 
 interface AttackForm {
@@ -44,7 +44,7 @@ const AttackConsole: React.FC = () => {
     attackType: 'syn_flood', target: '127.0.0.1', port: '8000', duration: '10', intensity: 0.7,
   });
   const [launching, setLaunching] = useState(false);
-  const [lastResult, setLastResult] = useState<SimulatorStartResult | null>(null);
+  const [lastResult, setLastResult] = useState<LaunchResult | null>(null);
   const [simRunning, setSimRunning] = useState(false);
   const [simMix, setSimMix] = useState<Record<string, number>>({});
   const [activeAttacks, setActiveAttacks] = useState<any[]>([]);
@@ -98,10 +98,10 @@ const AttackConsole: React.FC = () => {
     setLastResult(null);
     try {
       const result = await launchAttack(form.attackType, form.intensity);
-      setLastResult(result as SimulatorStartResult);
+      setLastResult(result);
       refreshSimStatus();
     } catch (err) {
-      setLastResult({ status: 'error', simulator_running: false, attack_mix: {}, message: err instanceof Error ? err.message : 'Launch failed' } as any);
+      setLastResult({ status: 'error', simulator_running: false, attack_mix: {}, message: err instanceof Error ? err.message : 'Launch failed' } as LaunchResult);
     } finally {
       setLaunching(false);
     }
@@ -355,28 +355,28 @@ const AttackConsole: React.FC = () => {
           {lastResult && (
             <div style={{
               padding: 16, borderRadius: 8,
-              background: lastResult.status === 'success' || lastResult.simulator_running ? 'var(--color-success-dim)' : 'var(--color-danger-dim)',
-              border: `1px solid ${lastResult.status === 'success' || lastResult.simulator_running ? 'var(--color-success)' : 'var(--color-danger)'}`,
+              background: (lastResult as any).simulator_running || (lastResult as any).status === 'success' ? 'var(--color-success-dim)' : 'var(--color-danger-dim)',
+              border: `1px solid ${(lastResult as any).simulator_running || (lastResult as any).status === 'success' ? 'var(--color-success)' : 'var(--color-danger)'}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                 <span style={{
                   padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-                  background: lastResult.status === 'success' || lastResult.simulator_running ? 'var(--color-success-dim)' : 'var(--color-danger-dim)',
-                  color: lastResult.status === 'success' || lastResult.simulator_running ? 'var(--accent-green)' : 'var(--accent-red)',
+                  background: (lastResult as any).simulator_running || (lastResult as any).status === 'success' ? 'var(--color-success-dim)' : 'var(--color-danger-dim)',
+                  color: (lastResult as any).simulator_running || (lastResult as any).status === 'success' ? 'var(--accent-green)' : 'var(--accent-red)',
                 }}>
-                  {lastResult.status}
+                  {(lastResult as any).simulator_running ? 'running' : ((lastResult as any).status || 'launched')}
                 </span>
-                <span style={{ fontSize: 12, color: C.textSec }}>{lastResult.message}</span>
+                <span style={{ fontSize: 12, color: C.textSec }}>{(lastResult as any).message || 'Attack launched'}</span>
               </div>
-              {Object.keys(lastResult.attack_mix || {}).length > 0 && (
+              {Object.keys((lastResult as any).attack_mix || {}).length > 0 && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                  {Object.entries(lastResult.attack_mix).map(([k, v]) => (
+                  {Object.entries((lastResult as any).attack_mix).map(([k, v]: [string, any]) => (
                     <span key={k} style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontFamily: MONO, background: 'var(--sev-critical-bg)', color: 'var(--accent-red)', border: '1px solid var(--sev-critical-border)' }}>{k} {v}%</span>
                   ))}
                 </div>
               )}
               <div style={{ fontSize: 10, color: C.textDim }}>
-                {lastResult.simulator_running ? 'Simulator running — attacks continuous' : `Attack ID: ${lastResult.attack_id || 'N/A'}`}
+                {(lastResult as any).simulator_running ? 'Simulator running — attacks continuous' : `Attack ID: ${(lastResult as any).attack_id || 'N/A'}`}
               </div>
             </div>
           )}
