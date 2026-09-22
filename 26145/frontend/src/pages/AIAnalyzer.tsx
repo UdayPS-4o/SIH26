@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Cpu, Crosshair, Activity, Zap } from 'lucide-react';
+import { fetchModelMetrics, isBackendOnline } from '../lib/realBackend';
 
 const C = {
   bg:        'var(--bg-primary)',
@@ -124,6 +125,35 @@ const THREAT_MODELS: ThreatModel[] = [
     rationale:'Multi-modal features (flow stats + timing + TLS). GBT handles mixed numeric/categorical features with SHAP explainability built in.',
     accuracy:95.8, precision:94.5, recall:96.2, f1:95.3, status:'active', samples:520000 },
 ];
+
+// Backend-sourced fallback: fetched on mount, overrides hardcoded data if available.
+function useBackendModels() {
+  const [models, setModels] = useState<ThreatModel[]>([]);
+  const [useBackend, setUseBackend] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchModelMetrics().then((data: any) => {
+      if (cancelled || !data || !data.models) return;
+      const mapped: ThreatModel[] = data.models.map((m: any) => ({
+        category: m.category,
+        modelType: m.model,
+        rationale: '',
+        accuracy: m.accuracy,
+        precision: m.precision,
+        recall: m.recall,
+        f1: m.f1,
+        status: m.status,
+        samples: m.samples,
+      }));
+      setModels(mapped);
+      setUseBackend(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  return { models, useBackend };
+}
 
 const FEATURE_IMPORTANCE = [
   { name:'JA3 hash entropy',       importance:0.94 },
@@ -457,22 +487,24 @@ function LiveInferenceStats() {
 
 const AIAnalyzer: React.FC = () => {
   const [clock, setClock] = useState(now());
+  const { models: backendModels, useBackend } = useBackendModels();
 
   useEffect(() => {
     const t = setInterval(() => setClock(now()), 1000);
     return () => clearInterval(t);
   }, []);
 
-  const activeModels = useMemo(() => THREAT_MODELS.filter(m => m.status === 'active').length, []);
+  const models = useBackend ? backendModels : THREAT_MODELS;
+  const activeModels = useMemo(() => models.filter(m => m.status === 'active').length, [models]);
   const avgAccuracy = useMemo(() => {
-    const a = THREAT_MODELS.filter(m => m.status === 'active');
-    return a.reduce((s, m) => s + m.accuracy, 0) / a.length;
-  }, []);
+    const a = models.filter(m => m.status === 'active');
+    return a.length ? a.reduce((s, m) => s + m.accuracy, 0) / a.length : 0;
+  }, [models]);
   const avgF1 = useMemo(() => {
-    const a = THREAT_MODELS.filter(m => m.status === 'active');
-    return a.reduce((s, m) => s + m.f1, 0) / a.length;
-  }, []);
-  const totalSamples = useMemo(() => THREAT_MODELS.reduce((s, m) => s + m.samples, 0), []);
+    const a = models.filter(m => m.status === 'active');
+    return a.length ? a.reduce((s, m) => s + m.f1, 0) / a.length : 0;
+  }, [models]);
+  const totalSamples = useMemo(() => models.reduce((s, m) => s + m.samples, 0), [models]);
 
   const kpiCards = [
     { label:'Avg Accuracy',   value:`${avgAccuracy.toFixed(1)}%`,  sub:'across all models',  color: C.accent },
@@ -657,10 +689,11 @@ const AIAnalyzer: React.FC = () => {
               letterSpacing: '2px', color: C.accent, textTransform: 'uppercase',
             }}>Threat Model Performance</span>
             <span style={{ fontSize: 11, color: C.textSec }}>
-              {THREAT_MODELS.length} models &middot; {activeModels} active
+              {models.length} models &middot; {activeModels} active
+              {useBackend && <span style={{ color: C.green, marginLeft: 6 }}>● LIVE</span>}
             </span>
           </div>
-          <ThreatModelTable models={THREAT_MODELS} />
+          <ThreatModelTable models={models} />
         </Panel>
 
         {/* Section 4: Feature Importance + Confidence Histogram */}

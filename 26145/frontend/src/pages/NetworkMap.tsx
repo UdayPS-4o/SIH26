@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useWebSocketContext } from '../context/WebSocketContext';
 import { useTheme } from '../context/ThemeContext';
-import { Alert } from '../types';
+import { Alert, Flow } from '../types';
 
 const MONO = '"JetBrains Mono","Fira Code",monospace';
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
@@ -324,6 +324,9 @@ const NetworkMap: React.FC = () => {
   const nodeMapRef = useRef<Map<string,{label:string;ip:string;status:string}>>(new Map());
   const prevAlertCountRef = useRef(0);
   const [dynamicEdges, setDynamicEdges] = useState<NetEdge[]>([]);
+  const [liveFlowCount, setLiveFlowCount] = useState(0);
+  const [liveFlows, setLiveFlows] = useState<Flow[]>([]);
+  const liveFlowsFetched = useRef(0);
 
   useEffect(() => {
     const t = setInterval(() => setClock(now()), 1000);
@@ -339,6 +342,25 @@ const NetworkMap: React.FC = () => {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  // Fetch live flows from backend and map them to topology nodes
+  useEffect(() => {
+    let cancelled = false;
+    const fetchFlows = async () => {
+      try {
+        const { fetchFlows: getFlows } = await import('../lib/realBackend');
+        const flows = await getFlows(50);
+        if (!cancelled) {
+          setLiveFlows(flows);
+          setLiveFlowCount(flows.length);
+          liveFlowsFetched.current += flows.length;
+        }
+      } catch { /* silently ignore */ }
+    };
+    fetchFlows();
+    const interval = setInterval(fetchFlows, 5000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   // Map WebSocket alerts to dynamic attack edges
@@ -397,7 +419,23 @@ const NetworkMap: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const { nodes, edges } = useMemo(() => buildTopology(svgDims.width, svgDims.height), [svgDims.width, svgDims.height]);
+  // Enrich topology with real flow data
+  const { nodes, edges } = useMemo(() => {
+    const { nodes: baseNodes, edges: baseEdges } = buildTopology(svgDims.width, svgDims.height);
+    if (liveFlows.length > 0) {
+      const flowEdges: NetEdge[] = liveFlows.slice(0, 20).map((f, i) => ({
+        id: `flow-${i}`,
+        source: f.src_ip,
+        target: f.dst_ip,
+        status: f.isAttack ? 'attack' : (f.attack_type ? 'suspicious' : 'normal'),
+        packets: f.packets || 1,
+        bytes: (f.bytes_sent || 0) + (f.bytes_recv || 0),
+        color: f.isAttack ? C.red : (f.attack_type ? C.amber : C.green),
+      }));
+      return { nodes: baseNodes, edges: [...baseEdges, ...flowEdges] };
+    }
+    return { nodes: baseNodes, edges: baseEdges };
+  }, [svgDims.width, svgDims.height, liveFlows, C.green, C.red, C.amber]);
 
   // Merge dynamic edges into base edges
   const allEdges = useMemo(() => {
@@ -418,7 +456,8 @@ const NetworkMap: React.FC = () => {
   const suspEdges = useMemo(() => allEdges.filter(e=>e.status==='suspicious'), [allEdges]);
 
   const statCards = [
-    { label:'Total Flows', value: fmt(totalFlows), color: C.accent },
+    { label:'Total Flows', value: liveFlowCount > 0 ? fmt(liveFlowCount + liveFlowsFetched.current) : fmt(totalFlows), color: C.accent },
+    { label:'Live Flows', value: fmt(liveFlows.length), color: C.green },
     { label:'Blocked Conns', value: fmt(blockedConns), color: C.red },
     { label:'Active Threats', value: String(activeThreats), color: 'var(--accent-orange)' },
   ];

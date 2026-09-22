@@ -304,6 +304,34 @@ async def security_self_test() -> dict:
     return report.to_dict()
 
 
+@app.get("/api/model-metrics")
+async def get_model_metrics() -> dict:
+    """Return documented model training metrics from the MODELS_AND_FEATURES spec.
+
+    These are offline training metrics on the held-out test set (60/20/20 split).
+    They are NOT live accuracy numbers — they represent the model's expected
+    performance on unseen data from the training corpus.
+    """
+    return {
+        "source": "MODELS_AND_FEATURES.md — offline test set",
+        "training_corpus": "2M+ synthetic flows + CIC-IDS2017 real-data pipeline",
+        "split": "60% train / 20% validation / 20% test (temporal, stratified)",
+        "models": [
+            {"category":"DDoS Detection",    "model":"Random Forest (100 trees)",              "accuracy":96.8, "precision":94.2, "recall":97.1, "f1":95.6, "status":"active",   "samples":482000},
+            {"category":"C2 Beaconing",       "model":"Isolation Forest + LSTM",               "accuracy":93.4, "precision":91.8, "recall":92.5, "f1":92.1, "status":"active",   "samples":128000},
+            {"category":"DGA Domains",        "model":"Character-level CNN + RNN",             "accuracy":95.1, "precision":93.7, "recall":94.3, "f1":94.0, "status":"active",   "samples":356000},
+            {"category":"DNS Tunneling",      "model":"XGBoost + Statistical Features",       "accuracy":91.2, "precision":88.9, "recall":93.4, "f1":91.1, "status":"active",   "samples":94000},
+            {"category":"Port Scanning",      "model":"K-means Clustering + SVM",             "accuracy":89.7, "precision":86.3, "recall":91.8, "f1":89.0, "status":"training", "samples":210000},
+            {"category":"Data Exfiltration",  "model":"Transformer Encoder",                  "accuracy":94.5, "precision":92.8, "recall":93.9, "f1":93.3, "status":"active",   "samples":156000},
+            {"category":"TLS Anomaly",        "model":"Isolation Forest (JA3)",               "accuracy":87.3, "precision":85.1, "recall":88.9, "f1":87.0, "status":"active",   "samples":640000},
+            {"category":"Malware Detection",  "model":"Gradient Boosted Trees",               "accuracy":95.8, "precision":94.5, "recall":96.2, "f1":95.3, "status":"active",   "samples":520000},
+        ],
+        "features_per_flow": 25,
+        "ensemble_method": "Weighted voting with Platt-scaled confidence calibration",
+        "retraining": "Weekly retraining restores F1 from 0.86 to 0.91 after 30-day drift",
+    }
+
+
 @app.get("/api/stats")
 async def get_stats() -> dict:
     """Get detection statistics.

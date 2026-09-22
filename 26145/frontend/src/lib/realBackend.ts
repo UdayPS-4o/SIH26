@@ -155,6 +155,21 @@ export async function fetchHealth(): Promise<{ status: string; uptime: number }>
   }
 }
 
+export async function fetchModelMetrics(): Promise<any | null> {
+  try {
+    const res = await fetchWithTimeout('/model-metrics');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data && Array.isArray(data.models)) {
+      backendOnline = true;
+      return data;
+    }
+    throw new Error('No models array');
+  } catch {
+    return null;
+  }
+}
+
 // ── WebSocket hook ────────────────────────────────────────────────────────────
 
 export interface WSState {
@@ -375,6 +390,41 @@ export async function fetchAttackStatus(): Promise<{ active: any[]; total: numbe
     return await res.json();
   } catch {
     return { active: [], total: 0 };
+  }
+}
+
+export interface SimulatorStartResult {
+  status: string;
+  simulator_running: boolean;
+  attack_mix: Record<string, number>;
+  message: string;
+}
+
+export async function launchSimulator(attackMix: Record<string, number>, duration = 0): Promise<SimulatorStartResult> {
+  const body: Record<string, any> = { attack_mix: attackMix };
+  if (duration > 0) body.duration_seconds = duration;
+  const res = await fetch(`${API_BASE}/api/demo/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}`);
+  return await res.json() as Promise<SimulatorStartResult>;
+}
+
+export async function stopSimulator(): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/api/demo/stop`, { method: 'POST' });
+  if (!res.ok) throw new Error(`Backend returned HTTP ${res.status}`);
+  return await res.json();
+}
+
+export async function fetchSimulatorStatus(): Promise<{ simulator_running: boolean; attack_mix: Record<string, number>; lab_attacks: any[]; generated_attacks: any[]; processing_active: boolean }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/demo/status`);
+    if (!res.ok) throw new Error();
+    return await res.json();
+  } catch {
+    return { simulator_running: false, attack_mix: {}, lab_attacks: [], generated_attacks: [], processing_active: false };
   }
 }
 
