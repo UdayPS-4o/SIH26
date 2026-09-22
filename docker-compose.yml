@@ -2,8 +2,8 @@ version: '3.8'
 services:
   ekadhara:
     build:
-      context: ./26145
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: 26145/Dockerfile
     container_name: ekadhara
     ports:
       - "8000:8000"
