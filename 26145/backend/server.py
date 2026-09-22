@@ -77,6 +77,7 @@ app.add_middleware(
 _start_time: float = time.time()
 _flows_processed: int = 0
 _alerts_generated: int = 0
+_attack_src_ip: str = ""
 
 # Recent flows and alerts for API queries
 _recent_flows: deque = deque(maxlen=5000)
