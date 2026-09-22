@@ -1,4 +1,3 @@
-ARG CACHE_DATE=2026-09-20
 # Multi-stage build: frontend → production single container
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-builder
