@@ -377,3 +377,13 @@ export async function fetchAttackStatus(): Promise<{ active: any[]; total: numbe
     return { active: [], total: 0 };
   }
 }
+
+export async function injectDemoAlert(attackType: string, count = 1): Promise<{ status: string; count: number }> {
+  const res = await fetch(`${API_BASE}/api/demo/alert`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ attack_type: attackType, count }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}

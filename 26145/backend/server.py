@@ -5,7 +5,7 @@ Provides WebSocket streaming of flows and alerts, and REST endpoints
 for health checks, statistics, and alert retrieval.
 """
 
-import os, sys, time, threading, uuid, json, asyncio, logging
+import os, sys, time, threading, uuid, json, asyncio, logging, random
 from pathlib import Path
 from collections import deque
 from typing import Any
@@ -528,6 +528,146 @@ _ATTACK_TOOL_TYPES = {
     "syn_flood", "udp_flood", "c2_beaconing",
     "dns_tunnel", "port_scan", "data_exfiltration",
 }
+
+
+# ── Demo cinematic alert endpoint ─────────────────────────────────────────────
+# Generates a realistic detection alert in the backend and broadcasts it to
+# all connected dashboard clients.  Used by the demo launcher / video script
+# to make the UI react immediately when an attack is launched from cmd.
+
+# Template evidence values are stored as callables so random numbers are
+# evaluated fresh on each request, not baked at module-import time.
+_DEMO_ALERT_TEMPLATES: dict[str, dict] = {
+    "syn_flood": lambda: {
+        "threat_class": "ddos", "threat_type": "syn_flood", "severity": "critical",
+        "evidence": {
+            "pkt_rate": random.randint(800, 5000),
+            "src_entropy": round(random.uniform(4.5, 8.0), 2),
+            "syn_ack_ratio": round(random.uniform(8.0, 40.0), 1),
+            "window_sec": 60, "flows_analyzed": random.randint(200, 2000),
+            "validity": "MEASURED", "diode_delta": None, "features_lost": "None",
+        },
+    },
+    "udp_flood": lambda: {
+        "threat_class": "ddos", "threat_type": "udp_flood", "severity": "critical",
+        "evidence": {
+            "pkt_rate": random.randint(600, 4000),
+            "dst_entropy": round(random.uniform(3.5, 7.5), 2),
+            "avg_payload_bytes": random.randint(64, 1400),
+            "target_ports": random.randint(10, 500),
+            "window_sec": 60, "flows_analyzed": random.randint(150, 1500),
+            "validity": "MEASURED", "diode_delta": None, "features_lost": "None",
+        },
+    },
+    "c2_beaconing": lambda: {
+        "threat_class": "beaconing", "threat_type": "c2_beaconing", "severity": "high",
+        "evidence": {
+            "beacon_interval_std": round(random.uniform(0.3, 1.5), 2),
+            "jitter_pct": round(random.uniform(2.0, 8.0), 1),
+            "dst_consistency": round(random.uniform(0.85, 1.0), 2),
+            "beacon_count": random.randint(5, 30),
+            "window_sec": 120, "flows_analyzed": random.randint(10, 60),
+            "validity": "MEASURED", "diode_delta": None, "features_lost": "Return volume",
+        },
+    },
+    "dns_tunnel": lambda: {
+        "threat_class": "dns_tunneling", "threat_type": "dns_tunneling", "severity": "high",
+        "evidence": {
+            "query_entropy": round(random.uniform(4.0, 7.0), 2),
+            "avg_query_len": random.randint(40, 120),
+            "txt_record_pct": round(random.uniform(30, 90), 1),
+            "unique_domains": random.randint(20, 200),
+            "window_sec": 60, "flows_analyzed": random.randint(50, 500),
+            "validity": "MEASURED", "diode_delta": None, "features_lost": "None",
+        },
+    },
+    "port_scan": lambda: {
+        "threat_class": "port_scan", "threat_type": "port_scan", "severity": "medium",
+        "evidence": {
+            "unique_ports_hit": random.randint(8, 30),
+            "fan_ratio": round(random.uniform(0.6, 0.95), 2),
+            "scan_duration_sec": random.randint(3, 15),
+            "ports_scanned": random.randint(20, 100),
+            "window_sec": 30, "flows_analyzed": random.randint(30, 200),
+            "validity": "ESTIMATED", "diode_delta": None, "features_lost": "RST validation",
+        },
+    },
+    "data_exfiltration": lambda: {
+        "threat_class": "exfiltration", "threat_type": "data_exfiltration", "severity": "critical",
+        "evidence": {
+            "outbound_bytes": random.randint(500_000, 5_000_000),
+            "inbound_bytes": random.randint(0, 50_000),
+            "exfil_ratio": round(random.uniform(8.0, 50.0), 1),
+            "session_count": random.randint(5, 50),
+            "window_sec": 120, "flows_analyzed": random.randint(10, 100),
+            "validity": "MISSING", "diode_delta": "-83%", "features_lost": "Entire return channel",
+        },
+    },
+}
+
+
+def _demo_random_ip() -> str:
+    return ".".join(str(random.randint(1, 223)) for _ in range(4))
+
+
+@app.post("/api/demo/alert")
+async def api_demo_alert(request: Request) -> dict:
+    """LAB/DEMO ONLY: Inject a cinematic detection alert for the dashboard.
+
+    Body (JSON):
+        attack_type: one of the supported _ATTACK_TOOL_TYPES
+        count: optional number of alerts to inject (default 1, max 10)
+
+    The alert is broadcast via WebSocket to all connected clients and
+    appended to the recent alerts deque so it shows up on API queries too.
+    """
+    body = {}
+    try:
+        body = await request.json() or {}
+    except Exception:
+        pass
+
+    attack_type = body.get("attack_type", "syn_flood")
+    count = min(int(body.get("count", 1)), 10)
+
+    template_fn = _DEMO_ALERT_TEMPLATES.get(attack_type)
+    if template_fn is None:
+        template_fn = lambda: {
+            "threat_class": attack_type,
+            "threat_type": attack_type,
+            "severity": "high",
+            "evidence": {"window_sec": 60, "flows_analyzed": 50, "validity": "MEASURED"},
+        }
+    template = template_fn()
+
+    injected = []
+    for _ in range(count):
+        alert = Alert(
+            threat_class=template["threat_class"],
+            threat_type=template["threat_type"],
+            severity=template["severity"],
+            confidence=round(random.uniform(0.72, 0.99), 2),
+            src_ip=_demo_random_ip(),
+            dst_ip=_demo_random_ip(),
+            evidence=dict(template["evidence"]),
+            validity=template["evidence"].get("validity", "MEASURED"),
+            flow_count=template["evidence"].get("flows_analyzed", 1),
+        )
+        _recent_alerts.append(alert)
+        _alerts_generated += 1
+        injected.append(alert.to_dict())
+        await manager.broadcast({"type": "alert", "data": alert.to_dict()})
+
+    return {
+        "status": "injected",
+        "attack_type": attack_type,
+        "count": len(injected),
+        "alerts": injected,
+    }
+
+
+def _demo_random_ip() -> str:
+    return ".".join(str(_demo_random.randint(1, 223)) for _ in range(4))
 
 
 @app.post("/api/attack/launch")
