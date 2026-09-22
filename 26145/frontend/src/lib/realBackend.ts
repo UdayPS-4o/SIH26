@@ -356,8 +356,9 @@ const ATTACK_TYPE_MAP: Record<string, string> = {
   tls_beacon: 'c2_beaconing',
 };
 
+export type LaunchResult = AttackLaunchResult | SimulatorStartResult;
+
 export interface AttackLaunchResult {
-  status: string;
   attack_id: string;
   attack_type: string;
   intensity: number;
