@@ -30,6 +30,8 @@ const OperationsTab: React.FC = () => {
   const { alerts, stats, isConnected, flowsPerSec, alertCount, backendOnline } = useWebSocketContext();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [throughputHistory, setThroughputHistory] = useState<number[]>([]);
+  const prevTotalFlows = useRef<number | null>(null);
+  const prevTime = useRef<number>(Date.now());
   const prevAlertCount = useRef(alertCount);
 
   useEffect(() => {
@@ -37,12 +39,21 @@ const OperationsTab: React.FC = () => {
     return () => clearInterval(t);
   }, []);
 
+  // Compute throughput from totalFlows delta (more reliable than backend flows_per_sec)
   useEffect(() => {
+    if (!stats?.total_flows) return;
+    const now = Date.now();
+    const dt = (now - prevTime.current) / 1000;
+    if (dt < 0.5) return;
+    const delta = prevTotalFlows.current !== null ? stats.total_flows - prevTotalFlows.current : 0;
+    const computedFps = dt > 0 ? Math.round(delta / dt) : 0;
+    prevTotalFlows.current = stats.total_flows;
+    prevTime.current = now;
     setThroughputHistory(h => {
-      const next = [...h, flowsPerSec];
+      const next = [...h, computedFps];
       return next.length > 30 ? next.slice(-30) : next;
     });
-  }, [flowsPerSec]);
+  }, [stats?.total_flows]);
 
   const isLive = isConnected && backendOnline;
 
