@@ -4,10 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        CACHE_DATE: "2026-09-22-v1"
     ports:
       - "8000:8000"
-    environment:
-      - PYTHONUNBUFFERED: "1"
     restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
