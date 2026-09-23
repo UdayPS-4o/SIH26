@@ -65,9 +65,11 @@ export async function fetchAlerts(limit = 50, offset = 0): Promise<Alert[]> {
     const data = await res.json();
     if (Array.isArray(data.alerts)) {
       backendOnline = true;
+      const rawTs = a.timestamp || Date.now();
+      const ts = typeof rawTs === 'number' && rawTs < 1e12 ? rawTs * 1000 : rawTs;
       return data.alerts.map((a: any) => ({
         id: a.id || `alt-${Math.random().toString(36).slice(2, 8)}`,
-        timestamp: a.timestamp || Date.now(),
+        timestamp: ts,
         threat_type: a.threat_type || 'Unknown',
         confidence: typeof a.confidence === 'number' ? (a.confidence <= 1 ? Math.round(a.confidence * 100) : a.confidence) : 0,
         severity: a.severity || 'medium',
@@ -244,9 +246,11 @@ export function useRealWebSocket(onAlert?: (alert: Alert) => void): WSState {
           const data = JSON.parse(event.data);
           if (data.type === 'alert' && data.data) {
             const a = data.data;
+            const rawTs = a.timestamp || Date.now();
+            const timestamp = typeof rawTs === 'number' && rawTs < 1e12 ? rawTs * 1000 : rawTs;
             const alert: Alert = {
               id: a.id || `alt-${Math.random().toString(36).slice(2, 8)}`,
-              timestamp: a.timestamp || Date.now(),
+              timestamp,
               threat_type: a.threat_type || a.details?.threat_type || 'Unknown',
               confidence: typeof a.confidence === 'number' ? (a.confidence <= 1 ? Math.round(a.confidence * 100) : a.confidence) : 0,
               severity: a.severity || 'medium',
