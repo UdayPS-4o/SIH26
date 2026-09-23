@@ -8,118 +8,89 @@
 
 | # | Shot | Duration | Visual |
 |---|------|----------|--------|
-| 1 | Title card | 0:00–0:08 | EKADHARA logo on dark background. Text: "PS-26145 · NTRO · SIH 2026" |
-| 2 | The Problem | 0:08–0:30 | Data diode diagram. Text overlays explaining the challenge |
-| 3 | Architecture | 0:30–1:05 | System architecture diagram — unidirectional flow |
-| 4 | Dashboard Tour | 1:05–2:00 | Live dashboard — Operations Center → Live Threats → Attack Console |
-| 5 | Detection Demo | 2:00–2:30 | Launching an attack, seeing it detected in real-time |
-| 6 | Results & Closing | 2:30–3:00 | Detection statistics, model accuracy, closing statement |
+| 1 | Dashboard Tour | 0:00–1:30 | Live dashboard screen recording — Operations Center → Live Threats → Network Map → Attack Console |
+| 2 | Detection Demo | 1:30–2:15 | Launch attacks from Attack Console, watch detections appear live |
+| 3 | Results & Closing | 2:15–3:00 | Throughput timeline, threat stats, detection coverage, closing statement |
 
 ---
 
 ## Detailed Script
 
-### SHOT 1: Title Card (0:00–0:08)
+### SHOT 1: Dashboard Tour (0:00–1:30)
 
-**[Visual: EKADHARA logo animates in, shield icon glows cyan]**
+**[Visual: Browser opens directly to `sih26145.udayps.com` — no intro, no diagrams]**
 
-**Narration:**
-"EKADHARA. AI-Based Detection of Cyber Threats in Unidirectional IP Traffic. Problem Statement 26145. Designed for the National Technical Research Organisation."
-
-**[Text on screen: PS-26145 · NTRO · SIH 2026 · Blockchain & Cybersecurity]**
-
----
-
-### SHOT 2: The Problem (0:08–0:30)
-
-**[Visual: Diagram showing production network → data diode → monitoring enclave. One-way arrow only.]**
+**[Page loads — Operations Center is visible immediately]**
 
 **Narration:**
-"Critical infrastructure operators use data diodes to monitor network traffic. Traffic flows one way only — into the enclave. No return path. No probes. No handshakes. No ability to push commands back."
+"EKADHARA is an AI-based threat detection system built for unidirectional network monitoring. Here's the Operations Center — the main dashboard."
 
-**[Text on screen: NO RETURN PATH · NO DECRYPTION · PASSIVE OBSERVATION ONLY]**
+**[Point to KPI cards at the top]**
+"Real-time KPI cards show active connections, threats blocked, total flows processed, throughput, and threat alerts. All updating live."
 
-**Narration:**
-"Any threat detection system must work purely from what it can passively observe — flow records, DNS queries, TLS fingerprints. Without ever contacting the source."
+**[Scroll down to degradation matrix / threat table]**
+"The threat matrix shows detection performance across attack types — DDoS, C2 beaconing, DNS tunneling, port scanning, and more. Each row shows full-duplex confidence, diode-only confidence, and validity status."
 
----
-
-### SHOT 3: Architecture (0:30–1:05)
-
-**[Visual: System architecture diagram]**
+**[Navigate to: Live Threats — click sidebar link]**
 
 **Narration:**
-"EKADHARA's pipeline has five stages."
+"The Live Threat Feed. Every detected alert appears here in real-time — threat class, source and destination IPs, ports, confidence score, and validity."
 
-**[Stage 1 appears: TRAFFIC INGEST]**
-"First, traffic ingest — reading NetFlow, IPFIX, and sFlow records passively from the diode mirror."
-
-**[Stage 2 appears: FEATURE EXTRACTION]**
-"Second, feature extraction — 47 features across flow statistics, DNS entropy, TLS fingerprinting, and behavioral patterns."
-
-**[Stage 3 appears: ML INFERENCE]**
-"Third, ML inference — a stacking ensemble combining Random Forest, XGBoost, and a deep neural network. Trained on CIC-IDS2017 with synthetic attack augmentation."
-
-**[Stage 4 appears: THREAT CLASSIFICATION]**
-"Fourth, threat classification — six classes: DDoS, C2 beaconing, DGA domains, DNS tunneling, TLS anomalies, port scanning, and data exfiltration."
-
-**[Stage 5 appears: ALERT OUTPUT]**
-"Fifth, structured alert output — timestamp, flow ID, threat class, confidence score, and supporting evidence."
-
----
-
-### SHOT 4: Dashboard Tour (1:05–2:00)
-
-**[Visual: Screen recording of the EKADHARA dashboard]**
-
-**[Navigate to: Operations Center]**
-"Here is the EKADHARA Operations Center. Real-time KPI cards show active connections, threats blocked, total flows processed, and system uptime. The degradation matrix shows detection performance per threat type."
-
-**[Navigate to: Live Threats]**
-"The Live Threat Feed displays detected alerts in real-time. Each alert shows the threat class, source and destination IPs, ports, confidence score, and validity status — all marked as measured, never injected."
+**[Scroll through alerts — point to a critical one]**
+"Each alert is timestamped and tagged with severity. Critical threats are flagged immediately."
 
 **[Navigate to: Network Map]**
-"The Network Map visualizes traffic topology — source-destination pairs, protocol distribution, and attack concentration."
 
-**[Navigate to: AI Analyzer]**
-"The AI Analyzer panel shows model confidence distributions and threat type breakdowns."
-
-**[Navigate to: Diode Lab]**
-"The Diode Lab confirms the enclave's air-gap integrity — no return path, no decryption, read-only monitoring."
+**Narration:**
+"The Network Map visualizes traffic topology — source-destination pairs, protocol distribution, and attack concentration across the monitored network."
 
 **[Navigate to: Attack Console]**
-"The Attack Console lets operators generate controlled attack traffic for testing. Select from eight attack types, configure target and intensity, and launch. Detections appear immediately on the Live Threats page."
+
+**Narration:**
+"And here's the Attack Console — where operators can generate controlled attack traffic to test the detection pipeline."
+
+**[Point to the preset buttons]**
+"One-click presets like DDoS Storm, C2 Channel, and Full Assault cover common attack scenarios. Or configure a single attack manually."
 
 ---
 
-### SHOT 5: Detection Demo (2:00–2:30)
+### SHOT 2: Detection Demo (1:30–2:15)
 
-**[Visual: Attack Console — select "SYN Flood", set target to localhost:8000, click Launch]**
+**[Visual: Still on Attack Console page]**
 
 **Narration:**
-"Let me demonstrate. I'll launch a SYN flood attack targeting the detection pipeline."
+"Let me demonstrate. I'll launch a SYN flood attack."
 
-**[Click Launch button — show loading state]**
+**[Click "DDoS Storm" preset — or click Launch on a single SYN Flood]**
 
-**[Switch to Live Threats tab — new alerts appear]**
-"Within seconds, the detection pipeline identifies the attack. Here we see multiple DDoS alerts — each with source IP, destination port, confidence score of over 90 percent, and severity marked critical."
+**[Wait for alerts to appear — then switch to Live Threats tab]**
 
-**[Switch back to Attack Console — show result]**
-"The Attack Console confirms the launch and shows the backend response — alerts generated, source address, and latency."
+**Narration:**
+"Within seconds, the detection pipeline identifies the attack. Here we see multiple DDoS alerts — each with source IP, destination port, confidence over 90 percent, and severity marked critical."
+
+**[Point to a specific alert — highlight confidence score and severity]**
+
+**[Switch back to Operations Center]**
+
+**Narration:**
+"Back on the Operations Center, the KPI cards have updated. Threats blocked count has increased. The degradation matrix reflects the new detections."
+
+**[Point to throughput timeline if visible]**
+"Throughput is climbing as attack traffic flows through the detection pipeline."
 
 ---
 
-### SHOT 6: Results & Closing (2:30–3:00)
+### SHOT 3: Results & Closing (2:15–3:00)
 
-**[Visual: Statistics overlay]**
+**[Visual: Operations Center — full view with populated data]**
 
 **Narration:**
-"EKADHARA processes over 45,000 flows per minute with 128,000+ alerts generated. Average detection confidence is 73.3 percent across all threat types. The system detects DGA domains, DNS tunneling, data exfiltration, TLS anomalies, port scans, and volumetric DDoS — all from passive observation only."
+"EKADHARA processes thousands of flows per second. Every threat is classified, scored, and surfaced in real-time — DDoS, C2 beaconing, DNS tunneling, DGA domains, port scans, and data exfiltration. All from passive observation only."
 
-**[Visual: Detection breakdown chart]**
-"DGA detection: 84,000 alerts. DNS tunneling: 17,000. Data exfiltration: 20,000. TLS anomalies: 4,000. Port scans: 1,100."
+**[Point to detection coverage section on Attack Console or stats]**
+"Detection coverage spans volumetric DDoS, C2 beaconing, DNS threats, TLS anomalies, reconnaissance, and data exfiltration."
 
-**[Visual: EKADHARA logo returns]**
+**[Visual: EKADHARA logo/brand mark appears briefly]**
 
 **Narration:**
 "EKADHARA. Protecting critical infrastructure through intelligent, passive threat detection. No decryption. No return path. Just detection."
@@ -132,21 +103,20 @@
 
 1. **Screen recording**: Use OBS Studio at 1920x1080, 30fps
 2. **Theme**: Keep dark mode throughout for consistency
-3. **Pre-load data**: Run attack scripts for 30 seconds before recording to populate the dashboard
+3. **Pre-load data**: Before recording, hit reset then launch attacks for 15 seconds so dashboard is alive but not cluttered
 4. **Browser**: Chrome, zoom 100%, no extensions visible
 5. **Narration**: Record in a quiet environment with a good microphone. Pace at ~150 words/minute
 6. **Music**: Subtle ambient electronic track underneath at -20dB
-7. **Transitions**: Simple cuts between scenes. No flashy effects — this is a technical demo
+7. **Transitions**: Simple cuts between pages. No flashy effects — this is a technical demo
 
 ## Pre-Recording Checklist
 
-- [ ] **Reset dashboard**: Visit `http://localhost:8000/api/reset` (or `/api/demo/start` on live site) before recording — clears all flows/alerts for a clean slate
-- [ ] Backend running on port 8000 with lightweight dummy mode
-- [ ] Frontend running on port 5180 (or live at `sih26145.udayps.com`)
-- [ ] Open browser to `/` — dashboard should show "0 flows, 0 alerts" after reset
-- [ ] Start simulator: Attack Lab → click "DDoS Storm" preset — wait 10 seconds for flows to populate
-- [ ] Launch single attack: Attack Console → SYN Flood → Launch → watch Live Threats page for alerts
-- [ ] Theme set to dark mode (toggle in top header)
+- [ ] **Reset dashboard**: Visit `POST https://sih26145.udayps.com/api/reset` — clears all flows/alerts for a clean slate
+- [ ] Wait 5 seconds, then launch attacks: Attack Lab → click "DDoS Storm" preset
+- [ ] Let simulator run for 15 seconds to populate the dashboard naturally
+- [ ] Open browser to `sih26145.udayps.com` — Operations Center should show live data
+- [ ] Navigate through pages: Operations → Live Threats → Network Map → Attack Console
+- [ ] Theme set to dark mode (default)
 - [ ] Browser cache cleared
 - [ ] Desktop notifications disabled
 - [ ] Recording software ready (OBS at 1920x1080, 30fps)
@@ -154,15 +124,15 @@
 
 ## Demo Flow (for recording)
 
-1. Open `sih26145.udayps.com` → shows Operations Center
-2. Navigate to **Attack Lab** → click **DDoS Storm** preset
-3. Watch Operations Center — flows and threats start climbing immediately
-4. Switch to **Live Threats** — alerts appear in real-time with confidence scores
-5. Switch to **Network Map** — traffic topology updates
-6. Switch back to **Attack Lab** → click **Launch** on a single SYN Flood attack
-7. Show result card with attack ID and backend response
+1. Open `sih26145.udayps.com` — starts at Operations Center with live data
+2. Scroll through KPI cards, point out the threat matrix
+3. Navigate to **Live Threats** — scroll through alerts, highlight a critical one
+4. Navigate to **Network Map** — show traffic visualization
+5. Navigate to **Attack Console** — point out the preset buttons
+6. Click **DDoS Storm** preset — watch the alert
+7. Switch to **Live Threats** — show new alerts appearing in real-time
+8. Close with Operations Center full view + narration
 
 ## Reset URL
 
-- **Local**: `POST http://localhost:8000/api/reset` — clears everything for a fresh recording
-- **Live**: `POST https://sih26145.udayps.com/api/reset` — use this before recording the video
+- **Live**: `POST https://sih26145.udayps.com/api/reset` — use this before recording to clear everything for a fresh start
