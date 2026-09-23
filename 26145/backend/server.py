@@ -353,26 +353,48 @@ async def attack_stop():
     return {"status": "stopped", "active_attacks": []}
 
 
+@app.post("/api/reset")
+async def reset_state():
+    global _flows_processed, _alerts_generated, _start_time, _sim_running
+    _flows_processed = 0
+    _alerts_generated = 0
+    _recent_alerts.clear()
+    _start_time = time.time()
+    _sim_running = False
+    _sim_stop.set()
+    return {"status": "reset", "message": "All state cleared — dashboard is fresh. Use /api/demo/start to begin."}
+
+
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket):
     await manager.connect(ws)
     try:
-        # Send initial stats
-        await ws.send_json({"type": "stats", "data": {
-            "total_flows": _flows_processed,
-            "total_alerts": _alerts_generated,
-            "active_connections": len(manager.active),
-            "throughput": round(_flows_processed / max(time.time() - _start_time, 0.1), 2),
-        }})
-        while True:
-            # Keepalive — send periodic stats
-            await asyncio.sleep(2)
-            await ws.send_json({"type": "stats", "data": {
+        def _build_stats():
+            elapsed = max(time.time() - _start_time, 0.1)
+            type_counts: dict[str, int] = {}
+            confs = []
+            for a in _recent_alerts:
+                t = a.get("threat_type", "unknown")
+                type_counts[t] = type_counts.get(t, 0) + 1
+                confs.append(a.get("confidence", 0.0))
+            avg_conf = round(sum(confs) / len(confs), 4) if confs else 0.0
+            return {
                 "total_flows": _flows_processed,
                 "total_alerts": _alerts_generated,
+                "threats_per_type": type_counts,
+                "avg_confidence": avg_conf,
+                "flows_per_sec": round(_flows_processed / elapsed, 2),
                 "active_connections": len(manager.active),
-                "throughput": round(_flows_processed / max(time.time() - _start_time, 0.1), 2),
-            }})
+                "uptime_sec": round(elapsed, 1),
+                "throughput": round(_flows_processed / elapsed, 2),
+                "simulator_running": _sim_running,
+            }
+
+        # Send initial stats
+        await ws.send_json({"type": "stats", "data": _build_stats()})
+        while True:
+            await asyncio.sleep(2)
+            await ws.send_json({"type": "stats", "data": _build_stats()})
     except WebSocketDisconnect:
         manager.disconnect(ws)
 
