@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Alert, Flow, Stats, ThreatType } from '../types';
 import { mockBackend } from './mockBackend';
 
-const API_BASE = '/api';
+const API_BASE = '';
 const WS_URL = '/ws';
 const ALERTS_WS_URL = '/ws';
 const RECONNECT_DELAY_MS = 3000;
