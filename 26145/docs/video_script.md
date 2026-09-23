@@ -11,23 +11,21 @@
 |------|--------|--------|
 | 0:00 | Browser opens to `sih26145.udayps.com` | Operations Center. Dark theme. LIVE badge pulsing. |
 | 0:05 | Operations Center | Pan across KPI cards: Active Connections, Threats Blocked, Total Flows, Throughput, Threat Alerts |
-| 0:12 | Operations Center | Scroll down to DEGRADATION WARNING banner, then threat matrix table |
-| 0:18 | Operations Center | Scroll through table: ZAP DDOS, RADIO C2 BEACONING, GLOBE DGA DOMAINS, SERVER DNS TUNNELING, SEARCH PORT SCAN |
-| 0:25 | Operations Center → click "Live Threats" | Live Threats feed loads. Alert cards with threat type, src/dst IP, confidence, severity. |
-| 0:30 | Live Threats | Scroll alerts. Point to a CRITICAL alert. |
-| 0:35 | Live Threats → click "Network" | Network Map loads. Nodes and edges. Traffic topology. |
-| 0:40 | Network Map | Brief pan. Show src-dst pairs, protocol distribution. |
-| 0:45 | Network Map → click "Attack Lab" | Attack Console loads. Status cards: Backend ONLINE, WebSocket CONNECTED, Flows, Alerts. |
-| 0:50 | Attack Console | Point to preset buttons: DDoS Storm, C2 Channel, Full Assault, Stealth Exfil, Recon + Infiltrate. |
-| 0:55 | Attack Console → click "DDoS Storm" | Preset highlights. "Starting DDoS Storm..." message. |
-| 0:58 | Attack Console | Show simulator active state — red border, attack type tags. |
-| 1:02 | Attack Console → click "Live Threats" | Switch tabs. New DDoS alerts appearing live. |
-| 1:07 | Live Threats | Point to a fresh alert. Confidence score visible. |
-| 1:12 | Live Threats → click "Network" | Network Map updates. New attack edges appearing on the topology. |
-| 1:17 | Network Map | Point to a new red edge — that's the attack traffic showing up. |
-| 1:22 | Network Map → click "Operations" | Operations Center. KPI numbers increased. Threat matrix updated. |
-| 1:32 | Operations Center (full view) | Full dashboard. Narrate closing statement. EKADHARA logo appears. |
-| 1:42 | End card | "EKADHARA · PS-26145 · NTRO · SIH 2026" |
+| 0:12 | Operations Center | Scroll down to threat matrix table |
+| 0:18 | Operations Center | Scroll through rows: ZAP DDOS (94%), RADIO C2 BEACONING (91%), GLOBE DGA DOMAINS (88%), SERVER DNS TUNNELING (86%), SEARCH PORT SCAN (92%) |
+| 0:25 | Operations Center → click "Live Threats" | Live Threats page opens. **Empty state** — "No threats detected yet" message visible. This is the blank slate. |
+| 0:30 | Live Threats | Point to the empty state. "The feed is clean — no threats detected yet." |
+| 0:35 | Live Threats → click "Attack Lab" | Attack Console loads. Status cards: Backend ONLINE, WebSocket CONNECTED, Flows Processed, Alerts Generated. |
+| 0:40 | Attack Console | Point to preset buttons: DDoS Storm, C2 Channel, Full Assault, Stealth Exfil, Recon + Infiltrate. |
+| 0:45 | Attack Console → click "DDoS Storm" | Preset highlights. "Starting DDoS Storm..." message. Simulator activates. |
+| 0:50 | Attack Console | Show simulator active state — red border, attack type tags: syn_flood + udp_flood. |
+| 0:55 | Attack Console → click "Live Threats" | Switch to Live Threats. **Alerts are now appearing** — scroll to show fresh DDoS alerts. |
+| 1:00 | Live Threats | Point to a newly arrived alert. Confidence score visible. Severity: CRITICAL. |
+| 1:05 | Live Threats → click "Network" | Network Map updates. New attack edges appearing on the topology in real-time. |
+| 1:10 | Network Map | Point to a new red edge — that's the attack traffic showing up live. |
+| 1:15 | Network Map → click "Operations" | Operations Center. KPI numbers have increased. Threat matrix updated with new detections. |
+| 1:25 | Operations Center (full view) | Full dashboard. Narrate closing statement. EKADHARA logo appears. |
+| 1:35 | End card | "EKADHARA · PS-26145 · NTRO · SIH 2026" |
 
 ---
 
