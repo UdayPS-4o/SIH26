@@ -269,6 +269,10 @@ async def diode_status():
 async def demo_status():
     return {
         "simulator_running": _sim_running,
+        "attack_mix": {},  # frontend expects this key
+        "lab_attacks": [],
+        "generated_attacks": [],
+        "processing_active": _sim_running,
         "flows_generated": _flows_processed,
         "alerts_generated": _alerts_generated,
         "active_attacks": [],
