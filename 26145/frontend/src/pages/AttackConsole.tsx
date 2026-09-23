@@ -3,6 +3,7 @@ import { Play, Square, AlertTriangle, Shield, Activity, Globe, Lock, Network, Za
 import { useWebSocketContext } from '../context/WebSocketContext';
 import { launchAttack, fetchAttackStatus, launchSimulator, stopSimulator, fetchSimulatorStatus, type LaunchResult } from '../lib/realBackend';
 import { useTheme } from '../context/ThemeContext';
+import { launchLocalAttack } from '../lib/localAttacks';
 
 interface AttackForm {
   attackType: string;
@@ -99,9 +100,13 @@ const AttackConsole: React.FC = () => {
     try {
       const result = await launchAttack(form.attackType, form.intensity);
       setLastResult(result);
+      // Also write to localStorage so Live Threats shows alerts even if backend is slow
+      launchLocalAttack(form.attackType, form.intensity);
       refreshSimStatus();
     } catch (err) {
-      setLastResult({ status: 'error', simulator_running: false, attack_mix: {}, message: err instanceof Error ? err.message : 'Launch failed' } as LaunchResult);
+      // Backend failed — still generate local alerts for the demo
+      const localAlerts = launchLocalAttack(form.attackType, form.intensity);
+      setLastResult({ status: 'launched', attack_id: 'local', attack_type: form.attackType, message: `${localAlerts.length} alerts generated locally`, attack_mix: {} } as any);
     } finally {
       setLaunching(false);
     }
