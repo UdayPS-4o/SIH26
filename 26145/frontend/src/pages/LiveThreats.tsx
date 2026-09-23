@@ -151,6 +151,12 @@ const LiveThreats: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
   const tableRef = useRef<HTMLDivElement>(null);
+  const mountTimeRef = useRef<number>(Date.now());
+
+  /* ── Only show alerts that arrived AFTER this page was opened ─────────── */
+  const liveAlerts = useMemo(() => {
+    return wsAlerts.filter(a => (a.timestamp || 0) >= mountTimeRef.current);
+  }, [wsAlerts]);
 
   /* ── Clock ──────────────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -163,11 +169,11 @@ const LiveThreats: React.FC = () => {
     if (autoScroll && tableRef.current) {
       tableRef.current.scrollTop = 0;
     }
-  }, [wsAlerts.length, autoScroll]);
+  }, [liveAlerts.length, autoScroll]);
 
   /* ── Filters ────────────────────────────────────────────────────────────── */
   const filteredAlerts = useMemo(() => {
-    let result = wsAlerts;
+    let result = liveAlerts;
     if (filterSeverity !== 'all') result = result.filter(a => a.severity === filterSeverity);
     if (filterTypes.length > 0) {
       result = result.filter(a => filterTypes.some(t =>
@@ -181,7 +187,7 @@ const LiveThreats: React.FC = () => {
       );
     }
     return result;
-  }, [wsAlerts, filterSeverity, filterTypes, searchQuery]);
+  }, [liveAlerts, filterSeverity, filterTypes, searchQuery]);
 
   const toggleType = (type: string) => {
     setFilterTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
@@ -189,21 +195,21 @@ const LiveThreats: React.FC = () => {
 
   const severityCounts = useMemo(() => {
     const counts: Record<string, number> = { critical: 0, high: 0, medium: 0, low: 0 };
-    wsAlerts.forEach(a => {
+    liveAlerts.forEach(a => {
       const s = (a.severity as string) || 'medium';
       counts[s] = (counts[s] || 0) + 1;
     });
     return counts;
-  }, [wsAlerts]);
+  }, [liveAlerts]);
 
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    wsAlerts.forEach(a => {
+    liveAlerts.forEach(a => {
       const t = a.threat_type || 'unknown';
       counts[t] = (counts[t] || 0) + 1;
     });
     return counts;
-  }, [wsAlerts]);
+  }, [liveAlerts]);
 
   const clearFilters = () => {
     setFilterSeverity('all');
@@ -609,7 +615,7 @@ const LiveThreats: React.FC = () => {
             EKADHARA v3.2.1 &middot; NTRO SIH26
           </span>
           <span style={{ fontSize:11, color: C.textDim, fontVariantNumeric:'tabular-nums' }}>
-            WebSocket: {isConnected ? 'connected' : 'disconnected'} &middot; {filteredAlerts.length} filtered &middot; {wsAlerts.length} total
+            WebSocket: {isConnected ? 'connected' : 'disconnected'} &middot; {filteredAlerts.length} filtered &middot; {liveAlerts.length} total
           </span>
         </div>
 
