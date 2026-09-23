@@ -357,6 +357,11 @@ async def attack_stop():
     return {"status": "stopped", "active_attacks": []}
 
 
+@app.get("/api/attack/status")
+async def attack_status():
+    return {"active": [], "total": _alerts_generated}
+
+
 @app.post("/api/reset")
 async def reset_state():
     global _flows_processed, _alerts_generated, _start_time, _sim_running
