@@ -30,7 +30,11 @@ app.add_middleware(
 )
 
 if _frontend_dist.exists():
-    app.mount("/static", StaticFiles(directory=str(_frontend_dist / "static")), name="static")
+    # Mount whatever static dirs exist (assets/ or static/)
+    for sub in ("assets", "static"):
+        d = _frontend_dist / sub
+        if d.exists():
+            app.mount(f"/{sub}", StaticFiles(directory=str(d)), name=sub)
 
 # ── State ──────────────────────────────────────────────────────────────────
 _start_time = time.time()
