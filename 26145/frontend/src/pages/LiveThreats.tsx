@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useWebSocketContext } from '../context/WebSocketContext';
 import { useTheme } from '../context/ThemeContext';
+import { getLocalAlerts, clearLocalAlerts } from '../lib/localAttacks';
 import ValidityChip from '../components/ValidityChip';
 import { ShieldAlert, Search, AlertTriangle } from 'lucide-react';
 import { Alert } from '../types';
@@ -151,11 +152,23 @@ const LiveThreats: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
   const tableRef = useRef<HTMLDivElement>(null);
+  const [localAlerts, setLocalAlerts] = useState<Alert[]>([]);
+
+  /* ── Poll localStorage for locally-launched attacks ───────────── */
+  useEffect(() => {
+    const poll = setInterval(() => {
+      setLocalAlerts(getLocalAlerts());
+    }, 500);
+    return () => clearInterval(poll);
+  }, []);
+
   const mountTimeRef = useRef<number>(Date.now());
 
   /* ── Only show alerts that arrived AFTER this page was opened ─────────── */
   const liveAlerts = useMemo(() => {
-    return wsAlerts.filter(a => (a.timestamp || 0) >= mountTimeRef.current);
+    const freshLocal = localAlerts.filter(a => (a.timestamp || 0) >= mountTimeRef.current);
+    const freshWs = wsAlerts.filter(a => (a.timestamp || 0) >= mountTimeRef.current);
+    return [...freshLocal, ...freshWs];
   }, [wsAlerts]);
 
   /* ── Clock ──────────────────────────────────────────────────────────────── */
