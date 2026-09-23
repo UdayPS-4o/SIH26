@@ -1,5 +1,6 @@
-# Multi-stage build: frontend → production single container
-# Stage 1: Build frontend
+# Multi-stage build: frontend → lightweight production single container
+# No ML models, no heavy deps — just realistic dummy data
+
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
@@ -7,32 +8,20 @@ RUN npm ci --silent 2>/dev/null || npm install --silent
 COPY frontend/ ./
 RUN npm run build
 
-# Stage 2: Production runtime image
+# Stage 2: Minimal Python runtime — no ML, no scipy, no sklearn
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install system dependencies (gcc + libpcap0.8 for scapy)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libgomp1 \
-    libpcap0.8 \
-    && rm -rf /var/lib/apt/lists/*
+# Minimal deps — just fastapi + uvicorn
+RUN pip install --no-cache-dir fastapi uvicorn websockets python-multipart
 
-# Install Python dependencies
-COPY backend/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy backend source code
+# Copy backend (lite server.py with no ML imports)
 COPY backend/ ./
 
-# Copy built frontend static files into /app/frontend/dist
+# Copy built frontend
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Create logs directory
-RUN mkdir -p /app/logs
-
-# Expose port (FastAPI serves both API/WS and frontend)
 EXPOSE 8000
 
-# Run with uvicorn — 2 workers for reliability
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Single worker — Dokploy has limited resources
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "warning"]

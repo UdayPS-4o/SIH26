@@ -10,7 +10,6 @@ import {
   Clock,
   Settings,
   Plug,
-  Zap,
 } from 'lucide-react';
 
 const MONITORING_ITEMS = [
@@ -19,7 +18,6 @@ const MONITORING_ITEMS = [
   { label: 'Network', path: '/network-map', icon: Network, key: 'netmap' },
   { label: 'AI Analyzer', path: '/ai-analyzer', icon: Brain, key: 'ai' },
   { label: 'Diode Lab', path: '/diode-lab', icon: Radar, key: 'diode' },
-  { label: 'Attack Console', path: '/attack-console', icon: Zap, key: 'attack' },
 ];
 
 const PLATFORM_ITEMS = [

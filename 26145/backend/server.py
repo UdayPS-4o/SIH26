@@ -1,8 +1,7 @@
 """
-FastAPI server for the cyber threat detection system.
-
-Provides WebSocket streaming of flows and alerts, and REST endpoints
-for health checks, statistics, and alert retrieval.
+Lightweight cyber threat detection dashboard backend.
+Generates realistic dummy data — no ML models, no heavy processing.
+Designed for Dokploy deployment on limited resources.
 """
 
 import os, sys, time, threading, uuid, json, asyncio, logging, random
@@ -16,52 +15,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-# Ensure backend package is importable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 project_root = Path(__file__).resolve().parent
 _frontend_dist = project_root / "frontend" / "dist"
 
-from simulator import TrafficSimulator
-from detector import ThreatDetector, Alert
-from models import DetectionEnsemble
-from self_test import run_self_test as _run_egress_self_test
-from diode_sim import DiodeMode, DIODE_DEGRADATION_TABLE, global_diode
-from attack_gen import controller as _lab_controller
-from attack_tools import launch_attack as _attack_launch, _ATTACK_FUNCS
+app = FastAPI(title="EKADHARA Threat Detection", version="3.2.1")
 
-# Attack controller wrapper for compatibility
-class _AttackController:
-    """Thin wrapper around attack_tools.launch_attack for server.py compatibility."""
-    def __init__(self):
-        self._attacks: dict[str, str] = {}
-
-    def launch(self, attack_type: str, **kwargs) -> str:
-        aid = _attack_launch(attack_type, **kwargs)
-        self._attacks[aid] = attack_type
-        return aid
-
-    def stop_all(self):
-        # Daemon threads — clear tracking; threads exit on their own or when func returns
-        self._attacks.clear()
-
-    def active_attacks(self):
-        return [{"id": k, "type": v} for k, v in self._attacks.items()]
-
-_attack_controller = _AttackController()
-
-logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# App setup
-# ---------------------------------------------------------------------------
-
-app = FastAPI(
-    title="Cyber Threat Detection API",
-    description="Real-time AI-based cyber threat detection system",
-    version="1.0.0",
-)
-
-# Allow all origins for development / demo
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -70,313 +29,208 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------------------------------------------------------------------------
-# Global state
-# ---------------------------------------------------------------------------
+if _frontend_dist.exists():
+    app.mount("/static", StaticFiles(directory=str(_frontend_dist / "static")), name="static")
 
-_start_time: float = time.time()
-_flows_processed: int = 0
-_alerts_generated: int = 0
-_attack_src_ip: str = ""
+# ── State ──────────────────────────────────────────────────────────────────
+_start_time = time.time()
+_flows_processed = 0
+_alerts_generated = 0
+_sim_running = False
+_sim_thread = None
+_sim_stop = threading.Event()
 
-# Recent flows and alerts for API queries
-_recent_flows: deque = deque(maxlen=5000)
-_recent_alerts: deque = deque(maxlen=2000)
+_recent_alerts: deque = deque(maxlen=500)
 
-# WebSocket connection manager
+# ── Dummy data generators ──────────────────────────────────────────────────
+ATTACK_TYPES = [
+    "syn_flood", "udp_flood", "c2_beaconing", "dns_tunnel",
+    "port_scan", "dga_domains", "data_exfiltration",
+]
+
+THREAT_CLASSES = {
+    "syn_flood": "ddos",
+    "udp_flood": "ddos",
+    "c2_beaconing": "beaconing",
+    "dns_tunnel": "dns_tunneling",
+    "port_scan": "port_scan",
+    "dga_domains": "dga",
+    "data_exfiltration": "exfiltration",
+}
+
+SEVERITIES = {
+    "syn_flood": "critical",
+    "udp_flood": "critical",
+    "c2_beaconing": "high",
+    "dns_tunnel": "high",
+    "port_scan": "medium",
+    "dga_domains": "high",
+    "data_exfiltration": "critical",
+}
+
+def _rand_ip() -> str:
+    return f"{random.randint(1,223)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
+
+def _make_alert(attack_type: str) -> dict:
+    tid = THREAT_CLASSES.get(attack_type, attack_type)
+    sev = SEVERITIES.get(attack_type, "medium")
+    conf = round(random.uniform(0.72, 0.99), 2)
+    evidence = {
+        "window_sec": random.choice([30, 60, 120]),
+        "flows_analyzed": random.randint(50, 5000),
+        "validity": random.choice(["MEASURED", "ESTIMATED"]),
+    }
+    if attack_type == "syn_flood":
+        evidence.update({"pkt_rate": random.randint(500, 8000), "src_entropy": round(random.uniform(4, 8), 2), "syn_ack_ratio": round(random.uniform(8, 50), 1)})
+    elif attack_type == "udp_flood":
+        evidence.update({"pkt_rate": random.randint(200, 5000), "dst_entropy": round(random.uniform(3, 8), 2), "avg_payload_bytes": random.randint(100, 1500)})
+    elif attack_type == "c2_beaconing":
+        evidence.update({"beacon_interval_std": round(random.uniform(0.2, 2), 2), "jitter_pct": round(random.uniform(1, 10), 1), "dst_consistency": round(random.uniform(0.8, 0.99), 2)})
+    elif attack_type == "dns_tunnel":
+        evidence.update({"query_entropy": round(random.uniform(4, 7), 2), "avg_query_len": random.randint(40, 150), "txt_record_pct": round(random.uniform(20, 70), 1)})
+    elif attack_type == "port_scan":
+        evidence.update({"unique_ports_hit": random.randint(5, 25), "fan_ratio": round(random.uniform(0.3, 0.9), 2)})
+    elif attack_type == "dga_domains":
+        evidence.update({"entropy_score": round(random.uniform(3.5, 7), 2), "unique_domains": random.randint(20, 200)})
+    elif attack_type == "data_exfiltration":
+        evidence.update({"exfil_bytes": random.randint(50000, 5000000), "channel": random.choice(["DNS", "HTTP", "ICMP", "TLS"])})
+
+    return {
+        "id": str(uuid.uuid4())[:8],
+        "timestamp": time.time(),
+        "flow_id": "",
+        "threat_class": tid,
+        "threat_type": attack_type,
+        "severity": sev,
+        "confidence": conf,
+        "src_ip": _rand_ip(),
+        "dst_ip": _rand_ip(),
+        "evidence": evidence,
+        "validity": evidence["validity"],
+        "flow_count": evidence["flows_analyzed"],
+    }
+
+# ── WebSocket manager ──────────────────────────────────────────────────────
 class ConnectionManager:
-    """Manages active WebSocket connections."""
-
-    def __init__(self) -> None:
+    def __init__(self):
         self.active: list[WebSocket] = []
 
-    async def connect(self, websocket: WebSocket) -> None:
-        await websocket.accept()
-        self.active.append(websocket)
-        logger.info(f"WebSocket connected ({len(self.active)} total)")
+    async def connect(self, ws: WebSocket):
+        await ws.accept()
+        self.active.append(ws)
 
-    def disconnect(self, websocket: WebSocket) -> None:
-        if websocket in self.active:
-            self.active.remove(websocket)
-        logger.info(f"WebSocket disconnected ({len(self.active)} total)")
+    def disconnect(self, ws: WebSocket):
+        if ws in self.active:
+            self.active.remove(ws)
 
-    async def broadcast(self, message: dict) -> None:
-        """Send a message to all connected clients.
-
-        Args:
-            message: Dictionary to send as JSON.
-        """
-        dead: list[WebSocket] = []
-        for ws in self.active:
+    async def broadcast(self, msg: dict):
+        for ws in list(self.active):
             try:
-                await ws.send_json(message)
+                await ws.send_json(msg)
             except Exception:
-                dead.append(ws)
-        for ws in dead:
-            self.disconnect(ws)
-
+                self.disconnect(ws)
 
 manager = ConnectionManager()
 
-# Background processing state — simulator is lazy-created, NOT auto-started.
-_simulator: TrafficSimulator | None = None
-_detector = ThreatDetector(window_sec=60)
-_ensemble = DetectionEnsemble()
-_background_task: asyncio.Task | None = None
-_processing_active: bool = False
-_event_loop: asyncio.AbstractEventLoop | None = None
+# ── Background simulator ──────────────────────────────────────────────────
+def _sim_loop():
+    """Generate flows and occasional alerts at realistic rates."""
+    global _flows_processed
+    batch = 0
+    while not _sim_stop.is_set():
+        # Generate a batch of flows
+        n = random.randint(80, 300)
+        _flows_processed += n
+        batch += 1
 
-
-def _get_or_create_simulator() -> TrafficSimulator:
-    """Return the simulator singleton, creating it on first access."""
-    global _simulator
-    if _simulator is None:
-        _simulator = TrafficSimulator()
-    return _simulator
-_demo_mode_enabled: bool = False
-
-
-# ---------------------------------------------------------------------------
-# Background processing
-# ---------------------------------------------------------------------------
-
-async def _process_flows() -> None:
-    """Background task that runs the simulator and processes flows.
-
-    Only active after POST /api/demo/start; not started on server startup.
-    """
-    global _flows_processed, _alerts_generated, _processing_active, _event_loop
-    _processing_active = True
-    logger.info("Background flow processing started")
-
-    sim = _get_or_create_simulator()
-    loop = asyncio.get_event_loop()
-
-    def on_flow(flow: dict) -> None:
-        global _flows_processed, _alerts_generated
-        loop.call_soon_threadsafe(lambda: asyncio.create_task(_handle_flow(flow)))
-
-    sim.on_flow(on_flow)
-    sim.start()
-
-    _event_loop = loop
-
-    while _processing_active:
-        await asyncio.sleep(5.0)
-        stats = _detector.get_stats()
-        if _simulator is not None:
-            stats["simulator"] = _simulator.get_stats()
-        await manager.broadcast({"type": "stats", "data": stats})
-
-    sim.stop()
-    logger.info("Background flow processing stopped")
-
-
-async def _handle_flow(flow: dict) -> None:
-    """Process a single flow through the detector and broadcast results.
-
-    Args:
-        flow: Flow dictionary from simulator.
-    """
-    global _flows_processed, _alerts_generated
-
-    _flows_processed += 1
-    _recent_flows.append(flow)
-
-    # If an attack is active, override src_ip so per-source detectors accumulate
-    if _attack_src_ip and flow.get("attack_type"):
-        flow["src_ip"] = _attack_src_ip
-
-    # Run ML ensemble detection
-    try:
-        context = {"window": _detector._all_flows[-100:]}
-        ml_result = _ensemble.detect(flow, context)
-        if ml_result.get("is_threat"):
-            logger.debug(f"ML detection: {ml_result}")
-    except Exception:
-        pass
-
-    # Run rule-based detection
-    try:
-        alerts = _detector.process_flow(flow)
-        for alert in alerts:
-            _alerts_generated += 1
+        # Maybe generate an alert (every ~3rd batch)
+        if random.random() < 0.35:
+            atype = random.choice(ATTACK_TYPES)
+            alert = _make_alert(atype)
             _recent_alerts.append(alert)
-            await manager.broadcast({
-                "type": "alert",
-                "data": alert.to_dict(),
-            })
-    except Exception as e:
-        logger.debug(f"Detection error: {e}")
+            global _alerts_generated
+            _alerts_generated += 1
 
-    # Broadcast flow
-    await manager.broadcast({"type": "flow", "data": flow})
+            # Broadcast via WS
+            try:
+                loop = asyncio.new_event_loop()
+                loop.run_until_complete(manager.broadcast({"type": "alert", "data": alert}))
+                loop.close()
+            except Exception:
+                pass
 
-
-# ---------------------------------------------------------------------------
-# Lifecycle
-# ---------------------------------------------------------------------------
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    """Initialize models.  Simulator is NOT started here — use POST /api/demo/start."""
-    logger.info("Starting threat detection server...")
-
-    # Pre-load ML models
-    try:
-        _ensemble.load_models()
-        logger.info("ML models loaded")
-    except Exception as e:
-        logger.warning(f"Model loading issue: {e}")
-
-    logger.info("Server startup complete — simulator is idle. POST /api/demo/start to begin.")
+        time.sleep(random.uniform(0.8, 2.5))
 
 
-@app.on_event("shutdown")
-async def on_shutdown() -> None:
-    """Clean up on shutdown."""
-    global _processing_active
-    _processing_active = False
-    if _simulator is not None:
-        _simulator.stop()
-    logger.info("Server shutdown complete")
+def _start_sim():
+    global _sim_running, _sim_thread
+    if _sim_running:
+        return
+    _sim_stop.clear()
+    _sim_thread = threading.Thread(target=_sim_loop, daemon=True)
+    _sim_thread.start()
+    _sim_running = True
 
 
-# ---------------------------------------------------------------------------
-# REST Endpoints
-# ---------------------------------------------------------------------------
+def _stop_sim():
+    global _sim_running
+    _sim_stop.set()
+    _sim_running = False
 
+
+# Start simulator automatically
+_start_sim()
+
+# ── REST endpoints ─────────────────────────────────────────────────────────
 @app.get("/api/health")
-async def health_check() -> dict:
-    """Health check endpoint.
-
-    Returns:
-        Health status with uptime and processing statistics.
-    """
-    uptime = time.time() - _start_time
+async def health():
+    elapsed = time.time() - _start_time
     return {
         "status": "ok",
-        "uptime": round(uptime, 2),
+        "uptime": round(elapsed, 1),
         "flows_processed": _flows_processed,
         "alerts_generated": _alerts_generated,
         "active_connections": len(manager.active),
-        "models_loaded": _ensemble._models_loaded,
-    }
-
-
-@app.get("/api/security/status")
-async def security_status() -> dict:
-    """Quick security posture check (no network I/O).
-
-    Returns current security configuration and enforcement status.
-    """
-    import os as _os
-    status = {
-        "enclave_mode": "unidirectional-read-only",
-        "return_path_blocked": True,
-        "payload_decryption": "disabled",
-        "processing_mode": "streaming",
-        "alert_schema": "OCSF-aligned",
-        "checks": {
-            "no_http_client_deps": True,
-            "capture_mode": _os.environ.get("WATCHTOWER_CAPTURE_MODE", "simulator"),
-            "direction_mask": "FWD-only (diode) or BOTH (mirror)",
-            "max_flows": int(_os.environ.get("WATCHTOWER_MAX_FLOWS", 1000000)),
-        },
-    }
-    return status
-
-
-@app.get("/api/security/self-test")
-async def security_self_test() -> dict:
-    """Run egress self-test — proves the enclave cannot initiate outbound connections.
-
-    This endpoint is part of the security audit trail. In production deployment
-    with seccomp active, any outbound connect() call would SIGSYS-kill the
-    process, so this test would never return results — that IS the pass condition.
-
-    Returns:
-        Self-test report with per-target results and environment checks.
-    """
-    import asyncio as _asyncio
-    loop = _asyncio.get_event_loop()
-    report = await loop.run_in_executor(None, _run_egress_self_test)
-    return report.to_dict()
-
-
-@app.get("/api/model-metrics")
-async def get_model_metrics() -> dict:
-    """Return documented model training metrics from the MODELS_AND_FEATURES spec.
-
-    These are offline training metrics on the held-out test set (60/20/20 split).
-    They are NOT live accuracy numbers — they represent the model's expected
-    performance on unseen data from the training corpus.
-    """
-    return {
-        "source": "MODELS_AND_FEATURES.md — offline test set",
-        "training_corpus": "2M+ synthetic flows + CIC-IDS2017 real-data pipeline",
-        "split": "60% train / 20% validation / 20% test (temporal, stratified)",
-        "models": [
-            {"category":"DDoS Detection",    "model":"Random Forest (100 trees)",              "accuracy":96.8, "precision":94.2, "recall":97.1, "f1":95.6, "status":"active",   "samples":482000},
-            {"category":"C2 Beaconing",       "model":"Isolation Forest + LSTM",               "accuracy":93.4, "precision":91.8, "recall":92.5, "f1":92.1, "status":"active",   "samples":128000},
-            {"category":"DGA Domains",        "model":"Character-level CNN + RNN",             "accuracy":95.1, "precision":93.7, "recall":94.3, "f1":94.0, "status":"active",   "samples":356000},
-            {"category":"DNS Tunneling",      "model":"XGBoost + Statistical Features",       "accuracy":91.2, "precision":88.9, "recall":93.4, "f1":91.1, "status":"active",   "samples":94000},
-            {"category":"Port Scanning",      "model":"K-means Clustering + SVM",             "accuracy":89.7, "precision":86.3, "recall":91.8, "f1":89.0, "status":"training", "samples":210000},
-            {"category":"Data Exfiltration",  "model":"Transformer Encoder",                  "accuracy":94.5, "precision":92.8, "recall":93.9, "f1":93.3, "status":"active",   "samples":156000},
-            {"category":"TLS Anomaly",        "model":"Isolation Forest (JA3)",               "accuracy":87.3, "precision":85.1, "recall":88.9, "f1":87.0, "status":"active",   "samples":640000},
-            {"category":"Malware Detection",  "model":"Gradient Boosted Trees",               "accuracy":95.8, "precision":94.5, "recall":96.2, "f1":95.3, "status":"active",   "samples":520000},
-        ],
-        "features_per_flow": 25,
-        "ensemble_method": "Weighted voting with Platt-scaled confidence calibration",
-        "retraining": "Weekly retraining restores F1 from 0.86 to 0.91 after 30-day drift",
+        "models_loaded": False,
+        "mode": "lightweight-dummy",
     }
 
 
 @app.get("/api/stats")
-async def get_stats() -> dict:
-    """Get detection statistics."""
-    detector_stats = _detector.get_stats()
+async def get_stats():
+    elapsed = max(time.time() - _start_time, 0.1)
+    fps = _flows_processed / elapsed
+
+    # Build threats_per_type from recent alerts
+    type_counts: dict[str, int] = {}
+    confs = []
+    for a in _recent_alerts:
+        t = a.get("threat_type", "unknown")
+        type_counts[t] = type_counts.get(t, 0) + 1
+        confs.append(a.get("confidence", 0.0))
+
+    avg_conf = round(sum(confs) / len(confs), 4) if confs else 0.0
+
     return {
-        "total_flows": detector_stats.get("total_flows", 0),
-        "total_alerts": detector_stats.get("total_alerts", 0) + _alerts_generated,
-        "threats_per_type": detector_stats.get("threats_per_type", {}),
-        "avg_confidence": detector_stats.get("avg_confidence", 0.0),
-        "flows_per_sec": detector_stats.get("flows_per_sec", 0.0),
-        "uptime_sec": round(time.time() - _start_time, 1),
-        "simulator_running": _simulator.running if _simulator else False,
+        "total_flows": _flows_processed,
+        "total_alerts": _alerts_generated,
+        "threats_per_type": type_counts,
+        "avg_confidence": avg_conf,
+        "flows_per_sec": round(fps, 2),
+        "uptime_sec": round(elapsed, 1),
+        "simulator_running": _sim_running,
     }
 
 
 @app.get("/api/alerts")
-async def get_alerts(limit: int = 50, offset: int = 0, threat_type: str = "") -> dict:
-    """Get paginated list of alerts.
-
-    Args:
-        limit: Maximum number of alerts to return.
-        offset: Number of alerts to skip (for pagination).
-        threat_type: Optional filter by threat type.
-
-    Returns:
-        Dictionary with alerts list and pagination metadata.
-    """
-    # Merge detector alerts and demo alerts (deduplicated by id)
-    all_alerts = _detector.get_recent_alerts(limit=2000)
-    demo_alerts = list(_recent_alerts)
-    existing_ids = {a.id for a in all_alerts}
-    for da in demo_alerts:
-        if da.id not in existing_ids:
-            all_alerts.append(da)
-
-    all_alerts.sort(key=lambda a: a.timestamp, reverse=True)
-
+async def get_alerts(limit: int = 50, offset: int = 0, threat_type: str = ""):
+    alerts = list(_recent_alerts)
+    alerts.sort(key=lambda a: a["timestamp"], reverse=True)
     if threat_type:
-        all_alerts = [a for a in all_alerts if a.threat_type == threat_type]
-
-    total = len(all_alerts)
-    paginated = all_alerts[offset:offset + limit]
-
+        alerts = [a for a in alerts if a["threat_type"] == threat_type]
+    total = len(alerts)
     return {
-        "alerts": [a.to_dict() for a in paginated],
+        "alerts": alerts[offset:offset + limit],
         "total": total,
         "limit": limit,
         "offset": offset,
@@ -384,556 +238,164 @@ async def get_alerts(limit: int = 50, offset: int = 0, threat_type: str = "") ->
 
 
 @app.get("/api/threat-types")
-async def get_threat_types() -> dict:
-    """Get list of supported threat types.
-
-    Returns:
-        Dictionary mapping threat type IDs to display names and descriptions.
-    """
+async def get_threat_types():
     return {
         "threat_types": [
-            {
-                "id": "ddos",
-                "name": "DDoS Attack",
-                "description": "Distributed Denial of Service attack detection",
-                "severity": "critical",
-            },
-            {
-                "id": "beaconing",
-                "name": "C2 Beaconing",
-                "description": "Command & Control beaconing detection",
-                "severity": "high",
-            },
-            {
-                "id": "dga",
-                "name": "DGA Domains",
-                "description": "Domain Generation Algorithm detection",
-                "severity": "medium",
-            },
-            {
-                "id": "dns_tunnel",
-                "name": "DNS Tunneling",
-                "description": "Data exfiltration via DNS tunneling",
-                "severity": "high",
-            },
-            {
-                "id": "tls_anomaly",
-                "name": "TLS Anomaly",
-                "description": "Suspicious TLS/JA3 fingerprint detection",
-                "severity": "medium",
-            },
-            {
-                "id": "port_scan",
-                "name": "Port Scanning",
-                "description": "Network port scanning detection",
-                "severity": "medium",
-            },
-            {
-                "id": "exfiltration",
-                "name": "Data Exfiltration",
-                "description": "Large-scale data exfiltration detection",
-                "severity": "critical",
-            },
+            {"id": "ddos", "name": "DDoS Attack", "description": "SYN/UDP flood detection", "severity": "critical"},
+            {"id": "beaconing", "name": "C2 Beaconing", "description": "Command & Control beaconing", "severity": "high"},
+            {"id": "dns_tunneling", "name": "DNS Tunneling", "description": "Exfil via DNS queries", "severity": "high"},
+            {"id": "port_scan", "name": "Port Scanning", "description": "Reconnaissance detection", "severity": "medium"},
+            {"id": "dga", "name": "DGA Domains", "description": "Algorithmically generated domains", "severity": "high"},
+            {"id": "exfiltration", "name": "Data Exfiltration", "description": "Unusual outbound data volume", "severity": "critical"},
         ]
     }
 
 
-# ── Diode mode endpoints (Tasks 2, 4) ──────────────────────────────────
-
-@app.post("/api/diode/mode")
-async def set_diode_mode(request: Request) -> dict:
-    """Set the data-diode operating mode and return the degradation table.
-
-    Body:
-        mode: "full-duplex" | "diode-only" | "ack-shadow"
-
-    Returns degradation rates per threat type for all three modes.
-    """
-    body = {}
-    try:
-        body = await request.json() or {}
-    except Exception:
-        pass
-
-    mode = body.get("mode", DiodeMode.FULL_DUPLEX)
-    try:
-        global_diode.mode = mode
-        _detector.set_diode_mode(mode)
-    except ValueError as exc:
-        return {
-            "status": "error",
-            "error": str(exc),
-            "mode": global_diode.mode,
-            "degradation_table": DIODE_DEGRADATION_TABLE,
-        }
-
+@app.get("/api/diode/status")
+async def diode_status():
     return {
-        "status": "ok",
-        "mode": global_diode.mode,
-        "degradation_table": DIODE_DEGRADATION_TABLE,
-    }
-
-
-@app.get("/api/diode/mode")
-async def get_diode_mode() -> dict:
-    """Return the current diode mode and the degradation table."""
-    status = global_diode.get_status()
-    return {
-        "mode": status["mode"],
-        "label": status["label"],
-        "integrity": status["integrity"],
-        "uptime_sec": status["uptime_sec"],
-        "degradation_table": status.get("degradation_table", DIODE_DEGRADATION_TABLE),
-    }
-
-
-# ── Egress self-test endpoint (Task 3) ──────────────────────────────────
-
-@app.get("/api/self-test/egress")
-async def egress_self_test() -> dict:
-    """Run egress self-test and return structured results.
-
-    Returns:
-        Self-test report with status, checks, and kernel verdict.
-    """
-    import asyncio as _asyncio
-    loop = _asyncio.get_event_loop()
-    report = await loop.run_in_executor(None, _run_egress_self_test)
-
-    checks = []
-    for r in report.results:
-        checks.append({
-            "id": len(checks) + 1,
-            "name": r.description,
-            "status": "PASS" if r.passed else "FAIL",
-            "detail": r.detail,
-        })
-
-    kernel_verdict = (
-        "ENCLAVE IS AIR-GAPPED"
-        if report.overall_status == "PASS"
-        else "ENCLAVE HAS EGRESS PATH"
-    )
-
-    return {
-        "status": report.overall_status,
-        "timestamp": _asyncio.get_event_loop().time(),
-        "checks": checks,
-        "kernel_verdict": kernel_verdict,
-    }
-
-
-@app.get("/api/flows")
-async def get_flows(limit: int = 100, offset: int = 0) -> dict:
-    """Get recent flows.
-
-    Args:
-        limit: Maximum number of flows to return.
-        offset: Number of flows to skip.
-
-    Returns:
-        Dictionary with flows list and pagination metadata.
-    """
-    flows_list = list(_recent_flows)
-    total = len(flows_list)
-    paginated = flows_list[offset:offset + limit]
-    return {
-        "flows": paginated,
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-    }
-
-
-# ===================================================================
-# PART E — Explicit attack/demo API (background threads, not dashboard-coupled)
-# ===================================================================
-#
-# These endpoints are the ONLY way to trigger attack traffic.
-# The server does NOT auto-generate attacks on startup or tied to
-# any dashboard state.  All traffic is benign until one of these
-# endpoints is called explicitly.
-# ===================================================================
-
-# Allowed types for POST /api/attack/launch (attack_tools.py keys)
-_ATTACK_TOOL_TYPES = {
-    "syn_flood", "udp_flood", "c2_beaconing",
-    "dns_tunnel", "port_scan", "data_exfiltration",
-}
-
-
-# ── Demo cinematic alert endpoint ─────────────────────────────────────────────
-# Generates a realistic detection alert in the backend and broadcasts it to
-# all connected dashboard clients.  Used by the demo launcher / video script
-# to make the UI react immediately when an attack is launched from cmd.
-
-# Template evidence values are stored as callables so random numbers are
-# evaluated fresh on each request, not baked at module-import time.
-_DEMO_ALERT_TEMPLATES: dict[str, dict] = {
-    "syn_flood": lambda: {
-        "threat_class": "ddos", "threat_type": "syn_flood", "severity": "critical",
-        "evidence": {
-            "pkt_rate": random.randint(800, 5000),
-            "src_entropy": round(random.uniform(4.5, 8.0), 2),
-            "syn_ack_ratio": round(random.uniform(8.0, 40.0), 1),
-            "window_sec": 60, "flows_analyzed": random.randint(200, 2000),
-            "validity": "MEASURED", "diode_delta": None, "features_lost": "None",
-        },
-    },
-    "udp_flood": lambda: {
-        "threat_class": "ddos", "threat_type": "udp_flood", "severity": "critical",
-        "evidence": {
-            "pkt_rate": random.randint(600, 4000),
-            "dst_entropy": round(random.uniform(3.5, 7.5), 2),
-            "avg_payload_bytes": random.randint(64, 1400),
-            "target_ports": random.randint(10, 500),
-            "window_sec": 60, "flows_analyzed": random.randint(150, 1500),
-            "validity": "MEASURED", "diode_delta": None, "features_lost": "None",
-        },
-    },
-    "c2_beaconing": lambda: {
-        "threat_class": "beaconing", "threat_type": "c2_beaconing", "severity": "high",
-        "evidence": {
-            "beacon_interval_std": round(random.uniform(0.3, 1.5), 2),
-            "jitter_pct": round(random.uniform(2.0, 8.0), 1),
-            "dst_consistency": round(random.uniform(0.85, 1.0), 2),
-            "beacon_count": random.randint(5, 30),
-            "window_sec": 120, "flows_analyzed": random.randint(10, 60),
-            "validity": "MEASURED", "diode_delta": None, "features_lost": "Return volume",
-        },
-    },
-    "dns_tunnel": lambda: {
-        "threat_class": "dns_tunneling", "threat_type": "dns_tunneling", "severity": "high",
-        "evidence": {
-            "query_entropy": round(random.uniform(4.0, 7.0), 2),
-            "avg_query_len": random.randint(40, 120),
-            "txt_record_pct": round(random.uniform(30, 90), 1),
-            "unique_domains": random.randint(20, 200),
-            "window_sec": 60, "flows_analyzed": random.randint(50, 500),
-            "validity": "MEASURED", "diode_delta": None, "features_lost": "None",
-        },
-    },
-    "port_scan": lambda: {
-        "threat_class": "port_scan", "threat_type": "port_scan", "severity": "medium",
-        "evidence": {
-            "unique_ports_hit": random.randint(8, 30),
-            "fan_ratio": round(random.uniform(0.6, 0.95), 2),
-            "scan_duration_sec": random.randint(3, 15),
-            "ports_scanned": random.randint(20, 100),
-            "window_sec": 30, "flows_analyzed": random.randint(30, 200),
-            "validity": "ESTIMATED", "diode_delta": None, "features_lost": "RST validation",
-        },
-    },
-    "data_exfiltration": lambda: {
-        "threat_class": "exfiltration", "threat_type": "data_exfiltration", "severity": "critical",
-        "evidence": {
-            "outbound_bytes": random.randint(500_000, 5_000_000),
-            "inbound_bytes": random.randint(0, 50_000),
-            "exfil_ratio": round(random.uniform(8.0, 50.0), 1),
-            "session_count": random.randint(5, 50),
-            "window_sec": 120, "flows_analyzed": random.randint(10, 100),
-            "validity": "MISSING", "diode_delta": "-83%", "features_lost": "Entire return channel",
-        },
-    },
-}
-
-
-def _demo_random_ip() -> str:
-    return ".".join(str(random.randint(1, 223)) for _ in range(4))
-
-
-@app.post("/api/demo/alert")
-async def api_demo_alert(request: Request) -> dict:
-    """LAB/DEMO ONLY: Inject a cinematic detection alert for the dashboard.
-
-    Body (JSON):
-        attack_type: one of the supported _ATTACK_TOOL_TYPES
-        count: optional number of alerts to inject (default 1, max 10)
-
-    The alert is broadcast via WebSocket to all connected clients and
-    appended to the recent alerts deque so it shows up on API queries too.
-    """
-    body = {}
-    try:
-        body = await request.json() or {}
-    except Exception:
-        pass
-
-    global _alerts_generated
-    attack_type = body.get("attack_type", "syn_flood")
-    count = min(int(body.get("count", 1)), 10)
-
-    template_fn = _DEMO_ALERT_TEMPLATES.get(attack_type)
-    if template_fn is None:
-        template_fn = lambda: {
-            "threat_class": attack_type,
-            "threat_type": attack_type,
-            "severity": "high",
-            "evidence": {"window_sec": 60, "flows_analyzed": 50, "validity": "MEASURED"},
-        }
-    template = template_fn()
-
-    injected = []
-    for _ in range(count):
-        alert = Alert(
-            threat_class=template["threat_class"],
-            threat_type=template["threat_type"],
-            severity=template["severity"],
-            confidence=round(random.uniform(0.72, 0.99), 2),
-            src_ip=_demo_random_ip(),
-            dst_ip=_demo_random_ip(),
-            evidence=dict(template["evidence"]),
-            validity=template["evidence"].get("validity", "MEASURED"),
-            flow_count=template["evidence"].get("flows_analyzed", 1),
-        )
-        _recent_alerts.append(alert)
-        _alerts_generated += 1
-        injected.append(alert.to_dict())
-        await manager.broadcast({"type": "alert", "data": alert.to_dict()})
-
-    return {
-        "status": "injected",
-        "attack_type": attack_type,
-        "count": len(injected),
-        "alerts": injected,
-    }
-
-
-@app.post("/api/attack/launch")
-async def api_attack_launch(request: Request) -> dict:
-    """LAB/DEMO ONLY: Launch an attack tool in a background thread.
-
-    Body (JSON):
-        attack_type  (required): one of the _ATTACK_TOOL_TYPES
-        target       (optional): target IP (default 127.0.0.1)
-        duration     (optional): attack duration in seconds (default 10)
-        rate         (optional): packets-per-second rate (default 100)
-        target_port  (optional): destination port
-
-    Returns:
-        {status, attack_id, attack_type, target, duration, message}
-    """
-    body = {}
-    try:
-        body = await request.json() or {}
-    except Exception:
-        pass
-
-    attack_type = body.get("attack_type", "syn_flood")
-    target = body.get("target", "127.0.0.1")
-    duration = float(body.get("duration", 10.0))
-    rate = int(body.get("rate", 100))
-
-    if attack_type not in _ATTACK_TOOL_TYPES:
-        return {
-            "status": "error",
-            "error": (
-                f"Invalid attack_type '{attack_type}'. "
-                f"Allowed: {sorted(_ATTACK_TOOL_TYPES)}"
-            ),
-            "attack_id": "",
-        }
-
-    kwargs: dict[str, Any] = {"target_ip": target, "duration": duration, "rate": rate}
-    if "target_port" in body:
-        kwargs["target_port"] = int(body["target_port"])
-
-    try:
-        attack_id = _lab_controller.launch(attack_type, **kwargs)
-    except Exception as exc:
-        return {"status": "error", "error": str(exc), "attack_id": ""}
-
-    return {
-        "status": "launched",
-        "attack_id": attack_id,
-        "attack_type": attack_type,
-        "target": target,
-        "duration": duration,
-        "message": (
-            f"Lab attack {attack_type} launched against {target} "
-            f"for {duration}s (id={attack_id}). "
-            "LAB/DEMO USE ONLY."
-        ),
-    }
-
-
-@app.post("/api/attack/stop")
-async def api_attack_stop() -> dict:
-    """Stop all active lab attacks."""
-    _lab_controller.stop_all()
-    _attack_controller.stop_all()
-    return {"status": "stopped", "message": "All attacks stopped"}
-
-
-@app.post("/api/demo/start")
-async def api_demo_start(request: Request) -> dict:
-    """Start the TrafficSimulator with an optional attack_mix.
-
-    Body (JSON, optional):
-        attack_mix: dict mapping attack_type -> relative weight.
-            Example: {"syn_flood": 20, "udp_flood": 10, "dga": 5}
-            Pass {} or omit for benign-only traffic.
-
-    The simulator runs until POST /api/demo/stop is called.
-    """
-    body = {}
-    try:
-        body = await request.json() or {}
-    except Exception:
-        pass
-
-    sim = _get_or_create_simulator()
-
-    attack_mix: dict | None = body.get("attack_mix")
-    if attack_mix is not None:
-        sim.set_attack_mix(attack_mix)
-
-    # Start simulator + background processing if not already running
-    global _processing_active, _background_task
-    if not _processing_active:
-        _processing_active = True
-        _background_task = asyncio.create_task(_process_flows())
-
-    sim.start()
-    return {
-        "status": "started",
-        "simulator_running": sim.running,
-        "attack_mix": sim.attack_mix,
-        "message": "Traffic simulator started. POST /api/demo/stop to halt.",
-    }
-
-
-@app.post("/api/demo/stop")
-async def api_demo_stop() -> dict:
-    """Stop the TrafficSimulator and all active attacks."""
-    global _processing_active
-    sim = _get_or_create_simulator()
-    sim.stop()
-    _processing_active = False
-    _lab_controller.stop_all()
-    _attack_controller.stop_all()
-    return {
-        "status": "stopped",
-        "simulator_running": sim.running,
-        "message": "Simulator and all attacks stopped.",
+        "mode": "full_duplex",
+        "status": "operational",
+        "data_transferred_mb": round(random.uniform(100, 5000), 1),
+        "integrity_ok": True,
     }
 
 
 @app.get("/api/demo/status")
-async def api_demo_status() -> dict:
-    """Return current simulator and attack-tool status."""
-    sim_running = _simulator.running if _simulator else False
+async def demo_status():
     return {
-        "simulator_running": sim_running,
-        "attack_mix": _simulator.attack_mix if _simulator else {},
-        "lab_attacks": _lab_controller.active_attacks(),
-        "generated_attacks": _attack_controller.active_attacks(),
-        "processing_active": _processing_active,
+        "simulator_running": _sim_running,
+        "flows_generated": _flows_processed,
+        "alerts_generated": _alerts_generated,
+        "active_attacks": [],
     }
 
 
-# ---------------------------------------------------------------------------
-# WebSocket Endpoint
-# ---------------------------------------------------------------------------
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket) -> None:
-    """WebSocket endpoint for real-time flow and alert streaming.
-
-    Sends:
-        - {type: "flow", data: flow_dict} for each generated flow
-        - {type: "alert", data: alert_dict} for each detected alert
-        - {type: "stats", data: stats_dict} periodically
-    """
-    await manager.connect(websocket)
-
-    # Send initial stats on connect
+@app.post("/api/demo/start")
+async def demo_start(request: Request):
+    body = {}
     try:
-        await websocket.send_json({
-            "type": "connected",
-            "data": {
-                "message": "Connected to threat detection stream",
-                "stats": _detector.get_stats(),
-                "simulator": _simulator.get_stats() if _simulator else {},
-            },
-        })
+        body = await request.json() or {}
     except Exception:
         pass
+    _start_sim()
+    return {"status": "started", "simulator_running": True, "attack_mix": body.get("attack_mix", {}), "message": "Lightweight simulator started."}
 
+
+@app.post("/api/demo/stop")
+async def demo_stop():
+    _stop_sim()
+    return {"status": "stopped", "simulator_running": False}
+
+
+@app.post("/api/demo/alert")
+async def demo_alert(request: Request):
+    body = {}
     try:
-        while True:
-            # Keep connection alive, receive any client messages
+        body = await request.json() or {}
+    except Exception:
+        pass
+    attack_type = body.get("attack_type", "syn_flood")
+    count = min(int(body.get("count", 1)), 10)
+    alerts = []
+    for _ in range(count):
+        a = _make_alert(attack_type)
+        _recent_alerts.append(a)
+        global _alerts_generated
+        _alerts_generated += 1
+        alerts.append(a)
+        try:
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(manager.broadcast({"type": "alert", "data": a}))
+            loop.close()
+        except Exception:
+            pass
+    return {"status": "injected", "attack_type": attack_type, "count": len(alerts), "alerts": alerts}
+
+
+@app.post("/api/attack/launch")
+async def attack_launch(request: Request):
+    body = {}
+    try:
+        body = await request.json() or {}
+    except Exception:
+        pass
+    attack_type = body.get("attack_type", "syn_flood")
+    duration = float(body.get("duration", 10))
+    attack_id = f"{attack_type}_{int(time.time())}"
+    # Generate alerts during the attack
+    def _run_attack():
+        end = time.time() + duration
+        while time.time() < end and not _sim_stop.is_set():
+            a = _make_alert(attack_type)
+            _recent_alerts.append(a)
+            global _alerts_generated, _flows_processed
+            _alerts_generated += 1
+            _flows_processed += random.randint(100, 1000)
             try:
-                data = await websocket.receive_text()
-                # Handle ping/pong or commands
-                try:
-                    msg = json.loads(data)
-                    if msg.get("type") == "ping":
-                        await websocket.send_json({"type": "pong"})
-                    elif msg.get("type") == "get_stats":
-                        await websocket.send_json({
-                            "type": "stats",
-                            "data": _detector.get_stats(),
-                        })
-                except json.JSONDecodeError:
-                    pass
-            except WebSocketDisconnect:
-                break
+                loop = asyncio.new_event_loop()
+                loop.run_until_complete(manager.broadcast({"type": "alert", "data": a}))
+                loop.close()
             except Exception:
-                break
-    finally:
-        manager.disconnect(websocket)
+                pass
+            time.sleep(random.uniform(0.3, 1.0))
+    t = threading.Thread(target=_run_attack, daemon=True)
+    t.start()
+    return {"status": "launched", "attack_id": attack_id, "attack_type": attack_type, "target": "127.0.0.1", "duration": duration}
 
 
-# ---------------------------------------------------------------------------
-# Static files (production)
-# ---------------------------------------------------------------------------
+@app.post("/api/attack/stop")
+async def attack_stop():
+    return {"status": "stopped", "active_attacks": []}
 
-# Catch-all route for SPA fallback (serves frontend for any non-API path)
-# Catch-all route for SPA fallback — explicitly excludes API/WS paths
-@app.get("/api/attack", include_in_schema=False)
-async def attack_get_fallback() -> dict:
-    return {"error": "Method Not Allowed. Use POST."}
+
+@app.websocket("/ws")
+async def ws_endpoint(ws: WebSocket):
+    await manager.connect(ws)
+    try:
+        # Send initial stats
+        await ws.send_json({"type": "stats", "data": {
+            "total_flows": _flows_processed,
+            "total_alerts": _alerts_generated,
+            "active_connections": len(manager.active),
+            "throughput": round(_flows_processed / max(time.time() - _start_time, 0.1), 2),
+        }})
+        while True:
+            # Keepalive — send periodic stats
+            await asyncio.sleep(2)
+            await ws.send_json({"type": "stats", "data": {
+                "total_flows": _flows_processed,
+                "total_alerts": _alerts_generated,
+                "active_connections": len(manager.active),
+                "throughput": round(_flows_processed / max(time.time() - _start_time, 0.1), 2),
+            }})
+    except WebSocketDisconnect:
+        manager.disconnect(ws)
+
+
+# ── Frontend SPA fallback ──────────────────────────────────────────────────
+@app.get("/")
+async def serve_index():
+    idx = _frontend_dist / "index.html"
+    if idx.exists():
+        return FileResponse(str(idx))
+    return {"message": "EKADHARA backend running. Deploy frontend to /frontend/dist"}
+
 
 @app.get("/{full_path:path}")
-async def serve_frontend(full_path: str) -> Any:
-    """Serve frontend files or index.html for SPA routing."""
-    # Skip API and WebSocket routes
-    if full_path.startswith("api/") or full_path.startswith("ws"):
-        return {"error": "Not found"}
-
-    # Serve static assets from frontend dist if available
-    if _frontend_dist.exists():
-        file_path = _frontend_dist / full_path
-        if full_path and file_path.exists() and file_path.is_file():
-            return FileResponse(str(file_path))
-
-        # SPA fallback: serve index.html for all other routes
-        index = _frontend_dist / "index.html"
-        if index.exists():
-            return FileResponse(str(index))
-
-    return {"error": "Frontend not found. Run 'npm run build' in the frontend directory."}
-
-
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
-
-def create_app() -> FastAPI:
-    """Create and return the FastAPI application.
-
-    Returns:
-        Configured FastAPI application instance.
-    """
-    return app
+async def serve_frontend(request: Request, full_path: str):
+    # Skip API routes
+    if full_path.startswith("api/") or full_path.startswith("static/"):
+        return {"error": "not found"}
+    filepath = _frontend_dist / full_path
+    if full_path and filepath.exists() and filepath.is_file():
+        return FileResponse(str(filepath))
+    idx = _frontend_dist / "index.html"
+    if idx.exists():
+        return FileResponse(str(idx))
+    return {"error": "not found"}
 
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "server:app",
-        host="0.0.0.0",
-        port=8000,
-        log_level="info",
-        access_log=True,
-    )
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
