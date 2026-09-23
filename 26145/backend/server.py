@@ -334,15 +334,11 @@ async def get_model_metrics() -> dict:
 
 @app.get("/api/stats")
 async def get_stats() -> dict:
-    """Get detection statistics.
-
-    Returns:
-        Dictionary with flow counts, alert counts, and threat type breakdown.
-    """
+    """Get detection statistics."""
     detector_stats = _detector.get_stats()
     return {
         "total_flows": detector_stats.get("total_flows", 0),
-        "total_alerts": detector_stats.get("total_alerts", 0),
+        "total_alerts": detector_stats.get("total_alerts", 0) + _alerts_generated,
         "threats_per_type": detector_stats.get("threats_per_type", {}),
         "avg_confidence": detector_stats.get("avg_confidence", 0.0),
         "flows_per_sec": detector_stats.get("flows_per_sec", 0.0),
@@ -363,7 +359,15 @@ async def get_alerts(limit: int = 50, offset: int = 0, threat_type: str = "") ->
     Returns:
         Dictionary with alerts list and pagination metadata.
     """
+    # Merge detector alerts and demo alerts (deduplicated by id)
     all_alerts = _detector.get_recent_alerts(limit=2000)
+    demo_alerts = list(_recent_alerts)
+    existing_ids = {a.id for a in all_alerts}
+    for da in demo_alerts:
+        if da.id not in existing_ids:
+            all_alerts.append(da)
+
+    all_alerts.sort(key=lambda a: a.timestamp, reverse=True)
 
     if threat_type:
         all_alerts = [a for a in all_alerts if a.threat_type == threat_type]
@@ -655,6 +659,7 @@ async def api_demo_alert(request: Request) -> dict:
     except Exception:
         pass
 
+    global _alerts_generated
     attack_type = body.get("attack_type", "syn_flood")
     count = min(int(body.get("count", 1)), 10)
 
@@ -692,10 +697,6 @@ async def api_demo_alert(request: Request) -> dict:
         "count": len(injected),
         "alerts": injected,
     }
-
-
-def _demo_random_ip() -> str:
-    return ".".join(str(_demo_random.randint(1, 223)) for _ in range(4))
 
 
 @app.post("/api/attack/launch")
