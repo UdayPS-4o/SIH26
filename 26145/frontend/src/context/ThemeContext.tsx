@@ -72,7 +72,7 @@ const ThemeContext = createContext<ThemeContextType>({
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('watchtower-theme');
-    return saved ? saved === 'dark' : true;
+    return saved ? saved === 'dark' : false;
   });
 
   const colors = isDark ? darkColors : lightColors;
