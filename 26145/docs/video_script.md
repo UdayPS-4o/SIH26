@@ -140,11 +140,29 @@
 
 ## Pre-Recording Checklist
 
-- [ ] Backend running on port 8000 with 50K+ flows
-- [ ] Frontend running on port 5180
-- [ ] Attack scripts tested and working
-- [ ] Theme set to dark mode
+- [ ] **Reset dashboard**: Visit `http://localhost:8000/api/reset` (or `/api/demo/start` on live site) before recording — clears all flows/alerts for a clean slate
+- [ ] Backend running on port 8000 with lightweight dummy mode
+- [ ] Frontend running on port 5180 (or live at `sih26145.udayps.com`)
+- [ ] Open browser to `/` — dashboard should show "0 flows, 0 alerts" after reset
+- [ ] Start simulator: Attack Lab → click "DDoS Storm" preset — wait 10 seconds for flows to populate
+- [ ] Launch single attack: Attack Console → SYN Flood → Launch → watch Live Threats page for alerts
+- [ ] Theme set to dark mode (toggle in top header)
 - [ ] Browser cache cleared
 - [ ] Desktop notifications disabled
-- [ ] Recording software ready (OBS)
+- [ ] Recording software ready (OBS at 1920x1080, 30fps)
 - [ ] Microphone tested
+
+## Demo Flow (for recording)
+
+1. Open `sih26145.udayps.com` → shows Operations Center
+2. Navigate to **Attack Lab** → click **DDoS Storm** preset
+3. Watch Operations Center — flows and threats start climbing immediately
+4. Switch to **Live Threats** — alerts appear in real-time with confidence scores
+5. Switch to **Network Map** — traffic topology updates
+6. Switch back to **Attack Lab** → click **Launch** on a single SYN Flood attack
+7. Show result card with attack ID and backend response
+
+## Reset URL
+
+- **Local**: `POST http://localhost:8000/api/reset` — clears everything for a fresh recording
+- **Live**: `POST https://sih26145.udayps.com/api/reset` — use this before recording the video
