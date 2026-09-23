@@ -65,22 +65,24 @@ export async function fetchAlerts(limit = 50, offset = 0): Promise<Alert[]> {
     const data = await res.json();
     if (Array.isArray(data.alerts)) {
       backendOnline = true;
-      const rawTs = a.timestamp || Date.now();
-      const ts = typeof rawTs === 'number' && rawTs < 1e12 ? rawTs * 1000 : rawTs;
-      return data.alerts.map((a: any) => ({
-        id: a.id || `alt-${Math.random().toString(36).slice(2, 8)}`,
-        timestamp: ts,
-        threat_type: a.threat_type || 'Unknown',
-        confidence: typeof a.confidence === 'number' ? (a.confidence <= 1 ? Math.round(a.confidence * 100) : a.confidence) : 0,
-        severity: a.severity || 'medium',
-        src_ip: a.src_ip || '',
-        dst_ip: a.dst_ip || '',
-        src_port: a.src_port || 0,
-        dst_port: a.dst_port || 0,
-        protocol: a.protocol || '',
-        evidence: typeof a.evidence === 'string' ? { description: a.evidence } : (a.evidence || {}),
-        flow_count: a.flow_count || 1,
-      }));
+      return data.alerts.map((a: any) => {
+        const rawTs = a.timestamp || Date.now();
+        const ts = typeof rawTs === 'number' && rawTs < 1e12 ? rawTs * 1000 : rawTs;
+        return {
+          id: a.id || `alt-${Math.random().toString(36).slice(2, 8)}`,
+          timestamp: ts,
+          threat_type: a.threat_type || 'Unknown',
+          confidence: typeof a.confidence === 'number' ? (a.confidence <= 1 ? Math.round(a.confidence * 100) : a.confidence) : 0,
+          severity: a.severity || 'medium',
+          src_ip: a.src_ip || '',
+          dst_ip: a.dst_ip || '',
+          src_port: a.src_port || 0,
+          dst_port: a.dst_port || 0,
+          protocol: a.protocol || '',
+          evidence: typeof a.evidence === 'string' ? { description: a.evidence } : (a.evidence || {}),
+          flow_count: a.flow_count || 1,
+        };
+      });
     }
     throw new Error('Bad response');
   } catch {
@@ -88,6 +90,7 @@ export async function fetchAlerts(limit = 50, offset = 0): Promise<Alert[]> {
     return mockBackend.getAlerts(limit, offset);
   }
 }
+
 
 export async function fetchThreatTypes(): Promise<ThreatType[]> {
   if (useFallback) return mockBackend.getThreatTypes();
