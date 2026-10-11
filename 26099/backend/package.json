@@ -4,8 +4,8 @@
   "description": "CodeOne Backend - AI-Driven Material Code Harmonization",
   "private": true,
   "scripts": {
-    "start": "uvicorn app.main:app --host 0.0.0.0 --port 8000",
-    "dev": "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+    "start": "node api.js && uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "dev": "node api.js && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
     "seed": "python scripts/seed_data.py",
     "test": "pytest tests/"
   },
