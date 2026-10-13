@@ -6,27 +6,93 @@
   "results": [
     {
       "leadDays": 0,
-      "error": "Timed out after waiting 30000ms"
+      "departDate": "2026-10-13",
+      "scrapedAt": "2026-10-13T13:31:21.507Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=13%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false",
+      "cheapest": {
+        "price": 8976,
+        "airlineCode": "6E",
+        "flightNumber": "6E-147",
+        "stops": 1,
+        "departTime": "2026-10-13T22:10:00.000+05:30",
+        "arriveTime": "2026-10-14T02:55:00.000+05:30"
+      },
+      "cardCount": 4
     },
     {
       "leadDays": 1,
-      "error": "Timed out after waiting 30000ms"
+      "departDate": "2026-10-14",
+      "scrapedAt": "2026-10-13T13:31:25.651Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=14%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "cheapest": {
+        "price": 8567,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
+        "stops": 0,
+        "departTime": "2026-10-14T21:20:00.000+05:30",
+        "arriveTime": "2026-10-14T23:25:00.000+05:30"
+      },
+      "cardCount": 41
     },
     {
       "leadDays": 7,
-      "error": "Timed out after waiting 30000ms"
+      "departDate": "2026-10-20",
+      "scrapedAt": "2026-10-13T13:31:29.143Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=20%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "cheapest": {
+        "price": 11353,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
+        "stops": 0,
+        "departTime": "2026-10-20T21:20:00.000+05:30",
+        "arriveTime": "2026-10-20T23:25:00.000+05:30"
+      },
+      "cardCount": 72
     },
     {
       "leadDays": 15,
-      "error": "Timed out after waiting 30000ms"
+      "departDate": "2026-10-28",
+      "scrapedAt": "2026-10-13T13:31:32.249Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=28%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "cheapest": {
+        "price": 8567,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
+        "stops": 0,
+        "departTime": "2026-10-28T21:45:00.000+05:30",
+        "arriveTime": "2026-10-28T23:45:00.000+05:30"
+      },
+      "cardCount": 59
     },
     {
       "leadDays": 30,
-      "error": "Timed out after waiting 30000ms"
+      "departDate": "2026-11-12",
+      "scrapedAt": "2026-10-13T13:31:34.369Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=12%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "cheapest": {
+        "price": 13583,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
+        "stops": 0,
+        "departTime": "2026-11-12T21:45:00.000+05:30",
+        "arriveTime": "2026-11-12T23:45:00.000+05:30"
+      },
+      "cardCount": 63
     },
     {
       "leadDays": 45,
-      "error": "Timed out after waiting 30000ms"
+      "departDate": "2026-11-27",
+      "scrapedAt": "2026-10-13T13:31:37.128Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=27%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "cheapest": {
+        "price": 10115,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
+        "stops": 0,
+        "departTime": "2026-11-27T21:45:00.000+05:30",
+        "arriveTime": "2026-11-27T23:45:00.000+05:30"
+      },
+      "cardCount": 71
     }
   ]
 }
