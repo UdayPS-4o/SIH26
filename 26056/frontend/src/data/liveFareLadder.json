@@ -7,22 +7,22 @@
     {
       "leadDays": 0,
       "departDate": "2026-10-14",
-      "scrapedAt": "2026-10-14T03:27:06.787Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=14%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "scrapedAt": "2026-10-14T11:08:07.042Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=14%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false",
       "cheapest": {
-        "price": 8567,
+        "price": 8976,
         "airlineCode": "6E",
-        "flightNumber": "6E-6744",
-        "stops": 0,
-        "departTime": "2026-10-14T21:20:00.000+05:30",
-        "arriveTime": "2026-10-14T23:25:00.000+05:30"
+        "flightNumber": "6E-147",
+        "stops": 1,
+        "departTime": "2026-10-14T22:10:00.000+05:30",
+        "arriveTime": "2026-10-15T02:55:00.000+05:30"
       },
-      "cardCount": 30
+      "cardCount": 4
     },
     {
       "leadDays": 1,
       "departDate": "2026-10-15",
-      "scrapedAt": "2026-10-14T03:27:09.457Z",
+      "scrapedAt": "2026-10-14T11:08:09.155Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=15%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8567,
@@ -32,12 +32,12 @@
         "departTime": "2026-10-15T21:20:00.000+05:30",
         "arriveTime": "2026-10-15T23:25:00.000+05:30"
       },
-      "cardCount": 46
+      "cardCount": 81
     },
     {
       "leadDays": 7,
       "departDate": "2026-10-21",
-      "scrapedAt": "2026-10-14T03:27:11.934Z",
+      "scrapedAt": "2026-10-14T11:08:11.005Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=21%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 10711,
@@ -47,12 +47,12 @@
         "departTime": "2026-10-21T21:20:00.000+05:30",
         "arriveTime": "2026-10-21T23:25:00.000+05:30"
       },
-      "cardCount": 57
+      "cardCount": 63
     },
     {
       "leadDays": 15,
       "departDate": "2026-10-29",
-      "scrapedAt": "2026-10-14T03:27:14.574Z",
+      "scrapedAt": "2026-10-14T11:08:12.580Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=29%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8567,
@@ -62,12 +62,12 @@
         "departTime": "2026-10-29T21:45:00.000+05:30",
         "arriveTime": "2026-10-29T23:45:00.000+05:30"
       },
-      "cardCount": 62
+      "cardCount": 66
     },
     {
       "leadDays": 30,
       "departDate": "2026-11-13",
-      "scrapedAt": "2026-10-14T03:27:17.079Z",
+      "scrapedAt": "2026-10-14T11:08:14.356Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=13%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 13583,
@@ -77,12 +77,12 @@
         "departTime": "2026-11-13T21:45:00.000+05:30",
         "arriveTime": "2026-11-13T23:45:00.000+05:30"
       },
-      "cardCount": 42
+      "cardCount": 59
     },
     {
       "leadDays": 45,
       "departDate": "2026-11-28",
-      "scrapedAt": "2026-10-14T03:27:19.660Z",
+      "scrapedAt": "2026-10-14T11:08:16.128Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=28%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 10115,
@@ -92,7 +92,7 @@
         "departTime": "2026-11-28T21:45:00.000+05:30",
         "arriveTime": "2026-11-28T23:45:00.000+05:30"
       },
-      "cardCount": 48
+      "cardCount": 51
     }
   ]
 }
