@@ -8,21 +8,21 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-10-20T03:18:40.998Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=04%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=IX&airline=IX&&sd=&mmb=false&stops=0",
+      "scrapedAt": "2026-10-20T10:54:29.129Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=04%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
-        "price": 8383,
-        "airlineCode": "IX",
-        "flightNumber": "IX-1020",
+        "price": 8246,
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
         "stops": 0,
-        "departTime": "2026-11-04T18:35:00.000+05:30",
-        "arriveTime": "2026-11-04T20:45:00.000+05:30"
+        "departTime": "2026-11-04T21:45:00.000+05:30",
+        "arriveTime": "2026-11-04T23:45:00.000+05:30"
       },
-      "cardCount": 61
+      "cardCount": 70
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-10-20T03:18:43.694Z",
+      "scrapedAt": "2026-10-20T10:54:32.283Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=04%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 11647.47,
@@ -36,7 +36,7 @@
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-10-20T03:18:46.426Z",
+      "scrapedAt": "2026-10-20T10:54:35.273Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=04%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 34019,
@@ -46,7 +46,7 @@
         "departTime": "2026-11-04T08:00:00.000+05:30",
         "arriveTime": "2026-11-04T19:50:00.000+05:30"
       },
-      "cardCount": 40
+      "cardCount": 39
     }
   ]
 }
