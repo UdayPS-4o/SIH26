@@ -8,7 +8,7 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-10-21T11:08:13.750Z",
+      "scrapedAt": "2026-10-21T16:35:00.224Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=05%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=IX&airline=IX&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8246,
@@ -18,25 +18,25 @@
         "departTime": "2026-11-05T10:00:00.000+05:30",
         "arriveTime": "2026-11-05T12:05:00.000+05:30"
       },
-      "cardCount": 67
+      "cardCount": 65
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-10-21T11:08:15.471Z",
+      "scrapedAt": "2026-10-21T16:35:02.057Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=05%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 13620.56,
         "airlineCode": "AI",
-        "flightNumber": "AI-1852",
+        "flightNumber": "AI-1860",
         "stops": 1,
-        "departTime": "2026-11-05T13:55:00.000+05:30",
-        "arriveTime": "2026-11-06T00:55:00.000+05:30"
+        "departTime": "2026-11-05T07:45:00.000+05:30",
+        "arriveTime": "2026-11-05T20:55:00.000+05:30"
       },
-      "cardCount": 30
+      "cardCount": 35
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-10-21T11:08:17.546Z",
+      "scrapedAt": "2026-10-21T16:35:04.498Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=05%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 34019,
@@ -46,7 +46,7 @@
         "departTime": "2026-11-05T08:00:00.000+05:30",
         "arriveTime": "2026-11-05T22:35:00.000+05:30"
       },
-      "cardCount": 35
+      "cardCount": 37
     }
   ]
 }
