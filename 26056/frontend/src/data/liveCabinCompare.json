@@ -8,21 +8,21 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-10-24T15:21:25.308Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=IX&airline=IX&&sd=&mmb=false&stops=0",
+      "scrapedAt": "2026-10-24T20:11:01.629Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8383,
-        "airlineCode": "IX",
-        "flightNumber": "IX-1020",
+        "airlineCode": "6E",
+        "flightNumber": "6E-6739",
         "stops": 0,
-        "departTime": "2026-11-08T18:35:00.000+05:30",
-        "arriveTime": "2026-11-08T20:45:00.000+05:30"
+        "departTime": "2026-11-08T09:40:00.000+05:30",
+        "arriveTime": "2026-11-08T11:45:00.000+05:30"
       },
-      "cardCount": 52
+      "cardCount": 46
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-10-24T15:21:28.404Z",
+      "scrapedAt": "2026-10-24T20:11:04.315Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=08%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 11471.35,
@@ -36,7 +36,7 @@
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-10-24T15:21:31.409Z",
+      "scrapedAt": "2026-10-24T20:11:07.104Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=08%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 40155,
@@ -46,7 +46,7 @@
         "departTime": "2026-11-08T08:00:00.000+05:30",
         "arriveTime": "2026-11-08T15:45:00.000+05:30"
       },
-      "cardCount": 29
+      "cardCount": 30
     }
   ]
 }
