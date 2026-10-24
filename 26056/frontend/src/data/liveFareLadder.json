@@ -7,22 +7,15 @@
     {
       "leadDays": 0,
       "departDate": "2026-10-24",
-      "scrapedAt": "2026-10-24T10:15:29.995Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=24%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
-      "cheapest": {
-        "price": 10115,
-        "airlineCode": "6E",
-        "flightNumber": "6E-6744",
-        "stops": 0,
-        "departTime": "2026-10-24T21:20:00.000+05:30",
-        "arriveTime": "2026-10-24T23:25:00.000+05:30"
-      },
-      "cardCount": 14
+      "scrapedAt": "2026-10-24T15:21:10.750Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=24%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": null,
+      "cardCount": 0
     },
     {
       "leadDays": 1,
       "departDate": "2026-10-25",
-      "scrapedAt": "2026-10-24T10:15:31.820Z",
+      "scrapedAt": "2026-10-24T15:21:13.001Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=25%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 14442,
@@ -37,7 +30,7 @@
     {
       "leadDays": 7,
       "departDate": "2026-10-31",
-      "scrapedAt": "2026-10-24T10:15:33.355Z",
+      "scrapedAt": "2026-10-24T15:21:14.807Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=31%2F10%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8567,
@@ -47,27 +40,27 @@
         "departTime": "2026-10-31T21:45:00.000+05:30",
         "arriveTime": "2026-10-31T23:45:00.000+05:30"
       },
-      "cardCount": 50
+      "cardCount": 49
     },
     {
       "leadDays": 15,
       "departDate": "2026-11-08",
-      "scrapedAt": "2026-10-24T10:15:35.434Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "scrapedAt": "2026-10-24T15:21:17.880Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=IX&airline=IX&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8383,
-        "airlineCode": "6E",
-        "flightNumber": "6E-6739",
+        "airlineCode": "IX",
+        "flightNumber": "IX-1020",
         "stops": 0,
-        "departTime": "2026-11-08T09:40:00.000+05:30",
-        "arriveTime": "2026-11-08T11:45:00.000+05:30"
+        "departTime": "2026-11-08T18:35:00.000+05:30",
+        "arriveTime": "2026-11-08T20:45:00.000+05:30"
       },
-      "cardCount": 45
+      "cardCount": 52
     },
     {
       "leadDays": 30,
       "departDate": "2026-11-23",
-      "scrapedAt": "2026-10-24T10:15:38.523Z",
+      "scrapedAt": "2026-10-24T15:21:20.291Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=23%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8567,
@@ -77,12 +70,12 @@
         "departTime": "2026-11-23T21:45:00.000+05:30",
         "arriveTime": "2026-11-23T23:45:00.000+05:30"
       },
-      "cardCount": 53
+      "cardCount": 61
     },
     {
       "leadDays": 45,
       "departDate": "2026-12-08",
-      "scrapedAt": "2026-10-24T10:15:40.276Z",
+      "scrapedAt": "2026-10-24T15:21:23.169Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=08%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8567,
