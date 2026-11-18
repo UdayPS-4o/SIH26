@@ -8,15 +8,31 @@
   "results": [
     {
       "cabin": "Economy",
-      "error": "Timed out after waiting 30000ms"
+      "scrapedAt": "2026-11-18T23:52:21.969Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=03%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false",
+      "cheapest": {
+        "price": 8395,
+        "airlineCode": "6E",
+        "flightNumber": "6E-147",
+        "stops": 1,
+        "departTime": "2026-12-03T22:25:00.000+05:30",
+        "arriveTime": "2026-12-04T03:20:00.000+05:30"
+      },
+      "cardCount": 56
     },
     {
       "cabin": "Premium Economy",
-      "error": "Timed out after waiting 30000ms"
+      "scrapedAt": "2026-11-18T23:52:28.846Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=03%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": null,
+      "cardCount": 0
     },
     {
       "cabin": "Business",
-      "error": "Timed out after waiting 30000ms"
+      "scrapedAt": "2026-11-18T23:52:35.673Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=03%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": null,
+      "cardCount": 0
     }
   ]
 }
