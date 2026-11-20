@@ -3,50 +3,50 @@
   "dest": "BLR",
   "originCity": "Indore",
   "destCity": "Bangalore",
-  "departDate": "2026-12-04",
+  "departDate": "2026-12-05",
   "leadDays": 15,
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-11-19T15:13:03.520Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=04%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
+      "scrapedAt": "2026-11-20T00:17:03.500Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=05%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=IX&airline=IX&&sd=&mmb=false&stops=0",
       "cheapest": {
-        "price": 8122,
-        "airlineCode": "6E",
-        "flightNumber": "6E-6739",
+        "price": 8566,
+        "airlineCode": "IX",
+        "flightNumber": "IX-2175",
         "stops": 0,
-        "departTime": "2026-12-04T09:40:00.000+05:30",
-        "arriveTime": "2026-12-04T11:45:00.000+05:30"
+        "departTime": "2026-12-05T10:00:00.000+05:30",
+        "arriveTime": "2026-12-05T12:05:00.000+05:30"
       },
-      "cardCount": 57
+      "cardCount": 50
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-11-19T15:13:06.929Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=04%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
+      "scrapedAt": "2026-11-20T00:17:07.563Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=05%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 12675.3,
         "airlineCode": "AI",
         "flightNumber": "AI-2750",
         "stops": 1,
-        "departTime": "2026-12-04T19:50:00.000+05:30",
-        "arriveTime": "2026-12-05T03:50:00.000+05:30"
+        "departTime": "2026-12-05T19:50:00.000+05:30",
+        "arriveTime": "2026-12-06T08:20:00.000+05:30"
       },
       "cardCount": 34
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-11-19T15:13:10.153Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=04%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
+      "scrapedAt": "2026-11-20T00:17:11.683Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=05%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 41773,
         "airlineCode": "AI",
-        "flightNumber": "AI-2750",
+        "flightNumber": "AI-2616",
         "stops": 1,
-        "departTime": "2026-12-04T19:50:00.000+05:30",
-        "arriveTime": "2026-12-05T03:50:00.000+05:30"
+        "departTime": "2026-12-05T16:00:00.000+05:30",
+        "arriveTime": "2026-12-06T03:50:00.000+05:30"
       },
-      "cardCount": 36
+      "cardCount": 31
     }
   ]
 }
