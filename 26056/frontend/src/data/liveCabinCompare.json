@@ -8,7 +8,7 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-11-25T01:54:13.695Z",
+      "scrapedAt": "2026-11-25T16:45:49.995Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=10%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=IX&airline=IX&&sd=&mmb=false",
       "cheapest": {
         "price": 8015,
@@ -18,11 +18,11 @@
         "departTime": "2026-12-10T15:25:00.000+05:30",
         "arriveTime": "2026-12-11T02:20:00.000+05:30"
       },
-      "cardCount": 56
+      "cardCount": 53
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-11-25T01:54:16.630Z",
+      "scrapedAt": "2026-11-25T16:45:53.681Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=10%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 12005.67,
@@ -32,11 +32,11 @@
         "departTime": "2026-12-10T08:00:00.000+05:30",
         "arriveTime": "2026-12-10T19:20:00.000+05:30"
       },
-      "cardCount": 36
+      "cardCount": 35
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-11-25T01:54:19.479Z",
+      "scrapedAt": "2026-11-25T16:45:57.049Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=10%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 49327,
