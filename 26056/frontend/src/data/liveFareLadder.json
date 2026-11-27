@@ -7,37 +7,30 @@
     {
       "leadDays": 0,
       "departDate": "2026-11-27",
-      "scrapedAt": "2026-11-27T01:28:20.410Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=27%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
-      "cheapest": {
-        "price": 13583,
-        "airlineCode": "6E",
-        "flightNumber": "6E-6744",
-        "stops": 0,
-        "departTime": "2026-11-27T21:45:00.000+05:30",
-        "arriveTime": "2026-11-27T23:45:00.000+05:30"
-      },
-      "cardCount": 25
+      "scrapedAt": "2026-11-27T16:05:37.068Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=27%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=&airline=&&sd=&mmb=false",
+      "cheapest": null,
+      "cardCount": 0
     },
     {
       "leadDays": 1,
       "departDate": "2026-11-28",
-      "scrapedAt": "2026-11-27T01:28:24.956Z",
+      "scrapedAt": "2026-11-27T16:05:39.157Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=28%2F11%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
-        "price": 15366,
+        "price": 12785,
         "airlineCode": "6E",
         "flightNumber": "6E-6744",
         "stops": 0,
         "departTime": "2026-11-28T21:45:00.000+05:30",
         "arriveTime": "2026-11-28T23:45:00.000+05:30"
       },
-      "cardCount": 46
+      "cardCount": 38
     },
     {
       "leadDays": 7,
       "departDate": "2026-12-04",
-      "scrapedAt": "2026-11-27T01:28:29.005Z",
+      "scrapedAt": "2026-11-27T16:05:42.026Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=04%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 9561,
@@ -47,27 +40,27 @@
         "departTime": "2026-12-04T21:45:00.000+05:30",
         "arriveTime": "2026-12-04T23:45:00.000+05:30"
       },
-      "cardCount": 55
+      "cardCount": 56
     },
     {
       "leadDays": 15,
       "departDate": "2026-12-12",
-      "scrapedAt": "2026-11-27T01:28:31.818Z",
+      "scrapedAt": "2026-11-27T16:05:44.530Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=12%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
-        "price": 9561,
+        "price": 9046,
         "airlineCode": "6E",
         "flightNumber": "6E-6744",
         "stops": 0,
         "departTime": "2026-12-12T21:45:00.000+05:30",
         "arriveTime": "2026-12-12T23:45:00.000+05:30"
       },
-      "cardCount": 51
+      "cardCount": 47
     },
     {
       "leadDays": 30,
       "departDate": "2026-12-27",
-      "scrapedAt": "2026-11-27T01:28:34.185Z",
+      "scrapedAt": "2026-11-27T16:05:47.294Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=27%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 10711,
@@ -77,12 +70,12 @@
         "departTime": "2026-12-27T21:45:00.000+05:30",
         "arriveTime": "2026-12-27T23:45:00.000+05:30"
       },
-      "cardCount": 46
+      "cardCount": 51
     },
     {
       "leadDays": 45,
       "departDate": "2027-01-11",
-      "scrapedAt": "2026-11-27T01:28:37.280Z",
+      "scrapedAt": "2026-11-27T16:05:49.328Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=11%2F01%2F2027&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 8567,
@@ -92,7 +85,7 @@
         "departTime": "2027-01-11T21:45:00.000+05:30",
         "arriveTime": "2027-01-11T23:45:00.000+05:30"
       },
-      "cardCount": 54
+      "cardCount": 57
     }
   ]
 }

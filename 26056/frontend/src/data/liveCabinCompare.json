@@ -8,35 +8,35 @@
   "results": [
     {
       "cabin": "Economy",
-      "scrapedAt": "2026-11-27T01:28:39.726Z",
-      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=12%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=IX&airline=IX&&sd=&mmb=false&stops=0",
+      "scrapedAt": "2026-11-27T16:05:51.448Z",
+      "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Economy&depart_date=12%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=6E&airline=6E&&sd=&mmb=false&stops=0",
       "cheapest": {
         "price": 9046,
-        "airlineCode": "IX",
-        "flightNumber": "IX-2175",
+        "airlineCode": "6E",
+        "flightNumber": "6E-6744",
         "stops": 0,
-        "departTime": "2026-12-12T10:00:00.000+05:30",
-        "arriveTime": "2026-12-12T12:05:00.000+05:30"
+        "departTime": "2026-12-12T21:45:00.000+05:30",
+        "arriveTime": "2026-12-12T23:45:00.000+05:30"
       },
-      "cardCount": 51
+      "cardCount": 47
     },
     {
       "cabin": "Premium Economy",
-      "scrapedAt": "2026-11-27T01:28:43.866Z",
+      "scrapedAt": "2026-11-27T16:05:54.764Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=PREMIUM_ECONOMY&depart_date=12%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
-        "price": 14060.34,
+        "price": 14359.84,
         "airlineCode": "AI",
         "flightNumber": "AI-2750",
         "stops": 1,
         "departTime": "2026-12-12T19:50:00.000+05:30",
-        "arriveTime": "2026-12-13T08:20:00.000+05:30"
+        "arriveTime": "2026-12-13T09:40:00.000+05:30"
       },
       "cardCount": 33
     },
     {
       "cabin": "Business",
-      "scrapedAt": "2026-11-27T01:28:47.573Z",
+      "scrapedAt": "2026-11-27T16:05:58.243Z",
       "sourceUrl": "https://www.cleartrip.com/flights/results?adults=1&childs=0&infants=0&class=Business&depart_date=12%2F12%2F2026&from=IDR&to=BLR&intl=false&carrier=AI&airline=AI&&sd=&mmb=false",
       "cheapest": {
         "price": 49327,
@@ -46,7 +46,7 @@
         "departTime": "2026-12-12T08:00:00.000+05:30",
         "arriveTime": "2026-12-12T15:45:00.000+05:30"
       },
-      "cardCount": 36
+      "cardCount": 35
     }
   ]
 }
